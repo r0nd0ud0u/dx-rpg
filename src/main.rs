@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use dx_rpg::game_page;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -8,6 +9,8 @@ enum Route {
     Home {},
     #[route("/blog/:id")]
     Blog { id: i32 },
+    #[route("/game/:id")]
+    Game { id: String },
 }
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -28,20 +31,10 @@ fn App() -> Element {
 }
 
 #[component]
-pub fn Hero() -> Element {
+fn Game(id: String) -> Element {
     rsx! {
-        div {
-            id: "hero",
-            img { src: HEADER_SVG, id: "header" }
-            div { id: "links",
-                a { href: "https://dioxuslabs.com/learn/0.6/", "📚 Learn Dioxus" }
-                a { href: "https://dioxuslabs.com/awesome", "🚀 Awesome Dioxus" }
-                a { href: "https://github.com/dioxus-community/", "📡 Community Libraries" }
-                a { href: "https://github.com/DioxusLabs/sdk", "⚙️ Dioxus Development Kit" }
-                a { href: "https://marketplace.visualstudio.com/items?itemName=DioxusLabs.dioxus", "💫 VSCode Extension" }
-                a { href: "https://discord.gg/XgGxMSkvUM", "👋 Community Discord" }
-            }
-        }
+        Link { to: Route::Home {}, "Host" }
+        game_page::Game_page {id}
     }
 }
 
@@ -49,7 +42,7 @@ pub fn Hero() -> Element {
 #[component]
 fn Home() -> Element {
     rsx! {
-        Hero {}
+        Game {id: ""}
         Echo {}
     }
 }

@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 dioxus = { version = "0.6.1", features = ["router", "fullstack"] }
-rust_rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", tag = "0.1.0" }
+rust_rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "40a3fb7134cc0e05962a3c9f988b3184720f6b8d" }
 
 [features]
 default = []
