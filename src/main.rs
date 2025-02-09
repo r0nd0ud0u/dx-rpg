@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dx_rpg::game_page;
+use dx_rpg::{character_page, game_page};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -34,7 +34,14 @@ fn App() -> Element {
 fn Game(id: String) -> Element {
     rsx! {
         Link { to: Route::Home {}, "Host" }
-        game_page::Game_page {id}
+        game_page::Game_page { id }
+    }
+}
+
+#[component]
+fn Hero(name: String) -> Element {
+    rsx! {
+        character_page::Character_page { name }
     }
 }
 
@@ -42,8 +49,9 @@ fn Game(id: String) -> Element {
 #[component]
 fn Home() -> Element {
     rsx! {
-        Game {id: ""}
+        Game { id: "" }
         Echo {}
+        Hero { name: "Dracaufeu" }
     }
 }
 
@@ -51,23 +59,18 @@ fn Home() -> Element {
 #[component]
 pub fn Blog(id: i32) -> Element {
     rsx! {
-        div {
-            id: "blog",
+        div { id: "blog",
 
             // Content
             h1 { "This is blog #{id}!" }
-            p { "In blog #{id}, we show how the Dioxus router works and how URL parameters can be passed as props to our route components." }
+            p {
+                "In blog #{id}, we show how the Dioxus router works and how URL parameters can be passed as props to our route components."
+            }
 
             // Navigation links
-            Link {
-                to: Route::Blog { id: id - 1 },
-                "Previous"
-            }
+            Link { to: Route::Blog { id: id - 1 }, "Previous" }
             span { " <---> " }
-            Link {
-                to: Route::Blog { id: id + 1 },
-                "Next"
-            }
+            Link { to: Route::Blog { id: id + 1 }, "Next" }
         }
     }
 }
@@ -76,16 +79,9 @@ pub fn Blog(id: i32) -> Element {
 #[component]
 fn Navbar() -> Element {
     rsx! {
-        div {
-            id: "navbar",
-            Link {
-                to: Route::Home {},
-                "Home"
-            }
-            Link {
-                to: Route::Blog { id: 1 },
-                "Blog"
-            }
+        div { id: "navbar",
+            Link { to: Route::Home {}, "Home" }
+            Link { to: Route::Blog { id: 1 }, "Blog" }
         }
 
         Outlet::<Route> {}
@@ -98,12 +94,11 @@ fn Echo() -> Element {
     let mut response = use_signal(|| String::new());
 
     rsx! {
-        div {
-            id: "echo",
+        div { id: "echo",
             h4 { "ServerFn Echo" }
             input {
                 placeholder: "Type here to echo...",
-                oninput:  move |event| async move {
+                oninput: move |event| async move {
                     let data = echo_server(event.value()).await.unwrap();
                     response.set(data);
                 },
