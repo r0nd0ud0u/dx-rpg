@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dioxus = { version = "0.6.2", features = ["router", "fullstack"] }
+dioxus = { version = "0.6.3", features = ["router", "fullstack"] }
 rust_rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "6ecc8258299b7c9c9cafcceb6d387dc4c510abdf" }
 
 [features]
