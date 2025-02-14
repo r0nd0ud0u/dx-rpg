@@ -1,5 +1,7 @@
+use std::sync::OnceLock;
+
 use dioxus::prelude::*;
-use dx_rpg::{character_page, game_page};
+use dx_rpg::{application::Application, character_page, game_page};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -15,9 +17,14 @@ enum Route {
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
-const HEADER_SVG: Asset = asset!("/assets/header.svg");
+
+fn application() -> &'static Application {
+    static APP_MANAGER: OnceLock<Application> = OnceLock::new();
+    APP_MANAGER.get_or_init(Application::default)
+}
 
 fn main() {
+    application().clone().init();
     dioxus::launch(App);
 }
 
@@ -91,7 +98,7 @@ fn Navbar() -> Element {
 /// Echo component that demonstrates fullstack server functions.
 #[component]
 fn Echo() -> Element {
-    let mut response = use_signal(|| String::new());
+    let mut response = use_signal(String::new);
 
     rsx! {
         div { id: "echo",

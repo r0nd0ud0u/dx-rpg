@@ -17,7 +17,7 @@ pub fn Character_page(name: String) -> Element {
 }
 
 fn get_color(vie: i32) -> &'static str {
-    if vie > 50 {
+    if vie > 80 {
         "green"
     } else if vie > 20 {
         "orange"
