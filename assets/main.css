@@ -113,6 +113,10 @@ body {
     border-radius: 5px;
     overflow: hidden;
     border: 2px solid #222;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .life-bar {
@@ -120,6 +124,9 @@ body {
     height: 100%;
     background-color: green;
     transition: width 0.3s ease-in-out;
+    position: absolute;
+    left: 0;
+    top: 0;
 }
 
 button {
@@ -135,4 +142,25 @@ button {
 
 button:active {
     background-color: darkred;
+}
+
+/* character */
+#character {
+    width: 360px;
+    margin-top: 50px;
+    background-color: #1e222d;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+#character>h4 {
+    margin: 0px 0px 15px 0px;
+}
+
+.bar-text {
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    position: absolute;
+    z-index: 2; /* Ensures text stays above the bar */
 }

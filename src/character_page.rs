@@ -2,17 +2,26 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn Character_page(name: String) -> Element {
-    let mut vie = use_signal(|| 100);
+    let max_life = 100;
+    let mut life = use_signal(|| max_life);
     rsx! {
-        div { class: "container-bar",
-            div {
-                class: "life-bar",
-                width: "{vie}%",
-                background_color: get_color(vie()),
+        div { id: "character",
+            h4 { "Name" }
+            div { class: "container-bar",
+                div {
+                    class: "life-bar",
+                    width: "{life}%",
+                    background_color: get_color(life()),
+                }
+                span { class: "bar-text", "{life()} / {max_life}" }
             }
         }
 
-        button { class: "damages-btn", onclick: move |_| vie -= 20, "Give damages" }
+        button {
+            class: "damages-btn",
+            onclick: move |_| life.set((life() - 10).max(0)),
+            "Give damages"
+        }
     }
 }
 
