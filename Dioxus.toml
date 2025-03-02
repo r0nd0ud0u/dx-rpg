@@ -11,9 +11,6 @@ title = "dx-rpg"
 # include `assets` in web platform
 [web.resource]
 
-# Additional CSS style files
-style = []
-
 # Additional JavaScript files
 script = []
 

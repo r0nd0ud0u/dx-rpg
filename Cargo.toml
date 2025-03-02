@@ -8,13 +8,13 @@ edition = "2021"
 
 [dependencies]
 dioxus = { version = "0.6.3", features = ["router", "fullstack"] }
-rust_rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "6ecc8258299b7c9c9cafcceb6d387dc4c510abdf" }
+rust-rpg = { git = "ssh://git@github.com/r0nd0ud0u/lib-rpg.git", branch = "add-game-manager" }
 
 [features]
-default = []
+default = ["server"]
+server = ["dioxus/server"]
 web = ["dioxus/web"]
 desktop = ["dioxus/desktop"]
-mobile = ["dioxus/mobile"]
 
 [profile]
 
