@@ -31,14 +31,6 @@ fn application() -> &'static Application {
 
 fn main() {
     // *APP_MANAGER.write() = Application::try_new().expect("Failed to initialize application");
-    /* println!(
-        "heroes:{:?}",
-        APP_MANAGER.read().game_manager.player_manager.all_heroes[0].name
-    ); */
-    println!(
-        "heroes:{:?}",
-        application().game_manager.player_manager.all_heroes[0].name
-    );
     dioxus::launch(App);
 }
 
@@ -76,11 +68,6 @@ fn Hero(name: String) -> Element {
       rsx!{
         character_page::Character_page{name}
       }    
-}
-
-#[component]
-fn WeatherElement(weather: String) -> Element {
-    rsx! { p { "The weather is {weather}" } }
 }
 
 /// Home page
