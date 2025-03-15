@@ -2,6 +2,10 @@ use std::sync::OnceLock;
 
 use dioxus::prelude::*;
 use dx_rpg::{application::Application, character_page, game_page};
+use lib_rpg::character::Character;
+
+static CHARACTERS: GlobalSignal<Vec<Character>> = Signal::global(Vec::new);
+
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -20,11 +24,21 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 fn application() -> &'static Application {
     static APP_MANAGER: OnceLock<Application> = OnceLock::new();
-    APP_MANAGER.get_or_init(Application::default)
+    APP_MANAGER.get_or_init(|| Application::try_new().expect("Failed to initialize application"))
 }
 
+//pub(crate) static APP_MANAGER: GlobalSignal<Application> = GlobalSignal::new(Application::default);
+
 fn main() {
-    application().clone().init();
+    // *APP_MANAGER.write() = Application::try_new().expect("Failed to initialize application");
+    /* println!(
+        "heroes:{:?}",
+        APP_MANAGER.read().game_manager.player_manager.all_heroes[0].name
+    ); */
+    println!(
+        "heroes:{:?}",
+        application().game_manager.player_manager.all_heroes[0].name
+    );
     dioxus::launch(App);
 }
 
@@ -47,9 +61,26 @@ fn Game(id: String) -> Element {
 
 #[component]
 fn Hero(name: String) -> Element {
-    rsx! {
-        character_page::Character_page { name }
+/*     println!(
+        "heroes test:{:?}",
+        application().game_manager.player_manager.all_heroes[0].name
+    );
+    for c in application().game_manager.player_manager.all_heroes.clone() {
+        CHARACTERS.write().push(c);
     }
+    rsx! {
+        for c in CHARACTERS.read().iter() {
+             character_page::Character_page{name:c.name.clone()}
+         }
+     } */
+      rsx!{
+        character_page::Character_page{name}
+      }    
+}
+
+#[component]
+fn WeatherElement(weather: String) -> Element {
+    rsx! { p { "The weather is {weather}" } }
 }
 
 /// Home page
@@ -57,7 +88,7 @@ fn Hero(name: String) -> Element {
 fn Home() -> Element {
     rsx! {
         Game { id: "" }
-        Echo {}
+        //Echo {}
         Hero { name: "Dracaufeu" }
     }
 }

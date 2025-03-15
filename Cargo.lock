@@ -48,6 +48,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.97"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcfed56ad506cb2c684a14971b8861fdc3baaaae314b9e5f9bb532cbe3ba7a4f"
+
+[[package]]
 name = "ashpd"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1466,8 +1472,9 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 name = "dx-rpg"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "dioxus",
- "rust-rpg",
+ "lib-rpg",
 ]
 
 [[package]]
@@ -2645,6 +2652,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
+name = "lib-rpg"
+version = "0.1.0"
+source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=cdc82b0d2105f57d035aa49a7509724f03644ff6#cdc82b0d2105f57d035aa49a7509724f03644ff6"
+dependencies = [
+ "anyhow",
+ "lazy_static",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "libappindicator"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3791,11 +3809,6 @@ dependencies = [
  "web-sys",
  "windows-sys 0.48.0",
 ]
-
-[[package]]
-name = "rust-rpg"
-version = "0.1.0"
-source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?branch=add-game-manager#e32628b282ab9b307ea27e5dacea2e475db85e44"
 
 [[package]]
 name = "rustc-demangle"

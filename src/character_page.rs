@@ -6,7 +6,7 @@ pub fn Character_page(name: String) -> Element {
     let mut life = use_signal(|| max_life);
     rsx! {
         div { id: "character",
-            h4 { "Name" }
+            h4 { {name} }
             div { class: "container-bar",
                 div {
                     class: "life-bar",
