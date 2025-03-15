@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
 
 #[component]
-pub fn Game_page(id: String) -> Element {
+pub fn Game_page(game: String) -> Element {
     rsx! {
-        div { id: "hero" }
+        div { "hero" }
     }
 }

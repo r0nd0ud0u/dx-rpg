@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn Character_page(name: String) -> Element {
+    println!("test character page");
     let max_life = 100;
     let mut life = use_signal(|| max_life);
     rsx! {
