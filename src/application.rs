@@ -1,6 +1,6 @@
 use lib_rpg::game_manager::GameManager;
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct Application {
     pub game_manager: GameManager,
 }

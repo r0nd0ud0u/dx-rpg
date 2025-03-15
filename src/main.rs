@@ -38,6 +38,12 @@ fn App() -> Element {
         }
         _ => rsx! { "no app" },
     } */
+    let app = use_memo(Application::try_new)
+    .as_ref()
+    .unwrap()
+    .clone();
+
+    use_context_provider(|| app.clone());
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
