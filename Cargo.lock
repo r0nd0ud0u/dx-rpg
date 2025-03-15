@@ -1476,6 +1476,7 @@ dependencies = [
  "dioxus",
  "lazy_static",
  "lib-rpg",
+ "serde",
 ]
 
 [[package]]
@@ -2655,7 +2656,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lib-rpg"
 version = "0.1.0"
-source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=ff5d843b57ccccbc05079fe2547553f6b9b6493c#ff5d843b57ccccbc05079fe2547553f6b9b6493c"
+source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=b627637dffdcf65b7ad6a6e35750d1b5cf2eec17#b627637dffdcf65b7ad6a6e35750d1b5cf2eec17"
 dependencies = [
  "anyhow",
  "lazy_static",
@@ -3956,9 +3957,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.217"
+version = "1.0.219"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02fc4265df13d6fa1d00ecff087228cc0a2b5f3c0e87e258d8b94a156e984c70"
+checksum = "5f0e2c6ed6606019b4e29e69dbaba95b11854410e5347d525002456dbbb786b6"
 dependencies = [
  "serde_derive",
 ]
@@ -3976,9 +3977,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.217"
+version = "1.0.219"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a9bf7cf98d04a2b28aead066b7496853d4779c9cc183c440dbac457641e19a0"
+checksum = "5b0276cf7f2c73365f7157c8123c21cd9a50fbbd844757af28ca1f5925fc2a00"
 dependencies = [
  "proc-macro2",
  "quote",
