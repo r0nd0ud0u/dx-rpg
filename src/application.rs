@@ -11,7 +11,7 @@ pub struct Application {
 
 #[server]
 pub async fn try_new() -> Result<Application, ServerFnError> {
-    match GameManager::try_new() {
+    match GameManager::try_new("") {
         Ok(gm) => Ok(Application { game_manager: gm }),
         Err(_) => Err(ServerFnError::Request(
             "Failed to create GameManager".to_string(),
