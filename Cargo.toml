@@ -7,8 +7,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.97"
 dioxus = { version = "0.6.3", features = ["router", "fullstack"] }
-rust-rpg = { git = "ssh://git@github.com/r0nd0ud0u/lib-rpg.git", branch = "add-game-manager" }
+lazy_static = "1.5.0"
+lib-rpg = { git = "ssh://git@github.com/r0nd0ud0u/lib-rpg.git", version = "1.0.0" }
+serde = "1.0.219"
 
 [features]
 default = ["server"]
