@@ -48,6 +48,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.97"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcfed56ad506cb2c684a14971b8861fdc3baaaae314b9e5f9bb532cbe3ba7a4f"
+
+[[package]]
 name = "ashpd"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1466,8 +1472,11 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 name = "dx-rpg"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "dioxus",
- "rust-rpg",
+ "lazy_static",
+ "lib-rpg",
+ "serde",
 ]
 
 [[package]]
@@ -2645,6 +2654,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
+name = "lib-rpg"
+version = "1.0.0"
+source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git#35715c55a2049cf435004c86319373db389f6488"
+dependencies = [
+ "anyhow",
+ "lazy_static",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "libappindicator"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3793,11 +3813,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-rpg"
-version = "0.1.0"
-source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?branch=add-game-manager#e32628b282ab9b307ea27e5dacea2e475db85e44"
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3942,9 +3957,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.217"
+version = "1.0.219"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02fc4265df13d6fa1d00ecff087228cc0a2b5f3c0e87e258d8b94a156e984c70"
+checksum = "5f0e2c6ed6606019b4e29e69dbaba95b11854410e5347d525002456dbbb786b6"
 dependencies = [
  "serde_derive",
 ]
@@ -3962,9 +3977,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.217"
+version = "1.0.219"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a9bf7cf98d04a2b28aead066b7496853d4779c9cc183c440dbac457641e19a0"
+checksum = "5b0276cf7f2c73365f7157c8123c21cd9a50fbbd844757af28ca1f5925fc2a00"
 dependencies = [
  "proc-macro2",
  "quote",
