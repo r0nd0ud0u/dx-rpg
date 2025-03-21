@@ -20,7 +20,14 @@ pub fn Character_page(c: Character) -> Element {
 
         button {
             class: "damages-btn",
-            onclick: move |_| life.set((life() - 10).max(0)),
+            onclick: move |_| {
+                let new_life = life().clone() as i32 - 10;
+                if new_life < 0 {
+                    life.set(0);
+                } else {
+                    life.set(new_life as u32);
+                }
+            },
             "Give damages"
         }
     }
