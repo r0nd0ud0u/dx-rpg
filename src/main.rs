@@ -45,7 +45,7 @@ fn App() -> Element {
 fn Hero() -> Element {
     rsx! {
         for c in APP.read().game_manager.player_manager.all_heroes.iter() {
-            character_page::Character_page { c: c.clone() }
+            character_page::CharacterPanel { c: c.clone() }
         }
     }
 }
@@ -53,7 +53,6 @@ fn Hero() -> Element {
 /// Home page
 #[component]
 fn Home() -> Element {
-    let mut is_blue = use_signal(|| true);
     rsx! {
         Hero {}
     }

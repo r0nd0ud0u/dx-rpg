@@ -10,7 +10,7 @@ edition = "2021"
 anyhow = "1.0.97"
 dioxus = { version = "0.6.3", features = ["router", "fullstack"] }
 lazy_static = "1.5.0"
-lib-rpg = { git = "ssh://git@github.com/r0nd0ud0u/lib-rpg.git", rev = "0e562f7a127187ec51e8f26be324b8c4878e4a85" }
+lib-rpg = { git = "ssh://git@github.com/r0nd0ud0u/lib-rpg.git", rev = "1099cd949c499c2451294b50a4ea65a194524f4a" }
 serde = "1.0.219"
 
 [features]

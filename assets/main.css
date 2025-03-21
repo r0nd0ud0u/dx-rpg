@@ -107,8 +107,8 @@ body {
 }
 
 .container-bar {
-    width: 300px;
-    height: 30px;
+    width: 200px;
+    height: 15px;
     background-color: #444;
     border-radius: 5px;
     overflow: hidden;
@@ -145,12 +145,16 @@ button:active {
 }
 
 /* character */
-#character {
+.character {
     width: 360px;
     margin-top: 50px;
-    background-color: #1e222d;
+    background-color: #05194f;
     padding: 20px;
     border-radius: 10px;
+    margin-bottom: 1px; 
+    display: flex;
+    gap: 10px; /* Add space between divs */
+    flex-direction: column; /* Stack divs vertically */
 }
 
 #character>h4 {
@@ -158,9 +162,29 @@ button:active {
 }
 
 .bar-text {
-    font-size: 14px;
+    font-size: 10px;
     font-weight: bold;
     color: white;
     position: absolute;
     z-index: 2; /* Ensures text stays above the bar */
 }
+
+.grid-container {
+    display: grid;
+    grid-template-columns: 0.5fr 5fr 2fr;
+    gap: 0px; /* Reduce column spacing */
+    row-gap: 0px; /* Minimize vertical spacing */
+    align-items: center;
+    margin-bottom: 0px;
+}
+
+.grid-container > * {
+    margin: 0;
+    padding: 0;
+}
+
+h4 {
+    line-height: 1;
+    margin: 0;
+}
+
