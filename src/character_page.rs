@@ -7,11 +7,13 @@ pub const PATH_IMG: &str = "assets/img";
 pub fn CharacterPanel(c: Character) -> Element {
     rsx! {
         div { class: "character",
-            img {
-                src: format!("{}/{}.png", PATH_IMG, "Troll"),
-                class: "image-small",
+            div {  
+                img {
+                    src: format!("{}/{}.png", PATH_IMG, c.name.clone()),
+                    class: "image-small",
+                }
+                h4 { {c.name.clone()} }
             }
-            h4 { {c.name} }
             div {
                 if c.stats.hp.max > 0 {
                     BarComponent {

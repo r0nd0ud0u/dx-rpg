@@ -100,20 +100,17 @@ button:active {
 
 /* character */
 .character {
-    width: 360px;
+    width: 450px;
     margin-top: 10px;
     background-color: #05194f;
-    padding: 20px;
+    padding: 10px;
     border-radius: 10px;
-    margin-bottom: 1px; 
-    display: flex;
-    gap: 10px; /* Add space between divs */
-    flex-direction: column; /* Stack divs vertically */
+    display: grid;
+    gap: 1px; /* Add space between divs */
+    grid-template-columns: 0.2fr 1fr;
+    column-gap: 3px; /* Add space between columns */   
 }
 
-#character>h4 {
-    margin: 0px 0px 15px 0px;
-}
 
 .bar-text {
     font-size: 10px;
@@ -125,20 +122,11 @@ button:active {
 
 .grid-container {
     display: grid;
-    grid-template-columns: 0.5fr 5fr 2fr;
-    gap: 0px; /* Reduce column spacing */
-    row-gap: 0px; /* Minimize vertical spacing */
-    align-items: center;
-    margin-bottom: 0px;
-}
-
-.grid-container > * {
-    margin: 0;
-    padding: 0;
-}
+    grid-template-columns: 0.2fr 1fr 0.4fr;
+}                                                                                                         
 
 h4 {
-    line-height: 1;
+    line-height: 1; /* height of the line */
     margin: 0;
 }
 
