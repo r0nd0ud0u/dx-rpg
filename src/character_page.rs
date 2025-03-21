@@ -1,10 +1,16 @@
 use dioxus::prelude::*;
 use lib_rpg::character::Character;
 
+pub const PATH_IMG: &str = "assets/img";
+
 #[component]
 pub fn CharacterPanel(c: Character) -> Element {
     rsx! {
         div { class: "character",
+            img {
+                src: format!("{}/{}.png", PATH_IMG, "Troll"),
+                class: "image-small",
+            }
             h4 { {c.name} }
             div {
                 if c.stats.hp.max > 0 {
