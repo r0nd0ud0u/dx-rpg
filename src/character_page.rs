@@ -59,7 +59,7 @@ pub fn BarComponent(max: u32, current: u32, name: String) -> Element {
             div { class: "container-bar",
                 div {
                     class: "life-bar",
-                    width: "{current_sig}%",
+                    width: "{current_sig()}%",
                     background_color: get_color(current_sig() as i32),
                 }
             }
