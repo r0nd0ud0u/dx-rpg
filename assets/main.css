@@ -137,3 +137,8 @@ h4 {
     object-fit: cover; /* Ensures the image fills the space without distortion */
     border: 1px solid #ccc; /* Optional: Adds a border for aesthetics */
 }
+
+.grid-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+} 

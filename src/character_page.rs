@@ -1,15 +1,17 @@
 use dioxus::prelude::*;
-use lib_rpg::character::Character;
+use lib_rpg::character::{Character, CharacterType};
 
 pub const PATH_IMG: &str = "assets/img";
 
 #[component]
 pub fn CharacterPanel(c: Character) -> Element {
+    let bg = if c.kind == CharacterType::Hero { "blue" } else { "red" };
     rsx! {
         div { class: "character",
+            background_color: bg,
             div {  
                 img {
-                    src: format!("{}/{}.png", PATH_IMG, c.name.clone()),
+                    src: format!("{}/{}.png", PATH_IMG, c.photo_name.clone()),
                     class: "image-small",
                 }
                 h4 { {c.name.clone()} }

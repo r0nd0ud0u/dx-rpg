@@ -42,11 +42,23 @@ fn App() -> Element {
 }
 
 #[component]
-fn Hero() -> Element {
+fn GameBoard() -> Element {
     rsx! {
-        for c in APP.read().game_manager.player_manager.all_heroes.iter() {
-            character_page::CharacterPanel { c: c.clone() }
+        div{
+            class: "grid-board",
+            div{
+                for c in APP.read().game_manager.player_manager.all_heroes.iter() {
+                    character_page::CharacterPanel { c: c.clone() }
+                }
+            }
+            div{}
+            div{
+                for c in APP.read().game_manager.player_manager.all_bosses.iter() {
+                    character_page::CharacterPanel { c: c.clone() }
+                }
+            }
         }
+        
     }
 }
 
@@ -54,7 +66,7 @@ fn Hero() -> Element {
 #[component]
 fn Home() -> Element {
     rsx! {
-        Hero {}
+        GameBoard {}
     }
 }
 
