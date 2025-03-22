@@ -42,20 +42,31 @@ fn App() -> Element {
 }
 
 #[component]
-fn Hero() -> Element {
+fn GameBoard() -> Element {
     rsx! {
-        for c in APP.read().game_manager.player_manager.all_heroes.iter() {
-            character_page::Character_page { c: c.clone() }
+        div{
+            class: "grid-board",
+            div{
+                for c in APP.read().game_manager.player_manager.all_heroes.iter() {
+                    character_page::CharacterPanel { c: c.clone() }
+                }
+            }
+            div{}
+            div{
+                for c in APP.read().game_manager.player_manager.all_bosses.iter() {
+                    character_page::CharacterPanel { c: c.clone() }
+                }
+            }
         }
+        
     }
 }
 
 /// Home page
 #[component]
 fn Home() -> Element {
-    let mut is_blue = use_signal(|| true);
     rsx! {
-        Hero {}
+        GameBoard {}
     }
 }
 

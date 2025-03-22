@@ -3,6 +3,9 @@
 # App (Project) Name
 name = "dx-rpg"
 
+# resource (assets) file folder
+asset_dir = "assets"
+
 [web.app]
 
 # HTML title tag content
