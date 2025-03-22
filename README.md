@@ -34,5 +34,5 @@ dx serve --platform web
 
 - On windows, run `dx-rpg\target\dx\dx-rpg\release\web\server.exe`
 
-- Then access [http:\\localhost:8080](http:\\localhost:8080)
+- Then access [http://localhost:8080](http://localhost:8080)
 
