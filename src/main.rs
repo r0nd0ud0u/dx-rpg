@@ -44,21 +44,19 @@ fn App() -> Element {
 #[component]
 fn GameBoard() -> Element {
     rsx! {
-        div{
-            class: "grid-board",
-            div{
+        div { class: "grid-board",
+            div {
                 for c in APP.read().game_manager.player_manager.all_heroes.iter() {
                     character_page::CharacterPanel { c: c.clone() }
                 }
             }
-            div{}
-            div{
+            div {}
+            div {
                 for c in APP.read().game_manager.player_manager.all_bosses.iter() {
                     character_page::CharacterPanel { c: c.clone() }
                 }
             }
         }
-        
     }
 }
 

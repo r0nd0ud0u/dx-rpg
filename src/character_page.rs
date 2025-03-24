@@ -1,15 +1,21 @@
 use dioxus::prelude::*;
-use lib_rpg::character::{Character, CharacterType};
+use lib_rpg::{
+    character::{Character, CharacterType},
+    common::stats_const::*,
+};
 
 pub const PATH_IMG: &str = "assets/img";
 
 #[component]
 pub fn CharacterPanel(c: Character) -> Element {
-    let bg = if c.kind == CharacterType::Hero { "blue" } else { "red" };
+    let bg = if c.kind == CharacterType::Hero {
+        "blue"
+    } else {
+        "red"
+    };
     rsx! {
-        div { class: "character",
-            background_color: bg,
-            div {  
+        div { class: "character", background_color: bg,
+            div {
                 img {
                     src: format!("{}/{}.png", PATH_IMG, c.photo_name.clone()),
                     class: "image-small",
@@ -17,31 +23,31 @@ pub fn CharacterPanel(c: Character) -> Element {
                 h4 { {c.name.clone()} }
             }
             div {
-                if c.stats.hp.max > 0 {
+                if c.stats.all_stats[HP].max > 0 {
                     BarComponent {
-                        max: c.stats.hp.max,
-                        current: c.stats.hp.current,
+                        max: c.stats.all_stats[HP].max,
+                        current: c.stats.all_stats[HP].current,
                         name: "HP",
                     }
                 }
-                if c.stats.mana.max > 0 {
+                if c.stats.all_stats[MANA].max > 0 {
                     BarComponent {
-                        max: c.stats.mana.max,
-                        current: c.stats.mana.current,
+                        max: c.stats.all_stats[MANA].max,
+                        current: c.stats.all_stats[MANA].current,
                         name: "MP",
                     }
                 }
-                if c.stats.vigor.max > 0 {
+                if c.stats.all_stats[VIGOR].max > 0 {
                     BarComponent {
-                        max: c.stats.vigor.max,
-                        current: c.stats.vigor.current,
+                        max: c.stats.all_stats[VIGOR].max,
+                        current: c.stats.all_stats[VIGOR].current,
                         name: "VP",
                     }
                 }
-                if c.stats.berseck.max > 0 {
+                if c.stats.all_stats[BERSECK].max > 0 {
                     BarComponent {
-                        max: c.stats.berseck.max,
-                        current: c.stats.berseck.current,
+                        max: c.stats.all_stats[BERSECK].max,
+                        current: c.stats.all_stats[BERSECK].current,
                         name: "BP",
                     }
                 }
@@ -51,7 +57,7 @@ pub fn CharacterPanel(c: Character) -> Element {
 }
 
 #[component]
-pub fn BarComponent(max: u32, current: u32, name: String) -> Element {
+pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
     let mut current_sig = use_signal(|| current);
     rsx! {
         div { class: "grid-container",
