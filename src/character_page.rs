@@ -58,18 +58,17 @@ pub fn CharacterPanel(c: Character) -> Element {
 
 #[component]
 pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
-    let mut current_sig = use_signal(|| current);
     rsx! {
         div { class: "grid-container",
             h4 { {name} }
             div { class: "container-bar",
                 div {
                     class: "life-bar",
-                    width: "{current_sig()}%",
-                    background_color: get_color(current_sig() as i32),
+                    width: "{current}%",
+                    background_color: get_color(current as i32),
                 }
             }
-            h4 { "{current_sig()} / {max}" }
+            h4 { "{current} / {max}" }
         }
     }
 }
