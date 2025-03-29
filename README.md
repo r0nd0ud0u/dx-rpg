@@ -20,6 +20,18 @@ Add the following lines to fetch lib-rpg:
 git-fetch-with-cli = true
 ```
 
+To use rand functions from lib-rpg "get_random_nb" compilation on target32-wasm is necessary.
+Add `getrandom = { version = "0.3", features = ["wasm_js"] }` to ./cargo.toml.
+
+Following [instructions from rust docs.](https://docs.rs/getrandom/#webassembly-support), add in your  `.cargo/config.toml` the lines below:
+
+```
+# It's recommended to set the flag on a per-target basis:
+[target.wasm32-unknown-unknown]
+rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
+```
+
+
 ## Launch
 Launch the Dioxus Fullstack app (do not forget to update dioxus-cli and cargo):
 

@@ -36,7 +36,7 @@ fn GameBoard() -> Element {
     rsx! {
         div { class: "grid-board",
             div {
-                for c in APP.read().game_manager.player_manager.all_heroes.iter() {
+                for c in APP.read().game_manager.pm.all_heroes.iter() {
                     character_page::CharacterPanel { c: c.clone() }
                 }
             }
@@ -46,7 +46,7 @@ fn GameBoard() -> Element {
                         async move {
                             APP.write()
                                 .game_manager
-                                .player_manager
+                                .pm
                                 .all_bosses
                                 .iter_mut()
                                 .for_each(|b| {
@@ -65,7 +65,7 @@ fn GameBoard() -> Element {
                 }
             }
             div {
-                for c in APP.read().game_manager.player_manager.all_bosses.iter() {
+                for c in APP.read().game_manager.pm.all_bosses.iter() {
                     character_page::CharacterPanel { c: c.clone() }
                 }
             }
