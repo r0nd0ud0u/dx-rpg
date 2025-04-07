@@ -43,28 +43,7 @@ fn GameBoard() -> Element {
                 }
             }
             div {
-                button {
-                    onclick: move |_| {
-                        async move {
-                            APP.write()
-                                .game_manager
-                                .pm
-                                .active_bosses
-                                .iter_mut()
-                                .for_each(|b| {
-                                    b.stats.all_stats.get_mut(HP).unwrap().current = b
-                                        .stats
-                                        .all_stats
-                                        .get_mut(HP)
-                                        .unwrap()
-                                        .current
-                                        .saturating_sub(10);
-                                });
-                            println!("boss not foundyet ");
-                        }
-                    },
-                    "add damagesss"
-                }
+                // add containers
             }
             div {
                 for c in APP.read().game_manager.pm.active_bosses.iter() {
