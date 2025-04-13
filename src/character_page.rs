@@ -20,7 +20,7 @@ pub fn CharacterPanel(c: Character) -> Element {
                     src: format!("{}/{}.png", PATH_IMG, c.photo_name.clone()),
                     class: "image-small",
                 }
-                h4 { {c.name.clone()} }
+                h4 { {c.short_name.clone()} }
             }
             div {
                 if c.stats.all_stats[HP].max > 0 {
@@ -58,14 +58,15 @@ pub fn CharacterPanel(c: Character) -> Element {
 
 #[component]
 pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
+    let width_display = current*100/ max;
     rsx! {
         div { class: "grid-container",
             h4 { {name} }
             div { class: "container-bar",
                 div {
                     class: "life-bar",
-                    width: "{current}%",
-                    background_color: get_color(current as i32),
+                    width: "{width_display}%",
+                    background_color: get_color(width_display as i32),
                 }
             }
             h4 { "{current} / {max}" }

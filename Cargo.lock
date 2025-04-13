@@ -1474,6 +1474,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "dioxus",
+ "dioxus-desktop",
+ "dioxus-html",
  "getrandom 0.3.2",
  "lazy_static",
  "lib-rpg",
@@ -2672,7 +2674,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lib-rpg"
 version = "1.0.0"
-source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=ad4c95f9cf7fe13f2099c615b60928fd710b9227#ad4c95f9cf7fe13f2099c615b60928fd710b9227"
+source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=b74a101d7b39fa1390d6e58e02580b59a978cbf5#b74a101d7b39fa1390d6e58e02580b59a978cbf5"
 dependencies = [
  "anyhow",
  "chrono",

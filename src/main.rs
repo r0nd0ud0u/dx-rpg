@@ -4,6 +4,8 @@ use dx_rpg::{
     character_page,
 };
 use lib_rpg::common::stats_const::HP;
+use lib_rpg::testing_target;
+use lib_rpg::testing_atk;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -36,36 +38,15 @@ fn GameBoard() -> Element {
     rsx! {
         div { class: "grid-board",
             div {
-                for c in APP.read().game_manager.pm.all_heroes.iter() {
+                for c in APP.read().game_manager.pm.active_heroes.iter() {
                     character_page::CharacterPanel { c: c.clone() }
                 }
             }
             div {
-                button {
-                    onclick: move |_| {
-                        async move {
-                            APP.write()
-                                .game_manager
-                                .pm
-                                .all_bosses
-                                .iter_mut()
-                                .for_each(|b| {
-                                    b.stats.all_stats.get_mut(HP).unwrap().current = b
-                                        .stats
-                                        .all_stats
-                                        .get_mut(HP)
-                                        .unwrap()
-                                        .current
-                                        .saturating_sub(10);
-                                });
-                            println!("boss not foundyet ");
-                        }
-                    },
-                    "add damagesss"
-                }
+                // add containers
             }
             div {
-                for c in APP.read().game_manager.pm.all_bosses.iter() {
+                for c in APP.read().game_manager.pm.active_bosses.iter() {
                     character_page::CharacterPanel { c: c.clone() }
                 }
             }
@@ -86,6 +67,26 @@ fn Home() -> Element {
                 }
             },
             "Start"
+        }
+        button {
+            onclick: move |_| async move {
+                APP.write().game_manager.start_new_turn();
+            },
+            "Start new turn"
+        }
+        button {
+            onclick: move |_| async move {
+                APP.write().game_manager.new_round();
+            },
+            "Start new round"
+        }
+        button {
+            onclick: move |_| async move {
+                let atk = testing_atk::build_atk_berseck_damage1();
+                if APP.write().game_manager.pm.current_player.attacks_list.is_empty() {APP.write().game_manager.pm.current_player.attacks_list.insert(atk.name.clone(), atk);   }
+                APP.write().game_manager.launch_attack("atk1", vec![testing_target::build_target_angmar_indiv()]);
+            },
+            "launch atk"
         }
         GameBoard {}
     }
