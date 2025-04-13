@@ -4,8 +4,8 @@ use dx_rpg::{
     character_page,
 };
 use lib_rpg::common::stats_const::HP;
-use lib_rpg::testing_target;
 use lib_rpg::testing_atk;
+use lib_rpg::testing_target;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -83,8 +83,17 @@ fn Home() -> Element {
         button {
             onclick: move |_| async move {
                 let atk = testing_atk::build_atk_berseck_damage1();
-                if APP.write().game_manager.pm.current_player.attacks_list.is_empty() {APP.write().game_manager.pm.current_player.attacks_list.insert(atk.name.clone(), atk);   }
-                APP.write().game_manager.launch_attack("atk1", vec![testing_target::build_target_angmar_indiv()]);
+                if APP.write().game_manager.pm.current_player.attacks_list.is_empty() {
+                    APP.write()
+                        .game_manager
+                        .pm
+                        .current_player
+                        .attacks_list
+                        .insert(atk.name.clone(), atk);
+                }
+                APP.write()
+                    .game_manager
+                    .launch_attack("atk1", vec![testing_target::build_target_angmar_indiv()]);
             },
             "launch atk"
         }

@@ -13,14 +13,15 @@ lazy_static = "1.5.0"
 lib-rpg = { git = "ssh://git@github.com/r0nd0ud0u/lib-rpg.git", rev = "b74a101d7b39fa1390d6e58e02580b59a978cbf5" }
 serde = "1.0.219"
 getrandom = { version = "0.3", features = ["wasm_js"] }
-dioxus-desktop = { version = "0.6.3", optional = true }
+dioxus-desktop = "0.6.3"
 dioxus-html = "0.6.3"
+dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion.git", branch = "main" }
 
 [features]
-default = ["server"]
-server = ["dioxus/server"]
-web = ["dioxus/web"]
-desktop = ["dioxus/desktop"]
+default = ["web"]
+web = ["dioxus/web", "dioxus-motion/web"]
+desktop = ["dioxus/desktop", "dioxus-motion/desktop"]
+mobile = ["dioxus/mobile", "dioxus-motion/desktop"]
 
 [profile]
 
