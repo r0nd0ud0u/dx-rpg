@@ -58,7 +58,7 @@ pub fn CharacterPanel(c: Character) -> Element {
 
 #[component]
 pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
-    let width_display = current*100/ max;
+    let width_display = current * 100 / max;
     rsx! {
         div { class: "grid-container",
             h4 { {name} }

@@ -4,8 +4,8 @@ use dx_rpg::{
     character_page,
 };
 use lib_rpg::common::stats_const::HP;
-use lib_rpg::testing_target;
 use lib_rpg::testing_atk;
+use lib_rpg::testing_target;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -54,39 +54,53 @@ fn GameBoard() -> Element {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+enum ButtonStatus {
+    StartGame = 0,
+    StartRound,
+    ValidateAction,
+}
+
 /// Home page
 #[component]
 fn Home() -> Element {
+    let mut state = use_signal(|| ButtonStatus::StartGame);
     rsx! {
-        button {
-            onclick: move |_| async move {
-                println!("component found");
-                match application::try_new().await {
-                    Ok(app) => *APP.write() = app,
-                    Err(_) => println!("no app"),
-                }
-            },
-            "Start"
+        if state() == ButtonStatus::StartGame {
+            button {
+                onclick: move |_| async move {
+                    println!("component found");
+                    match application::try_new().await {
+                        Ok(app) => *APP.write() = app,
+                        Err(_) => println!("no app"),
+                    }
+                    let _ = APP.write().game_manager.start_new_turn();
+                    state.set(ButtonStatus::ValidateAction);
+                },
+                "Start"
+            }
         }
-        button {
-            onclick: move |_| async move {
-                APP.write().game_manager.start_new_turn();
-            },
-            "Start new turn"
-        }
-        button {
-            onclick: move |_| async move {
-                APP.write().game_manager.new_round();
-            },
-            "Start new round"
-        }
-        button {
-            onclick: move |_| async move {
-                let atk = testing_atk::build_atk_berseck_damage1();
-                if APP.write().game_manager.pm.current_player.attacks_list.is_empty() {APP.write().game_manager.pm.current_player.attacks_list.insert(atk.name.clone(), atk);   }
-                APP.write().game_manager.launch_attack("atk1", vec![testing_target::build_target_angmar_indiv()]);
-            },
-            "launch atk"
+        if state() == ButtonStatus::ValidateAction {
+            button {
+                onclick: move |_| async move {
+                    APP.write()
+                        .game_manager
+                        .launch_attack(
+                            "SimpleAtk",
+                            vec![testing_target::build_target_angmar_indiv()],
+                        );
+                },
+                "launch atk"
+            }
+            button {
+                onclick: move |_| async move {
+                    if !APP.write().game_manager.new_round() {
+                        APP.write().game_manager.start_new_turn();
+                        state.set(ButtonStatus::StartRound);
+                    }
+                },
+                "Inventory"
+            }
         }
         GameBoard {}
     }
