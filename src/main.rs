@@ -4,8 +4,8 @@ use dx_rpg::{
     character_page,
 };
 use lib_rpg::common::stats_const::HP;
-use lib_rpg::testing_target;
 use lib_rpg::testing_atk;
+use lib_rpg::testing_target;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -55,10 +55,10 @@ fn GameBoard() -> Element {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-enum ButtonStatus{
+enum ButtonStatus {
     StartGame = 0,
-    StartTurn,
-    ValidateAction
+    StartRound,
+    ValidateAction,
 }
 
 /// Home page
@@ -74,37 +74,34 @@ fn Home() -> Element {
                         Ok(app) => *APP.write() = app,
                         Err(_) => println!("no app"),
                     }
-                    state.set(ButtonStatus::StartTurn);
-                },
-                "Start"
-            }
-        }
-        if state() == ButtonStatus::StartTurn {
-            button {
-                onclick: move |_| async move {
                     let _ = APP.write().game_manager.start_new_turn();
                     state.set(ButtonStatus::ValidateAction);
                 },
-                "Start new turn"
+                "Start"
             }
         }
         if state() == ButtonStatus::ValidateAction {
             button {
                 onclick: move |_| async move {
-                    let atk = testing_atk::build_atk_berseck_damage1();
-                    if APP.write().game_manager.pm.current_player.attacks_list.is_empty() {APP.write().game_manager.pm.current_player.attacks_list.insert(atk.name.clone(), atk);   }
-                    APP.write().game_manager.launch_attack("atk1", vec![testing_target::build_target_angmar_indiv()]);
+                    APP.write()
+                        .game_manager
+                        .launch_attack(
+                            "SimpleAtk",
+                            vec![testing_target::build_target_angmar_indiv()],
+                        );
                 },
                 "launch atk"
             }
-            button {               
+            button {
+                onclick: move |_| async move {
+                    if !APP.write().game_manager.new_round() {
+                        APP.write().game_manager.start_new_turn();
+                        state.set(ButtonStatus::StartRound);
+                    }
+                },
                 "Inventory"
             }
         }
-        
-        
-        
-        
         GameBoard {}
     }
 }
