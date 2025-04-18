@@ -13,6 +13,10 @@ jobs:
   main:
     runs-on: ubuntu-latest
     steps:
+      - name: Set Cargo config to use git CLI
+        run: |
+            mkdir -p $CARGO_HOME
+            echo -e '[net]\ngit-fetch-with-cli = true' > $CARGO_HOME/config.toml
       - name: Checkout submodules
         uses: actions/checkout@v4
         with:
