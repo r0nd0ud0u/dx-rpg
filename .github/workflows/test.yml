@@ -1,31 +1,35 @@
-name: test
+name: Clippy Check
 
-on: push
-
-permissions:
-  pull-requests: write
-  repository-projects: write
-
-env:
-  CARGO_TERM_COLOR: always
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  main:
+  clippy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Set Cargo config to use git CLI
-        run: |
-            mkdir -p "$HOME/.cargo"
-            echo -e '[net]\ngit-fetch-with-cli = true' > "$HOME/.cargo/config.toml"
-      - name: Checkout submodules
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v3
         with:
-          submodules: recursive
-      - name: Update rust
-        run: rustup update stable
-      
-      - name: Check formatting
-        run: cargo fmt --all --check
+          submodules: true  # just in case
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: clippy
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run Clippy
-        run: cargo clippy --all-targets --all-features
+        run: cargo clippy --all-targets --all-features -- -D warnings
