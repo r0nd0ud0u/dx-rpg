@@ -50,9 +50,12 @@ pub fn CharacterPanel(c: Character) -> Element {
                         name: "BP",
                     }
                 }
-            }
+            }            
         }
-        button { class: "character-name-bar", onclick: move |_| async move {}, "{c.name}" }
+        if c.kind == CharacterType::Hero {
+            button { class: "atk-button", onclick: move |_| async move {}, "ATK" }
+        }
+        button { class: "character-name-button", onclick: move |_| async move {}, "{c.name}" }
     }
 }
 
