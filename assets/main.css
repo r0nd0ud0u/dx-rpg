@@ -143,9 +143,14 @@ h4 {
     grid-template-columns: max-content 1fr max-content;
 } 
 
-.character-name-bar {
-    position: relative;
+.character-name-button {
+    position: absolute;
     -webkit-transform:translate(0%, -90%);
     justify-content: flex-start;
     align-items: left;
+  }
+
+  .atk-button{
+    position: absolute;
+    -webkit-transform:translate(450px, -300%); /* 450px = width of class character */
   }
