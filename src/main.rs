@@ -3,8 +3,6 @@ use dx_rpg::{
     application::{self, Application},
     character_page,
 };
-use lib_rpg::common::stats_const::HP;
-use lib_rpg::testing_atk;
 use lib_rpg::testing_target;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -18,7 +16,7 @@ enum Route {
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
-static APP: GlobalSignal<Application> = Signal::global(|| Application::default());
+static APP: GlobalSignal<Application> = Signal::global(Application::default);
 
 fn main() {
     dioxus::launch(App);
