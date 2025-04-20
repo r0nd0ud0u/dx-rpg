@@ -20,7 +20,6 @@ pub fn CharacterPanel(c: Character) -> Element {
                     src: format!("{}/{}.png", PATH_IMG, c.photo_name.clone()),
                     class: "image-small",
                 }
-                h4 { {c.short_name.clone()} }
             }
             div {
                 if c.stats.all_stats[HP].max > 0 {
@@ -53,6 +52,7 @@ pub fn CharacterPanel(c: Character) -> Element {
                 }
             }
         }
+        button { class: "character-name-bar", onclick: move |_| async move {}, "{c.name}" }
     }
 }
 
