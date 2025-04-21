@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Duration};
+use std::time::Duration;
 
 use dioxus::prelude::*;
 use indexmap::IndexMap;
@@ -26,7 +26,7 @@ pub fn CharacterPanel(c: Character, is_auto_atk: bool) -> Element {
         (VIGOR.to_owned(), "VP".to_owned()),
         (BERSECK.to_owned(), "BP".to_owned()),
     ]);
-    use_resource(use_reactive!(|(is_auto_atk,)| async move {
+    let _ = use_resource(use_reactive!(|(is_auto_atk,)| async move {
         // Simulate a delay before launching the attack
         // use wasmtimer instead of tokio::time to make it work with wasm
         // We manually add the resource to the dependencies list with the `use_reactive` hook
@@ -105,7 +105,7 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
 pub fn AttackList(c: Character, display_atklist_sig: Signal<bool>) -> Element {
     rsx! {
         div { class: "attack-list",
-            for (key , value) in c.attacks_list.iter() {
+            for (key , _value) in c.attacks_list.iter() {
                 button {
                     class: "atk-button",
                     background_color: "black",
