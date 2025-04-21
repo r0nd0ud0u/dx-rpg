@@ -1,13 +1,16 @@
 use dioxus::prelude::*;
 use lib_rpg::{
     character::{Character, CharacterType},
-    common::stats_const::*,
+    common::stats_const::*, testing_target,
 };
+
+use crate::common::APP;
 
 pub const PATH_IMG: &str = "assets/img";
 
 #[component]
 pub fn CharacterPanel(c: Character, is_current_player: bool) -> Element {
+    let mut atk_menu_display = use_signal(|| false);
     let bg = if c.kind == CharacterType::Hero {
         "blue"
     } else {
@@ -54,13 +57,18 @@ pub fn CharacterPanel(c: Character, is_current_player: bool) -> Element {
         }
         if is_current_player {
             if c.kind == CharacterType::Hero {
-                button { class: "atk-button", onclick: move |_| async move {}, "ATK" }
-            } else if c.kind == CharacterType::Boss {
+                button { class: "menu-atk-button", onclick: move |_| async move {
+                    atk_menu_display.set(!atk_menu_display());
+                }, "ATK" }
+            } else if c.kind == CharacterType::Boss {   
                 button {
                     class: "atk-button-ennemy",
                     onclick: move |_| async move {},
                     "ATK On Going"
                 }
+            }
+            if atk_menu_display() {
+                AttackList { c: c.clone(), display_atklist_sig: atk_menu_display }
             }
         }
         button {
@@ -86,6 +94,31 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
                 }
             }
             h4 { "{current} / {max}" }
+        }
+    }
+}
+
+#[component]
+pub fn AttackList(c: Character, display_atklist_sig: Signal<bool>) -> Element {
+    rsx! {
+        div {   
+            class: "attack-list",
+            for (key, value) in c.attacks_list.iter() {
+                button {
+                    class: "atk-button",
+                    background_color: "black",
+                    onclick: move |_| async move {
+                        *display_atklist_sig.write() = false;
+                        APP.write()
+                        .game_manager
+                        .launch_attack(
+                            "SimpleAtk",
+                            vec![testing_target::build_target_angmar_indiv()],
+                        );
+                    },
+                    "{key}"
+                }
+            }
         }
     }
 }

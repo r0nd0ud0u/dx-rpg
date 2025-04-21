@@ -101,7 +101,8 @@ button:active {
 /* character */
 .character {
     width: 450px;
-    margin-top: 10px;
+    height: 100px;
+    margin-top: 20px;
     background-color: #05194f;
     padding: 10px;
     border-radius: 10px;
@@ -141,7 +142,7 @@ h4 {
 .grid-board {
     display: grid;
     grid-template-columns: max-content 1fr max-content;
-} 
+}
 
 .character-name-button {
     position: absolute;
@@ -150,12 +151,29 @@ h4 {
     align-items: left;
   }
 
-  .atk-button{
+  .menu-atk-button {
     position: absolute;
-    -webkit-transform:translate(450px, -300%); /* 450px = width of class character */
+    width: 50px;
+    -webkit-transform:translate(450px, -120px); /* relative to margin-top, height and width of class character */
   }
 
   .atk-button-ennemy{
     position: absolute;
-    -webkit-transform:translate(-100%, -300%); /* 450px = width of class character */
+    -webkit-transform:translate(-100%, -120px); /* relative to margin-top,height and width of class character */
+  }
+
+  .attack-list {
+    display: flex;
+    flex-direction: column; /* stack vertically */
+    position: absolute;
+    -webkit-transform:translate(500px, -120px); /* relative to margin-top, height and width of class character  */
+  }
+
+  .attack-list > button {
+    margin: 3px;
+    padding: 3px;
+  }
+
+  .atk-button {
+    width: 200px;
   }

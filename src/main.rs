@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use dx_rpg::{
     application::{self, Application},
     character_page,
+    common::APP,
 };
 use lib_rpg::testing_target;
 
@@ -15,8 +16,6 @@ enum Route {
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
-
-static APP: GlobalSignal<Application> = Signal::global(Application::default);
 
 fn main() {
     dioxus::launch(App);
@@ -82,28 +81,6 @@ fn Home() -> Element {
                     state.set(ButtonStatus::ValidateAction);
                 },
                 "Start"
-            }
-        }
-        if state() == ButtonStatus::ValidateAction {
-            button {
-                onclick: move |_| async move {
-                    APP.write()
-                        .game_manager
-                        .launch_attack(
-                            "SimpleAtk",
-                            vec![testing_target::build_target_angmar_indiv()],
-                        );
-                },
-                "launch atk"
-            }
-            button {
-                onclick: move |_| async move {
-                    if !APP.write().game_manager.new_round() {
-                        APP.write().game_manager.start_new_turn();
-                        state.set(ButtonStatus::StartRound);
-                    }
-                },
-                "Inventory"
             }
         }
         GameBoard {}
