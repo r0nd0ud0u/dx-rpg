@@ -13,7 +13,7 @@ use crate::common::APP;
 pub const PATH_IMG: &str = "assets/img";
 
 #[component]
-pub fn CharacterPanel(c: Character, is_current_player: bool) -> Element {
+pub fn CharacterPanel(c: Character, is_current_player: bool, is_auto_atk: bool) -> Element {
     let mut atk_menu_display = use_signal(|| false);
     let bg = if c.kind == CharacterType::Hero {
         "blue"
@@ -26,21 +26,20 @@ pub fn CharacterPanel(c: Character, is_current_player: bool) -> Element {
         (VIGOR.to_owned(), "VP".to_owned()),
         (BERSECK.to_owned(), "BP".to_owned()),
     ]);
-    let mut auto_atk = use_signal(|| false);
-    if is_current_player && c.kind == CharacterType::Boss {
-        auto_atk.set(true);
-    }
-    use_resource(move || async move {
+    use_resource(use_reactive!(|(is_auto_atk,)| async move {
         // Simulate a delay before launching the attack
-        // use wasmtimer instead of tokio::time to make it work with wasm   
-        // Reading auto_atk enables the subscribe to that signal
-        if *auto_atk.read(){
+        // use wasmtimer instead of tokio::time to make it work with wasm
+        // We manually add the resource to the dependencies list with the `use_reactive` hook
+        // Any time `is_auto_atk` changes, the resource will rerun
+        if is_auto_atk {
             wasmtimer::tokio::sleep(Duration::from_millis(1000)).await;
-            APP.write().game_manager.launch_attack("SimpleAtk",vec![testing_target::build_target_angmar_indiv()])  
-        }   
-    });
-    
-    
+            APP.write().game_manager.launch_attack(
+                "SimpleAtk",
+                vec![testing_target::build_target_angmar_indiv()],
+            )
+        }
+    }));
+
     rsx! {
         div { class: "character", background_color: bg,
             div {
