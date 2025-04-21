@@ -43,7 +43,10 @@ fn GameBoard() -> Element {
                 }
             }
             div {
-                // add containers
+                "round:{APP.read().game_manager.game_state.current_round}"
+                "\n{APP.read().game_manager.game_state.current_turn_nb}"
+                "\n{APP.read().game_manager.pm.current_player.name}"
+                
             }
             div {
                 for c in APP.read().game_manager.pm.active_bosses.iter() {
@@ -81,6 +84,28 @@ fn Home() -> Element {
                     state.set(ButtonStatus::ValidateAction);
                 },
                 "Start"
+            }
+        }
+        if state() == ButtonStatus::ValidateAction {
+            button {
+                onclick: move |_| async move {
+                    APP.write()
+                        .game_manager
+                        .launch_attack(
+                            "SimpleAtk",
+                            vec![testing_target::build_target_angmar_indiv()],
+                        );
+                },
+                "launch atk"
+            }
+            button {
+                onclick: move |_| async move {
+                    if !APP.write().game_manager.new_round() {
+                        APP.write().game_manager.start_new_turn();
+                        state.set(ButtonStatus::StartRound);
+                    }
+                },
+                "Inventory"
             }
         }
         GameBoard {}
