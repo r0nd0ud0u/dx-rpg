@@ -1,7 +1,11 @@
+use std::collections::HashMap;
+
 use dioxus::prelude::*;
+use indexmap::IndexMap;
 use lib_rpg::{
     character::{Character, CharacterType},
-    common::stats_const::*, testing_target,
+    common::stats_const::*,
+    testing_target,
 };
 
 use crate::common::APP;
@@ -16,6 +20,12 @@ pub fn CharacterPanel(c: Character, is_current_player: bool) -> Element {
     } else {
         "red"
     };
+    let energy_list = IndexMap::from([
+        (HP.to_owned(), HP.to_owned()),
+        (MANA.to_owned(), "MP".to_owned()),
+        (VIGOR.to_owned(), "VP".to_owned()),
+        (BERSECK.to_owned(), "BP".to_owned()),
+    ]);
     rsx! {
         div { class: "character", background_color: bg,
             div {
@@ -25,42 +35,27 @@ pub fn CharacterPanel(c: Character, is_current_player: bool) -> Element {
                 }
             }
             div {
-                if c.stats.all_stats[HP].max > 0 {
-                    BarComponent {
-                        max: c.stats.all_stats[HP].max,
-                        current: c.stats.all_stats[HP].current,
-                        name: "HP",
-                    }
-                }
-                if c.stats.all_stats[MANA].max > 0 {
-                    BarComponent {
-                        max: c.stats.all_stats[MANA].max,
-                        current: c.stats.all_stats[MANA].current,
-                        name: "MP",
-                    }
-                }
-                if c.stats.all_stats[VIGOR].max > 0 {
-                    BarComponent {
-                        max: c.stats.all_stats[VIGOR].max,
-                        current: c.stats.all_stats[VIGOR].current,
-                        name: "VP",
-                    }
-                }
-                if c.stats.all_stats[BERSECK].max > 0 {
-                    BarComponent {
-                        max: c.stats.all_stats[BERSECK].max,
-                        current: c.stats.all_stats[BERSECK].current,
-                        name: "BP",
+                for (stat , display_stat) in energy_list.iter() {
+                    if c.stats.all_stats[stat].max > 0 {
+                        BarComponent {
+                            max: c.stats.all_stats[stat].max,
+                            current: c.stats.all_stats[stat].current,
+                            name: display_stat,
+                        }
                     }
                 }
             }
         }
         if is_current_player {
             if c.kind == CharacterType::Hero {
-                button { class: "menu-atk-button", onclick: move |_| async move {
-                    atk_menu_display.set(!atk_menu_display());
-                }, "ATK" }
-            } else if c.kind == CharacterType::Boss {   
+                button {
+                    class: "menu-atk-button",
+                    onclick: move |_| async move {
+                        atk_menu_display.set(!atk_menu_display());
+                    },
+                    "ATK"
+                }
+            } else if c.kind == CharacterType::Boss {
                 button {
                     class: "atk-button-ennemy",
                     onclick: move |_| async move {},
@@ -101,20 +96,19 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
 #[component]
 pub fn AttackList(c: Character, display_atklist_sig: Signal<bool>) -> Element {
     rsx! {
-        div {   
-            class: "attack-list",
-            for (key, value) in c.attacks_list.iter() {
+        div { class: "attack-list",
+            for (key , value) in c.attacks_list.iter() {
                 button {
                     class: "atk-button",
                     background_color: "black",
                     onclick: move |_| async move {
                         *display_atklist_sig.write() = false;
                         APP.write()
-                        .game_manager
-                        .launch_attack(
-                            "SimpleAtk",
-                            vec![testing_target::build_target_angmar_indiv()],
-                        );
+                            .game_manager
+                            .launch_attack(
+                                "SimpleAtk",
+                                vec![testing_target::build_target_angmar_indiv()],
+                            );
                     },
                     "{key}"
                 }

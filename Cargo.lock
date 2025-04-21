@@ -1477,6 +1477,7 @@ dependencies = [
  "dioxus-desktop",
  "dioxus-html",
  "getrandom 0.3.2",
+ "indexmap 2.9.0",
  "lazy_static",
  "lib-rpg",
  "serde",
@@ -2526,9 +2527,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.7.0"
+version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62f822373a4fe84d4bb149bf54e584a7f4abec90e072ed49cda0edea5b95471f"
+checksum = "cea70ddb795996207ad57735b50c5982d8844f38ba9ee5f1aedcfb708a2aa11e"
 dependencies = [
  "equivalent",
  "hashbrown 0.15.2",
@@ -2678,7 +2679,7 @@ source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=7db4a122022f068e03c
 dependencies = [
  "anyhow",
  "chrono",
- "indexmap 2.7.0",
+ "indexmap 2.9.0",
  "lazy_static",
  "rand 0.9.0",
  "serde",
@@ -4667,7 +4668,7 @@ version = "0.19.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
 dependencies = [
- "indexmap 2.7.0",
+ "indexmap 2.9.0",
  "toml_datetime",
  "winnow",
 ]
@@ -4678,7 +4679,7 @@ version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "396e4d48bbb2b7554c944bde63101b5ae446cff6ec4a24227428f15eb72ef338"
 dependencies = [
- "indexmap 2.7.0",
+ "indexmap 2.9.0",
  "serde",
  "serde_spanned",
  "toml_datetime",
