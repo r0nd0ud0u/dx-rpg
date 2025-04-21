@@ -4,7 +4,7 @@ use dx_rpg::{
     character_page,
     common::APP,
 };
-use lib_rpg::testing_target;
+use lib_rpg::{character::CharacterType, testing_target};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -39,6 +39,7 @@ fn GameBoard() -> Element {
                     character_page::CharacterPanel {
                         c: c.clone(),
                         is_current_player: APP.read().game_manager.pm.current_player.name == c.name,
+                        is_auto_atk: false,
                     }
                 }
             }
@@ -46,13 +47,13 @@ fn GameBoard() -> Element {
                 "round:{APP.read().game_manager.game_state.current_round}"
                 "\n{APP.read().game_manager.game_state.current_turn_nb}"
                 "\n{APP.read().game_manager.pm.current_player.name}"
-                
             }
             div {
                 for c in APP.read().game_manager.pm.active_bosses.iter() {
                     character_page::CharacterPanel {
                         c: c.clone(),
                         is_current_player: APP.read().game_manager.pm.current_player.name == c.name,
+                        is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
                     }
                 }
             }
@@ -97,15 +98,6 @@ fn Home() -> Element {
                         );
                 },
                 "launch atk"
-            }
-            button {
-                onclick: move |_| async move {
-                    if !APP.write().game_manager.new_round() {
-                        APP.write().game_manager.start_new_turn();
-                        state.set(ButtonStatus::StartRound);
-                    }
-                },
-                "Inventory"
             }
         }
         GameBoard {}
