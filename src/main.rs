@@ -1,10 +1,6 @@
 use dioxus::prelude::*;
-use dx_rpg::{
-    application::{self, Application},
-    character_page,
-    common::APP,
-};
-use lib_rpg::{character::CharacterType, testing_target};
+use dx_rpg::{application, character_page, common::APP};
+use lib_rpg::testing_target;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -59,7 +55,6 @@ fn GameBoard() -> Element {
 #[derive(Debug, Clone, PartialEq)]
 enum ButtonStatus {
     StartGame = 0,
-    StartRound,
     ValidateAction,
 }
 
