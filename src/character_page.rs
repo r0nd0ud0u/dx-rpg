@@ -7,7 +7,7 @@ use lib_rpg::{
 pub const PATH_IMG: &str = "assets/img";
 
 #[component]
-pub fn CharacterPanel(c: Character) -> Element {
+pub fn CharacterPanel(c: Character, is_current_player: bool) -> Element {
     let bg = if c.kind == CharacterType::Hero {
         "blue"
     } else {
@@ -50,12 +50,25 @@ pub fn CharacterPanel(c: Character) -> Element {
                         name: "BP",
                     }
                 }
-            }            
+            }
         }
-        if c.kind == CharacterType::Hero {
-            button { class: "atk-button", onclick: move |_| async move {}, "ATK" }
+        if is_current_player {
+            if c.kind == CharacterType::Hero {
+                button { class: "atk-button", onclick: move |_| async move {}, "ATK" }
+            } else if c.kind == CharacterType::Boss {
+                button {
+                    class: "atk-button-ennemy",
+                    onclick: move |_| async move {},
+                    "ATK On Going"
+                }
+            }
         }
-        button { class: "character-name-button", onclick: move |_| async move {}, "{c.name}" }
+        button {
+            class: "character-name-button",
+            background_color: "black",
+            onclick: move |_| async move {},
+            "{c.name}"
+        }
     }
 }
 
