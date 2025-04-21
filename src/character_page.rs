@@ -13,7 +13,7 @@ use crate::common::APP;
 pub const PATH_IMG: &str = "assets/img";
 
 #[component]
-pub fn CharacterPanel(c: Character, is_auto_atk: bool) -> Element {
+pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bool) -> Element {
     let mut atk_menu_display = use_signal(|| false);
     let bg = if c.kind == CharacterType::Hero {
         "blue"
@@ -62,7 +62,7 @@ pub fn CharacterPanel(c: Character, is_auto_atk: bool) -> Element {
         }
         if is_auto_atk {
             button { class: "atk-button-ennemy", onclick: move |_| async move {}, "ATK On Going" }
-        } else if c.kind == CharacterType::Hero {
+        } else if c.kind == CharacterType::Hero && current_player_name == c.name {
             button {
                 class: "menu-atk-button",
                 onclick: move |_| async move {
