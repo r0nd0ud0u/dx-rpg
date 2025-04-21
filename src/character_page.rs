@@ -1,18 +1,45 @@
+use std::time::Duration;
+
 use dioxus::prelude::*;
+use indexmap::IndexMap;
 use lib_rpg::{
     character::{Character, CharacterType},
     common::stats_const::*,
+    testing_target,
 };
+
+use crate::common::APP;
 
 pub const PATH_IMG: &str = "assets/img";
 
 #[component]
-pub fn CharacterPanel(c: Character) -> Element {
+pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bool) -> Element {
+    let mut atk_menu_display = use_signal(|| false);
     let bg = if c.kind == CharacterType::Hero {
         "blue"
     } else {
         "red"
     };
+    let energy_list = IndexMap::from([
+        (HP.to_owned(), HP.to_owned()),
+        (MANA.to_owned(), "MP".to_owned()),
+        (VIGOR.to_owned(), "VP".to_owned()),
+        (BERSECK.to_owned(), "BP".to_owned()),
+    ]);
+    let _ = use_resource(use_reactive!(|(is_auto_atk,)| async move {
+        // Simulate a delay before launching the attack
+        // use wasmtimer instead of tokio::time to make it work with wasm
+        // We manually add the resource to the dependencies list with the `use_reactive` hook
+        // Any time `is_auto_atk` changes, the resource will rerun
+        if is_auto_atk {
+            wasmtimer::tokio::sleep(Duration::from_millis(1000)).await;
+            APP.write().game_manager.launch_attack(
+                "SimpleAtk",
+                vec![testing_target::build_target_angmar_indiv()],
+            )
+        }
+    }));
+
     rsx! {
         div { class: "character", background_color: bg,
             div {
@@ -20,38 +47,38 @@ pub fn CharacterPanel(c: Character) -> Element {
                     src: format!("{}/{}.png", PATH_IMG, c.photo_name.clone()),
                     class: "image-small",
                 }
-                h4 { {c.short_name.clone()} }
             }
             div {
-                if c.stats.all_stats[HP].max > 0 {
-                    BarComponent {
-                        max: c.stats.all_stats[HP].max,
-                        current: c.stats.all_stats[HP].current,
-                        name: "HP",
-                    }
-                }
-                if c.stats.all_stats[MANA].max > 0 {
-                    BarComponent {
-                        max: c.stats.all_stats[MANA].max,
-                        current: c.stats.all_stats[MANA].current,
-                        name: "MP",
-                    }
-                }
-                if c.stats.all_stats[VIGOR].max > 0 {
-                    BarComponent {
-                        max: c.stats.all_stats[VIGOR].max,
-                        current: c.stats.all_stats[VIGOR].current,
-                        name: "VP",
-                    }
-                }
-                if c.stats.all_stats[BERSECK].max > 0 {
-                    BarComponent {
-                        max: c.stats.all_stats[BERSECK].max,
-                        current: c.stats.all_stats[BERSECK].current,
-                        name: "BP",
+                for (stat , display_stat) in energy_list.iter() {
+                    if c.stats.all_stats[stat].max > 0 {
+                        BarComponent {
+                            max: c.stats.all_stats[stat].max,
+                            current: c.stats.all_stats[stat].current,
+                            name: display_stat,
+                        }
                     }
                 }
             }
+        }
+        if is_auto_atk {
+            button { class: "atk-button-ennemy", onclick: move |_| async move {}, "ATK On Going" }
+        } else if c.kind == CharacterType::Hero && current_player_name == c.name {
+            button {
+                class: "menu-atk-button",
+                onclick: move |_| async move {
+                    atk_menu_display.set(!atk_menu_display());
+                },
+                "ATK"
+            }
+            if atk_menu_display() {
+                AttackList { c: c.clone(), display_atklist_sig: atk_menu_display }
+            }
+        }
+        button {
+            class: "character-name-button",
+            background_color: "black",
+            onclick: move |_| async move {},
+            "{c.name}"
         }
     }
 }
@@ -70,6 +97,30 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
                 }
             }
             h4 { "{current} / {max}" }
+        }
+    }
+}
+
+#[component]
+pub fn AttackList(c: Character, display_atklist_sig: Signal<bool>) -> Element {
+    rsx! {
+        div { class: "attack-list",
+            for (key , _value) in c.attacks_list.iter() {
+                button {
+                    class: "atk-button",
+                    background_color: "black",
+                    onclick: move |_| async move {
+                        *display_atklist_sig.write() = false;
+                        APP.write()
+                            .game_manager
+                            .launch_attack(
+                                "SimpleAtk",
+                                vec![testing_target::build_target_angmar_indiv()],
+                            );
+                    },
+                    "{key}"
+                }
+            }
         }
     }
 }

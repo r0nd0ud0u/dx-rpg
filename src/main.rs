@@ -1,10 +1,5 @@
 use dioxus::prelude::*;
-use dx_rpg::{
-    application::{self, Application},
-    character_page,
-};
-use lib_rpg::common::stats_const::HP;
-use lib_rpg::testing_atk;
+use dx_rpg::{application, character_page, common::APP};
 use lib_rpg::testing_target;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -17,8 +12,6 @@ enum Route {
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
-
-static APP: GlobalSignal<Application> = Signal::global(|| Application::default());
 
 fn main() {
     dioxus::launch(App);
@@ -39,15 +32,25 @@ fn GameBoard() -> Element {
         div { class: "grid-board",
             div {
                 for c in APP.read().game_manager.pm.active_heroes.iter() {
-                    character_page::CharacterPanel { c: c.clone() }
+                    character_page::CharacterPanel {
+                        c: c.clone(),
+                        current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
+                        is_auto_atk: false,
+                    }
                 }
             }
             div {
-                // add containers
+                "round:{APP.read().game_manager.game_state.current_round}"
+                "\n{APP.read().game_manager.game_state.current_turn_nb}"
+                "\n{APP.read().game_manager.pm.current_player.name}"
             }
             div {
                 for c in APP.read().game_manager.pm.active_bosses.iter() {
-                    character_page::CharacterPanel { c: c.clone() }
+                    character_page::CharacterPanel {
+                        c: c.clone(),
+                        current_player_name: "",
+                        is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
+                    }
                 }
             }
         }
@@ -57,7 +60,6 @@ fn GameBoard() -> Element {
 #[derive(Debug, Clone, PartialEq)]
 enum ButtonStatus {
     StartGame = 0,
-    StartRound,
     ValidateAction,
 }
 
@@ -91,15 +93,6 @@ fn Home() -> Element {
                         );
                 },
                 "launch atk"
-            }
-            button {
-                onclick: move |_| async move {
-                    if !APP.write().game_manager.new_round() {
-                        APP.write().game_manager.start_new_turn();
-                        state.set(ButtonStatus::StartRound);
-                    }
-                },
-                "Inventory"
             }
         }
         GameBoard {}
