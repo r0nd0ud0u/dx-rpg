@@ -37,7 +37,10 @@ fn GameBoard() -> Element {
         div { class: "grid-board",
             div {
                 for c in APP.read().game_manager.pm.active_heroes.iter() {
-                    character_page::CharacterPanel { c: c.clone() }
+                    character_page::CharacterPanel {
+                        c: c.clone(),
+                        is_current_player: APP.read().game_manager.pm.current_player.name == c.name,
+                    }
                 }
             }
             div {
@@ -45,7 +48,10 @@ fn GameBoard() -> Element {
             }
             div {
                 for c in APP.read().game_manager.pm.active_bosses.iter() {
-                    character_page::CharacterPanel { c: c.clone() }
+                    character_page::CharacterPanel {
+                        c: c.clone(),
+                        is_current_player: APP.read().game_manager.pm.current_player.name == c.name,
+                    }
                 }
             }
         }
