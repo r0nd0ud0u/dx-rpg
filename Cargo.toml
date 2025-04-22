@@ -17,6 +17,7 @@ dioxus-desktop = { version = "0.6.3", optional = true }
 dioxus-html = "0.6.3"
 indexmap = "2.9.0"
 wasmtimer = "0.4.1"
+tokio = "1.44.2"
 
 [features]
 default = ["server"]
