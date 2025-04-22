@@ -1481,6 +1481,7 @@ dependencies = [
  "lazy_static",
  "lib-rpg",
  "serde",
+ "tokio",
  "wasmtimer",
 ]
 
