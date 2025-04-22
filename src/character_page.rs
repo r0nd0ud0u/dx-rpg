@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use dioxus::prelude::*;
 use indexmap::IndexMap;
 use lib_rpg::{
@@ -8,7 +6,7 @@ use lib_rpg::{
     testing_target,
 };
 
-use crate::common::APP;
+use crate::{application, common::APP};
 
 pub const PATH_IMG: &str = "assets/img";
 
@@ -28,11 +26,10 @@ pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bo
     ]);
     let _ = use_resource(use_reactive!(|(is_auto_atk,)| async move {
         // Simulate a delay before launching the attack
-        // use wasmtimer instead of tokio::time to make it work with wasm
         // We manually add the resource to the dependencies list with the `use_reactive` hook
         // Any time `is_auto_atk` changes, the resource will rerun
         if is_auto_atk {
-            wasmtimer::tokio::sleep(Duration::from_millis(1000)).await;
+            let _ = application::sleep_from_millis(1000).await;
             APP.write().game_manager.launch_attack(
                 "SimpleAtk",
                 vec![testing_target::build_target_angmar_indiv()],
