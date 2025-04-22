@@ -57,6 +57,7 @@ pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bo
                 }
             }
         }
+        // atk button
         if is_auto_atk {
             button { class: "atk-button-ennemy", onclick: move |_| async move {}, "ATK On Going" }
         } else if c.kind == CharacterType::Hero && current_player_name == c.name {
@@ -71,11 +72,18 @@ pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bo
                 AttackList { c: c.clone(), display_atklist_sig: atk_menu_display }
             }
         }
+        // name button
         button {
             class: "character-name-button",
             background_color: "black",
             onclick: move |_| async move {},
             "{c.name}"
+        }
+        // target button
+        if c.kind == CharacterType::Hero {
+            button { class: "hero-target-button", onclick: move |_| async move {}, "" }
+        } else {
+            button { class: "boss-target-button", onclick: move |_| async move {}, "" }
         }
     }
 }
