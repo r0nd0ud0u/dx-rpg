@@ -21,11 +21,8 @@ pub async fn try_new() -> Result<Application, ServerFnError> {
     }
 }
 
-/// use wasmtimer instead of tokio::time to make it work with wasm
 #[server]
 pub async fn sleep_from_millis(millis: u64) -> Result<(), ServerFnError> {
-    #[cfg(target_arch = "wasm32")]
-    wasmtimer::tokio::sleep(Duration::from_millis(millis)).await;
     #[cfg(not(target_arch = "wasm32"))]
     tokio::time::sleep(Duration::from_millis(millis)).await;
     Ok(())
