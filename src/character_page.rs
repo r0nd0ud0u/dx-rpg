@@ -13,6 +13,7 @@ pub const PATH_IMG: &str = "assets/img";
 #[component]
 pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bool) -> Element {
     let mut atk_menu_display = use_signal(|| false);
+    let mut target_is_selected = use_signal(|| false);
     let bg = if c.kind == CharacterType::Hero {
         "blue"
     } else {
@@ -82,8 +83,24 @@ pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bo
         // target button
         if c.kind == CharacterType::Hero {
             button { class: "hero-target-button", onclick: move |_| async move {}, "" }
-        } else {
-            button { class: "boss-target-button", onclick: move |_| async move {}, "" }
+        } else if c.kind == CharacterType::Boss {
+            if target_is_selected() {
+                button {
+                    class: "boss-target-button-active",
+                    onclick: move |_| async move {
+                        target_is_selected.set(!target_is_selected());
+                    },
+                    ""
+                }
+            } else {
+                button {
+                    class: "boss-target-button",
+                    onclick: move |_| async move {
+                        target_is_selected.set(!target_is_selected());
+                    },
+                    ""
+                }
+            }
         }
     }
 }
