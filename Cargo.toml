@@ -10,7 +10,7 @@ edition = "2021"
 anyhow = "1.0.98"
 dioxus = { version = "0.6.3", features = ["router", "fullstack"] }
 lazy_static = "1.5.0"
-lib-rpg = { git = "ssh://git@github.com/r0nd0ud0u/lib-rpg.git", rev = "7db4a122022f068e03cb6efa9282a9c04aa2b3ba" }
+lib-rpg = { git = "ssh://git@github.com/r0nd0ud0u/lib-rpg.git", rev = "338bb559fbb9f15767e934e3c3526bb297f16e58" }
 serde = "1.0.219"
 getrandom = { version = "0.3", features = ["wasm_js"] }
 dioxus-desktop = { version = "0.6.3", optional = true }
