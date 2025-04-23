@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use indexmap::IndexMap;
 use lib_rpg::{
+    attack_type::AttackType,
     character::{Character, CharacterType},
     common::stats_const::*,
     testing_target,
@@ -124,24 +125,29 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
 }
 
 #[component]
+pub fn NewAtkButton(attack_type: AttackType, display_atklist_sig: Signal<bool>) -> Element {
+    rsx! {
+        button {
+            class: "atk-button",
+            background_color: "black",
+            onclick: move |_| {
+                let value = attack_type.clone();
+                async move {
+                    *display_atklist_sig.write() = false;
+                    APP.write().game_manager.game_state.current_atk = value.clone();
+                }
+            },
+            "{attack_type.name}"
+        }
+    }
+}
+
+#[component]
 pub fn AttackList(c: Character, display_atklist_sig: Signal<bool>) -> Element {
     rsx! {
         div { class: "attack-list",
-            for (key , _value) in c.attacks_list.iter() {
-                button {
-                    class: "atk-button",
-                    background_color: "black",
-                    onclick: move |_| async move {
-                        *display_atklist_sig.write() = false;
-                        APP.write()
-                            .game_manager
-                            .launch_attack(
-                                "SimpleAtk",
-                                vec![testing_target::build_target_angmar_indiv()],
-                            );
-                    },
-                    "{key}"
-                }
+            for (key , value) in c.attacks_list.iter() {
+                NewAtkButton { attack_type: value.clone(), display_atklist_sig }
             }
         }
     }
