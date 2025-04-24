@@ -28,6 +28,14 @@ fn App() -> Element {
 
 #[component]
 fn GameBoard() -> Element {
+    let mut current_atk = use_signal(|| "".to_owned());
+    if !current_atk().is_empty(){
+        APP.write().game_manager.launch_attack(
+            "SimpleAtk",
+            vec![testing_target::build_target_angmar_indiv()],
+        );
+        current_atk.set("".to_owned());
+    }
     rsx! {
         div { class: "grid-board",
             div {
@@ -36,6 +44,7 @@ fn GameBoard() -> Element {
                         c: c.clone(),
                         current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
                         is_auto_atk: false,
+                        selected_atk: current_atk
                     }
                 }
             }
@@ -50,6 +59,7 @@ fn GameBoard() -> Element {
                         c: c.clone(),
                         current_player_name: "",
                         is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
+                        selected_atk: current_atk
                     }
                 }
             }
