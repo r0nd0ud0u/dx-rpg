@@ -12,7 +12,7 @@ use crate::{application, common::APP};
 pub const PATH_IMG: &str = "assets/img";
 
 #[component]
-pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bool) -> Element {
+pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bool, selected_atk: Signal<String>) -> Element {
     let mut atk_menu_display = use_signal(|| false);
     let mut target_is_selected = use_signal(|| false);
     let bg = if c.kind == CharacterType::Hero {
@@ -71,7 +71,7 @@ pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bo
                 "ATK"
             }
             if atk_menu_display() {
-                AttackList { c: c.clone(), display_atklist_sig: atk_menu_display }
+                AttackList { c: c.clone(), display_atklist_sig: atk_menu_display, selected_atk: selected_atk }
             }
         }
         // name button
@@ -125,7 +125,7 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
 }
 
 #[component]
-pub fn NewAtkButton(attack_type: AttackType, display_atklist_sig: Signal<bool>) -> Element {
+pub fn NewAtkButton(attack_type: AttackType, display_atklist_sig: Signal<bool>, selected_atk: Signal<String>) -> Element {
     rsx! {
         button {
             class: "atk-button",
@@ -134,7 +134,7 @@ pub fn NewAtkButton(attack_type: AttackType, display_atklist_sig: Signal<bool>) 
                 let value = attack_type.clone();
                 async move {
                     *display_atklist_sig.write() = false;
-                    APP.write().game_manager.game_state.current_atk = value.clone();
+                    selected_atk.set(value.name);
                 }
             },
             "{attack_type.name}"
@@ -143,11 +143,11 @@ pub fn NewAtkButton(attack_type: AttackType, display_atklist_sig: Signal<bool>) 
 }
 
 #[component]
-pub fn AttackList(c: Character, display_atklist_sig: Signal<bool>) -> Element {
+pub fn AttackList(c: Character, display_atklist_sig: Signal<bool>, selected_atk: Signal<String>) -> Element {
     rsx! {
         div { class: "attack-list",
             for (key , value) in c.attacks_list.iter() {
-                NewAtkButton { attack_type: value.clone(), display_atklist_sig }
+                NewAtkButton { attack_type: value.clone(), display_atklist_sig, selected_atk }
             }
         }
     }
