@@ -191,6 +191,20 @@ h4 {
     -webkit-transform:translate(480px, -60px); /* relative to margin-top, height and width of class character */
   }
 
+  .hero-target-button-active {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background-color: yellow;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    animation: flicker 1.5s infinite;
+    -webkit-transform:translate(480px, -60px); /* relative to margin-top, height and width of class character */
+  }
+
   .boss-target-button {
     position: absolute;
     width: 30px;
@@ -214,8 +228,8 @@ h4 {
     color: white;
     font-size: 16px;
     cursor: pointer;
-    -webkit-transform:translate(-60px, -60px); /* relative to margin-top, height and width of class character */
     animation: flicker 1.5s infinite;
+    -webkit-transform:translate(-60px, -60px); /* relative to margin-top, height and width of class character */  
 }
 
 @keyframes flicker {

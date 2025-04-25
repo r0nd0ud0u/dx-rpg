@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use dx_rpg::{application, character_page, common::APP};
-use lib_rpg::testing_target;
+use lib_rpg::{attack_type::AttackType, testing_target};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -28,14 +28,7 @@ fn App() -> Element {
 
 #[component]
 fn GameBoard() -> Element {
-    let mut current_atk = use_signal(|| "".to_owned());
-    if !current_atk().is_empty(){
-        APP.write().game_manager.launch_attack(
-            "SimpleAtk",
-            vec![testing_target::build_target_angmar_indiv()],
-        );
-        current_atk.set("".to_owned());
-    }
+    let mut current_atk = use_signal(|| AttackType::default());
     rsx! {
         div { class: "grid-board",
             div {
@@ -44,7 +37,7 @@ fn GameBoard() -> Element {
                         c: c.clone(),
                         current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
                         is_auto_atk: false,
-                        selected_atk: current_atk
+                        selected_atk: current_atk,
                     }
                 }
             }
@@ -52,6 +45,16 @@ fn GameBoard() -> Element {
                 "round:{APP.read().game_manager.game_state.current_round}"
                 "\n{APP.read().game_manager.game_state.current_turn_nb}"
                 "\n{APP.read().game_manager.pm.current_player.name}"
+                if !current_atk().name.is_empty() {
+                    button {
+                        onclick: move |_| async move {
+                            APP.write().game_manager.launch_attack(current_atk().name.as_str());
+                            current_atk.set(AttackType::default());
+                        },
+                        "launch atk"
+                    }
+                }
+            
             }
             div {
                 for c in APP.read().game_manager.pm.active_bosses.iter() {
@@ -59,7 +62,7 @@ fn GameBoard() -> Element {
                         c: c.clone(),
                         current_player_name: "",
                         is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
-                        selected_atk: current_atk
+                        selected_atk: current_atk,
                     }
                 }
             }
@@ -95,14 +98,9 @@ fn Home() -> Element {
         if state() == ButtonStatus::ValidateAction {
             button {
                 onclick: move |_| async move {
-                    APP.write()
-                        .game_manager
-                        .launch_attack(
-                            "SimpleAtk",
-                            vec![testing_target::build_target_angmar_indiv()],
-                        );
+                    APP.write().game_manager.launch_attack("SimpleAtk");
                 },
-                "launch atk"
+                "Simple atk"
             }
         }
         GameBoard {}
