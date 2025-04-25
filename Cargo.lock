@@ -1482,7 +1482,6 @@ dependencies = [
  "lib-rpg",
  "serde",
  "tokio",
- "wasmtimer",
 ]
 
 [[package]]
@@ -2677,7 +2676,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lib-rpg"
 version = "1.0.0"
-source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=7db4a122022f068e03cb6efa9282a9c04aa2b3ba#7db4a122022f068e03cb6efa9282a9c04aa2b3ba"
+source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=2dde81f1124f54d2ef4bf5ab8f4ccbfa12e1781a#2dde81f1124f54d2ef4bf5ab8f4ccbfa12e1781a"
 dependencies = [
  "anyhow",
  "chrono",
@@ -5127,20 +5126,6 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
-]
-
-[[package]]
-name = "wasmtimer"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0048ad49a55b9deb3953841fa1fc5858f0efbcb7a18868c899a360269fac1b23"
-dependencies = [
- "futures",
- "js-sys",
- "parking_lot",
- "pin-utils",
- "slab",
- "wasm-bindgen",
 ]
 
 [[package]]
