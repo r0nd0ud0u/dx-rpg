@@ -18,6 +18,7 @@ pub fn CharacterPanel(
     is_auto_atk: bool,
     selected_atk: Signal<AttackType>,
 ) -> Element {
+    // if boss is dead, panel is hidden
     if c.is_dead().is_some_and(|value| value == true) && c.kind == CharacterType::Boss {
         return rsx! {};
     }
@@ -91,50 +92,37 @@ pub fn CharacterPanel(
         }
         // target button
         if !selected_atk().name.is_empty() {
-            if c.kind == CharacterType::Hero {
-                if c.is_current_target {
-                    button {
-                        class: "hero-target-button-active",
-                        onclick: move |_| async move {},
-                        ""
+            CharacterTargetButton { c: c.clone(), selected_atk }
+        }
+    }
+}
+
+#[component]
+pub fn CharacterTargetButton(c: Character, selected_atk: Signal<AttackType>) -> Element {
+    let mut kind_str = "hero";
+    if c.kind == CharacterType::Boss {
+        kind_str = "boss";
+    }
+    rsx! {
+        if c.is_current_target {
+            button {
+                class: format!("{}-target-button-active", kind_str),
+                onclick: move |_| async move {},
+                ""
+            }
+        } else {
+            button {
+                class: format!("{}-target-button", kind_str),
+                onclick: move |_| {
+                    let new_target_name = c.name.clone();
+                    async move {
+                        APP.write()
+                            .game_manager
+                            .pm
+                            .set_one_target(&new_target_name, &selected_atk().reach);
                     }
-                } else {
-                    button {
-                        class: "hero-target-button",
-                        onclick: move |_| {
-                            let new_target_name = c.name.clone();
-                            async move {
-                                APP.write()
-                                    .game_manager
-                                    .pm
-                                    .set_one_target(&new_target_name, &selected_atk().reach);
-                            }
-                        },
-                        ""
-                    }
-                }
-            } else if c.kind == CharacterType::Boss {
-                if c.is_current_target {
-                    button {
-                        class: "boss-target-button-active",
-                        onclick: move |_| async move {},
-                        ""
-                    }
-                } else {
-                    button {
-                        class: "boss-target-button",
-                        onclick: move |_| {
-                            let new_target_name = c.name.clone();
-                            async move {
-                                APP.write()
-                                    .game_manager
-                                    .pm
-                                    .set_one_target(&new_target_name, &selected_atk().reach);
-                            }
-                        },
-                        ""
-                    }
-                }
+                },
+                ""
             }
         }
     }
