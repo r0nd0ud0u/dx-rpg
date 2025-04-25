@@ -34,5 +34,5 @@ pub async fn sleep_from_millis(millis: u64) -> Result<(), ServerFnError> {
 pub async fn get_target_list(atk_name: String) -> Result<Vec<String>, ServerFnError> {
     APP.read().game_manager.pm.active_heroes.clone();
     Ok(vec!["".to_owned()])
-   // Ok(APP.read().game_manager.pm.get_target_list(atk_name))
+    // Ok(APP.read().game_manager.pm.get_target_list(atk_name))
 }

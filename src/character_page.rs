@@ -12,9 +12,16 @@ use crate::{application, common::APP};
 pub const PATH_IMG: &str = "assets/img";
 
 #[component]
-pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bool, selected_atk: Signal<String>) -> Element {
+pub fn CharacterPanel(
+    c: Character,
+    current_player_name: String,
+    is_auto_atk: bool,
+    selected_atk: Signal<AttackType>,
+) -> Element {
+    if c.is_dead().is_some_and(|value| value == true) && c.kind == CharacterType::Boss {
+        return rsx! {};
+    }
     let mut atk_menu_display = use_signal(|| false);
-    let mut target_is_selected = use_signal(|| false);
     let bg = if c.kind == CharacterType::Hero {
         "blue"
     } else {
@@ -32,10 +39,7 @@ pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bo
         // Any time `is_auto_atk` changes, the resource will rerun
         if is_auto_atk {
             let _ = application::sleep_from_millis(1000).await;
-            APP.write().game_manager.launch_attack(
-                "SimpleAtk",
-                vec![testing_target::build_target_angmar_indiv()],
-            )
+            APP.write().game_manager.launch_attack("SimpleAtk")
         }
     }));
 
@@ -71,7 +75,11 @@ pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bo
                 "ATK"
             }
             if atk_menu_display() {
-                AttackList { c: c.clone(), display_atklist_sig: atk_menu_display, selected_atk: selected_atk }
+                AttackList {
+                    c: c.clone(),
+                    display_atklist_sig: atk_menu_display,
+                    selected_atk,
+                }
             }
         }
         // name button
@@ -82,24 +90,50 @@ pub fn CharacterPanel(c: Character, current_player_name: String, is_auto_atk: bo
             "{c.name}"
         }
         // target button
-        if c.kind == CharacterType::Hero {
-            button { class: "hero-target-button", onclick: move |_| async move {}, "" }
-        } else if c.kind == CharacterType::Boss {
-            if target_is_selected() {
-                button {
-                    class: "boss-target-button-active",
-                    onclick: move |_| async move {
-                        target_is_selected.set(!target_is_selected());
-                    },
-                    ""
+        if !selected_atk().name.is_empty() {
+            if c.kind == CharacterType::Hero {
+                if c.is_current_target {
+                    button {
+                        class: "hero-target-button-active",
+                        onclick: move |_| async move {},
+                        ""
+                    }
+                } else {
+                    button {
+                        class: "hero-target-button",
+                        onclick: move |_| {
+                            let new_target_name = c.name.clone();
+                            async move {
+                                APP.write()
+                                    .game_manager
+                                    .pm
+                                    .set_one_target(&new_target_name, &selected_atk().reach);
+                            }
+                        },
+                        ""
+                    }
                 }
-            } else {
-                button {
-                    class: "boss-target-button",
-                    onclick: move |_| async move {
-                        target_is_selected.set(!target_is_selected());
-                    },
-                    ""
+            } else if c.kind == CharacterType::Boss {
+                if c.is_current_target {
+                    button {
+                        class: "boss-target-button-active",
+                        onclick: move |_| async move {},
+                        ""
+                    }
+                } else {
+                    button {
+                        class: "boss-target-button",
+                        onclick: move |_| {
+                            let new_target_name = c.name.clone();
+                            async move {
+                                APP.write()
+                                    .game_manager
+                                    .pm
+                                    .set_one_target(&new_target_name, &selected_atk().reach);
+                            }
+                        },
+                        ""
+                    }
                 }
             }
         }
@@ -125,16 +159,23 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
 }
 
 #[component]
-pub fn NewAtkButton(attack_type: AttackType, display_atklist_sig: Signal<bool>, selected_atk: Signal<String>) -> Element {
+pub fn NewAtkButton(
+    attack_type: AttackType,
+    display_atklist_sig: Signal<bool>,
+    selected_atk: Signal<AttackType>,
+    launcher: Character,
+) -> Element {
     rsx! {
         button {
             class: "atk-button",
             background_color: "black",
             onclick: move |_| {
                 let value = attack_type.clone();
+                let l_launcher = launcher.clone();
                 async move {
+                    APP.write().game_manager.pm.set_targeted_characters(&l_launcher, &value);
                     *display_atklist_sig.write() = false;
-                    selected_atk.set(value.name);
+                    selected_atk.set(value);
                 }
             },
             "{attack_type.name}"
@@ -143,11 +184,20 @@ pub fn NewAtkButton(attack_type: AttackType, display_atklist_sig: Signal<bool>, 
 }
 
 #[component]
-pub fn AttackList(c: Character, display_atklist_sig: Signal<bool>, selected_atk: Signal<String>) -> Element {
+pub fn AttackList(
+    c: Character,
+    display_atklist_sig: Signal<bool>,
+    selected_atk: Signal<AttackType>,
+) -> Element {
     rsx! {
         div { class: "attack-list",
-            for (key , value) in c.attacks_list.iter() {
-                NewAtkButton { attack_type: value.clone(), display_atklist_sig, selected_atk }
+            for (_key , value) in c.attacks_list.iter() {
+                NewAtkButton {
+                    attack_type: value.clone(),
+                    display_atklist_sig,
+                    selected_atk,
+                    launcher: c.clone(),
+                }
             }
         }
     }
