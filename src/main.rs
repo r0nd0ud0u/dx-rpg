@@ -53,8 +53,7 @@ fn GameBoard() -> Element {
                         },
                         "launch atk"
                     }
-                }
-            
+                }        
             }
             div {
                 for c in APP.read().game_manager.pm.active_bosses.iter() {
