@@ -1,10 +1,12 @@
 use std::time::Duration;
 
-use dioxus::prelude::server_fn;
+use dioxus::prelude::*;
 use dioxus::{prelude::server, prelude::ServerFnError};
 use lib_rpg::game_manager::GameManager;
 use serde::Deserialize;
 use serde::Serialize;
+
+use crate::common::APP;
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Application {
@@ -21,12 +23,16 @@ pub async fn try_new() -> Result<Application, ServerFnError> {
     }
 }
 
-/// use wasmtimer instead of tokio::time to make it work with wasm
 #[server]
 pub async fn sleep_from_millis(millis: u64) -> Result<(), ServerFnError> {
-    #[cfg(target_arch = "wasm32")]
-    wasmtimer::tokio::sleep(Duration::from_millis(millis)).await;
     #[cfg(not(target_arch = "wasm32"))]
     tokio::time::sleep(Duration::from_millis(millis)).await;
     Ok(())
+}
+
+#[server]
+pub async fn get_target_list(atk_name: String) -> Result<Vec<String>, ServerFnError> {
+    APP.read().game_manager.pm.active_heroes.clone();
+    Ok(vec!["".to_owned()])
+    // Ok(APP.read().game_manager.pm.get_target_list(atk_name))
 }
