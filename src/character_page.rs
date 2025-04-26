@@ -4,7 +4,6 @@ use lib_rpg::{
     attack_type::AttackType,
     character::{Character, CharacterType},
     common::stats_const::*,
-    testing_target,
 };
 
 use crate::{application, common::APP};
@@ -17,12 +16,12 @@ pub fn CharacterPanel(
     current_player_name: String,
     is_auto_atk: bool,
     selected_atk: Signal<AttackType>,
+    atk_menu_display: Signal<bool>,
 ) -> Element {
     // if boss is dead, panel is hidden
     if c.is_dead().is_some_and(|value| value == true) && c.kind == CharacterType::Boss {
         return rsx! {};
     }
-    let mut atk_menu_display = use_signal(|| false);
     let bg = if c.kind == CharacterType::Hero {
         "blue"
     } else {
@@ -75,13 +74,6 @@ pub fn CharacterPanel(
                 },
                 "ATK"
             }
-            if atk_menu_display() {
-                AttackList {
-                    c: c.clone(),
-                    display_atklist_sig: atk_menu_display,
-                    selected_atk,
-                }
-            }
         }
         // name button
         button {
@@ -110,7 +102,7 @@ pub fn CharacterTargetButton(c: Character, selected_atk: Signal<AttackType>) -> 
                 onclick: move |_| async move {},
                 ""
             }
-        } else {
+        } else if c.is_potential_target {
             button {
                 class: format!("{}-target-button", kind_str),
                 onclick: move |_| {
@@ -156,7 +148,7 @@ pub fn NewAtkButton(
     rsx! {
         button {
             class: "atk-button",
-            background_color: "black",
+            background_color: "grey",
             onclick: move |_| {
                 let value = attack_type.clone();
                 let l_launcher = launcher.clone();
@@ -173,21 +165,25 @@ pub fn NewAtkButton(
 
 #[component]
 pub fn AttackList(
-    c: Character,
+    name: String,
     display_atklist_sig: Signal<bool>,
     selected_atk: Signal<AttackType>,
 ) -> Element {
-    rsx! {
-        div { class: "attack-list",
-            for (_key , value) in c.attacks_list.iter() {
-                NewAtkButton {
-                    attack_type: value.clone(),
-                    display_atklist_sig,
-                    selected_atk,
-                    launcher: c.clone(),
+    if let Some(c) = APP.read().game_manager.pm.get_active_character(&name) {
+        rsx! {
+            div { class: "attack-list",
+                for (_key , value) in c.attacks_list.iter() {
+                    NewAtkButton {
+                        attack_type: value.clone(),
+                        display_atklist_sig,
+                        selected_atk,
+                        launcher: c.clone(),
+                    }
                 }
             }
         }
+    } else {
+        rsx! {}
     }
 }
 

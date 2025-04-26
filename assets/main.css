@@ -142,6 +142,7 @@ h4 {
 .grid-board {
     display: grid;
     grid-template-columns: max-content 1fr max-content;
+    gap: 30px;
 }
 
 .character-name-button {
@@ -165,8 +166,6 @@ h4 {
   .attack-list {
     display: flex;
     flex-direction: column; /* stack vertically */
-    position: absolute;
-    -webkit-transform:translate(480px, -120px); /* relative to margin-top, height and width of class character  */
   }
 
   .attack-list > button {
