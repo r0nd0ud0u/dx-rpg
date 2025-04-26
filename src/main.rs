@@ -1,5 +1,9 @@
 use dioxus::prelude::*;
-use dx_rpg::{application, character_page::{self, AttackList}, common::APP};
+use dx_rpg::{
+    application,
+    character_page::{self, AttackList},
+    common::APP,
+};
 use lib_rpg::{attack_type::AttackType, testing_target};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -39,7 +43,7 @@ fn GameBoard() -> Element {
                         current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
                         is_auto_atk: false,
                         selected_atk: current_atk,
-                        atk_menu_display: atk_menu_display
+                        atk_menu_display,
                     }
                 }
             }
@@ -71,7 +75,7 @@ fn GameBoard() -> Element {
                         current_player_name: "",
                         is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
                         selected_atk: current_atk,
-                        atk_menu_display:atk_menu_display
+                        atk_menu_display,
                     }
                 }
             }
