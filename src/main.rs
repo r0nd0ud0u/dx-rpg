@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dx_rpg::{application, character_page, common::APP};
+use dx_rpg::{application, character_page::{self, AttackList}, common::APP};
 use lib_rpg::{attack_type::AttackType, testing_target};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -29,6 +29,7 @@ fn App() -> Element {
 #[component]
 fn GameBoard() -> Element {
     let mut current_atk = use_signal(|| AttackType::default());
+    let mut atk_menu_display = use_signal(|| false);
     rsx! {
         div { class: "grid-board",
             div {
@@ -38,6 +39,7 @@ fn GameBoard() -> Element {
                         current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
                         is_auto_atk: false,
                         selected_atk: current_atk,
+                        atk_menu_display: atk_menu_display
                     }
                 }
             }
@@ -54,6 +56,13 @@ fn GameBoard() -> Element {
                         "launch atk"
                     }
                 }
+                if atk_menu_display() {
+                    AttackList {
+                        name: APP.read().game_manager.pm.current_player.name.clone(),
+                        display_atklist_sig: atk_menu_display,
+                        selected_atk: current_atk,
+                    }
+                }
             }
             div {
                 for c in APP.read().game_manager.pm.active_bosses.iter() {
@@ -62,6 +71,7 @@ fn GameBoard() -> Element {
                         current_player_name: "",
                         is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
                         selected_atk: current_atk,
+                        atk_menu_display:atk_menu_display
                     }
                 }
             }
