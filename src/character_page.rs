@@ -3,7 +3,7 @@ use indexmap::IndexMap;
 use lib_rpg::{
     attack_type::AttackType,
     character::{Character, CharacterType},
-    common::stats_const::*
+    common::stats_const::*,
 };
 
 use crate::{application, common::APP};
@@ -16,7 +16,7 @@ pub fn CharacterPanel(
     current_player_name: String,
     is_auto_atk: bool,
     selected_atk: Signal<AttackType>,
-    atk_menu_display: Signal<bool>
+    atk_menu_display: Signal<bool>,
 ) -> Element {
     // if boss is dead, panel is hidden
     if c.is_dead().is_some_and(|value| value == true) && c.kind == CharacterType::Boss {
@@ -102,7 +102,7 @@ pub fn CharacterTargetButton(c: Character, selected_atk: Signal<AttackType>) -> 
                 onclick: move |_| async move {},
                 ""
             }
-        } else if c.is_potential_target{
+        } else if c.is_potential_target {
             button {
                 class: format!("{}-target-button", kind_str),
                 onclick: move |_| {
@@ -183,7 +183,7 @@ pub fn AttackList(
             }
         }
     } else {
-        rsx!{}
+        rsx! {}
     }
 }
 
