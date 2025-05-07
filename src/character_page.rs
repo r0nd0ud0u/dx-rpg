@@ -61,6 +61,7 @@ pub fn CharacterPanel(
                         }
                     }
                 }
+                h4 { "Lvl: {c.level}" }
             }
         }
         // atk button
@@ -173,11 +174,28 @@ pub fn AttackList(
         rsx! {
             div { class: "attack-list",
                 for (_key , value) in c.attacks_list.iter() {
-                    NewAtkButton {
-                        attack_type: value.clone(),
-                        display_atklist_sig,
-                        selected_atk,
-                        launcher: c.clone(),
+                    if c.level >= value.level as u64 {
+                        div { class: "attack-list-line",
+                            button {
+                                class: "atk-type-button",
+                                background_color: get_type_color(&value),
+                                onclick: move |_| {},
+                                ""
+                            
+                            }
+                            NewAtkButton {
+                                attack_type: value.clone(),
+                                display_atklist_sig,
+                                selected_atk,
+                                launcher: c.clone(),
+                            }
+                            button {
+                                class: "cost-energy-button",
+                                onclick: move |_| {},
+                                {get_cost(value)}
+                            
+                            }
+                        }
                     }
                 }
             }
@@ -194,5 +212,29 @@ fn get_color(value: i32) -> &'static str {
         "orange"
     } else {
         "red"
+    }
+}
+
+fn get_type_color(atk: &AttackType) -> &'static str {
+    if atk.mana_cost > 0 {
+        "green"
+    } else if atk.vigor_cost > 0 {
+        "orange"
+    } else if atk.berseck_cost > 0 {
+        "red"
+    } else {
+        "white"
+    }
+}
+
+fn get_cost(atk: &AttackType) -> String {
+    if atk.mana_cost > 0 {
+        atk.mana_cost.to_string()
+    } else if atk.vigor_cost > 0 {
+        atk.vigor_cost.to_string()
+    } else if atk.berseck_cost > 0 {
+        atk.berseck_cost.to_string()
+    } else {
+        String::from("")
     }
 }
