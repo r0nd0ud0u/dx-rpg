@@ -19,7 +19,7 @@ pub fn CharacterPanel(
     atk_menu_display: Signal<bool>,
 ) -> Element {
     // if boss is dead, panel is hidden
-    if c.is_dead().is_some_and(|value| value == true) && c.kind == CharacterType::Boss {
+    if c.is_dead().is_some_and(|value| value) && c.kind == CharacterType::Boss {
         return rsx! {};
     }
     let bg = if c.kind == CharacterType::Hero {
@@ -178,7 +178,7 @@ pub fn AttackList(
                         div { class: "attack-list-line",
                             button {
                                 class: "atk-type-button",
-                                background_color: get_type_color(&value),
+                                background_color: get_type_color(value),
                                 onclick: move |_| {},
                                 ""
                             

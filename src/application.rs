@@ -6,8 +6,6 @@ use lib_rpg::game_manager::GameManager;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::common::APP;
-
 #[derive(Default, Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Application {
     pub game_manager: GameManager,
@@ -28,11 +26,4 @@ pub async fn sleep_from_millis(millis: u64) -> Result<(), ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     tokio::time::sleep(Duration::from_millis(millis)).await;
     Ok(())
-}
-
-#[server]
-pub async fn get_target_list(atk_name: String) -> Result<Vec<String>, ServerFnError> {
-    APP.read().game_manager.pm.active_heroes.clone();
-    Ok(vec!["".to_owned()])
-    // Ok(APP.read().game_manager.pm.get_target_list(atk_name))
 }
