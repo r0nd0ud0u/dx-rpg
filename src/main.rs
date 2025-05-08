@@ -48,9 +48,6 @@ fn GameBoard() -> Element {
                 }
             }
             div {
-                "round:{APP.read().game_manager.game_state.current_round}"
-                "\n{APP.read().game_manager.game_state.current_turn_nb}"
-                "\n{APP.read().game_manager.pm.current_player.name}"
                 if !current_atk().name.is_empty() {
                     button {
                         onclick: move |_| async move {

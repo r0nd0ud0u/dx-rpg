@@ -1,3 +1,4 @@
+use colorgrad::Gradient;
 use dioxus::prelude::*;
 use indexmap::IndexMap;
 use lib_rpg::{
@@ -6,7 +7,10 @@ use lib_rpg::{
     common::stats_const::*,
 };
 
-use crate::{application, common::APP};
+use crate::{
+    application,
+    common::{APP, ENERGY_GRAD},
+};
 
 pub const PATH_IMG: &str = "assets/img";
 
@@ -205,14 +209,8 @@ pub fn AttackList(
     }
 }
 
-fn get_color(value: i32) -> &'static str {
-    if value > 80 {
-        "green"
-    } else if value > 20 {
-        "orange"
-    } else {
-        "red"
-    }
+fn get_color(value: i32) -> String {
+    ENERGY_GRAD.at(value as f32 / 100.0).to_hex_string()
 }
 
 fn get_type_color(atk: &AttackType) -> &'static str {
