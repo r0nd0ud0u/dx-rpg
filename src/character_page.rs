@@ -181,7 +181,7 @@ pub fn AttackList(
                                 background_color: get_type_color(value),
                                 onclick: move |_| {},
                                 ""
-                            
+
                             }
                             NewAtkButton {
                                 attack_type: value.clone(),
@@ -193,7 +193,7 @@ pub fn AttackList(
                                 class: "cost-energy-button",
                                 onclick: move |_| {},
                                 {get_cost(value)}
-                            
+
                             }
                         }
                     }
