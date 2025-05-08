@@ -243,3 +243,22 @@ h4 {
   .flickering {
     animation: flicker 0.1s infinite;
   }
+
+  .attack-list-line {
+    display: grid;
+    grid-template-columns: max-content max-content max-content;
+    gap: 3px;
+}
+
+.attack-list-line > button {
+  margin: 3px;
+  padding: 3px;
+}
+
+.atk-type-button{
+  width: 30px;
+}
+
+.cost-energy-button{
+  width: 30px;
+}

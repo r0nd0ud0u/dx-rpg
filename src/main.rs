@@ -4,7 +4,7 @@ use dx_rpg::{
     character_page::{self, AttackList},
     common::APP,
 };
-use lib_rpg::{attack_type::AttackType, testing_target};
+use lib_rpg::attack_type::AttackType;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -32,8 +32,8 @@ fn App() -> Element {
 
 #[component]
 fn GameBoard() -> Element {
-    let mut current_atk = use_signal(|| AttackType::default());
-    let mut atk_menu_display = use_signal(|| false);
+    let mut current_atk = use_signal(AttackType::default);
+    let atk_menu_display = use_signal(|| false);
     rsx! {
         div { class: "grid-board",
             div {
