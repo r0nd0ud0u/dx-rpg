@@ -7,7 +7,10 @@ use lib_rpg::{
     common::stats_const::*,
 };
 
-use crate::{application, common::APP};
+use crate::{
+    application,
+    common::{APP, ENERGY_GRAD},
+};
 
 pub const PATH_IMG: &str = "assets/img";
 
@@ -207,11 +210,7 @@ pub fn AttackList(
 }
 
 fn get_color(value: i32) -> String {
-    let g = colorgrad::GradientBuilder::new()
-        .html_colors(&["deeppink", "gold", "seagreen"])
-        .build::<colorgrad::CatmullRomGradient>()
-        .unwrap();
-    g.at(value as f32 / 100.0).to_hex_string()
+    ENERGY_GRAD.at(value as f32 / 100.0).to_hex_string()
 }
 
 fn get_type_color(atk: &AttackType) -> &'static str {
