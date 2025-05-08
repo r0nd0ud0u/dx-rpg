@@ -1,9 +1,9 @@
-use std::time::Duration;
 use dioxus::prelude::*;
 use dioxus::{prelude::server, prelude::ServerFnError};
 use lib_rpg::game_manager::GameManager;
 use serde::Deserialize;
 use serde::Serialize;
+use std::time::Duration;
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Application {
