@@ -5,7 +5,7 @@ use lib_rpg::{
     character::{Character, CharacterType},
     common::stats_const::*,
 };
-
+use colorgrad::Gradient;
 use crate::{application, common::APP};
 
 pub const PATH_IMG: &str = "assets/img";
@@ -124,6 +124,12 @@ pub fn CharacterTargetButton(c: Character, selected_atk: Signal<AttackType>) -> 
 #[component]
 pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
     let width_display = current * 100 / max;
+    let colored = if let Some(grad) = &APP.read().gradient {
+        grad.at(width_display as f32/100.0).to_hex_string()
+    } 
+    else{
+        String::from("yellow")
+    };
     rsx! {
         div { class: "grid-container",
             h4 { {name} }
@@ -131,7 +137,7 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
                 div {
                     class: "life-bar",
                     width: "{width_display}%",
-                    background_color: get_color(width_display as i32),
+                    background_color: colored,
                 }
             }
             h4 { "{current} / {max}" }
@@ -205,13 +211,12 @@ pub fn AttackList(
     }
 }
 
-fn get_color(value: i32) -> &'static str {
-    if value > 80 {
-        "green"
-    } else if value > 20 {
-        "orange"
-    } else {
-        "red"
+fn get_color(value: i32) -> String { 
+    if let Some(grad) = &APP.read().gradient {
+        grad.at(value as f32/100.0).to_hex_string()
+    } 
+    else{
+        String::from("yellow")
     }
 }
 

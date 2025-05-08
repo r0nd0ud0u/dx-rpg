@@ -5,6 +5,7 @@ use dx_rpg::{
     common::APP,
 };
 use lib_rpg::attack_type::AttackType;
+use colorgrad::Gradient;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -48,9 +49,6 @@ fn GameBoard() -> Element {
                 }
             }
             div {
-                "round:{APP.read().game_manager.game_state.current_round}"
-                "\n{APP.read().game_manager.game_state.current_turn_nb}"
-                "\n{APP.read().game_manager.pm.current_player.name}"
                 if !current_atk().name.is_empty() {
                     button {
                         onclick: move |_| async move {
@@ -98,10 +96,16 @@ fn Home() -> Element {
             button {
                 onclick: move |_| async move {
                     println!("component found");
+                    // init APP global signal
                     match application::try_new().await {
                         Ok(app) => *APP.write() = app,
                         Err(_) => println!("no app"),
                     }
+                    /* // init GLOBAL_RESOURCE global signal
+                    match global_resource::try_new().await {
+                         Ok(gr) => *GLOBAL_RES.write() = gr,
+                         Err(_) => println!("no GLOBAL_RES"),
+                     } */
                     let _ = APP.write().game_manager.start_new_turn();
                     state.set(ButtonStatus::ValidateAction);
                 },
