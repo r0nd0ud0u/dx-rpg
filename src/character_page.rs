@@ -1,3 +1,4 @@
+use colorgrad::Gradient;
 use dioxus::prelude::*;
 use indexmap::IndexMap;
 use lib_rpg::{
@@ -5,7 +6,7 @@ use lib_rpg::{
     character::{Character, CharacterType},
     common::stats_const::*,
 };
-use colorgrad::Gradient;
+
 use crate::{application, common::APP};
 
 pub const PATH_IMG: &str = "assets/img";
@@ -124,12 +125,6 @@ pub fn CharacterTargetButton(c: Character, selected_atk: Signal<AttackType>) -> 
 #[component]
 pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
     let width_display = current * 100 / max;
-    let colored = if let Some(grad) = &APP.read().gradient {
-        grad.at(width_display as f32/100.0).to_hex_string()
-    } 
-    else{
-        String::from("yellow")
-    };
     rsx! {
         div { class: "grid-container",
             h4 { {name} }
@@ -137,7 +132,7 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
                 div {
                     class: "life-bar",
                     width: "{width_display}%",
-                    background_color: colored,
+                    background_color: get_color(width_display as i32),
                 }
             }
             h4 { "{current} / {max}" }
@@ -187,7 +182,7 @@ pub fn AttackList(
                                 background_color: get_type_color(value),
                                 onclick: move |_| {},
                                 ""
-
+                            
                             }
                             NewAtkButton {
                                 attack_type: value.clone(),
@@ -199,7 +194,7 @@ pub fn AttackList(
                                 class: "cost-energy-button",
                                 onclick: move |_| {},
                                 {get_cost(value)}
-
+                            
                             }
                         }
                     }
@@ -211,13 +206,12 @@ pub fn AttackList(
     }
 }
 
-fn get_color(value: i32) -> String { 
-    if let Some(grad) = &APP.read().gradient {
-        grad.at(value as f32/100.0).to_hex_string()
-    } 
-    else{
-        String::from("yellow")
-    }
+fn get_color(value: i32) -> String {
+    let g = colorgrad::GradientBuilder::new()
+        .html_colors(&["deeppink", "gold", "seagreen"])
+        .build::<colorgrad::CatmullRomGradient>()
+        .unwrap();
+    g.at(value as f32 / 100.0).to_hex_string()
 }
 
 fn get_type_color(atk: &AttackType) -> &'static str {
