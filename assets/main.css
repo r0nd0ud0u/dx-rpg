@@ -265,7 +265,12 @@ h4 {
 
 .show-then-hide {
   opacity: 0;
-  animation: appear-then-disappear 2s forwards;
+  animation: appear-then-disappear 3s forwards;
+}
+
+.show-then-hide-auto {
+  opacity: 0;
+  animation: appear-then-disappear 20s forwards;
 }
 
 @keyframes appear-then-disappear {

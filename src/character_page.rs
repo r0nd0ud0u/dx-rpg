@@ -5,12 +5,12 @@ use lib_rpg::{
     attack_type::AttackType,
     character::{Character, CharacterType},
     common::stats_const::*,
-    effect::EffectOutcome,
+    game_manager::ResultLaunchAttack,
 };
 
 use crate::{
     application,
-    common::{APP, ENERGY_GRAD},
+    common::{tempo_const::AUTO_ATK, APP, ENERGY_GRAD},
 };
 
 pub const PATH_IMG: &str = "assets/img";
@@ -22,6 +22,8 @@ pub fn CharacterPanel(
     is_auto_atk: bool,
     selected_atk: Signal<AttackType>,
     atk_menu_display: Signal<bool>,
+    result_auto_atk: Signal<ResultLaunchAttack>,
+    output_auto_atk: Signal<ResultLaunchAttack>,
 ) -> Element {
     // if boss is dead, panel is hidden
     if c.is_dead().is_some_and(|value| value) && c.kind == CharacterType::Boss {
@@ -43,8 +45,10 @@ pub fn CharacterPanel(
         // We manually add the resource to the dependencies list with the `use_reactive` hook
         // Any time `is_auto_atk` changes, the resource will rerun
         if is_auto_atk {
-            let _ = application::sleep_from_millis(1000).await;
-            let _ = APP.write().game_manager.launch_attack("SimpleAtk");
+            // TODO random attak from boss or pattern
+            let _ = application::sleep_from_millis(AUTO_ATK).await;
+            output_auto_atk.set(APP.write().game_manager.launch_attack("SimpleAtk"));
+            selected_atk.set(AttackType::default());
         }
     }));
 
@@ -77,6 +81,8 @@ pub fn CharacterPanel(
                 class: "menu-atk-button",
                 onclick: move |_| async move {
                     atk_menu_display.set(!atk_menu_display());
+                    result_auto_atk.set(ResultLaunchAttack::default());
+                    output_auto_atk.set(ResultLaunchAttack::default());
                 },
                 "ATK"
             }

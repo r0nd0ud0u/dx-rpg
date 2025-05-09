@@ -35,6 +35,7 @@ fn GameBoard() -> Element {
     let mut current_atk = use_signal(AttackType::default);
     let atk_menu_display = use_signal(|| false);
     let mut resultAttack = use_signal(ResultLaunchAttack::default);
+    let mut autoResultAttack = use_signal(ResultLaunchAttack::default);
 
     rsx! {
         div { class: "grid-board",
@@ -46,6 +47,8 @@ fn GameBoard() -> Element {
                         is_auto_atk: false,
                         selected_atk: current_atk,
                         atk_menu_display,
+                        result_auto_atk: resultAttack,
+                        output_auto_atk: autoResultAttack,
                     }
                 }
             }
@@ -66,19 +69,14 @@ fn GameBoard() -> Element {
                         "launch atk"
                     }
                 } else {
-                    div { class: "show-then-hide",
-                        if resultAttack().is_crit {
-                            "Critical Strike !"
+                    if !resultAttack().outcomes.is_empty() {
+                        div { class: "show-then-hide",
+                            ResultAtkText { ra: resultAttack }
                         }
-                        for d in resultAttack().all_dodging {
-                            if d.is_dodging {
-                                "{d.name} is dodging"
-                            } else if d.is_blocking {
-                                "{d.name} is blocking"
-                            }
-                        }
-                        for o in resultAttack().outcomes {
-                            AmountText { eo: o }
+                    }
+                    if !autoResultAttack().outcomes.is_empty() {
+                        div { class: "show-then-hide-auto",
+                            ResultAtkText { ra: autoResultAttack }
                         }
                     }
                 }
@@ -91,6 +89,8 @@ fn GameBoard() -> Element {
                         is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
                         selected_atk: current_atk,
                         atk_menu_display,
+                        result_auto_atk: resultAttack,
+                        output_auto_atk: autoResultAttack,
                     }
                 }
             }
@@ -155,5 +155,26 @@ fn AmountText(eo: EffectOutcome) -> Element {
     }
     rsx! {
         div { color: {colortext}, "{eo.target_name}: {eo.real_amount_tx}" }
+    }
+}
+
+#[component]
+fn ResultAtkText(ra: Signal<ResultLaunchAttack>) -> Element {
+    rsx! {
+        if !ra().outcomes.is_empty() {
+            if ra().is_crit {
+                "Critical Strike !"
+            }
+            for d in ra().all_dodging {
+                if d.is_dodging {
+                    "{d.name} is dodging"
+                } else if d.is_blocking {
+                    "{d.name} is blocking"
+                }
+            }
+            for o in ra().outcomes {
+                AmountText { eo: o }
+            }
+        }
     }
 }
