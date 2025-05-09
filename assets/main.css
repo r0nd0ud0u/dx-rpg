@@ -262,3 +262,28 @@ h4 {
 .cost-energy-button{
   width: 30px;
 }
+
+.show-then-hide {
+  opacity: 0;
+  animation: appear-then-disappear 3s forwards;
+}
+
+.show-then-hide-auto {
+  opacity: 0;
+  animation: appear-then-disappear 20s forwards;
+}
+
+@keyframes appear-then-disappear {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
