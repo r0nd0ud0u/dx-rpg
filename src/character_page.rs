@@ -5,12 +5,12 @@ use lib_rpg::{
     attack_type::AttackType,
     character::{Character, CharacterType},
     common::stats_const::*,
-    effect::EffectOutcome,
+    game_manager::ResultLaunchAttack,
 };
 
 use crate::{
     application,
-    common::{APP, ENERGY_GRAD},
+    common::{tempo_const::AUTO_ATK, APP, ENERGY_GRAD},
 };
 
 pub const PATH_IMG: &str = "assets/img";
@@ -22,6 +22,8 @@ pub fn CharacterPanel(
     is_auto_atk: bool,
     selected_atk: Signal<AttackType>,
     atk_menu_display: Signal<bool>,
+    output_auto_atk: Signal<ResultLaunchAttack>,
+    all_players: Signal<Vec<String>>,
 ) -> Element {
     // if boss is dead, panel is hidden
     if c.is_dead().is_some_and(|value| value) && c.kind == CharacterType::Boss {
@@ -43,8 +45,16 @@ pub fn CharacterPanel(
         // We manually add the resource to the dependencies list with the `use_reactive` hook
         // Any time `is_auto_atk` changes, the resource will rerun
         if is_auto_atk {
-            let _ = application::sleep_from_millis(1000).await;
-            let _ = APP.write().game_manager.launch_attack("SimpleAtk");
+            // TODO random attak from boss or pattern
+            let _ = application::sleep_from_millis(AUTO_ATK).await;
+            let ra = APP.write().game_manager.launch_attack("SimpleAtk");
+            output_auto_atk.set(ra.clone());
+            selected_atk.set(AttackType::default());
+            if (ra.all_dodging.len() > 0) {
+                all_players.write().push(ra.all_dodging[0].name.clone());
+            } else {
+                all_players.write().push("\n loupe".to_string());
+            }
         }
     }));
 
