@@ -12,3 +12,7 @@ pub static ENERGY_GRAD: Lazy<CatmullRomGradient> = Lazy::new(|| {
         .build::<CatmullRomGradient>()
         .expect("Failed to build gradient")
 });
+
+pub mod tempo_const {
+    pub const AUTO_ATK: u64 = 3000;
+}
