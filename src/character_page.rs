@@ -5,6 +5,7 @@ use lib_rpg::{
     attack_type::AttackType,
     character::{Character, CharacterType},
     common::stats_const::*,
+    effect::EffectOutcome,
 };
 
 use crate::{
@@ -43,7 +44,7 @@ pub fn CharacterPanel(
         // Any time `is_auto_atk` changes, the resource will rerun
         if is_auto_atk {
             let _ = application::sleep_from_millis(1000).await;
-            APP.write().game_manager.launch_attack("SimpleAtk")
+            let _ = APP.write().game_manager.launch_attack("SimpleAtk");
         }
     }));
 
@@ -185,7 +186,6 @@ pub fn AttackList(
                                 background_color: get_type_color(value),
                                 onclick: move |_| {},
                                 ""
-
                             }
                             NewAtkButton {
                                 attack_type: value.clone(),
@@ -197,7 +197,6 @@ pub fn AttackList(
                                 class: "cost-energy-button",
                                 onclick: move |_| {},
                                 {get_cost(value)}
-
                             }
                         }
                     }

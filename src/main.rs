@@ -4,7 +4,7 @@ use dx_rpg::{
     character_page::{self, AttackList},
     common::APP,
 };
-use lib_rpg::attack_type::AttackType;
+use lib_rpg::{attack_type::AttackType, effect::EffectOutcome, game_manager::ResultLaunchAttack};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -34,6 +34,8 @@ fn App() -> Element {
 fn GameBoard() -> Element {
     let mut current_atk = use_signal(AttackType::default);
     let atk_menu_display = use_signal(|| false);
+    let mut resultAttack = use_signal(ResultLaunchAttack::default);
+
     rsx! {
         div { class: "grid-board",
             div {
@@ -48,20 +50,36 @@ fn GameBoard() -> Element {
                 }
             }
             div {
-                if !current_atk().name.is_empty() {
-                    button {
-                        onclick: move |_| async move {
-                            APP.write().game_manager.launch_attack(current_atk().name.as_str());
-                            current_atk.set(AttackType::default());
-                        },
-                        "launch atk"
-                    }
-                }
                 if atk_menu_display() {
                     AttackList {
                         name: APP.read().game_manager.pm.current_player.name.clone(),
                         display_atklist_sig: atk_menu_display,
                         selected_atk: current_atk,
+                    }
+                } else if !current_atk().name.is_empty() {
+                    button {
+                        onclick: move |_| async move {
+                            resultAttack
+                                .set(APP.write().game_manager.launch_attack(current_atk().name.as_str()));
+                            current_atk.set(AttackType::default());
+                        },
+                        "launch atk"
+                    }
+                } else {
+                    div { class: "show-then-hide",
+                        if resultAttack().is_crit {
+                            "Critical Strike !"
+                        }
+                        for d in resultAttack().all_dodging {
+                            if d.is_dodging {
+                                "{d.name} is dodging"
+                            } else if d.is_blocking {
+                                "{d.name} is blocking"
+                            }
+                        }
+                        for o in resultAttack().outcomes {
+                            AmountText { eo: o }
+                        }
                     }
                 }
             }
@@ -126,5 +144,16 @@ fn Navbar() -> Element {
         }
 
         Outlet::<Route> {}
+    }
+}
+
+#[component]
+fn AmountText(eo: EffectOutcome) -> Element {
+    let mut colortext = "green";
+    if eo.real_amount_tx < 0 {
+        colortext = "red";
+    }
+    rsx! {
+        div { color: {colortext}, "{eo.target_name}: {eo.real_amount_tx}" }
     }
 }
