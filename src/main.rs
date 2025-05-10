@@ -4,7 +4,10 @@ use dx_rpg::{
     character_page::{self, AttackList},
     common::APP,
 };
-use lib_rpg::{attack_type::AttackType, effect::EffectOutcome, game_manager::ResultLaunchAttack};
+use lib_rpg::{
+    attack_type::AttackType, effect::EffectOutcome, game_manager::ResultLaunchAttack,
+    game_state::GameStatus,
+};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -31,66 +34,81 @@ fn App() -> Element {
 }
 
 #[component]
-fn GameBoard() -> Element {
+fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
     let mut current_atk = use_signal(AttackType::default);
     let atk_menu_display = use_signal(|| false);
     let mut resultAttack = use_signal(ResultLaunchAttack::default);
     let mut autoResultAttack = use_signal(ResultLaunchAttack::default);
 
-    rsx! {
-        div { class: "grid-board",
-            div {
-                for c in APP.read().game_manager.pm.active_heroes.iter() {
-                    character_page::CharacterPanel {
-                        c: c.clone(),
-                        current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
-                        is_auto_atk: false,
-                        selected_atk: current_atk,
-                        atk_menu_display,
-                        result_auto_atk: resultAttack,
-                        output_auto_atk: autoResultAttack,
-                    }
-                }
+    use_effect(move || {
+        if APP.read().game_manager.game_state.status == GameStatus::EndOfGame {
+            game_status.set(ButtonStatus::ReplayGame);
+        }
+    });
+    if APP.read().game_manager.game_state.status == GameStatus::EndOfGame {
+        rsx! {
+            div { class: "grid-board",
+                div { "You have lost!" }
+                div {}
+                div {}
             }
-            div {
-                if atk_menu_display() {
-                    AttackList {
-                        name: APP.read().game_manager.pm.current_player.name.clone(),
-                        display_atklist_sig: atk_menu_display,
-                        selected_atk: current_atk,
-                    }
-                } else if !current_atk().name.is_empty() {
-                    button {
-                        onclick: move |_| async move {
-                            resultAttack
-                                .set(APP.write().game_manager.launch_attack(current_atk().name.as_str()));
-                            current_atk.set(AttackType::default());
-                        },
-                        "launch atk"
-                    }
-                } else {
-                    if !resultAttack().outcomes.is_empty() {
-                        div { class: "show-then-hide",
-                            ResultAtkText { ra: resultAttack }
-                        }
-                    }
-                    if !autoResultAttack().outcomes.is_empty() {
-                        div { class: "show-then-hide-auto",
-                            ResultAtkText { ra: autoResultAttack }
+        }
+    } else {
+        rsx! {
+            div { class: "grid-board",
+                div {
+                    for c in APP.read().game_manager.pm.active_heroes.iter() {
+                        character_page::CharacterPanel {
+                            c: c.clone(),
+                            current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
+                            is_auto_atk: false,
+                            selected_atk: current_atk,
+                            atk_menu_display,
+                            result_auto_atk: resultAttack,
+                            output_auto_atk: autoResultAttack,
                         }
                     }
                 }
-            }
-            div {
-                for c in APP.read().game_manager.pm.active_bosses.iter() {
-                    character_page::CharacterPanel {
-                        c: c.clone(),
-                        current_player_name: "",
-                        is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
-                        selected_atk: current_atk,
-                        atk_menu_display,
-                        result_auto_atk: resultAttack,
-                        output_auto_atk: autoResultAttack,
+                div {
+                    if atk_menu_display() {
+                        AttackList {
+                            name: APP.read().game_manager.pm.current_player.name.clone(),
+                            display_atklist_sig: atk_menu_display,
+                            selected_atk: current_atk,
+                        }
+                    } else if !current_atk().name.is_empty() {
+                        button {
+                            onclick: move |_| async move {
+                                resultAttack
+                                    .set(APP.write().game_manager.launch_attack(current_atk().name.as_str()));
+                                current_atk.set(AttackType::default());
+                            },
+                            "launch atk"
+                        }
+                    } else {
+                        if !resultAttack().outcomes.is_empty() {
+                            div { class: "show-then-hide",
+                                ResultAtkText { ra: resultAttack }
+                            }
+                        }
+                        if !autoResultAttack().outcomes.is_empty() {
+                            div { class: "show-then-hide-auto",
+                                ResultAtkText { ra: autoResultAttack }
+                            }
+                        }
+                    }
+                }
+                div {
+                    for c in APP.read().game_manager.pm.active_bosses.iter() {
+                        character_page::CharacterPanel {
+                            c: c.clone(),
+                            current_player_name: "",
+                            is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
+                            selected_atk: current_atk,
+                            atk_menu_display,
+                            result_auto_atk: resultAttack,
+                            output_auto_atk: autoResultAttack,
+                        }
                     }
                 }
             }
@@ -102,14 +120,16 @@ fn GameBoard() -> Element {
 enum ButtonStatus {
     StartGame = 0,
     ValidateAction,
+    ReplayGame,
 }
 
 /// Home page
 #[component]
 fn Home() -> Element {
     let mut state = use_signal(|| ButtonStatus::StartGame);
+    let display_button = status_enum_to_string(state());
     rsx! {
-        if state() == ButtonStatus::StartGame {
+        if state() == ButtonStatus::StartGame || state() == ButtonStatus::ReplayGame {
             button {
                 onclick: move |_| async move {
                     println!("component found");
@@ -120,7 +140,7 @@ fn Home() -> Element {
                     let _ = APP.write().game_manager.start_new_turn();
                     state.set(ButtonStatus::ValidateAction);
                 },
-                "Start"
+                "{display_button}"
             }
         }
         if state() == ButtonStatus::ValidateAction {
@@ -131,7 +151,15 @@ fn Home() -> Element {
                 "Simple atk"
             }
         }
-        GameBoard {}
+        GameBoard { game_status: state }
+    }
+}
+
+fn status_enum_to_string(status: ButtonStatus) -> String {
+    match status {
+        ButtonStatus::StartGame => "Start".to_owned(),
+        ButtonStatus::ReplayGame => "Replay".to_owned(),
+        _ => "".to_owned(),
     }
 }
 
