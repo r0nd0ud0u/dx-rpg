@@ -133,24 +133,23 @@ enum PageStatus {
 #[component]
 fn Home() -> Element {
     let mut state = use_signal(|| PageStatus::HomePage);
-    rsx!{
+    rsx! {
         div { class: "home-container",
-        if state() == PageStatus::HomePage {
-            h1 { "Welcome to the RPG game!" }
-            button {
-                onclick: move |_| async move {
-                    state.set(PageStatus::NewGame);
-                },
-                "NEW GAME"
+            if state() == PageStatus::HomePage {
+                h1 { "Welcome to the RPG game!" }
+                button {
+                    onclick: move |_| async move {
+                        state.set(PageStatus::NewGame);
+                    },
+                    "NEW GAME"
+                }
+                button {
+                    onclick: move |_| async move {
+                        state.set(PageStatus::LoadGame);
+                    },
+                    "LOAD GAME"
+                }
             }
-            button {
-                onclick: move |_| async move {
-                    state.set(PageStatus::LoadGame);
-                    // LoadGame{} 
-                },
-                "LOAD GAME"
-            }
-        }   
         }
         if state() == PageStatus::NewGame {
             NewGame {}
@@ -163,7 +162,7 @@ fn Home() -> Element {
 fn NewGame() -> Element {
     let mut state = use_signal(|| ButtonStatus::StartGame);
     let mut ready_to_start = use_signal(|| true);
-    let _ = use_resource( move || async move {
+    let _ = use_resource(move || async move {
         if state() == ButtonStatus::StartGame {
             match application::try_new().await {
                 Ok(app) => *APP.write() = app,
@@ -175,12 +174,12 @@ fn NewGame() -> Element {
     });
 
     rsx! {
-        h4 {"{\nAPP.read().game_manager.game_state.current_turn_nb}"}
+        h4 { "{\nAPP.read().game_manager.game_state.current_turn_nb}" }
         if state() == ButtonStatus::ReplayGame {
             button {
                 onclick: move |_| async move {
                     state.set(ButtonStatus::StartGame);
-                    ready_to_start.set(false);   
+                    ready_to_start.set(false);
                 },
                 "Replay game"
             }
@@ -191,7 +190,7 @@ fn NewGame() -> Element {
                 },
                 "Simple atk"
             }
-            GameBoard { game_status: state }  
+            GameBoard { game_status: state }
         } else if state() == ButtonStatus::StartGame && ready_to_start() == false {
             h4 { "Loading..." }
         }
