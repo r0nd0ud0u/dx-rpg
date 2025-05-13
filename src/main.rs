@@ -119,47 +119,81 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
 #[derive(Debug, Clone, PartialEq)]
 enum ButtonStatus {
     StartGame = 0,
-    ValidateAction,
     ReplayGame,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+enum PageStatus {
+    HomePage = 0,
+    NewGame,
+    LoadGame,
 }
 
 /// Home page
 #[component]
 fn Home() -> Element {
-    let mut state = use_signal(|| ButtonStatus::StartGame);
-    let display_button = status_enum_to_string(state());
+    let mut state = use_signal(|| PageStatus::HomePage);
     rsx! {
-        if state() == ButtonStatus::StartGame || state() == ButtonStatus::ReplayGame {
-            button {
-                onclick: move |_| async move {
-                    println!("component found");
-                    match application::try_new().await {
-                        Ok(app) => *APP.write() = app,
-                        Err(_) => println!("no app"),
-                    }
-                    let _ = APP.write().game_manager.start_new_turn();
-                    state.set(ButtonStatus::ValidateAction);
-                },
-                "{display_button}"
+        div { class: "home-container",
+            if state() == PageStatus::HomePage {
+                h1 { "Welcome to the RPG game!" }
+                button {
+                    onclick: move |_| async move {
+                        state.set(PageStatus::NewGame);
+                    },
+                    "NEW GAME"
+                }
+                button {
+                    onclick: move |_| async move {
+                        state.set(PageStatus::LoadGame);
+                    },
+                    "LOAD GAME"
+                }
             }
         }
-        if state() == ButtonStatus::ValidateAction {
+        if state() == PageStatus::NewGame {
+            NewGame {}
+        }
+    }
+}
+
+/// New game
+#[component]
+fn NewGame() -> Element {
+    let mut state = use_signal(|| ButtonStatus::StartGame);
+    let mut ready_to_start = use_signal(|| true);
+    let _ = use_resource(move || async move {
+        if state() == ButtonStatus::StartGame {
+            match application::try_new().await {
+                Ok(app) => *APP.write() = app,
+                Err(_) => println!("no app"),
+            }
+            let _ = APP.write().game_manager.start_new_turn();
+            ready_to_start.set(true);
+        }
+    });
+
+    rsx! {
+        h4 { "{\nAPP.read().game_manager.game_state.current_turn_nb}" }
+        if state() == ButtonStatus::ReplayGame {
+            button {
+                onclick: move |_| async move {
+                    state.set(ButtonStatus::StartGame);
+                    ready_to_start.set(false);
+                },
+                "Replay game"
+            }
+        } else if state() == ButtonStatus::StartGame {
             button {
                 onclick: move |_| async move {
                     APP.write().game_manager.launch_attack("SimpleAtk");
                 },
                 "Simple atk"
             }
+            GameBoard { game_status: state }
+        } else if state() == ButtonStatus::StartGame && ready_to_start() == false {
+            h4 { "Loading..." }
         }
-        GameBoard { game_status: state }
-    }
-}
-
-fn status_enum_to_string(status: ButtonStatus) -> String {
-    match status {
-        ButtonStatus::StartGame => "Start".to_owned(),
-        ButtonStatus::ReplayGame => "Replay".to_owned(),
-        _ => "".to_owned(),
     }
 }
 
