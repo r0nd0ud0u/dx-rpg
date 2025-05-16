@@ -45,70 +45,60 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
             game_status.set(ButtonStatus::ReplayGame);
         }
     });
-    if APP.read().game_manager.game_state.status == GameStatus::EndOfGame {
-        rsx! {
-            div { class: "grid-board",
-                div { "You have lost!" }
-                div {}
-                div {}
+    rsx! {
+        div { class: "grid-board",
+            div {
+                for c in APP.read().game_manager.pm.active_heroes.iter() {
+                    character_page::CharacterPanel {
+                        c: c.clone(),
+                        current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
+                        is_auto_atk: false,
+                        selected_atk: current_atk,
+                        atk_menu_display,
+                        result_auto_atk: resultAttack,
+                        output_auto_atk: autoResultAttack,
+                    }
+                }
             }
-        }
-    } else {
-        rsx! {
-            div { class: "grid-board",
-                div {
-                    for c in APP.read().game_manager.pm.active_heroes.iter() {
-                        character_page::CharacterPanel {
-                            c: c.clone(),
-                            current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
-                            is_auto_atk: false,
-                            selected_atk: current_atk,
-                            atk_menu_display,
-                            result_auto_atk: resultAttack,
-                            output_auto_atk: autoResultAttack,
+            div {
+                if atk_menu_display() {
+                    AttackList {
+                        name: APP.read().game_manager.pm.current_player.name.clone(),
+                        display_atklist_sig: atk_menu_display,
+                        selected_atk: current_atk,
+                    }
+                } else if !current_atk().name.is_empty() {
+                    button {
+                        onclick: move |_| async move {
+                            resultAttack
+                                .set(APP.write().game_manager.launch_attack(current_atk().name.as_str()));
+                            current_atk.set(AttackType::default());
+                        },
+                        "launch atk"
+                    }
+                } else {
+                    if !resultAttack().outcomes.is_empty() {
+                        div { class: "show-then-hide",
+                            ResultAtkText { ra: resultAttack }
+                        }
+                    }
+                    if !autoResultAttack().outcomes.is_empty() {
+                        div { class: "show-then-hide-auto",
+                            ResultAtkText { ra: autoResultAttack }
                         }
                     }
                 }
-                div {
-                    if atk_menu_display() {
-                        AttackList {
-                            name: APP.read().game_manager.pm.current_player.name.clone(),
-                            display_atklist_sig: atk_menu_display,
-                            selected_atk: current_atk,
-                        }
-                    } else if !current_atk().name.is_empty() {
-                        button {
-                            onclick: move |_| async move {
-                                resultAttack
-                                    .set(APP.write().game_manager.launch_attack(current_atk().name.as_str()));
-                                current_atk.set(AttackType::default());
-                            },
-                            "launch atk"
-                        }
-                    } else {
-                        if !resultAttack().outcomes.is_empty() {
-                            div { class: "show-then-hide",
-                                ResultAtkText { ra: resultAttack }
-                            }
-                        }
-                        if !autoResultAttack().outcomes.is_empty() {
-                            div { class: "show-then-hide-auto",
-                                ResultAtkText { ra: autoResultAttack }
-                            }
-                        }
-                    }
-                }
-                div {
-                    for c in APP.read().game_manager.pm.active_bosses.iter() {
-                        character_page::CharacterPanel {
-                            c: c.clone(),
-                            current_player_name: "",
-                            is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
-                            selected_atk: current_atk,
-                            atk_menu_display,
-                            result_auto_atk: resultAttack,
-                            output_auto_atk: autoResultAttack,
-                        }
+            }
+            div {
+                for c in APP.read().game_manager.pm.active_bosses.iter() {
+                    character_page::CharacterPanel {
+                        c: c.clone(),
+                        current_player_name: "",
+                        is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
+                        selected_atk: current_atk,
+                        atk_menu_display,
+                        result_auto_atk: resultAttack,
+                        output_auto_atk: autoResultAttack,
                     }
                 }
             }
