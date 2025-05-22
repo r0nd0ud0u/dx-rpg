@@ -184,6 +184,12 @@ fn NewGame() -> Element {
                 },
                 "Simple atk"
             }
+            button {
+                    onclick: move |_| async move {
+                       // state.set(PageStatus::NewGame);
+                    },
+                    "Save"
+                }
             GameBoard { game_status: state }
         } else if state() == ButtonStatus::StartGame && ready_to_start() == false {
             h4 { "Loading..." }

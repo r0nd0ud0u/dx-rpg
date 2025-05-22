@@ -102,7 +102,8 @@ button:active {
 .character {
     width: 430px;
     height: 100px;
-    margin-top: 20px;
+    margin-top: 10px;
+    margin-bottom: 40px;
     background-color: #05194f;
     padding: 10px;
     border-radius: 10px;
@@ -111,22 +112,13 @@ button:active {
     column-gap: 10px; /* Add space between columns */   
 }
 
-
-.bar-text {
-    font-size: 10px;
-    font-weight: bold;
-    color: white;
-    position: absolute;
-    z-index: 2; /* Ensures text stays above the bar */
-}
-
 .grid-container {
     display: grid;
     grid-template-columns: 0.2fr 1fr 0.7fr;
     column-gap: 10px;
 }                                                                                                         
 
-h4 {
+.text-bar {
     line-height: 1; /* height of the line */
     margin: 0;
 }
@@ -147,7 +139,7 @@ h4 {
 
 .character-name-button {
     position: absolute;
-    -webkit-transform:translate(0%, -90%);
+    -webkit-transform:translate(0%, -140%);
     justify-content: flex-start;
     align-items: left;
   }
@@ -155,7 +147,7 @@ h4 {
   .menu-atk-button {
     position: absolute;
     width: 50px;
-    -webkit-transform:translate(430px, -120px); /* relative to margin-top, height and width of class character */
+    -webkit-transform:translate(400px, -150px); /* relative to margin-top, height and width of class character */
   }
 
   .atk-button-ennemy{
@@ -187,7 +179,7 @@ h4 {
     color: white;
     font-size: 16px;
     cursor: pointer;
-    -webkit-transform:translate(480px, -60px); /* relative to margin-top, height and width of class character */
+    -webkit-transform:translate(480px, -100px); /* relative to margin-top, height and width of class character */
   }
 
   .hero-target-button-active {
@@ -214,7 +206,7 @@ h4 {
     color: white;
     font-size: 16px;
     cursor: pointer;
-    -webkit-transform:translate(-60px, -60px); /* relative to margin-top, height and width of class character */
+    -webkit-transform:translate(-60px, -100px); /* relative to margin-top, height and width of class character */
   }
   
 .boss-target-button-active {
@@ -228,7 +220,7 @@ h4 {
     font-size: 16px;
     cursor: pointer;
     animation: flicker 1.5s infinite;
-    -webkit-transform:translate(-60px, -60px); /* relative to margin-top, height and width of class character */  
+    -webkit-transform:translate(-60px, -100px); /* relative to margin-top, height and width of class character */  
 }
 
 @keyframes flicker {
