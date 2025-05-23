@@ -137,7 +137,7 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
     let width_display = current * 100 / max;
     rsx! {
         div { class: "grid-container",
-            h4 { {name} }
+            div { class: "text-bar", {name} }
             div { class: "container-bar",
                 div {
                     class: "life-bar",
@@ -145,7 +145,7 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
                     background_color: get_color(width_display as i32),
                 }
             }
-            h4 { "{current} / {max}" }
+            div { class: "text-bar", "{current} / {max}" }
         }
     }
 }

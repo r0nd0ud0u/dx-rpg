@@ -1,0 +1,211 @@
+{
+    "Buf-debuf": [
+        {
+            "Buf-all-stats": [
+            ],
+            "Buf-is-percent": false,
+            "Buf-passive-enabled": false,
+            "Buf-type": 0,
+            "Buf-value": 0
+        },
+        {
+            "Buf-all-stats": [
+            ],
+            "Buf-is-percent": false,
+            "Buf-passive-enabled": false,
+            "Buf-type": 1,
+            "Buf-value": 0
+        },
+        {
+            "Buf-all-stats": [
+            ],
+            "Buf-is-percent": true,
+            "Buf-passive-enabled": false,
+            "Buf-type": 2,
+            "Buf-value": 0
+        },
+        {
+            "Buf-all-stats": [
+            ],
+            "Buf-is-percent": false,
+            "Buf-passive-enabled": false,
+            "Buf-type": 3,
+            "Buf-value": 0
+        },
+        {
+            "Buf-all-stats": [
+            ],
+            "Buf-is-percent": false,
+            "Buf-passive-enabled": false,
+            "Buf-type": 4,
+            "Buf-value": 0
+        },
+        {
+            "Buf-all-stats": [
+            ],
+            "Buf-is-percent": true,
+            "Buf-passive-enabled": false,
+            "Buf-type": 5,
+            "Buf-value": 0
+        },
+        {
+            "Buf-all-stats": [
+            ],
+            "Buf-is-percent": false,
+            "Buf-passive-enabled": false,
+            "Buf-type": 6,
+            "Buf-value": 0
+        },
+        {
+            "Buf-all-stats": [
+            ],
+            "Buf-is-percent": false,
+            "Buf-passive-enabled": false,
+            "Buf-type": 7,
+            "Buf-value": 0
+        },
+        {
+            "Buf-all-stats": [
+            ],
+            "Buf-is-percent": true,
+            "Buf-passive-enabled": false,
+            "Buf-type": 8,
+            "Buf-value": 0
+        },
+        {
+            "Buf-all-stats": [
+            ],
+            "Buf-is-percent": true,
+            "Buf-passive-enabled": false,
+            "Buf-type": 9,
+            "Buf-value": 0
+        },
+        {
+            "Buf-all-stats": [
+            ],
+            "Buf-is-percent": true,
+            "Buf-passive-enabled": false,
+            "Buf-type": 10,
+            "Buf-value": 0
+        },
+        {
+            "Buf-all-stats": [
+            ],
+            "Buf-is-percent": true,
+            "Buf-passive-enabled": false,
+            "Buf-type": 11,
+            "Buf-value": 0
+        }
+    ],
+    "Class": "Standard",
+    "Color": "orange",
+    "Experience": 0,
+    "ExtendedCharacter": {
+        "is_first_round": false,
+        "is_heal_atk_blocked": false,
+        "is_random_target": true
+    },
+    "Level": 1,
+    "Name": "Azrak Ombresang",
+    "Photo": "Azrak Ombresang",
+    "Powers": {
+        "is_crit_heal_after_crit": false,
+        "is_damage_tx_heal_needy_ally": false
+    },
+    "Rank": 4,
+    "Shape": "",
+    "Short name": "Azrak",
+    "Stats": {
+        "Aggro": {
+            "Current": 0,
+            "Max": 9999
+        },
+        "Aggro rate": {
+            "Current": 1,
+            "Max": 1
+        },
+        "Berseck": {
+            "Current": 0,
+            "Max": 0
+        },
+        "Berseck rate": {
+            "Current": 0,
+            "Max": 0
+        },
+        "Critical strike": {
+            "Current": 12,
+            "Max": 12
+        },
+        "Dodge": {
+            "Current": 6,
+            "Max": 6
+        },
+        "HP": {
+            "Current": 145,
+            "Max": 145
+        },
+        "HP regeneration": {
+            "Current": 7,
+            "Max": 7
+        },
+        "Magical armor": {
+            "Current": 0,
+            "Max": 0
+        },
+        "Magical power": {
+            "Current": 10,
+            "Max": 10
+        },
+        "Mana": {
+            "Current": 70,
+            "Max": 70
+        },
+        "Mana regeneration": {
+            "Current": 7,
+            "Max": 7
+        },
+        "Physical armor": {
+            "Current": 0,
+            "Max": 0
+        },
+        "Physical power": {
+            "Current": 20,
+            "Max": 20
+        },
+        "Speed": {
+            "Current": 10,
+            "Max": 10
+        },
+        "Speed regeneration": {
+            "Current": 10,
+            "Max": 10
+        },
+        "Vigor": {
+            "Current": 130,
+            "Max": 130
+        },
+        "Vigor regeneration": {
+            "Current": 5,
+            "Max": 5
+        }
+    },
+    "Tx-rx": [
+        {
+        },
+        {
+        },
+        {
+        },
+        {
+        },
+        {
+        },
+        {
+        }
+    ],
+    "Type": "Hero",
+    "is-blocking-atk": false,
+    "max-actions-by-round": 1,
+    "nb-actions-in-round": 0
+}
+
