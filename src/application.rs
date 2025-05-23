@@ -29,19 +29,16 @@ pub async fn save(path: String, value: String) -> Result<(), ServerFnError> {
 
 #[server]
 pub async fn start_game(paths: GamePaths) -> Result<(), ServerFnError> {
-    if let Err(e) = fs::create_dir_all(paths.characters) {
+    if let Err(e) = fs::create_dir_all(paths.root) {
         eprintln!("Failed to create directory: {}", e);
     }
-    if let Err(e) = fs::create_dir_all(paths.equipments) {
+    if let Err(e) = fs::create_dir_all(paths.characters) {
         eprintln!("Failed to create directory: {}", e);
     }
     if let Err(e) = fs::create_dir_all(paths.game_state) {
         eprintln!("Failed to create directory: {}", e);
     }
     if let Err(e) = fs::create_dir_all(paths.loot) {
-        eprintln!("Failed to create directory: {}", e);
-    }
-    if let Err(e) = fs::create_dir_all(paths.ongoing_effects) {
         eprintln!("Failed to create directory: {}", e);
     }
     if let Err(e) = fs::create_dir_all(paths.stats_in_game) {

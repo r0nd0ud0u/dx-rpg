@@ -248,11 +248,12 @@ fn SaveButton() -> Element {
     rsx! {
         button {
             onclick: move |_| async move {
+                // output heroes
                 for c in &APP.read().game_manager.pm.active_heroes {
                     let path = format!(
                         "{}/{}.json",
                         &APP.read().game_manager.game_paths.characters.to_string_lossy(),
-                        &c.name,
+                        &c.name
                     );
                     match application::save(
                             path.to_owned(),
@@ -264,11 +265,12 @@ fn SaveButton() -> Element {
                         Err(e) => println!("{}", e),
                     }
                 }
+                // output bosses
                 for b in &APP.read().game_manager.pm.active_bosses {
                     let path = format!(
                         "{}/{}.json",
                         &APP.read().game_manager.game_paths.characters.to_string_lossy(),
-                        &b.name,
+                        &b.name
                     );
                     match application::save(
                             path.to_owned(),
@@ -280,6 +282,21 @@ fn SaveButton() -> Element {
                         Err(e) => println!("{}", e),
                     }
                 }
+                // output gamestate
+                let path = format!(
+                        "{}/{}.json",
+                        &APP.read().game_manager.game_paths.game_state.to_string_lossy(),
+                        "gamestate"
+                    );
+                    match application::save(
+                            path.to_owned(),
+                            serde_json::to_string_pretty(&APP.read().game_manager.game_state).unwrap(),
+                        )
+                        .await
+                    {
+                        Ok(()) => println!("save"),
+                        Err(e) => println!("{}", e),
+                    }
             },
             "Save"
         }
