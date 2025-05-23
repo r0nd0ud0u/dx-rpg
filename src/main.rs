@@ -191,43 +191,7 @@ fn NewGame() -> Element {
                 },
                 "Simple atk"
             }
-            button {
-                onclick: move |_| async move {
-                    for c in &APP.read().game_manager.pm.active_heroes {
-                        let path = format!(
-                            "{}/{}.json",
-                            &APP.read().game_manager.game_paths.characters.to_string_lossy(),
-                            &c.name,
-                        );
-                        match application::save(
-                                path.to_owned(),
-                                serde_json::to_string_pretty(&c).unwrap(),
-                            )
-                            .await
-                        {
-                            Ok(()) => println!("save"),
-                            Err(e) => println!("{}", e),
-                        }
-                    }
-                    for b in &APP.read().game_manager.pm.active_bosses {
-                        let path = format!(
-                            "{}/{}.json",
-                            &APP.read().game_manager.game_paths.characters.to_string_lossy(),
-                            &b.name,
-                        );
-                        match application::save(
-                                path.to_owned(),
-                                serde_json::to_string_pretty(&b).unwrap(),
-                            )
-                            .await
-                        {
-                            Ok(()) => println!("save"),
-                            Err(e) => println!("{}", e),
-                        }
-                    }
-                },
-                "Save"
-            }
+            SaveButton {}
             GameBoard { game_status: state }
         } else if state() == ButtonStatus::StartGame && !ready_to_start() {
             h4 { "Loading..." }
@@ -275,6 +239,49 @@ fn ResultAtkText(ra: Signal<ResultLaunchAttack>) -> Element {
             for o in ra().outcomes {
                 AmountText { eo: o }
             }
+        }
+    }
+}
+
+#[component]
+fn SaveButton() -> Element {
+    rsx! {
+        button {
+            onclick: move |_| async move {
+                for c in &APP.read().game_manager.pm.active_heroes {
+                    let path = format!(
+                        "{}/{}.json",
+                        &APP.read().game_manager.game_paths.characters.to_string_lossy(),
+                        &c.name,
+                    );
+                    match application::save(
+                            path.to_owned(),
+                            serde_json::to_string_pretty(&c).unwrap(),
+                        )
+                        .await
+                    {
+                        Ok(()) => println!("save"),
+                        Err(e) => println!("{}", e),
+                    }
+                }
+                for b in &APP.read().game_manager.pm.active_bosses {
+                    let path = format!(
+                        "{}/{}.json",
+                        &APP.read().game_manager.game_paths.characters.to_string_lossy(),
+                        &b.name,
+                    );
+                    match application::save(
+                            path.to_owned(),
+                            serde_json::to_string_pretty(&b).unwrap(),
+                        )
+                        .await
+                    {
+                        Ok(()) => println!("save"),
+                        Err(e) => println!("{}", e),
+                    }
+                }
+            },
+            "Save"
         }
     }
 }
