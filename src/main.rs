@@ -31,7 +31,7 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Stylesheet {
             // Urls are relative to your Cargo.toml file
-            href: asset!("/assets/tailwind.css")
+            href: asset!("/assets/tailwind.css"),
         }
         Router::<Route> {}
     }
@@ -42,7 +42,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
     let mut current_atk = use_signal(AttackType::default);
     let atk_menu_display = use_signal(|| false);
     let mut resultAttack = use_signal(ResultLaunchAttack::default);
-    let mut autoResultAttack = use_signal(ResultLaunchAttack::default);
+    let autoResultAttack = use_signal(ResultLaunchAttack::default);
 
     use_effect(move || {
         if APP.read().game_manager.game_state.status == GameStatus::EndOfGame {
@@ -162,6 +162,13 @@ fn NewGame() -> Element {
                 Ok(app) => *APP.write() = app,
                 Err(_) => println!("no app"),
             }
+
+            APP.write().game_manager.start_game();
+            let path = APP.write().game_manager.game_paths.clone();
+            match application::start_game(path).await {
+                Ok(_) => println!("start app"),
+                Err(_) => println!("no app"),
+            }
             let _ = APP.write().game_manager.start_new_turn();
             ready_to_start.set(true);
         }
@@ -185,13 +192,44 @@ fn NewGame() -> Element {
                 "Simple atk"
             }
             button {
-                    onclick: move |_| async move {
-                       // state.set(PageStatus::NewGame);
-                    },
-                    "Save"
-                }
+                onclick: move |_| async move {
+                    for c in &APP.read().game_manager.pm.active_heroes {
+                        let path = format!(
+                            "{}/{}.json",
+                            &APP.read().game_manager.game_paths.characters.to_string_lossy(),
+                            &c.name,
+                        );
+                        match application::save(
+                                path.to_owned(),
+                                serde_json::to_string_pretty(&c).unwrap(),
+                            )
+                            .await
+                        {
+                            Ok(()) => println!("save"),
+                            Err(e) => println!("{}", e),
+                        }
+                    }
+                    for b in &APP.read().game_manager.pm.active_bosses {
+                        let path = format!(
+                            "{}/{}.json",
+                            &APP.read().game_manager.game_paths.characters.to_string_lossy(),
+                            &b.name,
+                        );
+                        match application::save(
+                                path.to_owned(),
+                                serde_json::to_string_pretty(&b).unwrap(),
+                            )
+                            .await
+                        {
+                            Ok(()) => println!("save"),
+                            Err(e) => println!("{}", e),
+                        }
+                    }
+                },
+                "Save"
+            }
             GameBoard { game_status: state }
-        } else if state() == ButtonStatus::StartGame && ready_to_start() == false {
+        } else if state() == ButtonStatus::StartGame && !ready_to_start() {
             h4 { "Loading..." }
         }
     }
@@ -216,7 +254,7 @@ fn AmountText(eo: EffectOutcome) -> Element {
         colortext = "red";
     }
     rsx! {
-        div { color: {colortext}, "{eo.target_name}: {eo.real_amount_tx}" }
+        div { color: colortext, "{eo.target_name}: {eo.real_amount_tx}" }
     }
 }
 

@@ -1501,6 +1501,7 @@ dependencies = [
  "lib-rpg",
  "once_cell",
  "serde",
+ "serde_json",
  "tokio",
 ]
 
@@ -2696,7 +2697,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lib-rpg"
 version = "1.0.0"
-source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=ca7487ca3794eb77fec8ef34a25504e46cca45cb#ca7487ca3794eb77fec8ef34a25504e46cca45cb"
+source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=36848a4e71092e8e238cea1c6215607d3cd0fce9#36848a4e71092e8e238cea1c6215607d3cd0fce9"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4108,9 +4109,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.135"
+version = "1.0.140"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b0d7ba2887406110130a978386c4e1befb98c674b4fba677954e4db976630d9"
+checksum = "20068b6e96dc6c9bd23e01df8827e6c7e1f2fddd43c21810382803c136b99373"
 dependencies = [
  "itoa 1.0.14",
  "memchr",
