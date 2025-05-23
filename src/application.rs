@@ -41,9 +41,6 @@ pub async fn start_game(paths: GamePaths) -> Result<(), ServerFnError> {
     if let Err(e) = fs::create_dir_all(paths.loot) {
         eprintln!("Failed to create directory: {}", e);
     }
-    if let Err(e) = fs::create_dir_all(paths.stats_in_game) {
-        eprintln!("Failed to create directory: {}", e);
-    }
     Ok(())
 }
 
