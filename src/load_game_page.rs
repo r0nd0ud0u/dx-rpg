@@ -1,7 +1,8 @@
 use dioxus::prelude::*;
 
 #[component]
-pub fn Game_page(game: String) -> Element {
+pub fn LoadGame_page() -> Element {
+    // check
     rsx! {
         div { "hero" }
     }
