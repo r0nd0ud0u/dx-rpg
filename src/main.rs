@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use dx_rpg::{
     application,
     character_page::{self, AttackList},
-    common::APP,
+    common::{PageStatus, APP, CURRENT_PAGE},
 };
 use lib_rpg::{
     attack_type::AttackType, effect::EffectOutcome, game_manager::ResultLaunchAttack,
@@ -116,36 +116,28 @@ enum ButtonStatus {
     ReplayGame,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-enum PageStatus {
-    HomePage = 0,
-    NewGame,
-    LoadGame,
-}
-
 /// Home page
 #[component]
 fn Home() -> Element {
-    let mut state = use_signal(|| PageStatus::HomePage);
     rsx! {
         div { class: "home-container",
-            if state() == PageStatus::HomePage {
+            if CURRENT_PAGE.cloned() == PageStatus::HomePage {
                 h1 { "Welcome to the RPG game!" }
                 button {
                     onclick: move |_| async move {
-                        state.set(PageStatus::NewGame);
+                        *CURRENT_PAGE.write() = PageStatus::NewGame;
                     },
                     "NEW GAME"
                 }
                 button {
                     onclick: move |_| async move {
-                        state.set(PageStatus::LoadGame);
+                        *CURRENT_PAGE.write() = PageStatus::LoadGame;
                     },
                     "LOAD GAME"
                 }
             }
         }
-        if state() == PageStatus::NewGame {
+        if CURRENT_PAGE.cloned() == PageStatus::NewGame {
             NewGame {}
         }
     }
