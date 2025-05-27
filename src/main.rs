@@ -15,6 +15,8 @@ enum Route {
     #[layout(Navbar)]
     #[route("/")]
     Home {},
+    #[route("/ongoing-games")]
+    OngoingGames {},
 }
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -134,6 +136,15 @@ fn Home() -> Element {
                         *CURRENT_PAGE.write() = PageStatus::LoadGame;
                     },
                     "LOAD GAME"
+                }
+                button {
+                    onclick: move |_| async move {
+                        // display other page
+                        // add watcher on Games path dir
+                        // list of buttons
+                        Route::OngoingGames{};
+                    },
+                    "ONGOING GAMES"
                 }
             }
         }
@@ -290,5 +301,12 @@ fn SaveButton() -> Element {
             },
             "Save"
         }
+    }
+}
+
+#[component]
+fn OngoingGames() -> Element {
+    rsx! {
+        div { "ongoinggames" }
     }
 }
