@@ -1,10 +1,14 @@
 use dioxus::prelude::*;
 use dioxus::{prelude::server, prelude::ServerFnError};
 use lib_rpg::game_manager::{GameManager, GamePaths};
+use lib_rpg::utils::list_files_in_dir;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fs;
+use std::path::PathBuf;
 use std::time::Duration;
+
+use crate::common::APP;
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Application {
@@ -49,4 +53,12 @@ pub async fn sleep_from_millis(millis: u64) -> Result<(), ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     tokio::time::sleep(Duration::from_millis(millis)).await;
     Ok(())
+}
+
+#[server]
+pub async fn get_game_list(game_dir_path: PathBuf) -> Result<Vec<PathBuf>, ServerFnError> {
+    println!("Fetching game list from: {:?}", game_dir_path);
+    let games_list = list_files_in_dir(&game_dir_path)?;
+    println!("List games: {:?}", games_list);
+    Ok(games_list)
 }

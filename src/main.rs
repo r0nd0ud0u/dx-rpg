@@ -1,9 +1,12 @@
 use dioxus::prelude::*;
+use dioxus_html::g;
 use dx_rpg::{
     application,
     character_page::{self, AttackList},
     common::{PageStatus, APP, CURRENT_PAGE},
+    load_game_page,
 };
+use indexmap::map::IndexedEntry;
 use lib_rpg::{
     attack_type::AttackType, effect::EffectOutcome, game_manager::ResultLaunchAttack,
     game_state::GameStatus,
@@ -15,6 +18,14 @@ enum Route {
     #[layout(Navbar)]
     #[route("/")]
     Home {},
+    #[route("/create-server")]
+    CreateServer {},
+    #[route("/lobby-page")]
+    LobbyPage {},
+    #[route("/start-game")]
+    StartGame {},
+    #[route("/load-game")]
+    LoadGame {},
     #[route("/ongoing-games")]
     OngoingGames {},
 }
@@ -23,6 +34,8 @@ const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 fn main() {
+    // Init logger
+    println!("starting app");
     dioxus::launch(App);
 }
 
@@ -123,49 +136,43 @@ enum ButtonStatus {
 fn Home() -> Element {
     rsx! {
         div { class: "home-container",
-            if CURRENT_PAGE.cloned() == PageStatus::HomePage {
-                h1 { "Welcome to the RPG game!" }
-                button {
-                    onclick: move |_| async move {
-                        *CURRENT_PAGE.write() = PageStatus::NewGame;
-                    },
-                    "NEW GAME"
-                }
-                button {
-                    onclick: move |_| async move {
-                        *CURRENT_PAGE.write() = PageStatus::LoadGame;
-                    },
-                    "LOAD GAME"
-                }
-                button {
-                    onclick: move |_| async move {
-                        // display other page
-                        // add watcher on Games path dir
-                        // list of buttons
-                        Route::OngoingGames{};
-                    },
-                    "ONGOING GAMES"
-                }
+        h1 { "Welcome to the RPG game!" }
+            ButtonLink {
+                target: Route::CreateServer{}.into(),
+                name: "Create Server".to_string(),
+            }
+            ButtonLink {
+                target: Route::OngoingGames {}.into(),
+                name: "Servers available".to_string(),
             }
         }
-        if CURRENT_PAGE.cloned() == PageStatus::NewGame {
-            NewGame {}
+    }
+}
+
+/// CreateServer page
+#[component]
+fn CreateServer() -> Element {
+    rsx! {
+        div { class: "home-container",
+            ButtonLink {
+                target: Route::LobbyPage{}.into(),
+                name: "New Game".to_string(),
+            }
+            ButtonLink {
+                target: Route::LoadGame {}.into(),
+                name: "Load Game".to_string(),
+            }
         }
     }
 }
 
 /// New game
 #[component]
-fn NewGame() -> Element {
+fn StartGame() -> Element {
     let mut state = use_signal(|| ButtonStatus::StartGame);
     let mut ready_to_start = use_signal(|| true);
     let _ = use_resource(move || async move {
         if state() == ButtonStatus::StartGame {
-            match application::try_new().await {
-                Ok(app) => *APP.write() = app,
-                Err(_) => println!("no app"),
-            }
-
             APP.write().game_manager.start_game();
             let path = APP.write().game_manager.game_paths.clone();
             match application::start_game(path).await {
@@ -198,6 +205,71 @@ fn NewGame() -> Element {
             GameBoard { game_status: state }
         } else if state() == ButtonStatus::StartGame && !ready_to_start() {
             h4 { "Loading..." }
+        }
+    }
+}
+
+#[component]
+fn LoadGame() -> Element {
+    rsx! {
+        div { class: "load-game-container",
+            h4 { "Load Game" }
+            // Placeholder for load game functionality
+            // This could be a list of saved games to choose from
+            // and a button to load the selected game.
+            load_game_page::LoadGame_page {}
+        }
+    }
+}
+
+#[component]
+fn LobbyPage() -> Element {
+    let items = vec!["Apple", "Banana", "Cherry"];
+    let mut active_button: Signal<i64> = use_signal(|| -1);
+
+    // get_game_list
+    let games_list = use_resource(move || async move {
+        match application::try_new().await {
+            Ok(app) => *APP.write() = app,
+            Err(_) => println!("no app"),
+        }
+        let path_dir = APP.write().game_manager.game_paths.clone();
+        match application::get_game_list(path_dir.games_dir).await {
+            Ok(games) => {
+                /* for game in &games {
+                    println!("Game: {}", game.to_string_lossy());
+                } */
+                games
+            }
+            Err(e) => {
+                println!("Error fetching game list: {}", e);
+                vec![]
+            }
+        }
+    });
+    let games_list = match games_list() {
+        Some(games) => games,
+        _ => Vec::new(),
+    };
+
+    rsx! {
+        div { class: "home-container",
+            h4 { "LobbyPage" }
+            for (index, i) in games_list.iter().enumerate() {
+                    button {
+                        class: "button-lobby-list",
+                        disabled: active_button() == index as i64,
+                        onclick: move |_| async move {
+                            active_button.set(index as i64)
+                        },
+                        "{i.clone().to_string_lossy()}"
+                    }
+                }
+           button {
+                        onclick: move |_| async move {
+                        },
+                        "Start Game"
+                    }
         }
     }
 }
@@ -308,5 +380,14 @@ fn SaveButton() -> Element {
 fn OngoingGames() -> Element {
     rsx! {
         div { "ongoinggames" }
+    }
+}
+
+#[component]
+fn ButtonLink(target: NavigationTarget, name: String) -> Element {
+    rsx! {
+        div { class: "button-link",
+            Link { class: "header-text", to: target, "{name}" }
+        }
     }
 }
