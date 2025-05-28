@@ -284,4 +284,20 @@ button:active {
   display: flex;
   flex-direction: column; /* empile les éléments verticalement */
   align-items: center;    /* centre horizontalement */
+  gap: 20px; /* espace entre les éléments */
+}
+
+.button-link {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #1a73e8;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.button-link:hover {
+  background-color: #1669c1;
 }
