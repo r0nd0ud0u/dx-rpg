@@ -136,9 +136,9 @@ enum ButtonStatus {
 fn Home() -> Element {
     rsx! {
         div { class: "home-container",
-        h1 { "Welcome to the RPG game!" }
+            h1 { "Welcome to the RPG game!" }
             ButtonLink {
-                target: Route::CreateServer{}.into(),
+                target: Route::CreateServer {}.into(),
                 name: "Create Server".to_string(),
             }
             ButtonLink {
@@ -155,7 +155,7 @@ fn CreateServer() -> Element {
     rsx! {
         div { class: "home-container",
             ButtonLink {
-                target: Route::LobbyPage{}.into(),
+                target: Route::LobbyPage {}.into(),
                 name: "New Game".to_string(),
             }
             ButtonLink {
@@ -224,7 +224,6 @@ fn LoadGame() -> Element {
 
 #[component]
 fn LobbyPage() -> Element {
-    let items = vec!["Apple", "Banana", "Cherry"];
     let mut active_button: Signal<i64> = use_signal(|| -1);
 
     // get_game_list
@@ -236,9 +235,9 @@ fn LobbyPage() -> Element {
         let path_dir = APP.write().game_manager.game_paths.clone();
         match application::get_game_list(path_dir.games_dir).await {
             Ok(games) => {
-                /* for game in &games {
+                for game in &games {
                     println!("Game: {}", game.to_string_lossy());
-                } */
+                }
                 games
             }
             Err(e) => {
@@ -255,21 +254,15 @@ fn LobbyPage() -> Element {
     rsx! {
         div { class: "home-container",
             h4 { "LobbyPage" }
-            for (index, i) in games_list.iter().enumerate() {
-                    button {
-                        class: "button-lobby-list",
-                        disabled: active_button() == index as i64,
-                        onclick: move |_| async move {
-                            active_button.set(index as i64)
-                        },
-                        "{i.clone().to_string_lossy()}"
-                    }
+            for (index , i) in games_list.iter().enumerate() {
+                button {
+                    class: "button-lobby-list",
+                    disabled: active_button() == index as i64,
+                    onclick: move |_| async move { active_button.set(index as i64) },
+                    "{i.clone().to_string_lossy()}"
                 }
-           button {
-                        onclick: move |_| async move {
-                        },
-                        "Start Game"
-                    }
+            }
+            button { onclick: move |_| async move {}, "Start Game" }
         }
     }
 }

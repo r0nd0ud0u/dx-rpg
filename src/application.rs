@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus::{prelude::server, prelude::ServerFnError};
 use lib_rpg::game_manager::{GameManager, GamePaths};
-use lib_rpg::utils::list_files_in_dir;
+use lib_rpg::utils::list_dirs_in_dir;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fs;
@@ -58,7 +58,7 @@ pub async fn sleep_from_millis(millis: u64) -> Result<(), ServerFnError> {
 #[server]
 pub async fn get_game_list(game_dir_path: PathBuf) -> Result<Vec<PathBuf>, ServerFnError> {
     println!("Fetching game list from: {:?}", game_dir_path);
-    let games_list = list_files_in_dir(&game_dir_path)?;
+    let games_list = list_dirs_in_dir(&game_dir_path)?;
     println!("List games: {:?}", games_list);
     Ok(games_list)
 }
