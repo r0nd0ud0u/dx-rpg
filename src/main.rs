@@ -1,10 +1,9 @@
 use dioxus::prelude::*;
 use dioxus_html::g;
 use dx_rpg::{
-    application,
+    application::{self, log_debug},
     character_page::{self, AttackList},
     common::{PageStatus, APP, CURRENT_PAGE},
-    load_game_page,
 };
 use indexmap::map::IndexedEntry;
 use lib_rpg::{
@@ -172,12 +171,13 @@ fn StartGame() -> Element {
     let mut state = use_signal(|| ButtonStatus::StartGame);
     let mut ready_to_start = use_signal(|| true);
     let _ = use_resource(move || async move {
-        if state() == ButtonStatus::StartGame {
-            APP.write().game_manager.start_game();
+
+        if state() == ButtonStatus::StartGame {     
+            APP.write().game_manager.start_new_game();
             let path = APP.write().game_manager.game_paths.clone();
             match application::start_game(path).await {
-                Ok(_) => println!("start app"),
-                Err(_) => println!("no app"),
+                Ok(_) => println!("start game"),
+                Err(_) => println!("no start game"),
             }
             let _ = APP.write().game_manager.start_new_turn();
             ready_to_start.set(true);
@@ -211,21 +211,8 @@ fn StartGame() -> Element {
 
 #[component]
 fn LoadGame() -> Element {
-    rsx! {
-        div { class: "load-game-container",
-            h4 { "Load Game" }
-            // Placeholder for load game functionality
-            // This could be a list of saved games to choose from
-            // and a button to load the selected game.
-            load_game_page::LoadGame_page {}
-        }
-    }
-}
-
-#[component]
-fn LobbyPage() -> Element {
     let mut active_button: Signal<i64> = use_signal(|| -1);
-
+    let navigator = use_navigator();
     // get_game_list
     let games_list = use_resource(move || async move {
         match application::try_new().await {
@@ -262,7 +249,48 @@ fn LobbyPage() -> Element {
                     "{i.clone().to_string_lossy()}"
                 }
             }
-            button { onclick: move |_| async move {}, "Start Game" }
+            button {
+                onclick: move |_| {
+                    let cur_game = games_list.get(active_button() as usize).unwrap().to_owned();
+                    async move {
+                        log_debug(format!("loading game: {}", cur_game.clone().to_string_lossy()));
+                        let gm = match application::get_gamemanager_by_game_dir(cur_game.clone()).await {
+                            Ok(gm) => gm,
+                            Err(e) => {
+                                println!("Error fetching game manager: {}", e);
+                                return;
+                            }
+                        };
+                        APP.write().game_manager = gm;
+                        navigator
+                            .push(Route::StartGame {
+
+                            });
+                    }
+                },
+                "Start Game"
+            }
+        }
+    }
+}
+
+#[component]
+fn LobbyPage() -> Element {
+    let _ = use_resource(move || async move{
+        match application::try_new().await {
+            Ok(app) => *APP.write() = app,
+            Err(_) => println!("no app"),
+        }
+    });
+    rsx! {
+        div { class: "home-container",
+            h4 { "LobbyPage" }
+            ButtonLink {
+                target: Route::StartGame {
+                }
+                    .into(),
+                name: "Start Game".to_string(),
+            }
         }
     }
 }
@@ -315,53 +343,29 @@ fn ResultAtkText(ra: Signal<ResultLaunchAttack>) -> Element {
 fn SaveButton() -> Element {
     rsx! {
         button {
-            onclick: move |_| async move {
-                for c in &APP.read().game_manager.pm.active_heroes {
+            onclick: move |_| {
+                let gm = APP.read().game_manager.clone();
+                async move {
+                    println!("Saving game state...");
                     let path = format!(
-                        "{}/{}.json",
-                        &APP.read().game_manager.game_paths.characters.to_string_lossy(),
-                        &c.name,
+                        "{}",
+                        &APP
+                            .read()
+                            .game_manager
+                            .game_paths
+                            .current_game_dir
+                            .join("game_manager.json")
+                            .to_string_lossy(),
                     );
                     match application::save(
                             path.to_owned(),
-                            serde_json::to_string_pretty(&c).unwrap(),
+                            serde_json::to_string_pretty(&gm).unwrap(),
                         )
                         .await
                     {
                         Ok(()) => println!("save"),
                         Err(e) => println!("{}", e),
                     }
-                }
-                for b in &APP.read().game_manager.pm.active_bosses {
-                    let path = format!(
-                        "{}/{}.json",
-                        &APP.read().game_manager.game_paths.characters.to_string_lossy(),
-                        &b.name,
-                    );
-                    match application::save(
-                            path.to_owned(),
-                            serde_json::to_string_pretty(&b).unwrap(),
-                        )
-                        .await
-                    {
-                        Ok(()) => println!("save"),
-                        Err(e) => println!("{}", e),
-                    }
-                }
-                let path = format!(
-                    "{}/{}.json",
-                    &APP.read().game_manager.game_paths.game_state.to_string_lossy(),
-                    "gamestate",
-                );
-                match application::save(
-                        path.to_owned(),
-                        serde_json::to_string_pretty(&APP.read().game_manager.game_state)
-                            .unwrap(),
-                    )
-                    .await
-                {
-                    Ok(()) => println!("save"),
-                    Err(e) => println!("{}", e),
                 }
             },
             "Save"

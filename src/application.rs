@@ -1,11 +1,15 @@
 use dioxus::prelude::*;
 use dioxus::{prelude::server, prelude::ServerFnError};
+use lib_rpg::character::Character;
+use lib_rpg::common::paths_const::OFFLINE_GAMESTATE;
 use lib_rpg::game_manager::{GameManager, GamePaths};
-use lib_rpg::utils::list_dirs_in_dir;
+use lib_rpg::game_state::GameState;
+use lib_rpg::players_manager::PlayerManager;
+use lib_rpg::utils::{self, list_dirs_in_dir};
 use serde::Deserialize;
 use serde::Serialize;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use crate::common::APP;
@@ -61,4 +65,24 @@ pub async fn get_game_list(game_dir_path: PathBuf) -> Result<Vec<PathBuf>, Serve
     let games_list = list_dirs_in_dir(&game_dir_path)?;
     println!("List games: {:?}", games_list);
     Ok(games_list)
+}
+
+#[server]
+pub async fn log_debug(message: String) -> Result<(), ServerFnError> {
+    println!("DEBUG: {}", message);
+    Ok(())
+}
+
+#[server]
+pub async fn get_gamemanager_by_game_dir(
+    game_dir_path: PathBuf,
+) -> Result<GameManager, ServerFnError> {
+    let game_manager_file = game_dir_path.join(Path::new("game_manager.json"));
+    if let Ok(value) = utils::read_from_json::<_, GameManager>(&game_manager_file) {
+        Ok(value)
+    } else {
+        Err(ServerFnError::Request(
+            "Failed to read game state".to_string(),
+        ))
+    }
 }
