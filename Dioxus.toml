@@ -3,6 +3,10 @@
 # App (Project) Name
 name = "dx-rpg"
 
+# Dioxus App Default Platform
+# web, desktop, fullstack
+default_platform = "fullstack"
+
 # resource (assets) file folder
 asset_dir = "assets"
 
@@ -10,6 +14,17 @@ asset_dir = "assets"
 
 # HTML title tag content
 title = "dx-rpg"
+
+[web.watcher]
+
+# when watcher trigger, regenerate the `index.html`
+reload_html = true
+
+# which files or dirs will be watcher monitoring
+watch_path = ["src", "assets"]
+
+# Javascript code file
+script = []
 
 # include `assets` in web platform
 [web.resource]
@@ -22,3 +37,6 @@ script = []
 # Javascript code file
 # serve: [dev-server] only
 script = []
+
+[bundle]
+resources = ["assets/*"]

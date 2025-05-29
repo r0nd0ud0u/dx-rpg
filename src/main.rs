@@ -1,9 +1,11 @@
 use dioxus::prelude::*;
+use dioxus_html::g;
 use dx_rpg::{
-    application,
+    application::{self, log_debug},
     character_page::{self, AttackList},
-    common::APP,
+    common::{PageStatus, APP, CURRENT_PAGE},
 };
+use indexmap::map::IndexedEntry;
 use lib_rpg::{
     attack_type::AttackType, effect::EffectOutcome, game_manager::ResultLaunchAttack,
     game_state::GameStatus,
@@ -15,12 +17,24 @@ enum Route {
     #[layout(Navbar)]
     #[route("/")]
     Home {},
+    #[route("/create-server")]
+    CreateServer {},
+    #[route("/lobby-page")]
+    LobbyPage {},
+    #[route("/start-game")]
+    StartGame {},
+    #[route("/load-game")]
+    LoadGame {},
+    #[route("/ongoing-games")]
+    OngoingGames {},
 }
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 fn main() {
+    // Init logger
+    println!("starting app");
     dioxus::launch(App);
 }
 
@@ -116,58 +130,53 @@ enum ButtonStatus {
     ReplayGame,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-enum PageStatus {
-    HomePage = 0,
-    NewGame,
-    LoadGame,
-}
-
 /// Home page
 #[component]
 fn Home() -> Element {
-    let mut state = use_signal(|| PageStatus::HomePage);
     rsx! {
         div { class: "home-container",
-            if state() == PageStatus::HomePage {
-                h1 { "Welcome to the RPG game!" }
-                button {
-                    onclick: move |_| async move {
-                        state.set(PageStatus::NewGame);
-                    },
-                    "NEW GAME"
-                }
-                button {
-                    onclick: move |_| async move {
-                        state.set(PageStatus::LoadGame);
-                    },
-                    "LOAD GAME"
-                }
+            h1 { "Welcome to the RPG game!" }
+            ButtonLink {
+                target: Route::CreateServer {}.into(),
+                name: "Create Server".to_string(),
+            }
+            ButtonLink {
+                target: Route::OngoingGames {}.into(),
+                name: "Servers available".to_string(),
             }
         }
-        if state() == PageStatus::NewGame {
-            NewGame {}
+    }
+}
+
+/// CreateServer page
+#[component]
+fn CreateServer() -> Element {
+    rsx! {
+        div { class: "home-container",
+            ButtonLink {
+                target: Route::LobbyPage {}.into(),
+                name: "New Game".to_string(),
+            }
+            ButtonLink {
+                target: Route::LoadGame {}.into(),
+                name: "Load Game".to_string(),
+            }
         }
     }
 }
 
 /// New game
 #[component]
-fn NewGame() -> Element {
+fn StartGame() -> Element {
     let mut state = use_signal(|| ButtonStatus::StartGame);
     let mut ready_to_start = use_signal(|| true);
     let _ = use_resource(move || async move {
         if state() == ButtonStatus::StartGame {
-            match application::try_new().await {
-                Ok(app) => *APP.write() = app,
-                Err(_) => println!("no app"),
-            }
-
-            APP.write().game_manager.start_game();
+            APP.write().game_manager.start_new_game();
             let path = APP.write().game_manager.game_paths.clone();
             match application::start_game(path).await {
-                Ok(_) => println!("start app"),
-                Err(_) => println!("no app"),
+                Ok(_) => println!("start game"),
+                Err(_) => println!("no start game"),
             }
             let _ = APP.write().game_manager.start_new_turn();
             ready_to_start.set(true);
@@ -195,6 +204,92 @@ fn NewGame() -> Element {
             GameBoard { game_status: state }
         } else if state() == ButtonStatus::StartGame && !ready_to_start() {
             h4 { "Loading..." }
+        }
+    }
+}
+
+#[component]
+fn LoadGame() -> Element {
+    let mut active_button: Signal<i64> = use_signal(|| -1);
+    let navigator = use_navigator();
+    // get_game_list
+    let games_list = use_resource(move || async move {
+        match application::try_new().await {
+            Ok(app) => *APP.write() = app,
+            Err(_) => println!("no app"),
+        }
+        let path_dir = APP.write().game_manager.game_paths.clone();
+        match application::get_game_list(path_dir.games_dir).await {
+            Ok(games) => {
+                for game in &games {
+                    println!("Game: {}", game.to_string_lossy());
+                }
+                games
+            }
+            Err(e) => {
+                println!("Error fetching game list: {}", e);
+                vec![]
+            }
+        }
+    });
+    let games_list = match games_list() {
+        Some(games) => games,
+        _ => Vec::new(),
+    };
+
+    rsx! {
+        div { class: "home-container",
+            h4 { "LobbyPage" }
+            for (index , i) in games_list.iter().enumerate() {
+                button {
+                    class: "button-lobby-list",
+                    disabled: active_button() == index as i64,
+                    onclick: move |_| async move { active_button.set(index as i64) },
+                    "{i.clone().to_string_lossy()}"
+                }
+            }
+            button {
+                onclick: move |_| {
+                    let cur_game = games_list.get(active_button() as usize).unwrap().to_owned();
+                    async move {
+                        log_debug(format!("loading game: {}", cur_game.clone().to_string_lossy()));
+                        let gm = match application::get_gamemanager_by_game_dir(cur_game.clone()).await {
+                            Ok(gm) => gm,
+                            Err(e) => {
+                                println!("Error fetching game manager: {}", e);
+                                return;
+                            }
+                        };
+                        APP.write().game_manager = gm;
+                        navigator
+                            .push(Route::StartGame {
+
+                            });
+                    }
+                },
+                "Start Game"
+            }
+        }
+    }
+}
+
+#[component]
+fn LobbyPage() -> Element {
+    let _ = use_resource(move || async move {
+        match application::try_new().await {
+            Ok(app) => *APP.write() = app,
+            Err(_) => println!("no app"),
+        }
+    });
+    rsx! {
+        div { class: "home-container",
+            h4 { "LobbyPage" }
+            ButtonLink {
+                target: Route::StartGame {
+                }
+                    .into(),
+                name: "Start Game".to_string(),
+            }
         }
     }
 }
@@ -247,56 +342,48 @@ fn ResultAtkText(ra: Signal<ResultLaunchAttack>) -> Element {
 fn SaveButton() -> Element {
     rsx! {
         button {
-            onclick: move |_| async move {
-                for c in &APP.read().game_manager.pm.active_heroes {
+            onclick: move |_| {
+                let gm = APP.read().game_manager.clone();
+                async move {
+                    println!("Saving game state...");
                     let path = format!(
-                        "{}/{}.json",
-                        &APP.read().game_manager.game_paths.characters.to_string_lossy(),
-                        &c.name,
+                        "{}",
+                        &APP
+                            .read()
+                            .game_manager
+                            .game_paths
+                            .current_game_dir
+                            .join("game_manager.json")
+                            .to_string_lossy(),
                     );
                     match application::save(
                             path.to_owned(),
-                            serde_json::to_string_pretty(&c).unwrap(),
+                            serde_json::to_string_pretty(&gm).unwrap(),
                         )
                         .await
                     {
                         Ok(()) => println!("save"),
                         Err(e) => println!("{}", e),
                     }
-                }
-                for b in &APP.read().game_manager.pm.active_bosses {
-                    let path = format!(
-                        "{}/{}.json",
-                        &APP.read().game_manager.game_paths.characters.to_string_lossy(),
-                        &b.name,
-                    );
-                    match application::save(
-                            path.to_owned(),
-                            serde_json::to_string_pretty(&b).unwrap(),
-                        )
-                        .await
-                    {
-                        Ok(()) => println!("save"),
-                        Err(e) => println!("{}", e),
-                    }
-                }
-                let path = format!(
-                    "{}/{}.json",
-                    &APP.read().game_manager.game_paths.game_state.to_string_lossy(),
-                    "gamestate",
-                );
-                match application::save(
-                        path.to_owned(),
-                        serde_json::to_string_pretty(&APP.read().game_manager.game_state)
-                            .unwrap(),
-                    )
-                    .await
-                {
-                    Ok(()) => println!("save"),
-                    Err(e) => println!("{}", e),
                 }
             },
             "Save"
+        }
+    }
+}
+
+#[component]
+fn OngoingGames() -> Element {
+    rsx! {
+        div { "ongoinggames" }
+    }
+}
+
+#[component]
+fn ButtonLink(target: NavigationTarget, name: String) -> Element {
+    rsx! {
+        div { class: "button-link",
+            Link { class: "header-text", to: target, "{name}" }
         }
     }
 }
