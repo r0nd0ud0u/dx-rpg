@@ -1,11 +1,9 @@
 use dioxus::prelude::*;
-use dioxus_html::g;
 use dx_rpg::{
     application::{self, log_debug},
     character_page::{self, AttackList},
-    common::{PageStatus, APP, CURRENT_PAGE},
+    common::APP,
 };
-use indexmap::map::IndexedEntry;
 use lib_rpg::{
     attack_type::AttackType, effect::EffectOutcome, game_manager::ResultLaunchAttack,
     game_state::GameStatus,
@@ -232,10 +230,7 @@ fn LoadGame() -> Element {
             }
         }
     });
-    let games_list = match games_list() {
-        Some(games) => games,
-        _ => Vec::new(),
-    };
+    let games_list = games_list().unwrap_or_default();
 
     rsx! {
         div { class: "home-container",
@@ -252,8 +247,13 @@ fn LoadGame() -> Element {
                 onclick: move |_| {
                     let cur_game = games_list.get(active_button() as usize).unwrap().to_owned();
                     async move {
-                        log_debug(format!("loading game: {}", cur_game.clone().to_string_lossy()));
-                        let gm = match application::get_gamemanager_by_game_dir(cur_game.clone()).await {
+                        let _ = log_debug(
+                                format!("loading game: {}", cur_game.clone().to_string_lossy()),
+                            )
+                            .await;
+                        let gm = match application::get_gamemanager_by_game_dir(cur_game.clone())
+                            .await
+                        {
                             Ok(gm) => gm,
                             Err(e) => {
                                 println!("Error fetching game manager: {}", e);
@@ -261,10 +261,7 @@ fn LoadGame() -> Element {
                             }
                         };
                         APP.write().game_manager = gm;
-                        navigator
-                            .push(Route::StartGame {
-
-                            });
+                        navigator.push(Route::StartGame {});
                     }
                 },
                 "Start Game"
@@ -285,9 +282,7 @@ fn LobbyPage() -> Element {
         div { class: "home-container",
             h4 { "LobbyPage" }
             ButtonLink {
-                target: Route::StartGame {
-                }
-                    .into(),
+                target: Route::StartGame {}.into(),
                 name: "Start Game".to_string(),
             }
         }

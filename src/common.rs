@@ -5,7 +5,6 @@ use colorgrad::{CatmullRomGradient, GradientBuilder};
 use once_cell::sync::Lazy;
 
 pub static APP: GlobalSignal<Application> = Signal::global(Application::default);
-pub static CURRENT_PAGE: GlobalSignal<PageStatus> = Signal::global(|| PageStatus::HomePage);
 
 pub static ENERGY_GRAD: Lazy<CatmullRomGradient> = Lazy::new(|| {
     GradientBuilder::new()
