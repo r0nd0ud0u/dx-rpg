@@ -5,6 +5,7 @@ use colorgrad::{CatmullRomGradient, GradientBuilder};
 use once_cell::sync::Lazy;
 
 pub static APP: GlobalSignal<Application> = Signal::global(Application::default);
+pub static CURRENT_PAGE: GlobalSignal<PageStatus> = Signal::global(|| PageStatus::HomePage);
 
 pub static ENERGY_GRAD: Lazy<CatmullRomGradient> = Lazy::new(|| {
     GradientBuilder::new()
@@ -15,4 +16,11 @@ pub static ENERGY_GRAD: Lazy<CatmullRomGradient> = Lazy::new(|| {
 
 pub mod tempo_const {
     pub const AUTO_ATK: u64 = 3000;
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum PageStatus {
+    HomePage = 0,
+    NewGame,
+    LoadGame,
 }
