@@ -171,8 +171,7 @@ fn StartGame() -> Element {
     let mut state = use_signal(|| ButtonStatus::StartGame);
     let mut ready_to_start = use_signal(|| true);
     let _ = use_resource(move || async move {
-
-        if state() == ButtonStatus::StartGame {     
+        if state() == ButtonStatus::StartGame {
             APP.write().game_manager.start_new_game();
             let path = APP.write().game_manager.game_paths.clone();
             match application::start_game(path).await {
@@ -276,7 +275,7 @@ fn LoadGame() -> Element {
 
 #[component]
 fn LobbyPage() -> Element {
-    let _ = use_resource(move || async move{
+    let _ = use_resource(move || async move {
         match application::try_new().await {
             Ok(app) => *APP.write() = app,
             Err(_) => println!("no app"),
