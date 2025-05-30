@@ -16,10 +16,3 @@ pub static ENERGY_GRAD: Lazy<CatmullRomGradient> = Lazy::new(|| {
 pub mod tempo_const {
     pub const AUTO_ATK: u64 = 3000;
 }
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum PageStatus {
-    HomePage = 0,
-    NewGame,
-    LoadGame,
-}
