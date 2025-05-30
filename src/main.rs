@@ -1,3 +1,8 @@
+use std::time::Duration;
+
+use async_std::task::sleep;
+use web_time::Instant;
+
 use dioxus::prelude::*;
 use dx_rpg::{
     application::{self, log_debug},
@@ -23,8 +28,8 @@ enum Route {
     StartGamePage {},
     #[route("/load-game")]
     LoadGame {},
-    #[route("/ongoing-games")]
-    OngoingGames {},
+    #[route("/current-game")]
+    JoinOngoingGame {},
 }
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -55,7 +60,76 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
     let atk_menu_display = use_signal(|| false);
     let mut resultAttack = use_signal(ResultLaunchAttack::default);
     let autoResultAttack = use_signal(ResultLaunchAttack::default);
+    let mut write_game_manager = use_signal(|| false);
+    let mut reload_app = use_signal(|| false);
+    let mut millis = use_signal(|| 0);
+    use_future(move ||
+        {
+            async move {
+        // Save our initial time
+        let start = Instant::now();
+        loop {
+        // always sleep at start of loop
+        sleep(std::time::Duration::from_millis(4000)).await;
 
+            // Update the time, using a more precise approach of getting the duration since we started the timer
+            millis.set(start.elapsed().as_millis() as i64);
+           if reload_app() {
+               write_game_manager.set(false);
+               reload_app.set(false);
+               // write the game manager to the app
+           
+           }
+           let cur_game_dir = APP.write().game_manager.game_paths.current_game_dir.clone();
+           match application::get_gamemanager_by_game_dir(cur_game_dir.clone())
+                            .await
+                        {
+                            Ok(gm) => {
+                                 APP.write().game_manager = gm
+                            },
+                            Err(e) => {
+                                println!("Error fetching game manager: {}", e)
+                            }
+                        }
+
+           
+       }
+    }
+
+    });
+    let _ = use_resource(move || async move {
+        if write_game_manager() {
+            reload_app.set(true);
+            // save the game manager state
+                let path = format!(
+                    "{}",
+                    &APP
+                        .read()
+                        .game_manager
+                        .game_paths
+                        .current_game_dir
+                        .join("game_manager.json")
+                        .to_string_lossy(),
+                );
+                match application::create_dir(
+                        APP.read().game_manager.game_paths.current_game_dir.clone(),
+                    )
+                    .await
+                {
+                    Ok(()) => println!("Directory created successfully"),
+                    Err(e) => println!("Failed to create directory: {}", e),
+                }
+                match application::save(
+                            path.to_owned(),
+                            serde_json::to_string_pretty(&APP.read().game_manager.clone()).unwrap(),
+                        )
+                        .await
+                    {
+                        Ok(()) => println!("save"),
+                        Err(e) => println!("{}", e),
+                    }
+        }
+    });
     use_effect(move || {
         if APP.read().game_manager.game_state.status == GameStatus::EndOfGame {
             game_status.set(ButtonStatus::ReplayGame);
@@ -89,6 +163,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                             resultAttack
                                 .set(APP.write().game_manager.launch_attack(current_atk().name.as_str()));
                             current_atk.set(AttackType::default());
+                            write_game_manager.set(true);
                         },
                         "launch atk"
                     }
@@ -139,8 +214,8 @@ fn Home() -> Element {
                 name: "Create Server".to_string(),
             }
             ButtonLink {
-                target: Route::OngoingGames {}.into(),
-                name: "Servers available".to_string(),
+                target: Route::JoinOngoingGame {}.into(),
+                name: "Join game".to_string(),
             }
         }
     }
@@ -227,7 +302,7 @@ fn LoadGame() -> Element {
 
     rsx! {
         div { class: "home-container",
-            h4 { "LobbyPage" }
+            h4 { "Load game" }
             for (index , i) in games_list.iter().enumerate() {
                 button {
                     class: "button-lobby-list",
@@ -254,7 +329,7 @@ fn LoadGame() -> Element {
                             }
                         };
                         APP.write().game_manager = gm;
-                        navigator.push(Route::StartGamePage {});
+                        navigator.push(Route::LobbyPage {});
                     }
                 },
                 "Start Game"
@@ -268,9 +343,70 @@ fn LobbyPage() -> Element {
     let _ = use_resource(move || async move {
         match application::try_new().await {
             Ok(app) => {
+                // init application and game manager
                 *APP.write() = app;
+                // start a new game
                 APP.write().game_manager.start_new_game();
                 let _ = APP.write().game_manager.start_new_turn();
+                // update ongoing games status
+                let all_games_dir = format!(
+                    "{}/ongoing-games.json",
+                    APP.read()
+                        .game_manager
+                        .game_paths
+                        .games_dir
+                        .to_string_lossy()
+                );
+                let mut ongoing_games =
+                    match application::read_ongoinggames_from_json(all_games_dir.clone()).await {
+                        Ok(og) => og,
+                        Err(e) => {
+                            println!("Error reading ongoing games: {}", e);
+                            application::OngoingGames::default()
+                        }
+                    };
+                // at the moment only one game is ongoing
+                ongoing_games.all_games.clear();
+                // add the current game directory to ongoing games
+                ongoing_games
+                    .all_games
+                    .push(APP.read().game_manager.game_paths.current_game_dir.clone());
+                match application::save(
+                    all_games_dir,
+                    serde_json::to_string_pretty(&ongoing_games).unwrap(),
+                )
+                .await
+                {
+                    Ok(_) => println!("Game state saved successfully"),
+                    Err(e) => println!("Failed to save game state: {}", e),
+                }
+                // save the game manager state
+                let path = format!(
+                    "{}",
+                    &APP.read()
+                        .game_manager
+                        .game_paths
+                        .current_game_dir
+                        .join("game_manager.json")
+                        .to_string_lossy(),
+                );
+                match application::create_dir(
+                    APP.read().game_manager.game_paths.current_game_dir.clone(),
+                )
+                .await
+                {
+                    Ok(()) => println!("Directory created successfully"),
+                    Err(e) => println!("Failed to create directory: {}", e),
+                }
+                match application::save(
+                    path.to_owned(),
+                    serde_json::to_string_pretty(&APP.read().game_manager.clone()).unwrap(),
+                )
+                .await
+                {
+                    Ok(()) => println!("save"),
+                    Err(e) => println!("{}", e),
+                }
             }
             Err(_) => println!("no app"),
         }
@@ -373,10 +509,90 @@ fn SaveButton() -> Element {
 }
 
 #[component]
-fn OngoingGames() -> Element {
-    rsx! {
-        div { "ongoinggames" }
-    }
+fn JoinOngoingGame() -> Element {
+    let _ = use_resource(move || async move {
+        match application::try_new().await {
+            Ok(app) => {
+                *APP.write() = app;
+                APP.write().game_manager.start_new_game();
+                let _ = APP.write().game_manager.start_new_turn();
+            }
+            Err(_) => println!("no app"),
+        }
+    });
+    let mut millis = use_signal(|| 0);
+    let mut ongoing_games_sig = use_signal(|| application::OngoingGames::default());
+    use_future(move ||
+        {
+            async move {
+        // Save our initial time
+        let start = Instant::now();
+        loop {
+            // always sleep at start of loop
+            sleep(std::time::Duration::from_millis(1000)).await;
+            // Update the time, using a more precise approach of getting the duration since we started the timer
+            millis.set(start.elapsed().as_millis() as i64);
+            let mut ongoing_games = application::OngoingGames::default();
+        // update ongoing games status
+        let all_games_dir = format!(
+            "{}/ongoing-games.json",
+            APP.write()
+                .game_manager
+                .game_paths
+                .games_dir
+                .to_string_lossy()
+        );
+        ongoing_games = match application::read_ongoinggames_from_json(all_games_dir.clone()).await
+        {
+            Ok(og) => {
+                application::log_debug(
+                    format!("ongoing games: {:?}", og.all_games),
+                ).await.unwrap();
+                if !og.all_games.is_empty() {
+                    match application::get_gamemanager_by_game_dir(og.all_games[0].clone())
+                    .await
+                {
+                    Ok(gm) => APP.write().game_manager = gm,
+                    Err(e) => {
+                        println!("Error fetching game manager: {}", e)
+                    }
+                }
+                og
+                } else {
+                    println!("No ongoing games found");
+                    application::OngoingGames::default()
+                }
+                
+                
+            }
+            Err(e) => {
+                println!("Error reading ongoing games: {}", e);
+                application::log_debug(
+                    "Error reading ongoing games".to_string(),
+                ).await.unwrap();
+                application::OngoingGames::default()
+            }
+        };
+        ongoing_games_sig.set(ongoing_games.clone());
+           }
+       }
+    });
+    if !ongoing_games_sig().all_games.is_empty() {
+            rsx! {
+                div { class: "ongoing-games-container",
+                    h4 { "Ongoing Games" }
+                    div { class: "ongoing-game-item",
+                        Link { to: Route::StartGamePage {}, "Join Game" }
+                        "{ongoing_games_sig().all_games[0].to_string_lossy()}"
+                    }
+                }
+            }
+        }
+        else{
+            rsx! {
+                div { "No loading ongoing games" }
+            }
+        }
 }
 
 #[component]

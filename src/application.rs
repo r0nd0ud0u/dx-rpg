@@ -81,3 +81,12 @@ pub async fn get_gamemanager_by_game_dir(
 pub async fn delete_ongoing_game_status() -> Result<(), ServerFnError> {
     Ok(())
 }
+
+#[server]
+pub async fn read_ongoinggames_from_json(path: String) -> Result<OngoingGames, ServerFnError> {
+    if let Ok(value) = utils::read_from_json::<_, OngoingGames>(&path) {
+        Ok(value)
+    } else {
+        Err(ServerFnError::Request(format!("Unknown file: {:?}", path)))
+    }
+}
