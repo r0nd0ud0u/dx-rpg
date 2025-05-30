@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use dioxus::{prelude::server, prelude::ServerFnError};
-use lib_rpg::game_manager::{GameManager, GamePaths};
+use lib_rpg::game_manager::GameManager;
 use lib_rpg::utils::{self, list_dirs_in_dir};
 use serde::Deserialize;
 use serde::Serialize;
@@ -11,6 +11,11 @@ use std::time::Duration;
 #[derive(Default, Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Application {
     pub game_manager: GameManager,
+}
+
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct OngoingGames {
+    pub all_games: Vec<PathBuf>,
 }
 
 #[server]
@@ -30,17 +35,8 @@ pub async fn save(path: String, value: String) -> Result<(), ServerFnError> {
 }
 
 #[server]
-pub async fn start_game(paths: GamePaths) -> Result<(), ServerFnError> {
-    if let Err(e) = fs::create_dir_all(paths.root) {
-        eprintln!("Failed to create directory: {}", e);
-    }
-    if let Err(e) = fs::create_dir_all(paths.characters) {
-        eprintln!("Failed to create directory: {}", e);
-    }
-    if let Err(e) = fs::create_dir_all(paths.game_state) {
-        eprintln!("Failed to create directory: {}", e);
-    }
-    if let Err(e) = fs::create_dir_all(paths.loot) {
+pub async fn create_dir(path: PathBuf) -> Result<(), ServerFnError> {
+    if let Err(e) = fs::create_dir_all(path) {
         eprintln!("Failed to create directory: {}", e);
     }
     Ok(())
@@ -79,4 +75,9 @@ pub async fn get_gamemanager_by_game_dir(
             "Failed to read game state".to_string(),
         ))
     }
+}
+
+#[server]
+pub async fn delete_ongoing_game_status() -> Result<(), ServerFnError> {
+    Ok(())
 }
