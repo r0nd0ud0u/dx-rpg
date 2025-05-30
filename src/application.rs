@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use dioxus::{prelude::server, prelude::ServerFnError};
-use lib_rpg::game_manager::{GameManager, GamePaths};
+use lib_rpg::game_manager::GameManager;
 use lib_rpg::utils::{self, list_dirs_in_dir};
 use serde::Deserialize;
 use serde::Serialize;

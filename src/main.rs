@@ -20,7 +20,7 @@ enum Route {
     #[route("/lobby-page")]
     LobbyPage {},
     #[route("/start-game")]
-    StartGamePage {is_new_game: bool},
+    StartGamePage {},
     #[route("/load-game")]
     LoadGame {},
     #[route("/ongoing-games")]
@@ -165,14 +165,11 @@ fn CreateServer() -> Element {
 
 /// New game
 #[component]
-fn StartGamePage(is_new_game: bool) -> Element {
+fn StartGamePage() -> Element {
     let mut state = use_signal(|| ButtonStatus::StartGame);
     let mut ready_to_start = use_signal(|| true);
-    let mut is_new_game_sig = use_signal(|| is_new_game);
     let _ = use_resource(move || async move {
-        if state() == ButtonStatus::StartGame && is_new_game_sig() {
-            APP.write().game_manager.start_new_game();
-            let _ = APP.write().game_manager.start_new_turn();
+        if state() == ButtonStatus::StartGame {
             ready_to_start.set(true);
         }
     });
@@ -257,7 +254,7 @@ fn LoadGame() -> Element {
                             }
                         };
                         APP.write().game_manager = gm;
-                        navigator.push(Route::StartGamePage {is_new_game: false});
+                        navigator.push(Route::StartGamePage {});
                     }
                 },
                 "Start Game"
@@ -270,16 +267,19 @@ fn LoadGame() -> Element {
 fn LobbyPage() -> Element {
     let _ = use_resource(move || async move {
         match application::try_new().await {
-            Ok(app) => *APP.write() = app,
+            Ok(app) => {
+                *APP.write() = app;
+                APP.write().game_manager.start_new_game();
+                let _ = APP.write().game_manager.start_new_turn();
+            }
             Err(_) => println!("no app"),
         }
-        
     });
     rsx! {
         div { class: "home-container",
             h4 { "LobbyPage" }
             ButtonLink {
-                target: Route::StartGamePage {is_new_game: true}.into(),
+                target: Route::StartGamePage {}.into(),
                 name: "Start Game".to_string(),
             }
         }
@@ -353,8 +353,8 @@ fn SaveButton() -> Element {
                         )
                         .await
                     {
-                        Ok(_) => println!("create game dir"),
-                        Err(_) => println!("create game dir"),
+                        Ok(()) => println!("Directory created successfully"),
+                        Err(e) => println!("Failed to create directory: {}", e),
                     }
                     match application::save(
                             path.to_owned(),
