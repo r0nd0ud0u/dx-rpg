@@ -99,6 +99,13 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         Ok(()) => println!("save"),
                         Err(e) => println!("{}", e),
                     }
+    /*                 let cur_game_dir = APP.write().game_manager.game_paths.current_game_dir.clone();
+                    match application::get_gamemanager_by_game_dir(cur_game_dir.clone()).await {
+                        Ok(gm) => APP.write().game_manager = gm,
+                        Err(e) => {
+                            println!("Error fetching game manager: {}", e)
+                        }
+                    } */
                 } else if reload_app() {
                     // write the game manager to the app
                     reload_app.set(false);
@@ -114,8 +121,6 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
         }
     });
 
-    // Update game manager json file when write_game_manager is set to true
-    let _ = use_resource(move || async move {});
     // Check if the game is at the end of the game and set the game status to ReplayGame
     use_effect(move || {
         if APP.read().game_manager.game_state.status == GameStatus::EndOfGame {
@@ -137,6 +142,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         atk_menu_display,
                         result_auto_atk: resultAttack,
                         output_auto_atk: autoResultAttack,
+                        write_game_manager,
                     }
                 }
             }
@@ -181,6 +187,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         atk_menu_display,
                         result_auto_atk: resultAttack,
                         output_auto_atk: autoResultAttack,
+                        write_game_manager,
                     }
                 }
             }

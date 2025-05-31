@@ -24,11 +24,12 @@ pub const PATH_IMG: &str = "assets/img";
 pub fn CharacterPanel(
     c: Character,
     current_player_name: String,
-    is_auto_atk: bool,
+    is_auto_atk: ReadOnlySignal<bool>,
     selected_atk: Signal<AttackType>,
     atk_menu_display: Signal<bool>,
     result_auto_atk: Signal<ResultLaunchAttack>,
     output_auto_atk: Signal<ResultLaunchAttack>,
+    write_game_manager: Signal<bool>,
 ) -> Element {
     // if boss is dead, panel is hidden
     if c.is_dead().is_some_and(|value| value) && c.kind == CharacterType::Boss {
@@ -45,39 +46,25 @@ pub fn CharacterPanel(
         (VIGOR.to_owned(), "VP".to_owned()),
         (BERSECK.to_owned(), "BP".to_owned()),
     ]);
-    /* let _ = use_resource(use_reactive!(|(is_auto_atk,)| async move {
-        // Simulate a delay before launching the attack
-        // We manually add the resource to the dependencies list with the `use_reactive` hook
-        // Any time `is_auto_atk` changes, the resource will rerun
-        if is_auto_atk {
-            // TODO random attak from boss or pattern
-            let _ = application::sleep_from_millis(AUTO_ATK).await;
-            output_auto_atk.set(APP.write().game_manager.launch_attack("SimpleAtk"));
-            selected_atk.set(AttackType::default());
-        }
-    })); */
-    let mut auto_sig = use_signal(|| is_auto_atk);
     let mut count = use_signal(|| 3);
+    let kind = c.kind.clone();
     use_future(move || {
-        {
-            async move {
-                loop {
-                    // always sleep at start of loop
-                    sleep(std::time::Duration::from_millis(1000)).await;
-                    if auto_sig() && count() > 0 {
-                        count.set(count() - 1);
-                    }
+        async move {
+            // Simulate a delay before launching the attack
+            // We manually add the resource to the dependencies list with the `use_reactive` hook
+            // Any time `is_auto_atk` changes, the resource will rerun
+            loop {
+                // always sleep at start of loop
+                sleep(std::time::Duration::from_millis(3000)).await;
+                if is_auto_atk() {
+                    application::log_debug("Auto Attack is ON".to_string()).await.unwrap();
+                    output_auto_atk.set(APP.write().game_manager.launch_attack("SimpleAtk"));
+                    selected_atk.set(AttackType::default());
+                    write_game_manager.set(true);
                 }
             }
         }
     });
-    if is_auto_atk && count() == 0 {
-        // reset count
-        count.set(3);
-        // launch attack
-        output_auto_atk.set(APP.write().game_manager.launch_attack("SimpleAtk"));
-        selected_atk.set(AttackType::default());
-    }
 
     rsx! {
         div { class: "character", background_color: bg,
@@ -101,9 +88,9 @@ pub fn CharacterPanel(
             }
         }
         // atk button
-        if is_auto_atk {
+        if is_auto_atk() {
             button { class: "atk-button-ennemy", onclick: move |_| async move {}, "ATK On Going" }
-        } else if c.kind == CharacterType::Hero && current_player_name == c.name {
+        } else if kind == CharacterType::Hero && current_player_name == c.name {
             button {
                 class: "menu-atk-button",
                 onclick: move |_| async move {
