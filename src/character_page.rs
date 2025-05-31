@@ -1,3 +1,8 @@
+use std::time::Duration;
+
+use async_std::task::sleep;
+use web_time::Instant;
+
 use colorgrad::Gradient;
 use dioxus::prelude::*;
 use indexmap::IndexMap;
@@ -40,7 +45,7 @@ pub fn CharacterPanel(
         (VIGOR.to_owned(), "VP".to_owned()),
         (BERSECK.to_owned(), "BP".to_owned()),
     ]);
-    let _ = use_resource(use_reactive!(|(is_auto_atk,)| async move {
+    /* let _ = use_resource(use_reactive!(|(is_auto_atk,)| async move {
         // Simulate a delay before launching the attack
         // We manually add the resource to the dependencies list with the `use_reactive` hook
         // Any time `is_auto_atk` changes, the resource will rerun
@@ -50,7 +55,29 @@ pub fn CharacterPanel(
             output_auto_atk.set(APP.write().game_manager.launch_attack("SimpleAtk"));
             selected_atk.set(AttackType::default());
         }
-    }));
+    })); */
+    let mut auto_sig = use_signal(|| is_auto_atk);
+    let mut count = use_signal(|| 3);
+    use_future(move || {
+        {
+            async move {
+                loop {
+                    // always sleep at start of loop
+                    sleep(std::time::Duration::from_millis(1000)).await;
+                    if auto_sig() && count() > 0 {
+                        count.set(count() - 1);
+                    }
+                }
+            }
+        }
+    });
+    if is_auto_atk && count() == 0 {
+        // reset count
+        count.set(3);
+        // launch attack
+        output_auto_atk.set(APP.write().game_manager.launch_attack("SimpleAtk"));
+        selected_atk.set(AttackType::default());
+    }
 
     rsx! {
         div { class: "character", background_color: bg,
