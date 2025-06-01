@@ -15,7 +15,7 @@ use lib_rpg::{
 
 use crate::{
     application,
-    common::{tempo_const::AUTO_ATK, APP, ENERGY_GRAD},
+    common::{tempo_const::{AUTO_ATK_TEMPO_MS, TIMER_FUTURE_1S}, APP, ENERGY_GRAD},
 };
 
 pub const PATH_IMG: &str = "assets/img";
@@ -46,18 +46,17 @@ pub fn CharacterPanel(
         (VIGOR.to_owned(), "VP".to_owned()),
         (BERSECK.to_owned(), "BP".to_owned()),
     ]);
-    let mut count = use_signal(|| 3);
-    let kind = c.kind.clone();
     use_future(move || {
         async move {
-            // Simulate a delay before launching the attack
-            // We manually add the resource to the dependencies list with the `use_reactive` hook
-            // Any time `is_auto_atk` changes, the resource will rerun
             loop {
                 // always sleep at start of loop
-                sleep(std::time::Duration::from_millis(3000)).await;
+                sleep(std::time::Duration::from_millis(TIMER_FUTURE_1S)).await;
+                // To be done only by server 
                 if is_auto_atk() {
-                    application::log_debug("Auto Attack is ON".to_string()).await.unwrap();
+                    sleep(std::time::Duration::from_millis(AUTO_ATK_TEMPO_MS)).await;
+                    application::log_debug("Auto Attack is ON".to_string())
+                        .await
+                        .unwrap();
                     output_auto_atk.set(APP.write().game_manager.launch_attack("SimpleAtk"));
                     selected_atk.set(AttackType::default());
                     write_game_manager.set(true);
@@ -90,7 +89,7 @@ pub fn CharacterPanel(
         // atk button
         if is_auto_atk() {
             button { class: "atk-button-ennemy", onclick: move |_| async move {}, "ATK On Going" }
-        } else if kind == CharacterType::Hero && current_player_name == c.name {
+        } else if c.kind == CharacterType::Hero && current_player_name == c.name {
             button {
                 class: "menu-atk-button",
                 onclick: move |_| async move {
@@ -110,13 +109,17 @@ pub fn CharacterPanel(
         }
         // target button
         if !selected_atk().name.is_empty() {
-            CharacterTargetButton { c: c.clone(), selected_atk }
+            CharacterTargetButton { c: c.clone(), selected_atk, write_game_manager }
         }
     }
 }
 
 #[component]
-pub fn CharacterTargetButton(c: Character, selected_atk: Signal<AttackType>) -> Element {
+pub fn CharacterTargetButton(
+    c: Character,
+    selected_atk: Signal<AttackType>,
+    write_game_manager: Signal<bool>,
+) -> Element {
     let mut kind_str = "hero";
     if c.kind == CharacterType::Boss {
         kind_str = "boss";
@@ -134,10 +137,12 @@ pub fn CharacterTargetButton(c: Character, selected_atk: Signal<AttackType>) -> 
                 onclick: move |_| {
                     let new_target_name = c.name.clone();
                     async move {
+                        // maybe we should update a state and write on APP on CharacterPanel or GameBoard
                         APP.write()
                             .game_manager
                             .pm
                             .set_one_target(&new_target_name, &selected_atk().reach);
+                        write_game_manager.set(true);
                     }
                 },
                 ""
@@ -170,6 +175,7 @@ pub fn NewAtkButton(
     display_atklist_sig: Signal<bool>,
     selected_atk: Signal<AttackType>,
     launcher: Character,
+    write_game_manager: Signal<bool>,
 ) -> Element {
     rsx! {
         button {
@@ -179,9 +185,11 @@ pub fn NewAtkButton(
                 let value = attack_type.clone();
                 let l_launcher = launcher.clone();
                 async move {
+                    // TODO remonter the information to write on APP
                     APP.write().game_manager.pm.set_targeted_characters(&l_launcher, &value);
                     *display_atklist_sig.write() = false;
                     selected_atk.set(value);
+                    write_game_manager.set(true);
                 }
             },
             "{attack_type.name}"
@@ -194,6 +202,7 @@ pub fn AttackList(
     name: String,
     display_atklist_sig: Signal<bool>,
     selected_atk: Signal<AttackType>,
+    write_game_manager: Signal<bool>,
 ) -> Element {
     if let Some(c) = APP.read().game_manager.pm.get_active_character(&name) {
         rsx! {
@@ -212,6 +221,7 @@ pub fn AttackList(
                                 display_atklist_sig,
                                 selected_atk,
                                 launcher: c.clone(),
+                                write_game_manager,
                             }
                             button {
                                 class: "cost-energy-button",

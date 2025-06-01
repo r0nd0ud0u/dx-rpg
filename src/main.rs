@@ -7,7 +7,7 @@ use dioxus::prelude::*;
 use dx_rpg::{
     application::{self, log_debug},
     character_page::{self, AttackList},
-    common::APP,
+    common::{tempo_const::TIMER_FUTURE_1S, APP},
 };
 use lib_rpg::{
     attack_type::AttackType, effect::EffectOutcome, game_manager::ResultLaunchAttack,
@@ -68,7 +68,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
         async move {
             loop {
                 // always sleep at start of loop
-                sleep(std::time::Duration::from_millis(1000)).await;
+                sleep(std::time::Duration::from_millis(TIMER_FUTURE_1S)).await;
                 if !reload_app() {
                     reload_app.set(true);
                 }
@@ -99,13 +99,6 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         Ok(()) => println!("save"),
                         Err(e) => println!("{}", e),
                     }
-    /*                 let cur_game_dir = APP.write().game_manager.game_paths.current_game_dir.clone();
-                    match application::get_gamemanager_by_game_dir(cur_game_dir.clone()).await {
-                        Ok(gm) => APP.write().game_manager = gm,
-                        Err(e) => {
-                            println!("Error fetching game manager: {}", e)
-                        }
-                    } */
                 } else if reload_app() {
                     // write the game manager to the app
                     reload_app.set(false);
@@ -152,6 +145,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         name: APP.read().game_manager.pm.current_player.name.clone(),
                         display_atklist_sig: atk_menu_display,
                         selected_atk: current_atk,
+                        write_game_manager
                     }
                 } else if !current_atk().name.is_empty() {
                     button {
@@ -523,7 +517,7 @@ fn JoinOngoingGame() -> Element {
         async move {
             loop {
                 // always sleep at start of loop
-                sleep(std::time::Duration::from_millis(1000)).await;
+                sleep(std::time::Duration::from_millis(TIMER_FUTURE_1S)).await;
                 // Update the time, using a more precise approach of getting the duration since we started the timer
                 let mut ongoing_games = application::OngoingGames::default();
                 // update ongoing games status
