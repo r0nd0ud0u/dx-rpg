@@ -60,11 +60,12 @@ fn App() -> Element {
 fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
     let mut current_atk = use_signal(AttackType::default);
     let atk_menu_display = use_signal(|| false);
-    let mut resultAttack = use_signal(ResultLaunchAttack::default);
-    let autoResultAttack = use_signal(ResultLaunchAttack::default);
+    let mut result_attack = use_signal(ResultLaunchAttack::default);
+    let auto_result_attack = use_signal(ResultLaunchAttack::default);
     let mut write_game_manager = use_signal(|| false);
     let mut reload_app = use_signal(|| false);
     let mut index_auto_atk = use_signal(|| 0);
+    let mut uuid_auto_atk = use_signal(|| uuid::Uuid::new_v4().to_string());
     let mut auto_atks = use_signal(|| AutoAtks::default());
 
     // Timer every second to update the game manager by reading json file
@@ -108,7 +109,25 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     reload_app.set(false);
                     let cur_game_dir = APP.write().game_manager.game_paths.current_game_dir.clone();
                     match application::get_gamemanager_by_game_dir(cur_game_dir.clone()).await {
-                        Ok(gm) => APP.write().game_manager = gm,
+                        Ok(gm) => {
+                            // update local signals  before updating global signals
+                            // in order to update well ATK/ATK ON GOING tag
+                            if !gm.game_state.auto_atks.uuid.is_empty()
+                                && uuid_auto_atk() != gm.game_state.auto_atks.uuid
+                            {
+                                let _ = log_debug(format!(
+                                    "uuid {} != {}",
+                                    uuid_auto_atk(),
+                                    gm.game_state.auto_atks.uuid
+                                ))
+                                .await
+                                .unwrap();
+                                auto_atks.set(gm.game_state.auto_atks.clone());
+                                index_auto_atk.set(0);
+                                uuid_auto_atk.set(gm.game_state.auto_atks.uuid.clone());
+                            }
+                            APP.write().game_manager = gm
+                        }
                         Err(e) => {
                             println!("Error fetching game manager: {}", e)
                         }
@@ -137,8 +156,8 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         index_auto_atk,
                         selected_atk: current_atk,
                         atk_menu_display,
-                        result_auto_atk: resultAttack,
-                        output_auto_atk: autoResultAttack,
+                        result_auto_atk: result_attack,
+                        output_auto_atk: auto_result_attack,
                         write_game_manager,
                         auto_atks,
                     }
@@ -161,24 +180,22 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                 } else if !current_atk().name.is_empty() {
                     button {
                         onclick: move |_| async move {
-                            resultAttack
+                            result_attack
                                 .set(APP.write().game_manager.launch_attack(current_atk().name.as_str()));
                             current_atk.set(AttackType::default());
                             write_game_manager.set(true);
-                            auto_atks.set(APP.write().game_manager.game_state.auto_atks.clone());
-                            index_auto_atk.set(0);
                         },
                         "launch atk"
                     }
                 } else {
-                    if !resultAttack().outcomes.is_empty() {
+                    if !result_attack().outcomes.is_empty() {
                         div { class: "show-then-hide",
-                            ResultAtkText { ra: resultAttack }
+                            ResultAtkText { ra: result_attack }
                         }
                     }
-                    if !autoResultAttack().outcomes.is_empty() {
+                    if !auto_result_attack().outcomes.is_empty() {
                         div { class: "show-then-hide-auto",
-                            ResultAtkText { ra: autoResultAttack }
+                            ResultAtkText { ra: auto_result_attack }
                         }
                     }
                 }
@@ -192,8 +209,8 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         index_auto_atk,
                         selected_atk: current_atk,
                         atk_menu_display,
-                        result_auto_atk: resultAttack,
-                        output_auto_atk: autoResultAttack,
+                        result_auto_atk: result_attack,
+                        output_auto_atk: auto_result_attack,
                         write_game_manager,
                         auto_atks,
                     }
@@ -346,6 +363,7 @@ fn LoadGame() -> Element {
 
 #[component]
 fn LobbyPage() -> Element {
+    let mut ready_to_start = use_signal(|| false);
     let _ = use_resource(move || async move {
         match application::try_new().await {
             Ok(app) => {
@@ -413,6 +431,7 @@ fn LobbyPage() -> Element {
                     Ok(()) => println!("save"),
                     Err(e) => println!("{}", e),
                 }
+                ready_to_start.set(true);
             }
             Err(_) => println!("no app"),
         }
@@ -420,10 +439,13 @@ fn LobbyPage() -> Element {
     rsx! {
         div { class: "home-container",
             h4 { "LobbyPage" }
-            ButtonLink {
-                target: Route::StartGamePage {}.into(),
-                name: "Start Game".to_string(),
+            if ready_to_start() {
+                ButtonLink {
+                    target: Route::StartGamePage {}.into(),
+                    name: "Start Game".to_string(),
+                }
             }
+        
         }
     }
 }

@@ -1570,6 +1570,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "uuid",
  "web-time",
 ]
 
@@ -2039,8 +2040,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4567c8db10ae91089c99af84c68c38da3ec2f087c3f82960bcdbf3656b6f4d7"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi 0.11.0+wasi-snapshot-preview1",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -2792,7 +2795,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lib-rpg"
 version = "1.0.0"
-source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=84d159702f9fec779261e6a0e82c6ac1000620ff#84d159702f9fec779261e6a0e82c6ac1000620ff"
+source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=3a0cb6942a279ab0e2090e0b6b16925ad28a90c5#3a0cb6942a279ab0e2090e0b6b16925ad28a90c5"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2801,6 +2804,7 @@ dependencies = [
  "rand 0.9.1",
  "serde",
  "serde_json",
+ "uuid",
 ]
 
 [[package]]
@@ -5129,6 +5133,11 @@ name = "uuid"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "744018581f9a3454a9e15beb8a33b017183f1e7c0cd170232a2d1453b23a51c4"
+dependencies = [
+ "getrandom 0.2.15",
+ "serde",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "value-bag"
