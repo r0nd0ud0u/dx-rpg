@@ -10,8 +10,10 @@ use dx_rpg::{
     common::{tempo_const::TIMER_FUTURE_1S, APP},
 };
 use lib_rpg::{
-    attack_type::AttackType, effect::EffectOutcome, game_manager::ResultLaunchAttack,
-    game_state::GameStatus,
+    attack_type::AttackType,
+    effect::EffectOutcome,
+    game_manager::ResultLaunchAttack,
+    game_state::{AutoAtks, GameStatus},
 };
 
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -62,6 +64,8 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
     let autoResultAttack = use_signal(ResultLaunchAttack::default);
     let mut write_game_manager = use_signal(|| false);
     let mut reload_app = use_signal(|| false);
+    let mut index_auto_atk = use_signal(|| 0);
+    let mut auto_atks = use_signal(|| AutoAtks::default());
 
     // Timer every second to update the game manager by reading json file
     use_future(move || {
@@ -130,22 +134,29 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     character_page::CharacterPanel {
                         c: c.clone(),
                         current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
-                        is_auto_atk: false,
+                        index_auto_atk,
                         selected_atk: current_atk,
                         atk_menu_display,
                         result_auto_atk: resultAttack,
                         output_auto_atk: autoResultAttack,
                         write_game_manager,
+                        auto_atks,
                     }
                 }
             }
             div {
+                "{APP.read().game_manager.game_state.current_turn_nb} "
+                "{APP.read().game_manager.game_state.auto_atks.nb_auto_atk_stored}"
+                if APP.read().game_manager.game_state.auto_atks.nb_auto_atk_stored == 2 {
+                    "{APP.read().game_manager.game_state.auto_atks.result_attacks[0].launcher_name} vs {APP.read().game_manager.game_state.auto_atks.result_attacks[1].launcher_name}"
+                }
+                " {index_auto_atk()}"
                 if atk_menu_display() {
                     AttackList {
                         name: APP.read().game_manager.pm.current_player.name.clone(),
                         display_atklist_sig: atk_menu_display,
                         selected_atk: current_atk,
-                        write_game_manager
+                        write_game_manager,
                     }
                 } else if !current_atk().name.is_empty() {
                     button {
@@ -154,6 +165,8 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                                 .set(APP.write().game_manager.launch_attack(current_atk().name.as_str()));
                             current_atk.set(AttackType::default());
                             write_game_manager.set(true);
+                            auto_atks.set(APP.write().game_manager.game_state.auto_atks.clone());
+                            index_auto_atk.set(0);
                         },
                         "launch atk"
                     }
@@ -176,12 +189,13 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     character_page::CharacterPanel {
                         c: c.clone(),
                         current_player_name: "",
-                        is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
+                        index_auto_atk,
                         selected_atk: current_atk,
                         atk_menu_display,
                         result_auto_atk: resultAttack,
                         output_auto_atk: autoResultAttack,
                         write_game_manager,
+                        auto_atks,
                     }
                 }
             }

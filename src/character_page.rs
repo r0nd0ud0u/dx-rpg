@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use async_std::task::sleep;
+use dioxus_html::button::form;
 use web_time::Instant;
 
 use colorgrad::Gradient;
@@ -11,11 +12,15 @@ use lib_rpg::{
     character::{Character, CharacterType},
     common::stats_const::*,
     game_manager::ResultLaunchAttack,
+    game_state::AutoAtks,
 };
 
 use crate::{
     application,
-    common::{tempo_const::{AUTO_ATK_TEMPO_MS, TIMER_FUTURE_1S}, APP, ENERGY_GRAD},
+    common::{
+        tempo_const::{AUTO_ATK_TEMPO_MS, TIMER_FUTURE_1S},
+        APP, ENERGY_GRAD,
+    },
 };
 
 pub const PATH_IMG: &str = "assets/img";
@@ -24,12 +29,13 @@ pub const PATH_IMG: &str = "assets/img";
 pub fn CharacterPanel(
     c: Character,
     current_player_name: String,
-    is_auto_atk: ReadOnlySignal<bool>,
+    index_auto_atk: Signal<i64>,
     selected_atk: Signal<AttackType>,
     atk_menu_display: Signal<bool>,
     result_auto_atk: Signal<ResultLaunchAttack>,
     output_auto_atk: Signal<ResultLaunchAttack>,
     write_game_manager: Signal<bool>,
+    auto_atks: Signal<AutoAtks>,
 ) -> Element {
     // if boss is dead, panel is hidden
     if c.is_dead().is_some_and(|value| value) && c.kind == CharacterType::Boss {
@@ -46,25 +52,47 @@ pub fn CharacterPanel(
         (VIGOR.to_owned(), "VP".to_owned()),
         (BERSECK.to_owned(), "BP".to_owned()),
     ]);
+    let name = c.name.clone();
+    let kind = c.kind.clone();
+    let mut is_auto_atk = use_signal(|| false);
+
     use_future(move || {
+        let l_name = name.clone();
+        let l_kind = kind.clone();
         async move {
             loop {
                 // always sleep at start of loop
                 sleep(std::time::Duration::from_millis(TIMER_FUTURE_1S)).await;
-                // To be done only by server 
+                is_auto_atk.set(
+                    auto_atks().nb_auto_atk_stored > 0
+                        && (index_auto_atk() as usize) < auto_atks().result_attacks.len()
+                        && auto_atks().result_attacks
+                            [auto_atks().result_attacks.len() - 1 - index_auto_atk() as usize]
+                            .launcher_name
+                            == l_name,
+                );
                 if is_auto_atk() {
                     sleep(std::time::Duration::from_millis(AUTO_ATK_TEMPO_MS)).await;
-                    application::log_debug("Auto Attack is ON".to_string())
-                        .await
-                        .unwrap();
-                    output_auto_atk.set(APP.write().game_manager.launch_attack("SimpleAtk"));
-                    selected_atk.set(AttackType::default());
-                    write_game_manager.set(true);
+                    application::log_debug(format!(
+                        "Auto atk for {}: {}",
+                        l_name,
+                        index_auto_atk()
+                    ))
+                    .await
+                    .unwrap();
+                    index_auto_atk += 1;
+                    is_auto_atk.set(false);
+                    if index_auto_atk() == auto_atks().nb_auto_atk_stored {
+                        // reset index
+                        auto_atks.set(AutoAtks::default());
+                    }
                 }
             }
         }
     });
 
+    let name2 = c.name.clone();
+    let kind2 = c.kind.clone();
     rsx! {
         div { class: "character", background_color: bg,
             div {
@@ -89,7 +117,9 @@ pub fn CharacterPanel(
         // atk button
         if is_auto_atk() {
             button { class: "atk-button-ennemy", onclick: move |_| async move {}, "ATK On Going" }
-        } else if c.kind == CharacterType::Hero && current_player_name == c.name {
+        } else if kind2.clone() == CharacterType::Hero && current_player_name == name2.clone()
+            && auto_atks() == AutoAtks::default()
+        {
             button {
                 class: "menu-atk-button",
                 onclick: move |_| async move {
@@ -105,7 +135,7 @@ pub fn CharacterPanel(
             class: "character-name-button",
             background_color: "black",
             onclick: move |_| async move {},
-            "{c.name}"
+            "{name2.clone()}"
         }
         // target button
         if !selected_atk().name.is_empty() {
@@ -137,7 +167,6 @@ pub fn CharacterTargetButton(
                 onclick: move |_| {
                     let new_target_name = c.name.clone();
                     async move {
-                        // maybe we should update a state and write on APP on CharacterPanel or GameBoard
                         APP.write()
                             .game_manager
                             .pm
@@ -185,7 +214,6 @@ pub fn NewAtkButton(
                 let value = attack_type.clone();
                 let l_launcher = launcher.clone();
                 async move {
-                    // TODO remonter the information to write on APP
                     APP.write().game_manager.pm.set_targeted_characters(&l_launcher, &value);
                     *display_atklist_sig.write() = false;
                     selected_atk.set(value);
