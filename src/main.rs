@@ -100,8 +100,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         Ok(()) => println!("save"),
                         Err(e) => println!("{}", e),
                     }
-                }
-                if reload_app() {
+                } else if reload_app() {
                     // write the game manager to the app
                     reload_app.set(false);
                     let cur_game_dir = APP.write().game_manager.game_paths.current_game_dir.clone();

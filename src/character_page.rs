@@ -48,6 +48,7 @@ pub fn CharacterPanel(
     ]);
     let name = c.name.clone();
     let mut is_auto_atk = use_signal(|| false);
+    let mut count = use_signal(|| 0);
     use_future(move || {
         let l_name = name.clone();
         async move {
@@ -79,6 +80,7 @@ pub fn CharacterPanel(
                     ))
                     .await
                     .unwrap();
+                    count.set(count() +1);
                 }
             }
         }
@@ -97,11 +99,23 @@ pub fn CharacterPanel(
             div {
                 for (stat , display_stat) in energy_list.iter() {
                     if c.stats.all_stats[stat].max > 0 {
-                        BarComponent {
+                        "{c.stats.all_stats[stat].current_before_auto_atk.len()}"
+                         " {index_result_atks()}"
+                        if c.stats.all_stats[stat].current_before_auto_atk.len() > index_result_atks() as usize{
+                            "yes"
+                            BarComponent {
+                            max: c.stats.all_stats[stat].max,
+                            current: c.stats.all_stats[stat].current_before_auto_atk[index_result_atks() as usize],
+                            name: display_stat,
+                        }
+                        } else {
+                            BarComponent {
                             max: c.stats.all_stats[stat].max,
                             current: c.stats.all_stats[stat].current,
                             name: display_stat,
                         }
+                        }
+                        
                     }
                 }
                 h4 { "Lvl: {c.level}" }
