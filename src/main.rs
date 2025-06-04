@@ -1,7 +1,4 @@
-use std::time::Duration;
-
 use async_std::task::sleep;
-use web_time::Instant;
 
 use dioxus::prelude::*;
 use dx_rpg::{
@@ -13,7 +10,7 @@ use lib_rpg::{
     attack_type::AttackType,
     effect::EffectOutcome,
     game_manager::ResultLaunchAttack,
-    game_state::{AutoAtks, GameStatus},
+    game_state::{GameStatus, ResultAtks},
 };
 
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -60,13 +57,12 @@ fn App() -> Element {
 fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
     let mut current_atk = use_signal(AttackType::default);
     let atk_menu_display = use_signal(|| false);
-    let mut result_attack = use_signal(ResultLaunchAttack::default);
-    let auto_result_attack = use_signal(ResultLaunchAttack::default);
     let mut write_game_manager = use_signal(|| false);
     let mut reload_app = use_signal(|| false);
-    let mut index_auto_atk = use_signal(|| 0);
-    let mut uuid_auto_atk = use_signal(|| uuid::Uuid::new_v4().to_string());
-    let mut auto_atks = use_signal(|| AutoAtks::default());
+    let mut index_result_atks = use_signal(|| 0);
+    let mut uuid_result_atks = use_signal(|| uuid::Uuid::new_v4().to_string());
+    let mut result_atks = use_signal(|| ResultAtks::default());
+    let mut is_end_auto_atk = use_signal(|| false);
 
     // Timer every second to update the game manager by reading json file
     use_future(move || {
@@ -112,19 +108,33 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         Ok(gm) => {
                             // update local signals  before updating global signals
                             // in order to update well ATK/ATK ON GOING tag
-                            if !gm.game_state.auto_atks.uuid.is_empty()
-                                && uuid_auto_atk() != gm.game_state.auto_atks.uuid
+                            if !gm.game_state.last_result_atks.uuid.is_empty()
+                                && uuid_result_atks() != gm.game_state.last_result_atks.uuid
                             {
                                 let _ = log_debug(format!(
                                     "uuid {} != {}",
-                                    uuid_auto_atk(),
-                                    gm.game_state.auto_atks.uuid
+                                    uuid_result_atks(),
+                                    gm.game_state.last_result_atks.uuid
                                 ))
                                 .await
                                 .unwrap();
-                                auto_atks.set(gm.game_state.auto_atks.clone());
-                                index_auto_atk.set(0);
-                                uuid_auto_atk.set(gm.game_state.auto_atks.uuid.clone());
+                                if gm.game_state.last_result_atks.results.len() == 1
+                                    && !gm.game_state.last_result_atks.results[0].is_auto_atk
+                                    || gm.game_state.last_result_atks.results.is_empty()
+                                {
+                                    is_end_auto_atk.set(true);
+                                    log_debug("is_end_auto_atk true".to_string()).await.unwrap();
+                                } else {
+                                    is_end_auto_atk.set(false);
+                                }
+
+                                result_atks.set(gm.game_state.last_result_atks.clone());
+                                log_debug(format!("update {:#?}", result_atks))
+                                    .await
+                                    .unwrap();
+
+                                index_result_atks.set(0);
+                                uuid_result_atks.set(gm.game_state.last_result_atks.uuid.clone());
                             }
                             APP.write().game_manager = gm
                         }
@@ -153,23 +163,22 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     character_page::CharacterPanel {
                         c: c.clone(),
                         current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
-                        index_auto_atk,
+                        index_result_atks,
                         selected_atk: current_atk,
                         atk_menu_display,
-                        result_auto_atk: result_attack,
-                        output_auto_atk: auto_result_attack,
                         write_game_manager,
-                        auto_atks,
+                        result_atks,
+                        is_end_auto_atk,
                     }
                 }
             }
             div {
                 "{APP.read().game_manager.game_state.current_turn_nb} "
-                "{APP.read().game_manager.game_state.auto_atks.nb_auto_atk_stored}"
-                if APP.read().game_manager.game_state.auto_atks.nb_auto_atk_stored == 2 {
-                    "{APP.read().game_manager.game_state.auto_atks.result_attacks[0].launcher_name} vs {APP.read().game_manager.game_state.auto_atks.result_attacks[1].launcher_name}"
+                "{APP.read().game_manager.game_state.last_result_atks.nb_atk_stored}"
+                if APP.read().game_manager.game_state.last_result_atks.nb_atk_stored == 2 {
+                    "{APP.read().game_manager.game_state.last_result_atks.results[0].launcher_name} vs {APP.read().game_manager.game_state.last_result_atks.results[1].launcher_name}"
                 }
-                " {index_auto_atk()}"
+                " {index_result_atks()}"
                 if atk_menu_display() {
                     AttackList {
                         name: APP.read().game_manager.pm.current_player.name.clone(),
@@ -180,23 +189,16 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                 } else if !current_atk().name.is_empty() {
                     button {
                         onclick: move |_| async move {
-                            result_attack
-                                .set(APP.write().game_manager.launch_attack(current_atk().name.as_str()));
+                            APP.write().game_manager.launch_attack(current_atk().name.as_str());
                             current_atk.set(AttackType::default());
+                            is_end_auto_atk.set(false);
                             write_game_manager.set(true);
                         },
                         "launch atk"
                     }
-                } else {
-                    if !result_attack().outcomes.is_empty() {
-                        div { class: "show-then-hide",
-                            ResultAtkText { ra: result_attack }
-                        }
-                    }
-                    if !auto_result_attack().outcomes.is_empty() {
-                        div { class: "show-then-hide-auto",
-                            ResultAtkText { ra: auto_result_attack }
-                        }
+                } else if result_atks().results.len() > index_result_atks() as usize {
+                    div { class: "show-then-hide",
+                        ResultAtkText { ra: result_atks, index: index_result_atks }
                     }
                 }
             }
@@ -206,13 +208,12 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     character_page::CharacterPanel {
                         c: c.clone(),
                         current_player_name: "",
-                        index_auto_atk,
+                        index_result_atks,
                         selected_atk: current_atk,
                         atk_menu_display,
-                        result_auto_atk: result_attack,
-                        output_auto_atk: auto_result_attack,
                         write_game_manager,
-                        auto_atks,
+                        result_atks,
+                        is_end_auto_atk,
                     }
                 }
             }
@@ -474,21 +475,26 @@ fn AmountText(eo: EffectOutcome) -> Element {
 }
 
 #[component]
-fn ResultAtkText(ra: Signal<ResultLaunchAttack>) -> Element {
-    rsx! {
-        if !ra().outcomes.is_empty() {
-            if ra().is_crit {
-                "Critical Strike !"
-            }
-            for d in ra().all_dodging {
-                if d.is_dodging {
-                    "{d.name} is dodging"
-                } else if d.is_blocking {
-                    "{d.name} is blocking"
+fn ResultAtkText(ra: Signal<ResultAtks>, index: Signal<i64>) -> Element {
+    if index() >= ra().results.len() as i64 {
+        rsx! {}
+    } else {
+        let ra = ra().results[ra().results.len() - 1 - index() as usize].clone();
+        rsx! {
+            if !ra.outcomes.is_empty() {
+                if ra.is_crit {
+                    "Critical Strike !"
                 }
-            }
-            for o in ra().outcomes {
-                AmountText { eo: o }
+                for d in ra.all_dodging {
+                    if d.is_dodging {
+                        "{d.name} is dodging"
+                    } else if d.is_blocking {
+                        "{d.name} is blocking"
+                    }
+                }
+                for o in ra.outcomes {
+                    AmountText { eo: o }
+                }
             }
         }
     }

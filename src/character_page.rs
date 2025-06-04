@@ -1,8 +1,4 @@
-use std::time::Duration;
-
 use async_std::task::sleep;
-use dioxus_html::button::form;
-use web_time::Instant;
 
 use colorgrad::Gradient;
 use dioxus::prelude::*;
@@ -11,8 +7,7 @@ use lib_rpg::{
     attack_type::AttackType,
     character::{Character, CharacterType},
     common::stats_const::*,
-    game_manager::ResultLaunchAttack,
-    game_state::AutoAtks,
+    game_state::ResultAtks,
 };
 
 use crate::{
@@ -29,13 +24,12 @@ pub const PATH_IMG: &str = "assets/img";
 pub fn CharacterPanel(
     c: Character,
     current_player_name: String,
-    index_auto_atk: Signal<i64>,
+    index_result_atks: Signal<i64>,
     selected_atk: Signal<AttackType>,
     atk_menu_display: Signal<bool>,
-    result_auto_atk: Signal<ResultLaunchAttack>,
-    output_auto_atk: Signal<ResultLaunchAttack>,
     write_game_manager: Signal<bool>,
-    auto_atks: Signal<AutoAtks>,
+    result_atks: Signal<ResultAtks>,
+    is_end_auto_atk: Signal<bool>,
 ) -> Element {
     // if boss is dead, panel is hidden
     if c.is_dead().is_some_and(|value| value) && c.kind == CharacterType::Boss {
@@ -53,39 +47,38 @@ pub fn CharacterPanel(
         (BERSECK.to_owned(), "BP".to_owned()),
     ]);
     let name = c.name.clone();
-    let kind = c.kind.clone();
     let mut is_auto_atk = use_signal(|| false);
-
     use_future(move || {
         let l_name = name.clone();
-        let l_kind = kind.clone();
         async move {
             loop {
                 // always sleep at start of loop
                 sleep(std::time::Duration::from_millis(TIMER_FUTURE_1S)).await;
+                let index = result_atks().results.len() as i64 - 1 - index_result_atks() - 1; // max is hero turn
                 is_auto_atk.set(
-                    auto_atks().nb_auto_atk_stored > 0
-                        && (index_auto_atk() as usize) < auto_atks().result_attacks.len()
-                        && auto_atks().result_attacks
-                            [auto_atks().result_attacks.len() - 1 - index_auto_atk() as usize]
-                            .launcher_name
-                            == l_name,
+                    index >= 0
+                        && result_atks().results[index as usize].is_auto_atk
+                        && result_atks().results[index as usize].launcher_name == l_name,
                 );
                 if is_auto_atk() {
                     sleep(std::time::Duration::from_millis(AUTO_ATK_TEMPO_MS)).await;
                     application::log_debug(format!(
                         "Auto atk for {}: {}",
                         l_name,
-                        index_auto_atk()
+                        index_result_atks()
                     ))
                     .await
                     .unwrap();
-                    index_auto_atk += 1;
+                    index_result_atks += 1;
                     is_auto_atk.set(false);
-                    if index_auto_atk() == auto_atks().nb_auto_atk_stored {
-                        // reset index
-                        auto_atks.set(AutoAtks::default());
-                    }
+                    is_end_auto_atk
+                        .set(index_result_atks() as usize == result_atks().results.len() - 1);
+                    application::log_debug(format!(
+                        "is_end_auto_atk2 {}",
+                        index_result_atks() as usize == result_atks().results.len() - 1
+                    ))
+                    .await
+                    .unwrap();
                 }
             }
         }
@@ -118,14 +111,12 @@ pub fn CharacterPanel(
         if is_auto_atk() {
             button { class: "atk-button-ennemy", onclick: move |_| async move {}, "ATK On Going" }
         } else if kind2.clone() == CharacterType::Hero && current_player_name == name2.clone()
-            && auto_atks() == AutoAtks::default()
+            && is_end_auto_atk()
         {
             button {
                 class: "menu-atk-button",
                 onclick: move |_| async move {
                     atk_menu_display.set(!atk_menu_display());
-                    result_auto_atk.set(ResultLaunchAttack::default());
-                    output_auto_atk.set(ResultLaunchAttack::default());
                 },
                 "ATK"
             }
