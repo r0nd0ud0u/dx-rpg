@@ -192,6 +192,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                             APP.write().game_manager.launch_attack(current_atk().name.as_str());
                             current_atk.set(AttackType::default());
                             is_end_auto_atk.set(false);
+                            result_atks.set(ResultAtks::default());
                             write_game_manager.set(true);
                         },
                         "launch atk"
