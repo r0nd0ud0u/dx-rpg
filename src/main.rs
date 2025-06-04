@@ -61,7 +61,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
     let mut reload_app = use_signal(|| false);
     let mut index_result_atks = use_signal(|| 0);
     let mut uuid_result_atks = use_signal(|| uuid::Uuid::new_v4().to_string());
-    let mut result_atks = use_signal(|| ResultAtks::default());
+    let mut result_atks = use_signal(ResultAtks::default);
     let mut is_end_auto_atk = use_signal(|| false);
 
     // Timer every second to update the game manager by reading json file
@@ -100,7 +100,8 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         Ok(()) => println!("save"),
                         Err(e) => println!("{}", e),
                     }
-                } else if reload_app() {
+                }
+                if reload_app() {
                     // write the game manager to the app
                     reload_app.set(false);
                     let cur_game_dir = APP.write().game_manager.game_paths.current_game_dir.clone();
@@ -111,7 +112,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                             if !gm.game_state.last_result_atks.uuid.is_empty()
                                 && uuid_result_atks() != gm.game_state.last_result_atks.uuid
                             {
-                                let _ = log_debug(format!(
+                                log_debug(format!(
                                     "uuid {} != {}",
                                     uuid_result_atks(),
                                     gm.game_state.last_result_atks.uuid
@@ -179,6 +180,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     "{APP.read().game_manager.game_state.last_result_atks.results[0].launcher_name} vs {APP.read().game_manager.game_state.last_result_atks.results[1].launcher_name}"
                 }
                 " {index_result_atks()}"
+                " {result_atks().nb_atk_stored}"
                 if atk_menu_display() {
                     AttackList {
                         name: APP.read().game_manager.pm.current_player.name.clone(),
@@ -197,9 +199,15 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         },
                         "launch atk"
                     }
-                } else if result_atks().results.len() > index_result_atks() as usize {
-                    div { class: "show-then-hide",
-                        ResultAtkText { ra: result_atks, index: index_result_atks }
+                } else {
+                    if result_atks().results.len() > index_result_atks() as usize {
+                        div {
+                            ResultAtkText {
+                                ra: result_atks()
+                                    .results[result_atks().results.len() - 1 - index_result_atks() as usize]
+                                    .clone(),
+                            }
+                        }
                     }
                 }
             }
@@ -476,27 +484,25 @@ fn AmountText(eo: EffectOutcome) -> Element {
 }
 
 #[component]
-fn ResultAtkText(ra: Signal<ResultAtks>, index: Signal<i64>) -> Element {
-    if index() >= ra().results.len() as i64 {
-        rsx! {}
-    } else {
-        let ra = ra().results[ra().results.len() - 1 - index() as usize].clone();
-        rsx! {
-            if !ra.outcomes.is_empty() {
-                if ra.is_crit {
-                    "Critical Strike !"
-                }
-                for d in ra.all_dodging {
-                    if d.is_dodging {
-                        "{d.name} is dodging"
-                    } else if d.is_blocking {
-                        "{d.name} is blocking"
-                    }
-                }
-                for o in ra.outcomes {
-                    AmountText { eo: o }
+fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
+    rsx! {
+        "Last round:"
+        if !ra.outcomes.is_empty() {
+            if ra.is_crit {
+                "Critical Strike !"
+            }
+            for d in ra.all_dodging {
+                if d.is_dodging {
+                    "{d.name} is dodging"
+                } else if d.is_blocking {
+                    "{d.name} is blocking"
                 }
             }
+            for o in ra.outcomes {
+                AmountText { eo: o }
+            }
+        } else {
+            "No effects"
         }
     }
 }
@@ -555,14 +561,12 @@ fn JoinOngoingGame() -> Element {
             Err(_) => println!("no app"),
         }
     });
-    let mut ongoing_games_sig = use_signal(|| application::OngoingGames::default());
+    let mut ongoing_games_sig = use_signal(application::OngoingGames::default);
     use_future(move || {
         async move {
             loop {
                 // always sleep at start of loop
                 sleep(std::time::Duration::from_millis(TIMER_FUTURE_1S)).await;
-                // Update the time, using a more precise approach of getting the duration since we started the timer
-                let mut ongoing_games = application::OngoingGames::default();
                 // update ongoing games status
                 let all_games_dir = format!(
                     "{}/ongoing-games.json",
@@ -572,7 +576,7 @@ fn JoinOngoingGame() -> Element {
                         .games_dir
                         .to_string_lossy()
                 );
-                ongoing_games =
+                let ongoing_games =
                     match application::read_ongoinggames_from_json(all_games_dir.clone()).await {
                         Ok(og) => {
                             application::log_debug(format!("ongoing games: {:?}", og.all_games))
