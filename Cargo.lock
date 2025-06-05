@@ -2795,7 +2795,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lib-rpg"
 version = "1.0.0"
-source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=a620662782b41ecdf6d0e739f2811f2bb8e347e2#a620662782b41ecdf6d0e739f2811f2bb8e347e2"
+source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=276d0046c5c11e3748b703c6164a3ec874aeb10a#276d0046c5c11e3748b703c6164a3ec874aeb10a"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4735,9 +4735,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.44.2"
+version = "1.45.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6b88822cbe49de4185e3a4cbf8321dd487cf5fe0c5c65695fef6346371e9c48"
+checksum = "75ef51a33ef1da925cea3e4eb122833cb377c61439ca401b770f54902b806779"
 dependencies = [
  "backtrace",
  "bytes",
