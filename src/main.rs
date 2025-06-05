@@ -7,9 +7,7 @@ use dx_rpg::{
     common::{tempo_const::TIMER_FUTURE_1S, APP},
 };
 use lib_rpg::{
-    attack_type::AttackType,
-    effect::EffectOutcome,
-    game_manager::ResultLaunchAttack,
+    attack_type::AttackType, effect::EffectOutcome, game_manager::ResultLaunchAttack,
     game_state::GameStatus,
 };
 
@@ -65,16 +63,27 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
             loop {
                 // always sleep at start of loop
                 sleep(std::time::Duration::from_millis(TIMER_FUTURE_1S)).await;
-                if APP.write().game_manager.is_round_auto(){
+                if APP.write().game_manager.is_round_auto() {
                     sleep(std::time::Duration::from_millis(3000)).await;
-                    APP.write().game_manager.game_state.last_result_atk = ResultLaunchAttack::default();
+                    APP.write().game_manager.game_state.last_result_atk =
+                        ResultLaunchAttack::default();
                     APP.write().game_manager.launch_attack("SimpleAtk");
-                    log_debug(format!("launcher  {}", APP.write().game_manager.game_state.last_result_atk.launcher_name))
-                                .await
-                                .unwrap();
-                    log_debug(format!("target  {}", APP.write().game_manager.game_state.last_result_atk.outcomes[0].target_name))
-                        .await
-                        .unwrap();
+                    log_debug(format!(
+                        "launcher  {}",
+                        APP.write()
+                            .game_manager
+                            .game_state
+                            .last_result_atk
+                            .launcher_name
+                    ))
+                    .await
+                    .unwrap();
+                    log_debug(format!(
+                        "target  {}",
+                        APP.write().game_manager.game_state.last_result_atk.outcomes[0].target_name
+                    ))
+                    .await
+                    .unwrap();
                     current_atk.set(AttackType::default());
                     write_game_manager.set(true);
                 }
@@ -123,9 +132,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     reload_app.set(false);
                     let cur_game_dir = APP.write().game_manager.game_paths.current_game_dir.clone();
                     match application::get_gamemanager_by_game_dir(cur_game_dir.clone()).await {
-                        Ok(gm) => {
-                            APP.write().game_manager = gm
-                        }
+                        Ok(gm) => APP.write().game_manager = gm,
                         Err(e) => {
                             println!("Error fetching game manager: {}", e)
                         }
@@ -154,7 +161,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         selected_atk: current_atk,
                         atk_menu_display,
                         write_game_manager,
-                        is_auto_atk: false
+                        is_auto_atk: false,
                     }
                 }
             }
@@ -178,10 +185,8 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     }
                 } else {
                     div {
-                            ResultAtkText {
-                                ra: APP.read().game_manager.game_state.last_result_atk.clone()
-                            }
-                        }
+                        ResultAtkText { ra: APP.read().game_manager.game_state.last_result_atk.clone() }
+                    }
                 }
             }
             div {
@@ -193,7 +198,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         selected_atk: current_atk,
                         atk_menu_display,
                         write_game_manager,
-                        is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name
+                        is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
                     }
                 }
             }
@@ -426,7 +431,6 @@ fn LobbyPage() -> Element {
                     name: "Start Game".to_string(),
                 }
             }
-        
         }
     }
 }

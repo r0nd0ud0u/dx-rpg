@@ -4,14 +4,10 @@ use indexmap::IndexMap;
 use lib_rpg::{
     attack_type::AttackType,
     character::{Character, CharacterType},
-    common::stats_const::*
+    common::stats_const::*,
 };
 
-use crate::{
-    common::{
-        APP, ENERGY_GRAD,
-    },
-};
+use crate::common::{APP, ENERGY_GRAD};
 
 pub const PATH_IMG: &str = "assets/img";
 
@@ -22,7 +18,7 @@ pub fn CharacterPanel(
     selected_atk: Signal<AttackType>,
     atk_menu_display: Signal<bool>,
     write_game_manager: Signal<bool>,
-    is_auto_atk: ReadOnlySignal<bool>
+    is_auto_atk: ReadOnlySignal<bool>,
 ) -> Element {
     // if boss is dead, panel is hidden
     if c.is_dead().is_some_and(|value| value) && c.kind == CharacterType::Boss {
@@ -57,7 +53,7 @@ pub fn CharacterPanel(
                             max: c.stats.all_stats[stat].max,
                             current: c.stats.all_stats[stat].current,
                             name: display_stat,
-                        }     
+                        }
                     }
                 }
                 h4 { "Lvl: {c.level}" }
@@ -66,8 +62,7 @@ pub fn CharacterPanel(
         // atk button
         if is_auto_atk() {
             button { class: "atk-button-ennemy", onclick: move |_| async move {}, "ATK On Going" }
-        } else if kind2.clone() == CharacterType::Hero && current_player_name == name2.clone()
-        {
+        } else if kind2.clone() == CharacterType::Hero && current_player_name == name2.clone() {
             button {
                 class: "menu-atk-button",
                 onclick: move |_| async move {
