@@ -1562,7 +1562,7 @@ dependencies = [
  "dioxus",
  "dioxus-desktop",
  "dioxus-html",
- "getrandom 0.3.2",
+ "getrandom 0.3.3",
  "indexmap 2.9.0",
  "lazy_static",
  "lib-rpg",
@@ -2048,9 +2048,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73fea8450eea4bac3940448fb7ae50d91f034f941199fcd9d909a5a07aa455f0"
+checksum = "26145e563e54f2cadc477553f1ec5ee650b00862f0a58bcd12cbdc5f0ea2d2f4"
 dependencies = [
  "cfg-if",
  "js-sys",
@@ -2795,7 +2795,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lib-rpg"
 version = "1.0.0"
-source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=a620662782b41ecdf6d0e739f2811f2bb8e347e2#a620662782b41ecdf6d0e739f2811f2bb8e347e2"
+source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=276d0046c5c11e3748b703c6164a3ec874aeb10a#276d0046c5c11e3748b703c6164a3ec874aeb10a"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3886,7 +3886,7 @@ version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99d9a13982dcf210057a8a78572b2217b667c3beacbf3a0d8b454f6f82837d38"
 dependencies = [
- "getrandom 0.3.2",
+ "getrandom 0.3.3",
 ]
 
 [[package]]
