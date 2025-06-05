@@ -10,7 +10,7 @@ use lib_rpg::{
     attack_type::AttackType,
     effect::EffectOutcome,
     game_manager::ResultLaunchAttack,
-    game_state::{GameStatus, ResultAtks},
+    game_state::GameStatus,
 };
 
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -59,10 +59,28 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
     let atk_menu_display = use_signal(|| false);
     let mut write_game_manager = use_signal(|| false);
     let mut reload_app = use_signal(|| false);
-    let mut index_result_atks = use_signal(|| 0);
-    let mut uuid_result_atks = use_signal(|| uuid::Uuid::new_v4().to_string());
-    let mut result_atks = use_signal(ResultAtks::default);
-    let mut is_end_auto_atk = use_signal(|| false);
+
+    use_future(move || {
+        async move {
+            loop {
+                // always sleep at start of loop
+                sleep(std::time::Duration::from_millis(TIMER_FUTURE_1S)).await;
+                if APP.write().game_manager.is_round_auto(){
+                    sleep(std::time::Duration::from_millis(3000)).await;
+                    APP.write().game_manager.game_state.last_result_atk = ResultLaunchAttack::default();
+                    APP.write().game_manager.launch_attack("SimpleAtk");
+                    log_debug(format!("launcher  {}", APP.write().game_manager.game_state.last_result_atk.launcher_name))
+                                .await
+                                .unwrap();
+                    log_debug(format!("target  {}", APP.write().game_manager.game_state.last_result_atk.outcomes[0].target_name))
+                        .await
+                        .unwrap();
+                    current_atk.set(AttackType::default());
+                    write_game_manager.set(true);
+                }
+            }
+        }
+    });
 
     // Timer every second to update the game manager by reading json file
     use_future(move || {
@@ -106,36 +124,6 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     let cur_game_dir = APP.write().game_manager.game_paths.current_game_dir.clone();
                     match application::get_gamemanager_by_game_dir(cur_game_dir.clone()).await {
                         Ok(gm) => {
-                            // update local signals  before updating global signals
-                            // in order to update well ATK/ATK ON GOING tag
-                            if !gm.game_state.last_result_atks.uuid.is_empty()
-                                && uuid_result_atks() != gm.game_state.last_result_atks.uuid
-                            {
-                                log_debug(format!(
-                                    "uuid {} != {}",
-                                    uuid_result_atks(),
-                                    gm.game_state.last_result_atks.uuid
-                                ))
-                                .await
-                                .unwrap();
-                                if gm.game_state.last_result_atks.results.len() == 1
-                                    && !gm.game_state.last_result_atks.results[0].is_auto_atk
-                                    || gm.game_state.last_result_atks.results.is_empty()
-                                {
-                                    is_end_auto_atk.set(true);
-                                    log_debug("is_end_auto_atk true".to_string()).await.unwrap();
-                                } else {
-                                    is_end_auto_atk.set(false);
-                                }
-
-                                result_atks.set(gm.game_state.last_result_atks.clone());
-                                log_debug(format!("update {:#?}", result_atks))
-                                    .await
-                                    .unwrap();
-
-                                index_result_atks.set(0);
-                                uuid_result_atks.set(gm.game_state.last_result_atks.uuid.clone());
-                            }
                             APP.write().game_manager = gm
                         }
                         Err(e) => {
@@ -163,23 +151,15 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     character_page::CharacterPanel {
                         c: c.clone(),
                         current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
-                        index_result_atks,
                         selected_atk: current_atk,
                         atk_menu_display,
                         write_game_manager,
-                        result_atks,
-                        is_end_auto_atk,
+                        is_auto_atk: false
                     }
                 }
             }
             div {
                 "{APP.read().game_manager.game_state.current_turn_nb} "
-                "{APP.read().game_manager.game_state.last_result_atks.nb_atk_stored}"
-                if APP.read().game_manager.game_state.last_result_atks.nb_atk_stored == 2 {
-                    "{APP.read().game_manager.game_state.last_result_atks.results[0].launcher_name} vs {APP.read().game_manager.game_state.last_result_atks.results[1].launcher_name}"
-                }
-                " {index_result_atks()}"
-                " {result_atks().nb_atk_stored}"
                 if atk_menu_display() {
                     AttackList {
                         name: APP.read().game_manager.pm.current_player.name.clone(),
@@ -192,22 +172,16 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         onclick: move |_| async move {
                             APP.write().game_manager.launch_attack(current_atk().name.as_str());
                             current_atk.set(AttackType::default());
-                            is_end_auto_atk.set(false);
-                            result_atks.set(ResultAtks::default());
                             write_game_manager.set(true);
                         },
                         "launch atk"
                     }
                 } else {
-                    if result_atks().results.len() > index_result_atks() as usize {
-                        div {
+                    div {
                             ResultAtkText {
-                                ra: result_atks()
-                                    .results[result_atks().results.len() - 1 - index_result_atks() as usize]
-                                    .clone(),
+                                ra: APP.read().game_manager.game_state.last_result_atk.clone()
                             }
                         }
-                    }
                 }
             }
             div {
@@ -216,12 +190,10 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     character_page::CharacterPanel {
                         c: c.clone(),
                         current_player_name: "",
-                        index_result_atks,
                         selected_atk: current_atk,
                         atk_menu_display,
                         write_game_manager,
-                        result_atks,
-                        is_end_auto_atk,
+                        is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name
                     }
                 }
             }

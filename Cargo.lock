@@ -2795,7 +2795,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lib-rpg"
 version = "1.0.0"
-source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=25f336c79113b8065db2e86e732aacccb086d6e3#25f336c79113b8065db2e86e732aacccb086d6e3"
+source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=a620662782b41ecdf6d0e739f2811f2bb8e347e2#a620662782b41ecdf6d0e739f2811f2bb8e347e2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2804,7 +2804,6 @@ dependencies = [
  "rand 0.9.1",
  "serde",
  "serde_json",
- "uuid",
 ]
 
 [[package]]

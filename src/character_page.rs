@@ -1,19 +1,14 @@
-use async_std::task::sleep;
-
 use colorgrad::Gradient;
 use dioxus::prelude::*;
 use indexmap::IndexMap;
 use lib_rpg::{
     attack_type::AttackType,
     character::{Character, CharacterType},
-    common::stats_const::*,
-    game_state::ResultAtks,
+    common::stats_const::*
 };
 
 use crate::{
-    application,
     common::{
-        tempo_const::{AUTO_ATK_TEMPO_MS, TIMER_FUTURE_1S},
         APP, ENERGY_GRAD,
     },
 };
@@ -24,12 +19,10 @@ pub const PATH_IMG: &str = "assets/img";
 pub fn CharacterPanel(
     c: Character,
     current_player_name: String,
-    index_result_atks: Signal<i64>,
     selected_atk: Signal<AttackType>,
     atk_menu_display: Signal<bool>,
     write_game_manager: Signal<bool>,
-    result_atks: Signal<ResultAtks>,
-    is_end_auto_atk: Signal<bool>,
+    is_auto_atk: ReadOnlySignal<bool>
 ) -> Element {
     // if boss is dead, panel is hidden
     if c.is_dead().is_some_and(|value| value) && c.kind == CharacterType::Boss {
@@ -46,45 +39,6 @@ pub fn CharacterPanel(
         (VIGOR.to_owned(), "VP".to_owned()),
         (BERSECK.to_owned(), "BP".to_owned()),
     ]);
-    let name = c.name.clone();
-    let mut is_auto_atk = use_signal(|| false);
-    let mut count = use_signal(|| 0);
-    use_future(move || {
-        let l_name = name.clone();
-        async move {
-            loop {
-                // always sleep at start of loop
-                sleep(std::time::Duration::from_millis(TIMER_FUTURE_1S)).await;
-                let index = result_atks().results.len() as i64 - 1 - index_result_atks() - 1; // max is hero turn
-                is_auto_atk.set(
-                    index >= 0
-                        && result_atks().results[index as usize].is_auto_atk
-                        && result_atks().results[index as usize].launcher_name == l_name,
-                );
-                if is_auto_atk() {
-                    sleep(std::time::Duration::from_millis(AUTO_ATK_TEMPO_MS)).await;
-                    application::log_debug(format!(
-                        "Auto atk for {}: {}",
-                        l_name,
-                        index_result_atks()
-                    ))
-                    .await
-                    .unwrap();
-                    index_result_atks += 1;
-                    is_auto_atk.set(false);
-                    is_end_auto_atk
-                        .set(index_result_atks() as usize == result_atks().results.len() - 1);
-                    application::log_debug(format!(
-                        "is_end_auto_atk2 {}",
-                        index_result_atks() as usize == result_atks().results.len() - 1
-                    ))
-                    .await
-                    .unwrap();
-                    count.set(count() +1);
-                }
-            }
-        }
-    });
 
     let name2 = c.name.clone();
     let kind2 = c.kind.clone();
@@ -99,23 +53,11 @@ pub fn CharacterPanel(
             div {
                 for (stat , display_stat) in energy_list.iter() {
                     if c.stats.all_stats[stat].max > 0 {
-                        "{c.stats.all_stats[stat].current_before_auto_atk.len()}"
-                         " {index_result_atks()}"
-                        if c.stats.all_stats[stat].current_before_auto_atk.len() > index_result_atks() as usize{
-                            "yes"
-                            BarComponent {
-                            max: c.stats.all_stats[stat].max,
-                            current: c.stats.all_stats[stat].current_before_auto_atk[index_result_atks() as usize],
-                            name: display_stat,
-                        }
-                        } else {
-                            BarComponent {
+                        BarComponent {
                             max: c.stats.all_stats[stat].max,
                             current: c.stats.all_stats[stat].current,
                             name: display_stat,
-                        }
-                        }
-                        
+                        }     
                     }
                 }
                 h4 { "Lvl: {c.level}" }
@@ -125,7 +67,6 @@ pub fn CharacterPanel(
         if is_auto_atk() {
             button { class: "atk-button-ennemy", onclick: move |_| async move {}, "ATK On Going" }
         } else if kind2.clone() == CharacterType::Hero && current_player_name == name2.clone()
-            && is_end_auto_atk()
         {
             button {
                 class: "menu-atk-button",
