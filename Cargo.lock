@@ -628,9 +628,9 @@ dependencies = [
 
 [[package]]
 name = "colorgrad"
-version = "0.7.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "770315cbc9e3909b1f574a1ab4923a1e1e2f39442ac432cbf7e30e405ee9db1a"
+checksum = "faedab4fd8670120c2be7f49225fbdb8b6db6d46f04ce4f864b1f1cdd55e6400"
 dependencies = [
  "csscolorparser",
 ]
@@ -845,9 +845,9 @@ dependencies = [
 
 [[package]]
 name = "csscolorparser"
-version = "0.7.0"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46f9a16a848a7fb95dd47ce387ac1ee9a6df879ba784b815537fcd388a1a8288"
+checksum = "5fda6aace1fbef3aa217b27f4c8d7d071ef2a70a5ca51050b1f17d40299d3f16"
 dependencies = [
  "phf 0.11.3",
 ]
@@ -2795,7 +2795,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lib-rpg"
 version = "1.0.0"
-source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=a620662782b41ecdf6d0e739f2811f2bb8e347e2#a620662782b41ecdf6d0e739f2811f2bb8e347e2"
+source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=276d0046c5c11e3748b703c6164a3ec874aeb10a#276d0046c5c11e3748b703c6164a3ec874aeb10a"
 dependencies = [
  "anyhow",
  "chrono",
