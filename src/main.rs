@@ -3,8 +3,8 @@ use async_std::task::sleep;
 use dioxus::prelude::*;
 use dx_rpg::{
     application::{self, log_debug},
-    character_page::{self, AttackList},
     common::{tempo_const::TIMER_FUTURE_1S, APP},
+    components::character_page::*,
 };
 use lib_rpg::{
     attack_type::AttackType, effect::EffectOutcome, game_manager::ResultLaunchAttack,
@@ -155,7 +155,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
             div {
                 // Heroes
                 for c in APP.read().game_manager.pm.active_heroes.iter() {
-                    character_page::CharacterPanel {
+                    CharacterPanel {
                         c: c.clone(),
                         current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
                         selected_atk: current_atk,
@@ -192,7 +192,7 @@ fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
             div {
                 // Bosses
                 for c in APP.read().game_manager.pm.active_bosses.iter() {
-                    character_page::CharacterPanel {
+                    CharacterPanel {
                         c: c.clone(),
                         current_player_name: "",
                         selected_atk: current_atk,
