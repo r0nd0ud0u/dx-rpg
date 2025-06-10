@@ -6,16 +6,10 @@ use lib_rpg::{
 
 use crate::{
     application::{self, log_debug},
-    common::{tempo_const::TIMER_FUTURE_1S, APP},
+    common::{tempo_const::TIMER_FUTURE_1S, ButtonStatus, APP},
     components::character_page::{AttackList, CharacterPanel},
 };
 use dioxus::prelude::*;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum ButtonStatus {
-    StartGame = 0,
-    ReplayGame,
-}
 
 #[component]
 pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
