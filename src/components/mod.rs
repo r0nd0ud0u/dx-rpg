@@ -1,3 +1,10 @@
 pub mod character_page;
+pub mod common_comp;
+pub mod create_server_page;
 pub mod gameboard;
+pub mod home_page;
+pub mod joinongoinggame_page;
+pub mod loadgame_page;
+pub mod lobby_page;
+pub mod navbar;
 pub mod startgame_page;

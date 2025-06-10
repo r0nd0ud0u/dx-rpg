@@ -1,6 +1,13 @@
 use dioxus::prelude::*;
 
 use crate::application::Application;
+use crate::components::create_server_page::CreateServer;
+use crate::components::home_page::Home;
+use crate::components::joinongoinggame_page::JoinOngoingGame;
+use crate::components::loadgame_page::LoadGame;
+use crate::components::lobby_page::LobbyPage;
+use crate::components::navbar::Navbar;
+use crate::components::startgame_page::StartGamePage;
 use colorgrad::{CatmullRomGradient, GradientBuilder};
 use once_cell::sync::Lazy;
 
@@ -22,4 +29,22 @@ pub mod tempo_const {
 pub enum ButtonStatus {
     StartGame = 0,
     ReplayGame,
+}
+
+#[derive(Debug, Clone, Routable, PartialEq)]
+#[rustfmt::skip]
+pub enum Route {
+    #[layout(Navbar)]
+    #[route("/")]
+    Home {},
+    #[route("/create-server")]
+    CreateServer {},
+    #[route("/lobby-page")]
+    LobbyPage {},
+    #[route("/start-game")]
+    StartGamePage {},
+    #[route("/load-game")]
+    LoadGame {},
+    #[route("/current-game")]
+    JoinOngoingGame {},
 }
