@@ -208,7 +208,7 @@ pub fn AttackList(
 }
 
 fn get_color(value: i32) -> String {
-    ENERGY_GRAD.at(value as f32 / 100.0).to_hex_string()
+    ENERGY_GRAD.at(value as f32 / 100.0).to_css_hex()
 }
 
 fn get_type_color(atk: &AttackType) -> &'static str {
