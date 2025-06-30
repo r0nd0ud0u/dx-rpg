@@ -14,7 +14,7 @@ serde = "1.0.219"
 getrandom = { version = "0.3.3", features = ["wasm_js"] }
 dioxus-desktop = { version = "0.6.3", optional = true }
 dioxus-html = "0.6.3"
-indexmap = "2.9.0"
+indexmap = "2.10.0"
 tokio = "1.45.1"
 colorgrad = "0.7.2"
 once_cell = "1.21.3"
