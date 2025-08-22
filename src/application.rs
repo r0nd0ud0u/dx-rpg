@@ -22,7 +22,7 @@ pub struct OngoingGames {
 pub async fn try_new() -> Result<Application, ServerFnError> {
     match GameManager::try_new("offlines") {
         Ok(gm) => Ok(Application { game_manager: gm }),
-        Err(_) => Err(ServerFnError::Request(
+        Err(_) => Err(ServerFnError::new(
             "Failed to create GameManager".to_string(),
         )),
     }
@@ -71,9 +71,7 @@ pub async fn get_gamemanager_by_game_dir(
     if let Ok(value) = utils::read_from_json::<_, GameManager>(&game_manager_file) {
         Ok(value)
     } else {
-        Err(ServerFnError::Request(
-            "Failed to read game state".to_string(),
-        ))
+        Err(ServerFnError::new("Failed to read game state".to_string()))
     }
 }
 
@@ -87,6 +85,6 @@ pub async fn read_ongoinggames_from_json(path: String) -> Result<OngoingGames, S
     if let Ok(value) = utils::read_from_json::<_, OngoingGames>(&path) {
         Ok(value)
     } else {
-        Err(ServerFnError::Request(format!("Unknown file: {:?}", path)))
+        Err(ServerFnError::new(format!("Unknown file: {:?}", path)))
     }
 }
