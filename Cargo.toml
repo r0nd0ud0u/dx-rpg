@@ -1,15 +1,15 @@
 [package]
 name = "dx-rpg"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["rondoudou"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.98"
+anyhow = "1.0.99"
 dioxus = { version = "0.7.0-rc.0", features = ["router", "fullstack"] }
-lib-rpg = { git = "ssh://git@github.com/r0nd0ud0u/lib-rpg.git", rev = "276d0046c5c11e3748b703c6164a3ec874aeb10a" }
+lib-rpg = { git = "ssh://git@github.com/r0nd0ud0u/lib-rpg.git", tag = "v1.1.0" }
 serde = "1.0.219"
 dioxus-desktop = { version = "0.7.0-rc.0", optional = true }
 dioxus-html = "0.7.0-rc.0"
@@ -19,7 +19,7 @@ colorgrad = "0.7.2"
 once_cell = "1.21.3"
 serde_json = "1.0.140"
 web-time = "1.1.0"
-async-std = "1.13.1"
+async-std = "1.13.2"
 getrandom = { version = "0.3.3", features = ["wasm_js"] }
 
 [features]
