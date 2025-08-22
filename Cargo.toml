@@ -1,6 +1,6 @@
 [package]
 name = "dx-rpg"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["rondoudou"]
 edition = "2021"
 
