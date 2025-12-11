@@ -8,15 +8,15 @@ use crate::components::loadgame_page::LoadGame;
 use crate::components::lobby_page::LobbyPage;
 use crate::components::navbar::Navbar;
 use crate::components::startgame_page::StartGamePage;
-use colorgrad::{CatmullRomGradient, GradientBuilder};
+use colorgrad::{CatmullRomGradient, GradientBuilder, LinearGradient};
 use once_cell::sync::Lazy;
 
 pub static APP: GlobalSignal<Application> = Signal::global(Application::default);
 
-pub static ENERGY_GRAD: Lazy<CatmullRomGradient> = Lazy::new(|| {
+pub static ENERGY_GRAD: Lazy<LinearGradient> = Lazy::new(|| {
     GradientBuilder::new()
-        .html_colors(&["deeppink", "gold", "seagreen"])
-        .build::<CatmullRomGradient>()
+        .html_colors(&["#ff2600ff", "#f2ff00ff", "#11c426ff"])
+        .build::<colorgrad::LinearGradient>()
         .expect("Failed to build gradient")
 });
 
