@@ -48,3 +48,6 @@ pub enum Route {
     #[route("/current-game")]
     JoinOngoingGame {},
 }
+
+
+pub const PATH_IMG: Asset = asset!("/assets/img");
