@@ -47,18 +47,24 @@ pub fn JoinOngoingGame() -> Element {
                                 {
                                     Ok(gm) => APP.write().game_manager = gm,
                                     Err(e) => {
-                                        println!("Error fetching game manager: {}", e)
+                                        application::log_debug(format!(
+                                            "Error fetching game manager: {}",
+                                            e
+                                        ))
+                                        .await
+                                        .unwrap();
                                     }
                                 }
                                 og
                             } else {
-                                println!("No ongoing games found");
+                                application::log_debug("No ongoing games found".to_string())
+                                    .await
+                                    .unwrap();
                                 application::OngoingGames::default()
                             }
                         }
                         Err(e) => {
-                            println!("Error reading ongoing games: {}", e);
-                            application::log_debug("Error reading ongoing games".to_string())
+                            application::log_debug(format!("Error reading ongoing games: {}", e))
                                 .await
                                 .unwrap();
                             application::OngoingGames::default()

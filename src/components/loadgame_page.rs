@@ -55,7 +55,9 @@ pub fn LoadGame() -> Element {
                         {
                             Ok(gm) => gm,
                             Err(e) => {
-                                println!("Error fetching game manager: {}", e);
+                                application::log_debug(format!("Error fetching game manager: {}", e))
+                                    .await
+                                    .unwrap();
                                 return;
                             }
                         };

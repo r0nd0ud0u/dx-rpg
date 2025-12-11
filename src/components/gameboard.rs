@@ -94,7 +94,9 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     match application::get_gamemanager_by_game_dir(cur_game_dir.clone()).await {
                         Ok(gm) => APP.write().game_manager = gm,
                         Err(e) => {
-                            println!("Error fetching game manager: {}", e)
+                            application::log_debug(format!("Error fetching game manager: {}", e))
+                                .await
+                                .unwrap()
                         }
                     }
                 }

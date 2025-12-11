@@ -30,8 +30,10 @@ pub async fn try_new() -> Result<Application, ServerFnError> {
 
 #[server]
 pub async fn save(path: String, value: String) -> Result<(), ServerFnError> {
-    fs::write(path, value)?;
-    Ok(())
+    match fs::write(path, value) {
+        Ok(_) => Ok(()),
+        Err(_) => Err(ServerFnError::new("Failed to save file".to_string())),
+    }
 }
 
 #[server]
@@ -52,7 +54,10 @@ pub async fn sleep_from_millis(millis: u64) -> Result<(), ServerFnError> {
 #[server]
 pub async fn get_game_list(game_dir_path: PathBuf) -> Result<Vec<PathBuf>, ServerFnError> {
     println!("Fetching game list from: {:?}", game_dir_path);
-    let games_list = list_dirs_in_dir(&game_dir_path)?;
+    let games_list = match list_dirs_in_dir(&game_dir_path) {
+        Ok(list) => list,
+        Err(_) => return Err(ServerFnError::new("Failed to list games".to_string())),
+    };
     println!("List games: {:?}", games_list);
     Ok(games_list)
 }
