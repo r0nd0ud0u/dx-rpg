@@ -7,9 +7,8 @@ use lib_rpg::{
     common::stats_const::*,
 };
 
+use crate::common::PATH_IMG;
 use crate::common::{APP, ENERGY_GRAD};
-
-pub const PATH_IMG: &str = "assets/img";
 
 #[component]
 pub fn CharacterPanel(
@@ -42,7 +41,7 @@ pub fn CharacterPanel(
         div { class: "character", background_color: bg,
             div {
                 img {
-                    src: format!("{}/{}.png", PATH_IMG, c.photo_name.clone()),
+                    src: format!("{}/{}.png", PATH_IMG, c.photo_name),
                     class: "image-small",
                 }
             }
