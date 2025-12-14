@@ -38,12 +38,15 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     ))
                     .await
                     .unwrap();
-                    log_debug(format!(
-                        "target  {}",
-                        APP.write().game_manager.game_state.last_result_atk.outcomes[0].target_name
-                    ))
-                    .await
-                    .unwrap();
+                    let last_result_atk = &APP.write().game_manager.game_state.last_result_atk;
+                    if !last_result_atk.outcomes.is_empty() {
+                        log_debug(format!(
+                            "target  {}",
+                            last_result_atk.outcomes[0].target_name
+                        ))
+                        .await
+                        .unwrap();
+                    }
                     current_atk.set(AttackType::default());
                     write_game_manager.set(true);
                 }
@@ -128,7 +131,6 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                 }
             }
             div {
-                "{APP.read().game_manager.game_state.current_turn_nb} "
                 if atk_menu_display() {
                     AttackList {
                         name: APP.read().game_manager.pm.current_player.name.clone(),
