@@ -17,7 +17,7 @@ pub fn StartGamePage() -> Element {
     });
 
     rsx! {
-        h4 { "{\nAPP.read().game_manager.game_state.current_turn_nb}" }
+        h4 { "Turn: {APP.read().game_manager.game_state.current_turn_nb}" }
         if state() == ButtonStatus::ReplayGame {
             button {
                 onclick: move |_| async move {
@@ -27,12 +27,6 @@ pub fn StartGamePage() -> Element {
                 "Replay game"
             }
         } else if state() == ButtonStatus::StartGame && ready_to_start() {
-            button {
-                onclick: move |_| async move {
-                    APP.write().game_manager.launch_attack("SimpleAtk");
-                },
-                "Simple atk"
-            }
             SaveButton {}
             GameBoard { game_status: state }
         } else if state() == ButtonStatus::StartGame && !ready_to_start() {
