@@ -76,7 +76,10 @@ pub async fn get_gamemanager_by_game_dir(
     if let Ok(value) = utils::read_from_json::<_, GameManager>(&game_manager_file) {
         Ok(value)
     } else {
-        Err(ServerFnError::new("Failed to read game state".to_string()))
+        Err(ServerFnError::new(format!(
+            "Failed to read game statett {:?}",
+            game_dir_path
+        )))
     }
 }
 
