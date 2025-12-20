@@ -17,16 +17,25 @@ pub fn StartGamePage() -> Element {
     });
 
     rsx! {
-        h4 { "Turn: {APP.read().game_manager.game_state.current_turn_nb}" }
+        h4 { "Turn: {APP.write().game_manager.game_state.current_turn_nb}" }
         if state() == ButtonStatus::ReplayGame {
             button {
                 onclick: move |_| async move {
-                    state.set(ButtonStatus::StartGame);
                     ready_to_start.set(false);
+                    match application::try_new().await {
+                        Ok(app) => {
+                            *APP.write() = app;
+                            APP.write().game_manager.start_new_game();
+                            let _ = APP.write().game_manager.start_new_turn();
+                        }
+                        Err(_) => println!("no app"),
+                    }
+                    state.set(ButtonStatus::StartGame);
                 },
                 "Replay game"
             }
-        } else if state() == ButtonStatus::StartGame && ready_to_start() {
+        }
+        if state() == ButtonStatus::StartGame && ready_to_start() {
             SaveButton {}
             GameBoard { game_status: state }
         } else if state() == ButtonStatus::StartGame && !ready_to_start() {
