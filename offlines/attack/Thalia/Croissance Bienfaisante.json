@@ -7,7 +7,7 @@
         {
             "Cible": "Tous les heroes",
             "Portée": "Zone",
-            "Stat": "PV",
+            "Stat": "HP",
             "Tours actifs": 3,
             "Type": "Changement par valeur",
             "Valeur de l'effet": 0,
@@ -16,7 +16,7 @@
 	{
             "Cible": "Tous les heroes",
             "Portée": "Zone",
-            "Stat": "Pouvoir magique",
+            "Stat": "Magic power",
             "Tours actifs": 3,
             "Type": "Up par %",
             "Valeur de l'effet": 0,

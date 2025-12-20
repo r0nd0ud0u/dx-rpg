@@ -23,18 +23,22 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
             loop {
                 // always sleep at start of loop
                 sleep(std::time::Duration::from_millis(TIMER_FUTURE_1S)).await;
+                // Auto - atk
                 if APP.write().game_manager.is_round_auto() {
                     sleep(std::time::Duration::from_millis(3000)).await;
                     APP.write().game_manager.game_state.last_result_atk =
                         ResultLaunchAttack::default();
+                    // TODO add other boss attacks
+                    // Launch attack
                     APP.write().game_manager.launch_attack("SimpleAtk");
                     log_debug(format!(
-                        "launcher  {}",
+                        "launcher  {} {}",
                         APP.write()
                             .game_manager
                             .game_state
                             .last_result_atk
-                            .launcher_name
+                            .launcher_name,
+                        current_atk().name
                     ))
                     .await
                     .unwrap();
@@ -47,7 +51,9 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         .await
                         .unwrap();
                     }
+                    // reset atk
                     current_atk.set(AttackType::default());
+                    // update game manager
                     write_game_manager.set(true);
                 }
             }
@@ -141,9 +147,22 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                 } else if !current_atk().name.is_empty() {
                     button {
                         onclick: move |_| async move {
+                            // launch attack
                             APP.write().game_manager.launch_attack(current_atk().name.as_str());
+                            log_debug(
+                                    format!(
+                                        "launcher  {} {}",
+                                        APP.write().game_manager.game_state.last_result_atk.launcher_name,
+                                        current_atk().name,
+                                    ),
+                                )
+                                .await
+                                .unwrap();
+                            // reset atk
                             current_atk.set(AttackType::default());
+                            // update game manager
                             write_game_manager.set(true);
+
                         },
                         "launch atk"
                     }
