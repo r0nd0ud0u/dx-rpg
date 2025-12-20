@@ -62,7 +62,7 @@ pub fn LoadGame() -> Element {
                             }
                         };
                         APP.write().game_manager = gm;
-                        navigator.push(Route::LobbyPage {});
+                        navigator.push(Route::StartGamePage {});
                     }
                 },
                 "Start Game"
