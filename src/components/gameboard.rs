@@ -199,9 +199,9 @@ fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
             }
             for d in ra.all_dodging {
                 if d.is_dodging {
-                    "{d.name} is dodging"
+                    "{d.name} is dodging\n"
                 } else if d.is_blocking {
-                    "{d.name} is blocking"
+                    "{d.name} is blocking\n"
                 }
             }
             for o in ra.outcomes {
@@ -220,6 +220,6 @@ fn AmountText(eo: EffectOutcome) -> Element {
         colortext = "red";
     }
     rsx! {
-        div { color: colortext, "{eo.target_name}: {eo.real_amount_tx}" }
+        div { color: colortext, "{eo.new_effect_param.effect_type} {eo.target_name}: {eo.real_amount_tx}" }
     }
 }
