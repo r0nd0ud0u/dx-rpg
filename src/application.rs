@@ -77,7 +77,7 @@ pub async fn get_gamemanager_by_game_dir(
         Ok(value)
     } else {
         Err(ServerFnError::new(format!(
-            "Failed to read game statett {:?}",
+            "Failed to read game state {:?}",
             game_dir_path
         )))
     }
