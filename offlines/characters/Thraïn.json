@@ -105,7 +105,7 @@
         "is_heal_atk_blocked": false,
         "is_random_target": false
     },
-    "Level": 20,
+    "Level": 1,
     "Name": "Thraïn",
     "Photo": "thrain",
     "Powers": {
