@@ -17,7 +17,7 @@ pub fn CharacterPanel(
     selected_atk: Signal<AttackType>,
     atk_menu_display: Signal<bool>,
     write_game_manager: Signal<bool>,
-    is_auto_atk: ReadOnlySignal<bool>,
+    is_auto_atk: ReadSignal<bool>,
 ) -> Element {
     // if boss is dead, panel is hidden
     if c.is_dead().is_some_and(|value| value) && c.kind == CharacterType::Boss {

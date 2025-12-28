@@ -8,16 +8,19 @@ use crate::{
 
 #[component]
 pub fn JoinOngoingGame() -> Element {
-    let _ = use_resource(move || async move {
-        match application::try_new().await {
-            Ok(app) => {
-                *APP.write() = app;
-                APP.write().game_manager.start_new_game();
-                let _ = APP.write().game_manager.start_new_turn();
+    use_effect(|| {
+        spawn(async move {
+            match application::try_new().await {
+                Ok(app) => {
+                    *APP.write() = app;
+                    APP.write().game_manager.start_new_game();
+                    let _ = APP.write().game_manager.start_new_turn();
+                }
+                Err(_) => println!("no app"),
             }
-            Err(_) => println!("no app"),
-        }
+        });
     });
+
     let mut ongoing_games_sig = use_signal(application::OngoingGames::default);
     use_future(move || {
         async move {

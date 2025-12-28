@@ -148,7 +148,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     button {
                         onclick: move |_| async move {
                             // launch attack
-                            APP.write().game_manager.launch_attack(current_atk().name.as_str());
+                            let _ = APP.write().game_manager.launch_attack(current_atk().name.as_str());
                             log_debug(
                                     format!(
                                         "launcher  {} {}",
@@ -162,13 +162,20 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                             current_atk.set(AttackType::default());
                             // update game manager
                             write_game_manager.set(true);
-
                         },
                         "launch atk"
                     }
                 } else {
                     div {
                         ResultAtkText { ra: APP.read().game_manager.game_state.last_result_atk.clone() }
+                    }
+                    div {
+                        if !APP.read().game_manager.game_state.last_result_atk.logs_new_round.is_empty() {
+                            "Starting round:\n"
+                            for log in APP.read().game_manager.game_state.last_result_atk.logs_new_round.iter() {
+                                "{log}\n"
+                            }
+                        }
                     }
                 }
             }
@@ -192,23 +199,23 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
 #[component]
 fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
     rsx! {
-        "Last round:"
         if !ra.outcomes.is_empty() {
+            "Last attack:\n"
             if ra.is_crit {
                 "Critical Strike !"
             }
             for d in ra.all_dodging {
                 if d.is_dodging {
-                    "{d.name} is dodging"
+                    "{d.name} is dodging\n"
                 } else if d.is_blocking {
-                    "{d.name} is blocking"
+                    "{d.name} is blocking\n"
                 }
             }
             for o in ra.outcomes {
                 AmountText { eo: o }
             }
         } else {
-            "No effects"
+            ""
         }
     }
 }
@@ -220,6 +227,8 @@ fn AmountText(eo: EffectOutcome) -> Element {
         colortext = "red";
     }
     rsx! {
-        div { color: colortext, "{eo.target_name}: {eo.real_amount_tx}" }
+        div { color: colortext,
+            "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_name}: {eo.real_amount_tx}"
+        }
     }
 }

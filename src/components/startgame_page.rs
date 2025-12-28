@@ -10,7 +10,7 @@ use dioxus::prelude::*;
 pub fn StartGamePage() -> Element {
     let mut state = use_signal(|| ButtonStatus::StartGame);
     let mut ready_to_start = use_signal(|| true);
-    let _ = use_resource(move || async move {
+    use_effect(move || {
         if state() == ButtonStatus::StartGame {
             ready_to_start.set(true);
         }

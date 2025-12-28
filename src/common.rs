@@ -8,7 +8,7 @@ use crate::components::loadgame_page::LoadGame;
 use crate::components::lobby_page::LobbyPage;
 use crate::components::navbar::Navbar;
 use crate::components::startgame_page::StartGamePage;
-use colorgrad::{CatmullRomGradient, GradientBuilder, LinearGradient};
+use colorgrad::{GradientBuilder, LinearGradient};
 use once_cell::sync::Lazy;
 
 pub static APP: GlobalSignal<Application> = Signal::global(Application::default);
