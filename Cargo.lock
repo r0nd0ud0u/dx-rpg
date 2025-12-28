@@ -3033,7 +3033,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lib-rpg"
 version = "1.1.1"
-source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=b47206142dc6dd51f6aee32b32272689f6ea42fc#b47206142dc6dd51f6aee32b32272689f6ea42fc"
+source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=56f3606f8c8215069c7e20edd52e1fcc4d5c27a0#56f3606f8c8215069c7e20edd52e1fcc4d5c27a0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4693,15 +4693,15 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.145"
+version = "1.0.148"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "402a6f66d8c709116cf22f558eab210f5a50187f702eb4d7e5ef38d9a7f1c79c"
+checksum = "3084b546a1dd6289475996f182a22aba973866ea8e8b02c51d9f46b1336a22da"
 dependencies = [
  "itoa",
  "memchr",
- "ryu",
  "serde",
  "serde_core",
+ "zmij",
 ]
 
 [[package]]
@@ -6785,6 +6785,12 @@ dependencies = [
  "quote",
  "syn 2.0.106",
 ]
+
+[[package]]
+name = "zmij"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6d6085d62852e35540689d1f97ad663e3971fc19cf5eceab364d62c646ea167"
 
 [[package]]
 name = "zvariant"
