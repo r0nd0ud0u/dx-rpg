@@ -170,8 +170,11 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         ResultAtkText { ra: APP.read().game_manager.game_state.last_result_atk.clone() }
                     }
                     div {
-                        for a in APP.read().game_manager.game_state.last_result_atk.logs_new_round.iter() {
-                            "{a}\n"
+                        if !APP.read().game_manager.game_state.last_result_atk.logs_new_round.is_empty() {
+                            "Starting round:\n"
+                            for log in APP.read().game_manager.game_state.last_result_atk.logs_new_round.iter() {
+                                "{log}\n"
+                            }
                         }
                     }
                 }
@@ -196,8 +199,8 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
 #[component]
 fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
     rsx! {
-        "Last round:"
         if !ra.outcomes.is_empty() {
+            "Last attack:\n"
             if ra.is_crit {
                 "Critical Strike !"
             }
@@ -212,7 +215,7 @@ fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
                 AmountText { eo: o }
             }
         } else {
-            "No effects"
+            ""
         }
     }
 }
@@ -225,7 +228,7 @@ fn AmountText(eo: EffectOutcome) -> Element {
     }
     rsx! {
         div { color: colortext,
-            "{eo.new_effect_param.effect_type} {eo.target_name}: {eo.real_amount_tx}"
+            "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_name}: {eo.real_amount_tx}"
         }
     }
 }
