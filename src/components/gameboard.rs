@@ -1,7 +1,7 @@
 use async_std::task::sleep;
 use lib_rpg::{
-    attack_type::AttackType, effect::EffectOutcome, game_manager::ResultLaunchAttack,
-    game_state::GameStatus,
+    attack_type::AttackType, common::stats_const::HP, effect::EffectOutcome,
+    game_manager::ResultLaunchAttack, game_state::GameStatus,
 };
 
 use crate::{
@@ -223,12 +223,20 @@ fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
 #[component]
 fn AmountText(eo: EffectOutcome) -> Element {
     let mut colortext = "green";
-    if eo.real_amount_tx < 0 {
+    if eo.new_effect_param.stats_name == HP && eo.real_hp_amount_tx < 0 {
+        colortext = "red";
+    } else if eo.full_atk_amount_tx < 0 {
         colortext = "red";
     }
     rsx! {
-        div { color: colortext,
-            "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_name}: {eo.real_amount_tx}"
+        if eo.new_effect_param.stats_name == HP {
+            div { color: colortext,
+                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_name}: {eo.real_hp_amount_tx}"
+            }
+        } else {
+            div { color: colortext,
+                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_name}: {eo.full_atk_amount_tx}"
+            }
         }
     }
 }

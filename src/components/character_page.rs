@@ -32,7 +32,7 @@ pub fn CharacterPanel(
         (HP.to_owned(), HP.to_owned()),
         (MANA.to_owned(), "MP".to_owned()),
         (VIGOR.to_owned(), "VP".to_owned()),
-        (BERSECK.to_owned(), "BP".to_owned()),
+        (BERSERK.to_owned(), "BP".to_owned()),
     ]);
 
     let name2 = c.name.clone();
