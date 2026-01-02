@@ -169,6 +169,11 @@ button:active {
     width: 200px;
   }
 
+  .atk-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   .hero-target-button {
     position: absolute;
     width: 30px;

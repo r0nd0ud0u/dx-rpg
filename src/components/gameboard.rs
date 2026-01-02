@@ -1,7 +1,10 @@
 use async_std::task::sleep;
 use lib_rpg::{
-    attack_type::AttackType, common::stats_const::HP, effect::EffectOutcome,
-    game_manager::ResultLaunchAttack, game_state::GameStatus,
+    attack_type::AttackType,
+    common::{effect_const::EFFECT_NB_COOL_DOWN, stats_const::HP},
+    effect::EffectOutcome,
+    game_manager::ResultLaunchAttack,
+    game_state::GameStatus,
 };
 
 use crate::{
@@ -229,7 +232,11 @@ fn AmountText(eo: EffectOutcome) -> Element {
         colortext = "red";
     }
     rsx! {
-        if eo.new_effect_param.stats_name == HP {
+        if eo.new_effect_param.effect_type == EFFECT_NB_COOL_DOWN {
+            div { color: colortext,
+                "{eo.new_effect_param.effect_type} for {eo.new_effect_param.nb_turns}"
+            }
+        } else if eo.new_effect_param.stats_name == HP {
             div { color: colortext,
                 "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_name}: {eo.real_hp_amount_tx}"
             }
