@@ -32,7 +32,7 @@ pub fn CharacterPanel(
         (HP.to_owned(), HP.to_owned()),
         (MANA.to_owned(), "MP".to_owned()),
         (VIGOR.to_owned(), "VP".to_owned()),
-        (BERSECK.to_owned(), "BP".to_owned()),
+        (BERSERK.to_owned(), "BP".to_owned()),
     ]);
 
     let name2 = c.name.clone();
@@ -146,10 +146,15 @@ pub fn NewAtkButton(
     launcher: Character,
     write_game_manager: Signal<bool>,
 ) -> Element {
+    let can_be_launched = launcher.can_be_launched(&attack_type);
+    let mut color = "grey";
+    if !can_be_launched {
+        color = "black";
+    }
     rsx! {
         button {
             class: "atk-button",
-            background_color: "grey",
+            background_color: color,
             onclick: move |_| {
                 let value = attack_type.clone();
                 let l_launcher = launcher.clone();
@@ -160,6 +165,7 @@ pub fn NewAtkButton(
                     write_game_manager.set(true);
                 }
             },
+            disabled: !can_be_launched,
             "{attack_type.name}"
         }
     }

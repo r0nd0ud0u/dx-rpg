@@ -5,11 +5,10 @@ authors = ["rondoudou"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 anyhow = "1.0.99"
 dioxus = { version = "0.7.2", features = ["router", "fullstack"] }
-lib-rpg = { git = "ssh://git@github.com/r0nd0ud0u/lib-rpg.git", rev = "56f3606f8c8215069c7e20edd52e1fcc4d5c27a0" }
+lib-rpg = { git = "ssh://git@github.com/r0nd0ud0u/lib-rpg.git", rev = "5fcf042eb90416d26dda90e4198ab1f9555f7ebd" }
 serde = "1.0.228"
 dioxus-desktop = { version = "0.7.2", optional = true }
 dioxus-html = "0.7.2"
