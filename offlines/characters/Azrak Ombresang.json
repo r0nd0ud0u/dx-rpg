@@ -105,7 +105,7 @@
         "is_heal_atk_blocked": false,
         "is_random_target": true
     },
-    "Level": 1,
+    "Level": 2,
     "Name": "Azrak Ombresang",
     "Photo": "azrak-ombresang",
     "Powers": {
