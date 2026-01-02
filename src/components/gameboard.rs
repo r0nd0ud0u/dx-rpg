@@ -233,9 +233,7 @@ fn AmountText(eo: EffectOutcome) -> Element {
     }
     rsx! {
         if eo.new_effect_param.effect_type == EFFECT_NB_COOL_DOWN {
-            div { color: colortext,
-                "{eo.new_effect_param.effect_type} for {eo.new_effect_param.nb_turns}"
-            }
+            div { color: colortext, "{eo.new_effect_param.effect_type}: {eo.new_effect_param.nb_turns}" }
         } else if eo.new_effect_param.stats_name == HP {
             div { color: colortext,
                 "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_name}: {eo.real_hp_amount_tx}"
