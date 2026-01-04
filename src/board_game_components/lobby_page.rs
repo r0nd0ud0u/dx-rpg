@@ -2,8 +2,8 @@ use dioxus::prelude::*;
 
 use crate::{
     application,
-    common::{Route, APP},
     board_game_components::common_comp::ButtonLink,
+    common::{Route, APP},
 };
 
 #[component]

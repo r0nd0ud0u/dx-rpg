@@ -1,7 +1,8 @@
 use crate::{
     application,
-    common::{ButtonStatus, APP},
     board_game_components::gameboard::GameBoard,
+    common::{ButtonStatus, APP},
+    components::button::{Button, ButtonVariant},
 };
 use dioxus::prelude::*;
 
@@ -19,7 +20,8 @@ pub fn StartGamePage() -> Element {
     rsx! {
         h4 { "Turn: {APP.write().game_manager.game_state.current_turn_nb}" }
         if state() == ButtonStatus::ReplayGame {
-            button {
+            Button {
+                variant: ButtonVariant::Primary,
                 onclick: move |_| async move {
                     ready_to_start.set(false);
                     match application::try_new().await {
@@ -47,7 +49,8 @@ pub fn StartGamePage() -> Element {
 #[component]
 fn SaveButton() -> Element {
     rsx! {
-        button {
+        Button {
+            variant: ButtonVariant::Primary,
             onclick: move |_| {
                 let gm = APP.read().game_manager.clone();
                 async move {

@@ -83,21 +83,6 @@ body {
     top: 0;
 }
 
-button {
-    margin-top: 10px;
-    padding: 10px;
-    background-color: red;
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    border-radius: 5px;
-}
-
-button:active {
-    background-color: darkred;
-}
-
 /* character */
 .character {
     width: 430px;
@@ -250,10 +235,6 @@ button:active {
 .attack-list-line > button {
   margin: 3px;
   padding: 3px;
-}
-
-.atk-type-button{
-  width: 30px;
 }
 
 .cost-energy-button{

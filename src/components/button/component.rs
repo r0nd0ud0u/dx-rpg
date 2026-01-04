@@ -3,6 +3,10 @@ use dioxus::prelude::*;
 #[derive(Copy, Clone, PartialEq, Default)]
 #[non_exhaustive]
 pub enum ButtonVariant {
+    AtkVigorType,
+    AtkManaType,
+    AtkBerserkType,
+    AtkDefaultType,
     #[default]
     Primary,
     Secondary,
@@ -14,6 +18,10 @@ pub enum ButtonVariant {
 impl ButtonVariant {
     pub fn class(&self) -> &'static str {
         match self {
+            ButtonVariant::AtkDefaultType => "atk-default-type",
+            ButtonVariant::AtkVigorType => "atk-vigor-type",
+            ButtonVariant::AtkManaType => "atk-mana-type",
+            ButtonVariant::AtkBerserkType => "atk-berserk-type",
             ButtonVariant::Primary => "primary",
             ButtonVariant::Secondary => "secondary",
             ButtonVariant::Destructive => "destructive",

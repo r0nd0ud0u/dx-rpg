@@ -7,8 +7,11 @@ use lib_rpg::{
     common::stats_const::*,
 };
 
-use crate::common::PATH_IMG;
 use crate::common::{APP, ENERGY_GRAD};
+use crate::{
+    common::PATH_IMG,
+    components::button::{Button, ButtonVariant},
+};
 
 #[component]
 pub fn CharacterPanel(
@@ -60,9 +63,15 @@ pub fn CharacterPanel(
         }
         // atk button
         if is_auto_atk() {
-            button { class: "atk-button-ennemy", onclick: move |_| async move {}, "ATK On Going" }
+            Button {
+                variant: ButtonVariant::Primary,
+                class: "atk-button-ennemy",
+                onclick: move |_| async move {},
+                "ATK On Going"
+            }
         } else if kind2.clone() == CharacterType::Hero && current_player_name == name2.clone() {
-            button {
+            Button {
+                variant: ButtonVariant::Primary,
                 class: "menu-atk-button",
                 onclick: move |_| async move {
                     atk_menu_display.set(!atk_menu_display());
@@ -71,7 +80,8 @@ pub fn CharacterPanel(
             }
         }
         // name button
-        button {
+        Button {
+            variant: ButtonVariant::Primary,
             class: "character-name-button",
             background_color: "black",
             onclick: move |_| async move {},
@@ -96,13 +106,15 @@ pub fn CharacterTargetButton(
     }
     rsx! {
         if c.is_current_target {
-            button {
+            Button {
+                variant: ButtonVariant::Primary,
                 class: format!("{}-target-button-active", kind_str),
                 onclick: move |_| async move {},
                 ""
             }
         } else if c.is_potential_target {
-            button {
+            Button {
+                variant: ButtonVariant::Primary,
                 class: format!("{}-target-button", kind_str),
                 onclick: move |_| {
                     let new_target_name = c.name.clone();
@@ -184,9 +196,8 @@ pub fn AttackList(
                 for (_key , value) in c.attacks_list.iter() {
                     if c.level >= value.level as u64 {
                         div { class: "attack-list-line",
-                            button {
-                                class: "atk-type-button",
-                                background_color: get_type_color(value),
+                            Button {
+                                variant: get_variant_atk_type(value),
                                 onclick: move |_| {},
                                 ""
                             }
@@ -197,7 +208,8 @@ pub fn AttackList(
                                 launcher: c.clone(),
                                 write_game_manager,
                             }
-                            button {
+                            Button {
+                                variant: ButtonVariant::Primary,
                                 class: "cost-energy-button",
                                 onclick: move |_| {},
                                 {get_cost(value)}
@@ -216,15 +228,15 @@ fn get_color(value: i32) -> String {
     ENERGY_GRAD.at(value as f32 / 100.0).to_css_hex()
 }
 
-fn get_type_color(atk: &AttackType) -> &'static str {
+fn get_variant_atk_type(atk: &AttackType) -> ButtonVariant {
     if atk.mana_cost > 0 {
-        "green"
+        ButtonVariant::AtkDefaultType
     } else if atk.vigor_cost > 0 {
-        "orange"
+        ButtonVariant::AtkDefaultType
     } else if atk.berseck_cost > 0 {
-        "red"
+        ButtonVariant::AtkBerserkType
     } else {
-        "white"
+        ButtonVariant::AtkDefaultType
     }
 }
 

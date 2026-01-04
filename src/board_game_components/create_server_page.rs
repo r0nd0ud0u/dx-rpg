@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::{common::Route, board_game_components::common_comp::ButtonLink};
+use crate::{board_game_components::common_comp::ButtonLink, common::Route};
 
 /// CreateServer page
 #[component]

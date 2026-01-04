@@ -3,17 +3,6 @@
  */
 @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 
-body {
-  padding: 0;
-  margin: 0;
-  background-color: var(--primary-color);
-  color: var(--secondary-color-4);
-  font-family: Inter, sans-serif;
-  font-optical-sizing: auto;
-  font-style: normal;
-  font-weight: 400;
-}
-
 @media (prefers-color-scheme: dark) {
   :root {
     --dark: initial;
@@ -38,6 +27,9 @@ body {
   --primary-color-5: var(--dark, #262626) var(--light, #f5f5f5);
   --primary-color-6: var(--dark, #232323) var(--light, #e5e5e5);
   --primary-color-7: var(--dark, #3e3e3e) var(--light, #b0b0b0);
+  --green-color-1: var(--dark, #0b6407) var(--light, #15ed0d);
+  --orange-color-1: var(--dark, #d47c18) var(--light, #d48f18);
+  --red-color-1: var(--dark, #cc1919) var(--light, #cc1919);
 
   /* Secondary colors */
   --secondary-color: var(--dark, #fff) var(--light, #000);

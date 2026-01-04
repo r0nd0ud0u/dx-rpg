@@ -20,6 +20,46 @@
   background-color: var(--secondary-color-1);
 }
 
+.button[data-style="atk-default-type"] {
+  background-color: var(--secondary-color-6);
+  color: var(--primary-color);
+  width: 30px;
+}
+
+.button[data-style="atk-default-type"]:hover {
+  background-color: var(--secondary-color-5);
+}
+
+.button[data-style="atk-mana-type"] {
+  background-color: var(--green-color-1);
+  color: var(--primary-color);
+  width: 30px;
+}
+
+.button[data-style="atk-mana-type"]:hover {
+  background-color: var(--secondary-color-1);
+}
+
+.button[data-style="atk-vigor-type"] {
+  background-color: var(--orange-color-1);
+  color: var(--primary-color);
+  width: 30px;
+}
+
+.button[data-style="atk-vigor-type"]:hover {
+  background-color: var(--secondary-color-1);
+}
+
+.button[data-style="atk-berserk-type"] {
+  background-color: var(--red-color-1);
+  color: var(--primary-color);
+  width: 30px;
+}
+
+.button[data-style="atk-berserk-type"]:hover {
+  background-color: var(--secondary-error-color);
+}
+
 .button[data-style="secondary"] {
   background-color: var(--primary-color-5);
   color: var(--secondary-color-1);
