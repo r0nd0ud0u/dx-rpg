@@ -1,8 +1,11 @@
 use dioxus::{logger::tracing::Level, prelude::*};
-use dx_rpg::common::Route;
+use dx_rpg::common::{DX_COMP_CSS, Route};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
+
+mod components;
+
 
 fn main() {
     // Init logger
@@ -15,6 +18,7 @@ fn App() -> Element {
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
+        //document::Link { rel: "stylesheet", href: DX_COMP_CSS }
         document::Stylesheet {
             // Urls are relative to your Cargo.toml file
             href: asset!("/assets/tailwind.css"),

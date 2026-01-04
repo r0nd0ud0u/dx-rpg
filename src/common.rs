@@ -50,3 +50,4 @@ pub enum Route {
 }
 
 pub const PATH_IMG: Asset = asset!("/assets/img");
+pub const DX_COMP_CSS: Asset = asset!("/assets/dx-components-theme.css");
