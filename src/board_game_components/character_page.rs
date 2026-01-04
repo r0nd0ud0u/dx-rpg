@@ -199,7 +199,7 @@ pub fn AttackList(
                             Button {
                                 variant: get_variant_atk_type(value),
                                 onclick: move |_| {},
-                                ""
+                                {get_cost(value)}
                             }
                             NewAtkButton {
                                 attack_type: value.clone(),
@@ -207,12 +207,6 @@ pub fn AttackList(
                                 selected_atk,
                                 launcher: c.clone(),
                                 write_game_manager,
-                            }
-                            Button {
-                                variant: ButtonVariant::Primary,
-                                class: "cost-energy-button",
-                                onclick: move |_| {},
-                                {get_cost(value)}
                             }
                         }
                     }
@@ -230,9 +224,9 @@ fn get_color(value: i32) -> String {
 
 fn get_variant_atk_type(atk: &AttackType) -> ButtonVariant {
     if atk.mana_cost > 0 {
-        ButtonVariant::AtkDefaultType
+        ButtonVariant::AtkManaType
     } else if atk.vigor_cost > 0 {
-        ButtonVariant::AtkDefaultType
+        ButtonVariant::AtkVigorType
     } else if atk.berseck_cost > 0 {
         ButtonVariant::AtkBerserkType
     } else {

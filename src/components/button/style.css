@@ -37,7 +37,7 @@
 }
 
 .button[data-style="atk-mana-type"]:hover {
-  background-color: var(--secondary-color-1);
+  background-color: var(--high-green-color-1);
 }
 
 .button[data-style="atk-vigor-type"] {
@@ -47,7 +47,7 @@
 }
 
 .button[data-style="atk-vigor-type"]:hover {
-  background-color: var(--secondary-color-1);
+  background-color: var(--high-orange-color-1);
 }
 
 .button[data-style="atk-berserk-type"] {

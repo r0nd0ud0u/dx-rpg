@@ -27,7 +27,7 @@
   --primary-color-5: var(--dark, #262626) var(--light, #f5f5f5);
   --primary-color-6: var(--dark, #232323) var(--light, #e5e5e5);
   --primary-color-7: var(--dark, #3e3e3e) var(--light, #b0b0b0);
-  --green-color-1: var(--dark, #0b6407) var(--light, #15ed0d);
+  --green-color-1: var(--dark, #0b6407) var(--light, #0f990b);
   --orange-color-1: var(--dark, #d47c18) var(--light, #d48f18);
   --red-color-1: var(--dark, #cc1919) var(--light, #cc1919);
 
@@ -54,6 +54,8 @@
     var(--light, var(--primary-color));
   --secondary-info-color: var(--dark, var(--primary-color-7))
     var(--light, var(--secondary-color-3));
+  --high-green-color-1: var(--dark, #0b6407) var(--light, #17c311);
+  --high-orange-color-1: var(--dark, #d47c18) var(--light, #e8a738);
 }
 
 /* Modern browsers with `scrollbar-*` support */
