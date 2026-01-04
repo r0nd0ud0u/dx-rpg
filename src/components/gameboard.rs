@@ -9,8 +9,8 @@ use lib_rpg::{
 
 use crate::{
     application::{self, log_debug},
-    common::{APP, ButtonStatus, tempo_const::TIMER_FUTURE_1S},
-    components::{button::{Button, ButtonVariant}, character_page::{AttackList, CharacterPanel}},
+    common::{tempo_const::TIMER_FUTURE_1S, ButtonStatus, APP},
+    components::character_page::{AttackList, CharacterPanel},
 };
 use dioxus::prelude::*;
 
@@ -148,8 +148,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         write_game_manager,
                     }
                 } else if !current_atk().name.is_empty() {
-                    Button {
-                        variant: ButtonVariant::Primary,
+                    button {
                         onclick: move |_| async move {
                             // launch attack
                             let _ = APP.write().game_manager.launch_attack(current_atk().name.as_str());
