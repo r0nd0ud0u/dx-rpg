@@ -10,7 +10,7 @@ use lib_rpg::{
 use crate::{
     application::{self, log_debug},
     common::{tempo_const::TIMER_FUTURE_1S, ButtonStatus, APP},
-    components::character_page::{AttackList, CharacterPanel},
+    board_game_components::character_page::{AttackList, CharacterPanel},
 };
 use dioxus::prelude::*;
 

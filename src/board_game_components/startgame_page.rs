@@ -1,7 +1,7 @@
 use crate::{
     application,
     common::{ButtonStatus, APP},
-    components::gameboard::GameBoard,
+    board_game_components::gameboard::GameBoard,
 };
 use dioxus::prelude::*;
 

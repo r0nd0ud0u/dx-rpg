@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use crate::{
     application,
     common::{Route, APP},
-    components::common_comp::ButtonLink,
+    board_game_components::common_comp::ButtonLink,
 };
 
 #[component]
