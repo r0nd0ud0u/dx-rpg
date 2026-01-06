@@ -17,7 +17,7 @@ use crate::{
 pub fn CharacterPanel(
     c: Character,
     current_player_name: String,
-    selected_atk: Signal<AttackType>,
+    selected_atk_name: Signal<String>,
     atk_menu_display: Signal<bool>,
     write_game_manager: Signal<bool>,
     is_auto_atk: ReadSignal<bool>,
@@ -88,16 +88,22 @@ pub fn CharacterPanel(
             "{name2.clone()}"
         }
         // target button
-        if !selected_atk().name.is_empty() {
-            CharacterTargetButton { c: c.clone(), selected_atk, write_game_manager }
+        if !selected_atk_name().is_empty() {
+            CharacterTargetButton {
+                launcher_name: current_player_name,
+                c: c.clone(),
+                selected_atk_name,
+                write_game_manager,
+            }
         }
     }
 }
 
 #[component]
 pub fn CharacterTargetButton(
+    launcher_name: String,
     c: Character,
-    selected_atk: Signal<AttackType>,
+    selected_atk_name: Signal<String>,
     write_game_manager: Signal<bool>,
 ) -> Element {
     let mut kind_str = "hero";
@@ -122,7 +128,11 @@ pub fn CharacterTargetButton(
                         APP.write()
                             .game_manager
                             .pm
-                            .set_one_target(&new_target_name, &selected_atk().reach);
+                            .set_one_target(
+                                &new_target_name,
+                                &selected_atk_name(),
+                                &new_target_name,
+                            );
                         write_game_manager.set(true);
                     }
                 },
@@ -154,9 +164,9 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
 pub fn NewAtkButton(
     attack_type: AttackType,
     display_atklist_sig: Signal<bool>,
-    selected_atk: Signal<AttackType>,
     launcher: Character,
     write_game_manager: Signal<bool>,
+    selected_atk_name: Signal<String>,
 ) -> Element {
     let can_be_launched = launcher.can_be_launched(&attack_type);
     let mut color = "grey";
@@ -171,10 +181,11 @@ pub fn NewAtkButton(
                 let value = attack_type.clone();
                 let l_launcher = launcher.clone();
                 async move {
+                    selected_atk_name.set(value.name.clone());
                     APP.write().game_manager.pm.set_targeted_characters(&l_launcher, &value);
                     *display_atklist_sig.write() = false;
-                    selected_atk.set(value);
                     write_game_manager.set(true);
+
                 }
             },
             disabled: !can_be_launched,
@@ -187,13 +198,13 @@ pub fn NewAtkButton(
 pub fn AttackList(
     name: String,
     display_atklist_sig: Signal<bool>,
-    selected_atk: Signal<AttackType>,
     write_game_manager: Signal<bool>,
+    selected_atk_name: Signal<String>,
 ) -> Element {
     if let Some(c) = APP.read().game_manager.pm.get_active_character(&name) {
         rsx! {
             div { class: "attack-list",
-                for (_key , value) in c.attacks_list.iter() {
+                for (key , value) in c.attacks_list.iter() {
                     if c.level >= value.level as u64 {
                         div { class: "attack-list-line",
                             Button {
@@ -204,9 +215,9 @@ pub fn AttackList(
                             NewAtkButton {
                                 attack_type: value.clone(),
                                 display_atklist_sig,
-                                selected_atk,
                                 launcher: c.clone(),
                                 write_game_manager,
+                                selected_atk_name,
                             }
                         }
                     }
