@@ -9,17 +9,18 @@ use lib_rpg::{
 
 use crate::{
     application::{self, log_debug},
+    board_game_components::character_page::{AttackList, CharacterPanel},
     common::{tempo_const::TIMER_FUTURE_1S, ButtonStatus, APP},
-    components::character_page::{AttackList, CharacterPanel},
+    components::button::Button,
 };
 use dioxus::prelude::*;
 
 #[component]
 pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
-    let mut current_atk = use_signal(AttackType::default);
     let atk_menu_display = use_signal(|| false);
     let mut write_game_manager = use_signal(|| false);
     let mut reload_app = use_signal(|| false);
+    let mut selected_atk_name = use_signal(|| "".to_string());
 
     use_future(move || {
         async move {
@@ -41,7 +42,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                             .game_state
                             .last_result_atk
                             .launcher_name,
-                        current_atk().name
+                        selected_atk_name()
                     ))
                     .await
                     .unwrap();
@@ -55,7 +56,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         .unwrap();
                     }
                     // reset atk
-                    current_atk.set(AttackType::default());
+                    selected_atk_name.set("".to_string());
                     // update game manager
                     write_game_manager.set(true);
                 }
@@ -132,7 +133,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     CharacterPanel {
                         c: c.clone(),
                         current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
-                        selected_atk: current_atk,
+                        selected_atk_name,
                         atk_menu_display,
                         write_game_manager,
                         is_auto_atk: false,
@@ -144,25 +145,25 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     AttackList {
                         name: APP.read().game_manager.pm.current_player.name.clone(),
                         display_atklist_sig: atk_menu_display,
-                        selected_atk: current_atk,
                         write_game_manager,
+                        selected_atk_name,
                     }
-                } else if !current_atk().name.is_empty() {
-                    button {
+                } else if !selected_atk_name().is_empty() {
+                    Button {
                         onclick: move |_| async move {
                             // launch attack
-                            let _ = APP.write().game_manager.launch_attack(current_atk().name.as_str());
+                            let _ = APP.write().game_manager.launch_attack(&selected_atk_name());
                             log_debug(
                                     format!(
                                         "launcher  {} {}",
                                         APP.write().game_manager.game_state.last_result_atk.launcher_name,
-                                        current_atk().name,
+                                        selected_atk_name(),
                                     ),
                                 )
                                 .await
                                 .unwrap();
                             // reset atk
-                            current_atk.set(AttackType::default());
+                            selected_atk_name.set("".to_string());
                             // update game manager
                             write_game_manager.set(true);
                         },
@@ -188,7 +189,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     CharacterPanel {
                         c: c.clone(),
                         current_player_name: "",
-                        selected_atk: current_atk,
+                        selected_atk_name: selected_atk_name,
                         atk_menu_display,
                         write_game_manager,
                         is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
