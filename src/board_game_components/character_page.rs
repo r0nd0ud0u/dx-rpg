@@ -64,15 +64,13 @@ pub fn CharacterPanel(
         // atk button
         if is_auto_atk() {
             Button {
-                variant: ButtonVariant::Primary,
-                class: "atk-button-ennemy",
+                variant: ButtonVariant::AtkAutoMenu,
                 onclick: move |_| async move {},
                 "ATK On Going"
             }
         } else if kind2.clone() == CharacterType::Hero && current_player_name == name2.clone() {
             Button {
-                variant: ButtonVariant::Primary,
-                class: "menu-atk-button",
+                variant: ButtonVariant::AtkMenu,
                 onclick: move |_| async move {
                     atk_menu_display.set(!atk_menu_display());
                 },
@@ -81,9 +79,7 @@ pub fn CharacterPanel(
         }
         // name button
         Button {
-            variant: ButtonVariant::Primary,
-            class: "character-name-button",
-            background_color: "black",
+            variant: ButtonVariant::CharacterName,
             onclick: move |_| async move {},
             "{name2.clone()}"
         }
@@ -173,19 +169,23 @@ pub fn NewAtkButton(
     if !can_be_launched {
         color = "black";
     }
+    let attack_name = attack_type.name.clone();
+    let launcher_name = launcher.name;
     rsx! {
-        button {
-            class: "atk-button",
-            background_color: color,
+        Button {
+            variant: ButtonVariant::AtkName,
             onclick: move |_| {
-                let value = attack_type.clone();
-                let l_launcher = launcher.clone();
+                let async_atk_name = attack_name.clone();
+                let async_launcher_name = launcher_name.clone();
                 async move {
-                    selected_atk_name.set(value.name.clone());
-                    APP.write().game_manager.pm.set_targeted_characters(&l_launcher, &value);
+                    selected_atk_name.set(async_atk_name.clone());
+                    APP.write()
+
+                        .game_manager
+                        .pm
+                        .set_targeted_characters(&async_launcher_name, &async_atk_name);
                     *display_atklist_sig.write() = false;
                     write_game_manager.set(true);
-
                 }
             },
             disabled: !can_be_launched,
