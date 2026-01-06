@@ -3,6 +3,7 @@ use dioxus::prelude::*;
 use crate::{
     application,
     common::{Route, APP},
+    components::button::{Button, ButtonVariant},
 };
 
 #[component]
@@ -35,14 +36,16 @@ pub fn LoadGame() -> Element {
         div { class: "home-container",
             h4 { "Load game" }
             for (index , i) in games_list.iter().enumerate() {
-                button {
-                    class: "button-lobby-list",
+                Button {
+                    variant: if active_button() as usize == index { ButtonVariant::Destructive } else { ButtonVariant::Primary },
                     disabled: active_button() == index as i64,
                     onclick: move |_| async move { active_button.set(index as i64) },
                     "{i.clone().to_string_lossy()}"
                 }
             }
-            button {
+            Button {
+                variant: ButtonVariant::Secondary,
+                disabled: active_button() == -1,
                 onclick: move |_| {
                     let cur_game = games_list.get(active_button() as usize).unwrap().to_owned();
                     async move {

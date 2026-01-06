@@ -7,6 +7,10 @@ pub enum ButtonVariant {
     AtkManaType,
     AtkBerserkType,
     AtkDefaultType,
+    AtkName,
+    AtkAutoMenu,
+    AtkMenu,
+    CharacterName,
     #[default]
     Primary,
     Secondary,
@@ -18,10 +22,16 @@ pub enum ButtonVariant {
 impl ButtonVariant {
     pub fn class(&self) -> &'static str {
         match self {
+            // Button attaks type
             ButtonVariant::AtkDefaultType => "atk-default-type",
             ButtonVariant::AtkVigorType => "atk-vigor-type",
             ButtonVariant::AtkManaType => "atk-mana-type",
             ButtonVariant::AtkBerserkType => "atk-berserk-type",
+            ButtonVariant::AtkMenu => "atk-menu",
+            ButtonVariant::AtkAutoMenu => "auto-atk-menu",
+            ButtonVariant::CharacterName => "character-name",
+            // Button atk name
+            ButtonVariant::AtkName => "atk-name",
             ButtonVariant::Primary => "primary",
             ButtonVariant::Secondary => "secondary",
             ButtonVariant::Destructive => "destructive",

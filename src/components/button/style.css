@@ -20,6 +20,10 @@
   background-color: var(--secondary-color-1);
 }
 
+.button[data-style="primary"]:disabled {
+  cursor: not-allowed;
+}
+
 .button[data-style="atk-default-type"] {
   background-color: var(--secondary-color-6);
   color: var(--primary-color);
@@ -28,6 +32,10 @@
 
 .button[data-style="atk-default-type"]:hover {
   background-color: var(--secondary-color-5);
+}
+
+.button[data-style="atk-default-type"]:disabled {
+  cursor: not-allowed;
 }
 
 .button[data-style="atk-mana-type"] {
@@ -40,6 +48,10 @@
   background-color: var(--high-green-color-1);
 }
 
+.button[data-style="atk-mana-type"]:disabled {
+  cursor: not-allowed;
+}
+
 .button[data-style="atk-vigor-type"] {
   background-color: var(--orange-color-1);
   color: var(--primary-color);
@@ -48,6 +60,10 @@
 
 .button[data-style="atk-vigor-type"]:hover {
   background-color: var(--high-orange-color-1);
+}
+
+.button[data-style="atk-vigor-type"]:disabled {
+  cursor: not-allowed;
 }
 
 .button[data-style="atk-berserk-type"] {
@@ -60,13 +76,67 @@
   background-color: var(--secondary-error-color);
 }
 
+.button[data-style="atk-berserk-type"]:disabled {
+  cursor: not-allowed;
+}
+
+.button[data-style="atk-name"] {
+  background-color: var(--grey-color-1);
+  color: var(--primary-color);
+  width: 300px;
+}
+
+.button[data-style="atk-name"]:hover {
+  background-color: var(--high-grey-color-1)
+}
+
+.button[data-style="atk-menu"] {
+  background-color: var(--primary-error-color);
+  color: var(--contrast-error-color);
+  position: absolute;
+  text-align: center;
+  -webkit-transform:translate(400px, -150px); /* relative to margin-top, height and width of class character */
+}
+
+.button[data-style="atk-name"]:hover {
+  background-color: var(--high-grey-color-1)
+}
+
+.button[data-style="auto-atk-menu"] {
+  background-color: var(--primary-error-color);
+  color: var(--contrast-error-color);
+  text-align: center;
+  -webkit-transform:translate(-100%, -120px); /* relative to margin-top, height and width of class character */
+}
+
+.button[data-style="auto-atk-menu"]:hover {
+  background-color: var(--secondary-error-color);
+}
+
+.button[data-style="character-name"] {
+  background-color: var(--primary-color-5);
+  color: var(--black-color-1);
+  position: absolute;
+  -webkit-transform:translate(0%, -140%);
+  justify-content: flex-start;
+  align-items: left;
+}
+
+.button[data-style="character-name"]:hover {
+  background-color: var(--primary-color-1);
+}
+
 .button[data-style="secondary"] {
   background-color: var(--primary-color-5);
   color: var(--secondary-color-1);
 }
 
 .button[data-style="secondary"]:hover {
-  background-color: var(--primary-color-4);
+  background-color: var(--secondary-color-3);
+}
+
+.button[data-style="secondary"]:disabled {
+  cursor: not-allowed;
 }
 
 .button[data-style="ghost"] {

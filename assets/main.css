@@ -129,17 +129,6 @@ body {
     align-items: left;
   }
 
-  .menu-atk-button {
-    position: absolute;
-    width: 50px;
-    -webkit-transform:translate(400px, -150px); /* relative to margin-top, height and width of class character */
-  }
-
-  .atk-button-ennemy{
-    position: absolute;
-    -webkit-transform:translate(-100%, -120px); /* relative to margin-top,height and width of class character */
-  }
-
   .attack-list {
     display: flex;
     flex-direction: column; /* stack vertically */
@@ -148,10 +137,6 @@ body {
   .attack-list > button {
     margin: 3px;
     padding: 3px;
-  }
-
-  .atk-button {
-    width: 200px;
   }
 
   .atk-button:disabled {
@@ -248,19 +233,23 @@ body {
   gap: 10px; /* espace entre les éléments */
 }
 
-.button-link {
-  display: inline-block;
-  padding: 10px 20px;
+.header-text {
   background-color: #1a73e8;
-  color: #ffffff;
   text-decoration: none;
+  color: #ffffff;
   border-radius: 8px;
   font-weight: bold;
   transition: background-color 0.3s ease;
+  padding: 5px 5px;
 }
 
-.button-link:hover {
+.header-text:hover {
   background-color: #1669c1;
+}
+
+.button-link {
+  display: inline-block;
+  margin-bottom: 10px;
 }
 
 .styled-list {

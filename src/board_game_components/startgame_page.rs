@@ -50,7 +50,7 @@ pub fn StartGamePage() -> Element {
 fn SaveButton() -> Element {
     rsx! {
         Button {
-            variant: ButtonVariant::Primary,
+            variant: ButtonVariant::Destructive,
             onclick: move |_| {
                 let gm = APP.read().game_manager.clone();
                 async move {

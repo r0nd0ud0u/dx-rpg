@@ -11,7 +11,7 @@ use crate::{
     application::{self, log_debug},
     board_game_components::character_page::{AttackList, CharacterPanel},
     common::{tempo_const::TIMER_FUTURE_1S, ButtonStatus, APP},
-    components::button::Button,
+    components::button::{Button, ButtonVariant},
 };
 use dioxus::prelude::*;
 
@@ -150,6 +150,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     }
                 } else if !selected_atk_name().is_empty() {
                     Button {
+                        variant: ButtonVariant::Destructive,
                         onclick: move |_| async move {
                             // launch attack
                             let _ = APP.write().game_manager.launch_attack(&selected_atk_name());
@@ -189,7 +190,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     CharacterPanel {
                         c: c.clone(),
                         current_player_name: "",
-                        selected_atk_name: selected_atk_name,
+                        selected_atk_name,
                         atk_menu_display,
                         write_game_manager,
                         is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
