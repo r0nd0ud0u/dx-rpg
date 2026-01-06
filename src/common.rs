@@ -1,13 +1,13 @@
 use dioxus::prelude::*;
 
 use crate::application::Application;
-use crate::components::create_server_page::CreateServer;
-use crate::components::home_page::Home;
-use crate::components::joinongoinggame_page::JoinOngoingGame;
-use crate::components::loadgame_page::LoadGame;
-use crate::components::lobby_page::LobbyPage;
-use crate::components::navbar::Navbar;
-use crate::components::startgame_page::StartGamePage;
+use crate::board_game_components::create_server_page::CreateServer;
+use crate::board_game_components::home_page::Home;
+use crate::board_game_components::joinongoinggame_page::JoinOngoingGame;
+use crate::board_game_components::loadgame_page::LoadGame;
+use crate::board_game_components::lobby_page::LobbyPage;
+use crate::board_game_components::navbar::Navbar;
+use crate::board_game_components::startgame_page::StartGamePage;
 use colorgrad::{GradientBuilder, LinearGradient};
 use once_cell::sync::Lazy;
 
@@ -50,3 +50,4 @@ pub enum Route {
 }
 
 pub const PATH_IMG: Asset = asset!("/assets/img");
+pub const DX_COMP_CSS: Asset = asset!("/assets/dx-components-theme.css");

@@ -7,14 +7,17 @@ use lib_rpg::{
     common::stats_const::*,
 };
 
-use crate::common::PATH_IMG;
 use crate::common::{APP, ENERGY_GRAD};
+use crate::{
+    common::PATH_IMG,
+    components::button::{Button, ButtonVariant},
+};
 
 #[component]
 pub fn CharacterPanel(
     c: Character,
     current_player_name: String,
-    selected_atk: Signal<AttackType>,
+    selected_atk_name: Signal<String>,
     atk_menu_display: Signal<bool>,
     write_game_manager: Signal<bool>,
     is_auto_atk: ReadSignal<bool>,
@@ -60,9 +63,15 @@ pub fn CharacterPanel(
         }
         // atk button
         if is_auto_atk() {
-            button { class: "atk-button-ennemy", onclick: move |_| async move {}, "ATK On Going" }
+            Button {
+                variant: ButtonVariant::Primary,
+                class: "atk-button-ennemy",
+                onclick: move |_| async move {},
+                "ATK On Going"
+            }
         } else if kind2.clone() == CharacterType::Hero && current_player_name == name2.clone() {
-            button {
+            Button {
+                variant: ButtonVariant::Primary,
                 class: "menu-atk-button",
                 onclick: move |_| async move {
                     atk_menu_display.set(!atk_menu_display());
@@ -71,23 +80,30 @@ pub fn CharacterPanel(
             }
         }
         // name button
-        button {
+        Button {
+            variant: ButtonVariant::Primary,
             class: "character-name-button",
             background_color: "black",
             onclick: move |_| async move {},
             "{name2.clone()}"
         }
         // target button
-        if !selected_atk().name.is_empty() {
-            CharacterTargetButton { c: c.clone(), selected_atk, write_game_manager }
+        if !selected_atk_name().is_empty() {
+            CharacterTargetButton {
+                launcher_name: current_player_name,
+                c: c.clone(),
+                selected_atk_name,
+                write_game_manager,
+            }
         }
     }
 }
 
 #[component]
 pub fn CharacterTargetButton(
+    launcher_name: String,
     c: Character,
-    selected_atk: Signal<AttackType>,
+    selected_atk_name: Signal<String>,
     write_game_manager: Signal<bool>,
 ) -> Element {
     let mut kind_str = "hero";
@@ -96,13 +112,15 @@ pub fn CharacterTargetButton(
     }
     rsx! {
         if c.is_current_target {
-            button {
+            Button {
+                variant: ButtonVariant::Primary,
                 class: format!("{}-target-button-active", kind_str),
                 onclick: move |_| async move {},
                 ""
             }
         } else if c.is_potential_target {
-            button {
+            Button {
+                variant: ButtonVariant::Primary,
                 class: format!("{}-target-button", kind_str),
                 onclick: move |_| {
                     let new_target_name = c.name.clone();
@@ -110,7 +128,11 @@ pub fn CharacterTargetButton(
                         APP.write()
                             .game_manager
                             .pm
-                            .set_one_target(&new_target_name, &selected_atk().reach);
+                            .set_one_target(
+                                &new_target_name,
+                                &selected_atk_name(),
+                                &new_target_name,
+                            );
                         write_game_manager.set(true);
                     }
                 },
@@ -142,9 +164,9 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
 pub fn NewAtkButton(
     attack_type: AttackType,
     display_atklist_sig: Signal<bool>,
-    selected_atk: Signal<AttackType>,
     launcher: Character,
     write_game_manager: Signal<bool>,
+    selected_atk_name: Signal<String>,
 ) -> Element {
     let can_be_launched = launcher.can_be_launched(&attack_type);
     let mut color = "grey";
@@ -159,10 +181,11 @@ pub fn NewAtkButton(
                 let value = attack_type.clone();
                 let l_launcher = launcher.clone();
                 async move {
+                    selected_atk_name.set(value.name.clone());
                     APP.write().game_manager.pm.set_targeted_characters(&l_launcher, &value);
                     *display_atklist_sig.write() = false;
-                    selected_atk.set(value);
                     write_game_manager.set(true);
+
                 }
             },
             disabled: !can_be_launched,
@@ -175,32 +198,26 @@ pub fn NewAtkButton(
 pub fn AttackList(
     name: String,
     display_atklist_sig: Signal<bool>,
-    selected_atk: Signal<AttackType>,
     write_game_manager: Signal<bool>,
+    selected_atk_name: Signal<String>,
 ) -> Element {
     if let Some(c) = APP.read().game_manager.pm.get_active_character(&name) {
         rsx! {
             div { class: "attack-list",
-                for (_key , value) in c.attacks_list.iter() {
+                for (key , value) in c.attacks_list.iter() {
                     if c.level >= value.level as u64 {
                         div { class: "attack-list-line",
-                            button {
-                                class: "atk-type-button",
-                                background_color: get_type_color(value),
+                            Button {
+                                variant: get_variant_atk_type(value),
                                 onclick: move |_| {},
-                                ""
+                                {get_cost(value)}
                             }
                             NewAtkButton {
                                 attack_type: value.clone(),
                                 display_atklist_sig,
-                                selected_atk,
                                 launcher: c.clone(),
                                 write_game_manager,
-                            }
-                            button {
-                                class: "cost-energy-button",
-                                onclick: move |_| {},
-                                {get_cost(value)}
+                                selected_atk_name,
                             }
                         }
                     }
@@ -216,15 +233,15 @@ fn get_color(value: i32) -> String {
     ENERGY_GRAD.at(value as f32 / 100.0).to_css_hex()
 }
 
-fn get_type_color(atk: &AttackType) -> &'static str {
+fn get_variant_atk_type(atk: &AttackType) -> ButtonVariant {
     if atk.mana_cost > 0 {
-        "green"
+        ButtonVariant::AtkManaType
     } else if atk.vigor_cost > 0 {
-        "orange"
+        ButtonVariant::AtkVigorType
     } else if atk.berseck_cost > 0 {
-        "red"
+        ButtonVariant::AtkBerserkType
     } else {
-        "white"
+        ButtonVariant::AtkDefaultType
     }
 }
 
