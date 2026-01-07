@@ -7,7 +7,10 @@ use lib_rpg::{
     common::stats_const::*,
 };
 
-use crate::common::{APP, ENERGY_GRAD};
+use crate::{
+    application::log_debug,
+    common::{APP, ENERGY_GRAD},
+};
 use crate::{
     common::PATH_IMG,
     components::button::{Button, ButtonVariant},
@@ -119,16 +122,18 @@ pub fn CharacterTargetButton(
                 variant: ButtonVariant::Primary,
                 class: format!("{}-target-button", kind_str),
                 onclick: move |_| {
-                    let new_target_name = c.name.clone();
+                    let async_target_name = c.name.clone();
+                    let async_launcher_name = launcher_name.clone();
                     async move {
                         APP.write()
                             .game_manager
                             .pm
                             .set_one_target(
-                                &new_target_name,
+                                &async_launcher_name,
                                 &selected_atk_name(),
-                                &new_target_name,
+                                &async_target_name,
                             );
+                        log_debug(format!("l:{} t:{}, a:{}", async_launcher_name.clone(), async_target_name.clone(), selected_atk_name.read().clone())).await.unwrap();
                         write_game_manager.set(true);
                     }
                 },
@@ -184,6 +189,7 @@ pub fn NewAtkButton(
                         .game_manager
                         .pm
                         .set_targeted_characters(&async_launcher_name, &async_atk_name);
+                    log_debug("set_targeted_characters".to_owned()).await.unwrap();
                     *display_atklist_sig.write() = false;
                     write_game_manager.set(true);
                 }

@@ -189,7 +189,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                 for c in APP.read().game_manager.pm.active_bosses.iter() {
                     CharacterPanel {
                         c: c.clone(),
-                        current_player_name: "",
+                        current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
                         selected_atk_name,
                         atk_menu_display,
                         write_game_manager,
