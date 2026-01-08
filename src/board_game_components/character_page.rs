@@ -133,7 +133,16 @@ pub fn CharacterTargetButton(
                                 &selected_atk_name(),
                                 &async_target_name,
                             );
-                        log_debug(format!("l:{} t:{}, a:{}", async_launcher_name.clone(), async_target_name.clone(), selected_atk_name.read().clone())).await.unwrap();
+                        log_debug(
+                                format!(
+                                    "l:{} t:{}, a:{}",
+                                    async_launcher_name.clone(),
+                                    async_target_name.clone(),
+                                    selected_atk_name.read().clone(),
+                                ),
+                            )
+                            .await
+                            .unwrap();
                         write_game_manager.set(true);
                     }
                 },
