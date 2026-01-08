@@ -227,9 +227,8 @@ fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
 #[component]
 fn AmountText(eo: EffectOutcome) -> Element {
     let mut colortext = "green";
-    if eo.new_effect_param.stats_name == HP && eo.real_hp_amount_tx < 0 {
-        colortext = "red";
-    } else if eo.full_atk_amount_tx < 0 {
+    if eo.new_effect_param.stats_name == HP && eo.real_hp_amount_tx < 0 || eo.full_atk_amount_tx < 0
+    {
         colortext = "red";
     }
     rsx! {
