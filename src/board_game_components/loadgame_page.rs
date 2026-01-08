@@ -1,3 +1,4 @@
+use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use dioxus_primitives::scroll_area::{ScrollArea, ScrollDirection};
 
@@ -11,8 +12,11 @@ use crate::{
 pub fn LoadGame() -> Element {
     let mut active_button: Signal<i64> = use_signal(|| -1);
     let navigator = use_navigator();
+
     // get_game_list
     let games_list = use_resource(move || async move {
+        // read signal active_button to rerun the resource when active_button is set again.
+        println!("active button: {active_button}");
         match application::try_new().await {
             Ok(app) => *APP.write() = app,
             Err(_) => println!("no app"),
@@ -31,7 +35,8 @@ pub fn LoadGame() -> Element {
             }
         }
     });
-    let games_list = games_list().unwrap_or_default();
+    let button1_game_list = games_list().clone().unwrap_or_default();
+    let button2_game_list = games_list().clone().unwrap_or_default();
 
     rsx! {
         div { class: "home-container",
@@ -45,7 +50,7 @@ pub fn LoadGame() -> Element {
                 direction: ScrollDirection::Vertical,
                 tabindex: "0",
                 div { class: "scroll-content",
-                    for (index , i) in games_list.iter().enumerate() {
+                    for (index , i) in button1_game_list.clone().iter().enumerate() {
                         Button {
                             variant: if active_button() as usize == index { ButtonVariant::Destructive } else { ButtonVariant::Primary },
                             disabled: active_button() == index as i64,
@@ -60,20 +65,19 @@ pub fn LoadGame() -> Element {
                 variant: ButtonVariant::Secondary,
                 disabled: active_button() == -1,
                 onclick: move |_| {
-                    let cur_game = games_list.get(active_button() as usize).unwrap().to_owned();
+                    let cur_game = button1_game_list
+                        .clone()
+                        .get(active_button() as usize)
+                        .unwrap()
+                        .to_owned();
                     async move {
-                        let _ = application::log_debug(
-                                format!("loading game: {}", cur_game.clone().to_string_lossy()),
-                            )
-                            .await;
+                        tracing::info!("loading game: {}", cur_game.clone().to_string_lossy());
                         let gm = match application::get_gamemanager_by_game_dir(cur_game.clone())
                             .await
                         {
                             Ok(gm) => gm,
                             Err(e) => {
-                                application::log_debug(format!("Error fetching game manager: {}", e))
-                                    .await
-                                    .unwrap();
+                                tracing::info!("Error fetching game manager: {}", e);
                                 return;
                             }
                         };
@@ -82,6 +86,28 @@ pub fn LoadGame() -> Element {
                     }
                 },
                 "Start Game"
+            }
+            Button {
+                variant: ButtonVariant::Secondary,
+                disabled: active_button() == -1,
+                onclick: move |_| {
+                    let cur_game = button2_game_list
+                        .clone()
+                        .get(active_button() as usize)
+                        .unwrap()
+                        .to_owned();
+                    async move {
+                        let _ = match application::delete_game(cur_game.clone()).await {
+                            Ok(_) => {}
+                            Err(e) => {
+                                tracing::debug!("Error deleting game: {}", e);
+                                return;
+                            }
+                        };
+                        active_button.set(-1);
+                    }
+                },
+                "Delete Game"
             }
         }
     }

@@ -5,6 +5,7 @@ use crate::{
     application,
     common::{tempo_const::TIMER_FUTURE_1S, Route, APP},
 };
+use dioxus::logger::tracing;
 
 #[component]
 pub fn JoinOngoingGame() -> Element {
@@ -39,9 +40,7 @@ pub fn JoinOngoingGame() -> Element {
                 let ongoing_games =
                     match application::read_ongoinggames_from_json(all_games_dir.clone()).await {
                         Ok(og) => {
-                            application::log_debug(format!("ongoing games: {:?}", og.all_games))
-                                .await
-                                .unwrap();
+                            tracing::debug!("ongoing games: {:?}", og.all_games);
                             if !og.all_games.is_empty() {
                                 match application::get_gamemanager_by_game_dir(
                                     og.all_games[0].clone(),
@@ -50,26 +49,17 @@ pub fn JoinOngoingGame() -> Element {
                                 {
                                     Ok(gm) => APP.write().game_manager = gm,
                                     Err(e) => {
-                                        application::log_debug(format!(
-                                            "Error fetching game manager: {}",
-                                            e
-                                        ))
-                                        .await
-                                        .unwrap();
+                                        tracing::debug!("Error fetching game manager: {}", e);
                                     }
                                 }
                                 og
                             } else {
-                                application::log_debug("No ongoing games found".to_string())
-                                    .await
-                                    .unwrap();
+                                tracing::debug!("No ongoing games found");
                                 application::OngoingGames::default()
                             }
                         }
                         Err(e) => {
-                            application::log_debug(format!("Error reading ongoing games: {}", e))
-                                .await
-                                .unwrap();
+                            tracing::debug!("Error reading ongoing games: {}", e);
                             application::OngoingGames::default()
                         }
                     };
