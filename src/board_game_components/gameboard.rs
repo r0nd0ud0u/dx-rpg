@@ -1,6 +1,5 @@
 use async_std::task::sleep;
 use lib_rpg::{
-    attack_type::AttackType,
     common::{effect_const::EFFECT_NB_COOL_DOWN, stats_const::HP},
     effect::EffectOutcome,
     game_manager::ResultLaunchAttack,

@@ -8,6 +8,7 @@ pub enum ButtonVariant {
     AtkBerserkType,
     AtkDefaultType,
     AtkName,
+    AtkNameBlocked,
     AtkAutoMenu,
     AtkMenu,
     CharacterName,
@@ -32,6 +33,7 @@ impl ButtonVariant {
             ButtonVariant::CharacterName => "character-name",
             // Button atk name
             ButtonVariant::AtkName => "atk-name",
+            ButtonVariant::AtkNameBlocked => "atk-name-blocked",
             ButtonVariant::Primary => "primary",
             ButtonVariant::Secondary => "secondary",
             ButtonVariant::Destructive => "destructive",

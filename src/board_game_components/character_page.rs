@@ -179,22 +179,17 @@ pub fn NewAtkButton(
     selected_atk_name: Signal<String>,
 ) -> Element {
     let can_be_launched = launcher.can_be_launched(&attack_type);
-    let mut color = "grey";
-    if !can_be_launched {
-        color = "black";
-    }
     let attack_name = attack_type.name.clone();
     let launcher_name = launcher.name;
     rsx! {
         Button {
-            variant: ButtonVariant::AtkName,
+            variant: if can_be_launched { ButtonVariant::AtkName } else { ButtonVariant::AtkNameBlocked },
             onclick: move |_| {
                 let async_atk_name = attack_name.clone();
                 let async_launcher_name = launcher_name.clone();
                 async move {
                     selected_atk_name.set(async_atk_name.clone());
                     APP.write()
-
                         .game_manager
                         .pm
                         .set_targeted_characters(&async_launcher_name, &async_atk_name);
@@ -219,8 +214,8 @@ pub fn AttackList(
     if let Some(c) = APP.read().game_manager.pm.get_active_character(&name) {
         rsx! {
             div { class: "attack-list",
-                for (key , value) in c.attacks_list.iter() {
-                    if c.level >= value.level as u64 {
+                for (_key , value) in c.attacks_list.iter() {
+                    if c.level >= value.level {
                         div { class: "attack-list-line",
                             Button {
                                 variant: get_variant_atk_type(value),
