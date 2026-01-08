@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use dioxus_primitives::scroll_area::{ScrollArea, ScrollDirection};
 
 use crate::{
     application,
@@ -35,14 +36,26 @@ pub fn LoadGame() -> Element {
     rsx! {
         div { class: "home-container",
             h4 { "Load game" }
-            for (index , i) in games_list.iter().enumerate() {
-                Button {
-                    variant: if active_button() as usize == index { ButtonVariant::Destructive } else { ButtonVariant::Primary },
-                    disabled: active_button() == index as i64,
-                    onclick: move |_| async move { active_button.set(index as i64) },
-                    "{i.clone().to_string_lossy()}"
+            ScrollArea {
+                width: "25em",
+                height: "10em",
+                border: "1px solid var(--primary-color-6)",
+                border_radius: "0.5em",
+                padding: "0 1em 1em 1em",
+                direction: ScrollDirection::Vertical,
+                tabindex: "0",
+                div { class: "scroll-content",
+                    for (index , i) in games_list.iter().enumerate() {
+                        Button {
+                            variant: if active_button() as usize == index { ButtonVariant::Destructive } else { ButtonVariant::Primary },
+                            disabled: active_button() == index as i64,
+                            onclick: move |_| async move { active_button.set(index as i64) },
+                            "{i.clone().to_string_lossy()}"
+                        }
+                    }
                 }
             }
+
             Button {
                 variant: ButtonVariant::Secondary,
                 disabled: active_button() == -1,

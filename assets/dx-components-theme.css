@@ -64,11 +64,11 @@
 /* Modern browsers with `scrollbar-*` support */
 @supports (scrollbar-width: auto) {
   :not(:hover) {
-    scrollbar-color: rgb(0 0 0 / 0%) rgb(0 0 0 / 0%);
+    scrollbar-color: var(--primary-color-1) rgb(0 0 0 / 0%);
   }
 
   :hover {
-    scrollbar-color: var(--secondary-color-2) rgb(0 0 0 / 0%);
+    scrollbar-color: var(--primary-color-7) rgb(0 0 0 / 0%);
   }
 }
 

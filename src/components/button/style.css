@@ -90,6 +90,18 @@
   background-color: var(--high-grey-color-1)
 }
 
+.button[data-style="atk-name-blocked"] {
+  background-color: var(--black-color-1);
+  color: var(--primary-color);
+  width: 300px;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button[data-style="atk-name-blocked"]:hover {
+  background-color: var(--high-grey-color-1)
+}
+
 .button[data-style="atk-menu"] {
   background-color: var(--primary-error-color);
   color: var(--contrast-error-color);
@@ -98,7 +110,7 @@
   -webkit-transform:translate(400px, -150px); /* relative to margin-top, height and width of class character */
 }
 
-.button[data-style="atk-name"]:hover {
+.button[data-style="atk-menu"]:hover {
   background-color: var(--high-grey-color-1)
 }
 
