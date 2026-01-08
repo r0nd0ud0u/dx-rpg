@@ -1,4 +1,5 @@
 use async_std::task::sleep;
+use dioxus::logger::tracing;
 use lib_rpg::{
     common::{effect_const::EFFECT_NB_COOL_DOWN, stats_const::HP},
     effect::EffectOutcome,
@@ -7,7 +8,7 @@ use lib_rpg::{
 };
 
 use crate::{
-    application::{self, log_debug},
+    application,
     board_game_components::character_page::{AttackList, CharacterPanel},
     common::{tempo_const::TIMER_FUTURE_1S, ButtonStatus, APP},
     components::button::{Button, ButtonVariant},
@@ -34,7 +35,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     // TODO add other boss attacks
                     // Launch attack
                     APP.write().game_manager.launch_attack("SimpleAtk");
-                    log_debug(format!(
+                    tracing::debug!(
                         "launcher  {} {}",
                         APP.write()
                             .game_manager
@@ -42,17 +43,11 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                             .last_result_atk
                             .launcher_name,
                         selected_atk_name()
-                    ))
-                    .await
-                    .unwrap();
+                    );
+
                     let last_result_atk = &APP.write().game_manager.game_state.last_result_atk;
                     if !last_result_atk.outcomes.is_empty() {
-                        log_debug(format!(
-                            "target  {}",
-                            last_result_atk.outcomes[0].target_name
-                        ))
-                        .await
-                        .unwrap();
+                        tracing::debug!("target  {}", last_result_atk.outcomes[0].target_name);
                     }
                     // reset atk
                     selected_atk_name.set("".to_string());
@@ -106,9 +101,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     match application::get_gamemanager_by_game_dir(cur_game_dir.clone()).await {
                         Ok(gm) => APP.write().game_manager = gm,
                         Err(e) => {
-                            application::log_debug(format!("Error fetching game manager: {}", e))
-                                .await
-                                .unwrap()
+                            tracing::debug!("Error fetching game manager: {}", e)
                         }
                     }
                 }
@@ -153,18 +146,13 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         onclick: move |_| async move {
                             // launch attack
                             let _ = APP.write().game_manager.launch_attack(&selected_atk_name());
-                            log_debug(
-                                    format!(
-                                        "launcher  {} {}",
-                                        APP.write().game_manager.game_state.last_result_atk.launcher_name,
-                                        selected_atk_name(),
-                                    ),
-                                )
-                                .await
-                                .unwrap();
-                            // reset atk
+                            tracing::debug!(
+                                // reset atk
+                                // update game manager
+                                "launcher  {} {}", APP.write().game_manager.game_state.last_result_atk
+                                .launcher_name, selected_atk_name()
+                            );
                             selected_atk_name.set("".to_string());
-                            // update game manager
                             write_game_manager.set(true);
                         },
                         "launch atk"
