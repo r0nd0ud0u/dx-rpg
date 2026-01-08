@@ -7,14 +7,12 @@ use lib_rpg::{
     common::stats_const::*,
 };
 
-use crate::{
-    application::log_debug,
-    common::{APP, ENERGY_GRAD},
-};
+use crate::common::{APP, ENERGY_GRAD};
 use crate::{
     common::PATH_IMG,
     components::button::{Button, ButtonVariant},
 };
+use dioxus::logger::tracing;
 
 #[component]
 pub fn CharacterPanel(
@@ -133,16 +131,10 @@ pub fn CharacterTargetButton(
                                 &selected_atk_name(),
                                 &async_target_name,
                             );
-                        log_debug(
-                                format!(
-                                    "l:{} t:{}, a:{}",
-                                    async_launcher_name.clone(),
-                                    async_target_name.clone(),
-                                    selected_atk_name.read().clone(),
-                                ),
-                            )
-                            .await
-                            .unwrap();
+                        tracing::debug!(
+                            "l:{} t:{}, a:{}", async_launcher_name.clone(), async_target_name
+                            .clone(), selected_atk_name.read().clone()
+                        );
                         write_game_manager.set(true);
                     }
                 },
@@ -193,7 +185,7 @@ pub fn NewAtkButton(
                         .game_manager
                         .pm
                         .set_targeted_characters(&async_launcher_name, &async_atk_name);
-                    log_debug("set_targeted_characters".to_owned()).await.unwrap();
+                    tracing::debug!("set_targeted_characters");
                     *display_atklist_sig.write() = false;
                     write_game_manager.set(true);
                 }

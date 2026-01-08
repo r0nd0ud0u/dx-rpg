@@ -63,8 +63,12 @@ pub async fn get_game_list(game_dir_path: PathBuf) -> Result<Vec<PathBuf>, Serve
 }
 
 #[server]
-pub async fn log_debug(message: String) -> Result<(), ServerFnError> {
-    println!("DEBUG: {}", message);
+pub async fn delete_game(game_path: PathBuf) -> Result<(), ServerFnError> {
+    println!("Deleting game from: {:?}", game_path);
+    match fs::remove_dir_all(&game_path) {
+        Ok(_) => (),
+        Err(_) => return Err(ServerFnError::new("Failed to delete game".to_owned())),
+    };
     Ok(())
 }
 
@@ -81,11 +85,6 @@ pub async fn get_gamemanager_by_game_dir(
             game_dir_path
         )))
     }
-}
-
-#[server]
-pub async fn delete_ongoing_game_status() -> Result<(), ServerFnError> {
-    Ok(())
 }
 
 #[server]
