@@ -43,23 +43,33 @@ body {
 }
 
 /* Navbar */
-#navbar {
-    display: flex;
-    flex-direction: row;
-  }
-  
-#navbar a {
-    color: #ffffff;
-    margin-right: 20px;
-    text-decoration: none;
-    transition: color 0.2s ease;
+:root {
+  --accent: #00ffd5; /* neon cyan */
 }
 
-#navbar a:hover {
-    cursor: pointer;
-    color: #91a4d2;
+.navbar {
+  background: #000;
 }
 
+.navbar a {
+  color: #ccc;
+  position: relative;
+}
+
+.navbar a::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -6px;
+  left: 0;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.navbar a:hover::after {
+  width: 100%;
+}
 .container-bar {
     width: 200px;
     height: 15px;
