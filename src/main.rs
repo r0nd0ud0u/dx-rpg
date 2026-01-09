@@ -1,8 +1,5 @@
 use dioxus::{
-    logger::{
-        self,
-        tracing::{self, Level},
-    },
+    logger::tracing::{self, Level},
     prelude::*,
 };
 use dx_rpg::common::{Route, DX_COMP_CSS};

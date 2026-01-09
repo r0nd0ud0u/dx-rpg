@@ -104,14 +104,26 @@ body {
     border-radius: 10px;
     display: grid;
     grid-template-columns: max-content max-content;
-    column-gap: 10px; /* Add space between columns */   
+    column-gap: 10px; /* Add space between columns */  
 }
 
 .grid-container {
     display: grid;
     grid-template-columns: 0.2fr 1fr 0.7fr;
     column-gap: 10px;
-}                                                                                                         
+} 
+
+.character-energy-effects-box {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.character-effects {
+    display: flex;
+    flex-direction: row;
+    column-gap: 5px;
+}     
 
 .text-bar {
     line-height: 1; /* height of the line */

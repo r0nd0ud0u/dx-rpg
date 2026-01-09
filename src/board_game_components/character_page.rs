@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use indexmap::IndexMap;
 use lib_rpg::{
     attack_type::AttackType,
-    character::{Character, CharacterType},
+    character::{Character, CharacterType, ExtendedCharacter},
     common::stats_const::*,
 };
 
@@ -41,6 +41,7 @@ pub fn CharacterPanel(
 
     let name2 = c.name.clone();
     let kind2 = c.kind.clone();
+    let hot_buf_nbs = ExtendedCharacter::get_hot_and_buf_nbs(&c.all_effects);
     rsx! {
         div { class: "character", background_color: bg,
             div {
@@ -49,7 +50,17 @@ pub fn CharacterPanel(
                     class: "image-small",
                 }
             }
-            div {
+            div { class: "character-energy-effects-box",
+                div { class: "character-effects",
+                    button { width: "20px", background_color: "green", "" }
+                    label { "{hot_buf_nbs.hot}" }
+                    button { width: "20px", background_color: "red", "" }
+                    label { "{hot_buf_nbs.dot}" }
+                    button { width: "20px", background_color: "blue", "" }
+                    label { "{hot_buf_nbs.buf}" }
+                    button { width: "20px", background_color: "orange", "" }
+                    label { "{hot_buf_nbs.debuf}" }
+                }
                 for (stat , display_stat) in energy_list.iter() {
                     if c.stats.all_stats[stat].max > 0 {
                         BarComponent {
@@ -59,7 +70,6 @@ pub fn CharacterPanel(
                         }
                     }
                 }
-                h4 { "Lvl: {c.level}" }
             }
         }
         // atk button
@@ -78,11 +88,13 @@ pub fn CharacterPanel(
                 "ATK"
             }
         }
-        // name button
-        Button {
-            variant: ButtonVariant::CharacterName,
-            onclick: move |_| async move {},
-            "{name2.clone()}"
+        div { class: "character-name-grid-container",
+            // name button
+            Button {
+                variant: ButtonVariant::CharacterName,
+                onclick: move |_| async move {},
+                "{name2.clone()} | Lvl: {c.level}"
+            }
         }
         // target button
         if !selected_atk_name().is_empty() {
