@@ -6,7 +6,7 @@ use crate::common::Route;
 #[component]
 pub fn Navbar() -> Element {
     rsx! {
-        div { id: "navbar",
+        div { class: "navbar",
             Link { to: Route::Home {}, "Home" }
         }
 
