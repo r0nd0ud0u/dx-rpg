@@ -273,30 +273,26 @@ fn CharacterTooltip(hots_bufs: HotsBufs) -> Element {
                         height: "20px",
                         width: "20px",
                         background_color: "green",
-                        ""
+                        "{hots_bufs.hot_nb}"
                     }
-                    label { "{hots_bufs.hot_nb}" }
                     button {
                         height: "20px",
                         width: "20px",
                         background_color: "red",
-                        ""
+                        "{hots_bufs.dot_nb}"
                     }
-                    label { "{hots_bufs.dot_nb}" }
                     button {
                         height: "20px",
                         width: "20px",
                         background_color: "blue",
-                        ""
+                        "{hots_bufs.buf_nb}"
                     }
-                    label { "{hots_bufs.buf_nb}" }
                     button {
                         height: "20px",
                         width: "20px",
                         background_color: "orange",
-                        ""
+                        "{hots_bufs.debuf_nb}"
                     }
-                    label { "{hots_bufs.debuf_nb}" }
                 }
                 TooltipContent { side: ContentSide::Right, style: "width: 300px;",
                     for txt in hots_bufs.hot_txt {

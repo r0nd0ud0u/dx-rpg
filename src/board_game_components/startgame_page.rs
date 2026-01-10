@@ -5,6 +5,7 @@ use crate::{
     components::button::{Button, ButtonVariant},
 };
 use dioxus::prelude::*;
+use dioxus_primitives::separator::Separator;
 
 /// New game
 #[component]
@@ -37,15 +38,23 @@ pub fn StartGamePage() -> Element {
             }
         }
         if state() == ButtonStatus::StartGame && ready_to_start() {
+            Separator {
+                style: "margin: 10px 0; width: 50%;",
+                horizontal: true,
+                decorative: true,
+            }
             div {
-                div {
-                style: "display: flex; flex-direction: row; height: 40px;",
-                h4 { "Turn: {APP.write().game_manager.game_state.current_turn_nb}" }
-                SaveButton {}
+                div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
+                    SaveButton {}
+                    h4 { "Turn: {APP.write().game_manager.game_state.current_turn_nb}" }
+                }
+                Separator {
+                    style: "margin: 10px 0; width: 50%;",
+                    horizontal: true,
+                    decorative: true,
+                }
+                GameBoard { game_status: state }
             }
-            GameBoard { game_status: state }
-            }
-            
         } else if state() == ButtonStatus::StartGame && !ready_to_start() {
             h4 { "Loading..." }
         }
