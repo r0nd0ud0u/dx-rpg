@@ -18,7 +18,6 @@ pub fn StartGamePage() -> Element {
     });
 
     rsx! {
-        h4 { "Turn: {APP.write().game_manager.game_state.current_turn_nb}" }
         if state() == ButtonStatus::ReplayGame {
             Button {
                 variant: ButtonVariant::Primary,
@@ -38,8 +37,15 @@ pub fn StartGamePage() -> Element {
             }
         }
         if state() == ButtonStatus::StartGame && ready_to_start() {
-            SaveButton {}
+            div {
+                div {
+                style: "display: flex; flex-direction: row; height: 40px;",
+                h4 { "Turn: {APP.write().game_manager.game_state.current_turn_nb}" }
+                SaveButton {}
+            }
             GameBoard { game_status: state }
+            }
+            
         } else if state() == ButtonStatus::StartGame && !ready_to_start() {
             h4 { "Loading..." }
         }

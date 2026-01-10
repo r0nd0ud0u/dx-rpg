@@ -298,7 +298,7 @@ fn CharacterTooltip(hots_bufs: HotsBufs) -> Element {
                     }
                     label { "{hots_bufs.debuf_nb}" }
                 }
-                TooltipContent { side: ContentSide::Right, style: "width: 500px;",
+                TooltipContent { side: ContentSide::Right, style: "width: 300px;",
                     for txt in hots_bufs.hot_txt {
                         p { style: "margin: 0;", "hots: \n{txt}" }
                     }
