@@ -97,7 +97,7 @@ pub fn LoadGame() -> Element {
                         .unwrap()
                         .to_owned();
                     async move {
-                        let _ = match application::delete_game(cur_game.clone()).await {
+                        match application::delete_game(cur_game.clone()).await {
                             Ok(_) => {}
                             Err(e) => {
                                 tracing::debug!("Error deleting game: {}", e);
