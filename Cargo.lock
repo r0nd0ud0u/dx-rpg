@@ -3029,7 +3029,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lib-rpg"
 version = "1.1.1"
-source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=a4229cf67c97592bd3d8fe7d97bb1ab35a786922#a4229cf67c97592bd3d8fe7d97bb1ab35a786922"
+source = "git+ssh://git@github.com/r0nd0ud0u/lib-rpg.git?rev=6fa83c0928cc0967d8cb38318f8c10e2bcb062ac#6fa83c0928cc0967d8cb38318f8c10e2bcb062ac"
 dependencies = [
  "anyhow",
  "chrono",

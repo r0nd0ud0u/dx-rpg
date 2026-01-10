@@ -87,7 +87,7 @@ pub fn LobbyPage() -> Element {
 
     rsx! {
         div { class: "home-container",
-            h4 { "LobbyPage" }
+            h1 { "LobbyPage" }
             if ready_to_start() {
                 ButtonLink {
                     target: Route::StartGamePage {}.into(),

@@ -7,6 +7,7 @@ use crate::{board_game_components::common_comp::ButtonLink, common::Route};
 pub fn CreateServer() -> Element {
     rsx! {
         div { class: "home-container",
+            h1 { "Create a server" }
             ButtonLink {
                 target: Route::LobbyPage {}.into(),
                 name: "New Game".to_string(),

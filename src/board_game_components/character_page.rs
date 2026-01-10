@@ -1,9 +1,13 @@
 use colorgrad::Gradient;
 use dioxus::prelude::*;
+use dioxus_primitives::{
+    tooltip::{Tooltip, TooltipContent, TooltipTrigger},
+    ContentSide,
+};
 use indexmap::IndexMap;
 use lib_rpg::{
     attack_type::AttackType,
-    character::{Character, CharacterType, ExtendedCharacter},
+    character::{Character, CharacterType, ExtendedCharacter, HotsBufs},
     common::stats_const::*,
 };
 
@@ -39,10 +43,8 @@ pub fn CharacterPanel(
         (BERSERK.to_owned(), "BP".to_owned()),
     ]);
 
-    let name2 = c.name.clone();
-    let kind2 = c.kind.clone();
-    let hot_buf_nbs = ExtendedCharacter::get_hot_and_buf_nbs(&c.all_effects);
     rsx! {
+        CharacterTooltip { hots_bufs: ExtendedCharacter::get_hot_and_buf_nbs_txts(&c.all_effects) }
         div { class: "character", background_color: bg,
             div {
                 img {
@@ -51,16 +53,6 @@ pub fn CharacterPanel(
                 }
             }
             div { class: "character-energy-effects-box",
-                div { class: "character-effects",
-                    button { width: "20px", background_color: "green", "" }
-                    label { "{hot_buf_nbs.hot}" }
-                    button { width: "20px", background_color: "red", "" }
-                    label { "{hot_buf_nbs.dot}" }
-                    button { width: "20px", background_color: "blue", "" }
-                    label { "{hot_buf_nbs.buf}" }
-                    button { width: "20px", background_color: "orange", "" }
-                    label { "{hot_buf_nbs.debuf}" }
-                }
                 for (stat , display_stat) in energy_list.iter() {
                     if c.stats.all_stats[stat].max > 0 {
                         BarComponent {
@@ -79,7 +71,7 @@ pub fn CharacterPanel(
                 onclick: move |_| async move {},
                 "ATK On Going"
             }
-        } else if kind2.clone() == CharacterType::Hero && current_player_name == name2.clone() {
+        } else if c.kind == CharacterType::Hero && current_player_name == c.name {
             Button {
                 variant: ButtonVariant::AtkMenu,
                 onclick: move |_| async move {
@@ -93,7 +85,7 @@ pub fn CharacterPanel(
             Button {
                 variant: ButtonVariant::CharacterName,
                 onclick: move |_| async move {},
-                "{name2.clone()} | Lvl: {c.level}"
+                "{c.name} | Lvl: {c.level}"
             }
         }
         // target button
@@ -268,5 +260,56 @@ fn get_cost(atk: &AttackType) -> String {
         atk.berseck_cost.to_string()
     } else {
         String::from("")
+    }
+}
+
+#[component]
+fn CharacterTooltip(hots_bufs: HotsBufs) -> Element {
+    rsx! {
+        div { class: "character-effects",
+            Tooltip {
+                TooltipTrigger {
+                    button {
+                        height: "20px",
+                        width: "20px",
+                        background_color: "green",
+                        "{hots_bufs.hot_nb}"
+                    }
+                    button {
+                        height: "20px",
+                        width: "20px",
+                        background_color: "red",
+                        "{hots_bufs.dot_nb}"
+                    }
+                    button {
+                        height: "20px",
+                        width: "20px",
+                        background_color: "blue",
+                        "{hots_bufs.buf_nb}"
+                    }
+                    button {
+                        height: "20px",
+                        width: "20px",
+                        background_color: "orange",
+                        "{hots_bufs.debuf_nb}"
+                    }
+                }
+                TooltipContent { side: ContentSide::Right, style: "width: 300px;",
+                    for txt in hots_bufs.hot_txt {
+                        p { style: "margin: 0;", "hots: \n{txt}" }
+                    }
+                    for txt in hots_bufs.dot_txt {
+                        p { style: "margin: 0;", "dots: \n{txt}" }
+                    }
+                    for txt in hots_bufs.buf_txt {
+                        p { style: "margin: 0;", "bufs: \n{txt}" }
+                    }
+                    for txt in hots_bufs.debuf_txt {
+                        p { style: "margin: 0;", "debufs: \n{txt}" }
+                    }
+                }
+            }
+        }
+
     }
 }
