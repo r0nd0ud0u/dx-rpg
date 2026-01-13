@@ -8,9 +8,9 @@ use crate::{
         sheet::*,
     },
 };
+use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use dioxus_primitives::{label::Label, separator::Separator};
-use lib_rpg::game_manager::GameManager;
 
 /// New game
 #[component]
@@ -50,7 +50,6 @@ pub fn StartGamePage() -> Element {
             }
             div {
                 div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
-                    SaveButton {}
                     Sheets {}
                     h4 { "Turn: {APP.write().game_manager.game_state.current_turn_nb}" }
                 }
@@ -68,14 +67,14 @@ pub fn StartGamePage() -> Element {
 }
 
 #[component]
-fn SaveButton() -> Element {
+fn SaveButton(is_saved: Signal<bool>) -> Element {
     rsx! {
         Button {
             variant: ButtonVariant::Destructive,
             onclick: move |_| {
                 let gm = APP.read().game_manager.clone();
                 async move {
-                    println!("Saving game state...");
+                    tracing::info!("Saving game state...");
                     let path = format!(
                         "{}",
                         &APP
@@ -91,8 +90,10 @@ fn SaveButton() -> Element {
                         )
                         .await
                     {
-                        Ok(()) => println!("Directory created successfully"),
-                        Err(e) => println!("Failed to create directory: {}", e),
+                        Ok(()) => {
+                            tracing::info!("Directory created or already existing successfully")
+                        }
+                        Err(e) => tracing::info!("Failed to create directory: {}", e),
                     }
                     match application::save(
                             path.to_owned(),
@@ -100,8 +101,11 @@ fn SaveButton() -> Element {
                         )
                         .await
                     {
-                        Ok(()) => println!("save"),
-                        Err(e) => println!("{}", e),
+                        Ok(()) => {
+                            tracing::trace!("save");
+                            is_saved.set(true);
+                        }
+                        Err(e) => tracing::trace!("{}", e),
                     }
                 }
             },
@@ -162,6 +166,7 @@ pub fn Sheets() -> Element {
                 SheetSide::Top => {
                     MenuSheet(MenuSheetProps {
                         s: SheetSide::Top,
+                        open_wnd: open,
                     })
                 }
                 SheetSide::Bottom => {
@@ -251,7 +256,13 @@ fn GameStatsSheet(s: SheetSide) -> Element {
 }
 
 #[component]
-fn MenuSheet(s: SheetSide) -> Element {
+fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>) -> Element {
+    let mut is_saved: Signal<bool> = use_signal(|| false);
+
+    if !open_wnd() {
+        is_saved.set(false);
+    }
+
     rsx! {
         SheetContent { side: s,
             SheetHeader {
@@ -266,20 +277,28 @@ fn MenuSheet(s: SheetSide) -> Element {
                 gap: "1.5rem",
                 padding: "0 1rem",
                 div { display: "grid", gap: "0.75rem",
-                    Label { html_for: "sheet-demo-name", "Name" }
-                    Input { id: "sheet-demo-name", initial_value: "Dioxus" }
-                }
-                div { display: "grid", gap: "0.75rem",
-                    Label { html_for: "sheet-demo-username", "Username" }
-                    Input { id: "sheet-demo-username", initial_value: "@dioxus" }
+                    Label { html_for: "sheet-demo-name",
+                        if is_saved() {
+                            "Saved ✅"
+                        } else {
+                            ""
+                        }
+                    }
                 }
             }
 
             SheetFooter {
-                Button { "Save changes" }
+                SaveButton { is_saved }
                 SheetClose {
-                    r#as: |attributes| rsx! {
-                        Button { variant: ButtonVariant::Outline, attributes, "Cancel" }
+                    r#as: move |attributes| rsx! {
+                        Button {
+                            variant: ButtonVariant::Outline,
+                            onclick: move |_| {
+                                is_saved.set(false);
+                            },
+                            attributes,
+                            "Cancel"
+                        }
                     },
                 }
             }
