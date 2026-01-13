@@ -2,10 +2,15 @@ use crate::{
     application,
     board_game_components::gameboard::GameBoard,
     common::{ButtonStatus, APP},
-    components::button::{Button, ButtonVariant},
+    components::{
+        button::{Button, ButtonVariant},
+        input::Input,
+        sheet::*,
+    },
 };
 use dioxus::prelude::*;
-use dioxus_primitives::separator::Separator;
+use dioxus_primitives::{label::Label, separator::Separator};
+use lib_rpg::game_manager::GameManager;
 
 /// New game
 #[component]
@@ -46,6 +51,7 @@ pub fn StartGamePage() -> Element {
             div {
                 div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
                     SaveButton {}
+                    Sheets {}
                     h4 { "Turn: {APP.write().game_manager.game_state.current_turn_nb}" }
                 }
                 Separator {
@@ -101,5 +107,221 @@ fn SaveButton() -> Element {
             },
             "Save"
         }
+    }
+}
+
+#[component]
+pub fn Sheets() -> Element {
+    let mut open = use_signal(|| false);
+    let mut side = use_signal(|| SheetSide::Right);
+    let mut use_gm = use_signal(|| false);
+
+    let open_sheet = move |s: SheetSide| {
+        move |_| {
+            side.set(s);
+            open.set(true);
+            use_gm.set(true);
+        }
+    };
+
+    rsx! {
+        div { display: "flex", gap: "0.5rem",
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: open_sheet(SheetSide::Top),
+                "Menu"
+            }
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: open_sheet(SheetSide::Right),
+                "Inventory"
+            }
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: open_sheet(SheetSide::Bottom),
+                "Logs"
+            }
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: open_sheet(SheetSide::Left),
+                "Game stats"
+            }
+        }
+        Sheet { open: open(), on_open_change: move |v| open.set(v),
+            match side() {
+                SheetSide::Right => {
+                    InventorySheet(InventorySheetProps {
+                        s: SheetSide::Right,
+                    })
+                }
+                SheetSide::Left => {
+                    GameStatsSheet(GameStatsSheetProps {
+                        s: SheetSide::Left,
+                    })
+                }
+                SheetSide::Top => {
+                    MenuSheet(MenuSheetProps {
+                        s: SheetSide::Top,
+                    })
+                }
+                SheetSide::Bottom => {
+                    LogsSheet(LogsSheetProps {
+                        s: SheetSide::Bottom,
+                    })
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn InventorySheet(s: SheetSide) -> Element {
+    rsx! {
+        SheetContent { side: s,
+            SheetHeader {
+                SheetTitle { "Inventory" }
+                SheetDescription { "Update your equipment here." }
+            }
+
+            div {
+                display: "grid",
+                flex: "1 1 0%",
+                grid_auto_rows: "min-content",
+                gap: "1.5rem",
+                padding: "0 1rem",
+                div { display: "grid", gap: "0.75rem",
+                    Label { html_for: "sheet-demo-name", "Name" }
+                    Input { id: "sheet-demo-name", initial_value: "Dioxus" }
+                }
+                div { display: "grid", gap: "0.75rem",
+                    Label { html_for: "sheet-demo-username", "Username" }
+                    Input { id: "sheet-demo-username", initial_value: "@dioxus" }
+                }
+            }
+
+            SheetFooter {
+                Button { "Save changes" }
+                SheetClose {
+                    r#as: |attributes| rsx! {
+                        Button { variant: ButtonVariant::Outline, attributes, "Cancel" }
+                    },
+                }
+            }
+        }
+
+    }
+}
+
+#[component]
+fn GameStatsSheet(s: SheetSide) -> Element {
+    let gm = &APP.read().game_manager;
+    rsx! {
+        SheetContent { side: s,
+            SheetHeader {
+                SheetTitle { "Game Stats {gm.game_state.current_round}" }
+                SheetDescription { "Assess the evolution of the game here." }
+            }
+
+            div {
+                display: "grid",
+                flex: "1 1 0%",
+                grid_auto_rows: "min-content",
+                gap: "1.5rem",
+                padding: "0 1rem",
+                div { display: "grid", gap: "0.75rem",
+                    Label { html_for: "sheet-demo-name", "Name" }
+                    Input { id: "sheet-demo-name", initial_value: "Dioxus" }
+                }
+                div { display: "grid", gap: "0.75rem",
+                    Label { html_for: "sheet-demo-username", "Username" }
+                    Input { id: "sheet-demo-username", initial_value: "@dioxus" }
+                }
+            }
+
+            SheetFooter {
+                SheetClose {
+                    r#as: |attributes| rsx! {
+                        Button { variant: ButtonVariant::Outline, attributes, "Cancel" }
+                    },
+                }
+            }
+        }
+
+    }
+}
+
+#[component]
+fn MenuSheet(s: SheetSide) -> Element {
+    rsx! {
+        SheetContent { side: s,
+            SheetHeader {
+                SheetTitle { "Menu" }
+                SheetDescription { "Modify the parameters or save your game here." }
+            }
+
+            div {
+                display: "grid",
+                flex: "1 1 0%",
+                grid_auto_rows: "min-content",
+                gap: "1.5rem",
+                padding: "0 1rem",
+                div { display: "grid", gap: "0.75rem",
+                    Label { html_for: "sheet-demo-name", "Name" }
+                    Input { id: "sheet-demo-name", initial_value: "Dioxus" }
+                }
+                div { display: "grid", gap: "0.75rem",
+                    Label { html_for: "sheet-demo-username", "Username" }
+                    Input { id: "sheet-demo-username", initial_value: "@dioxus" }
+                }
+            }
+
+            SheetFooter {
+                Button { "Save changes" }
+                SheetClose {
+                    r#as: |attributes| rsx! {
+                        Button { variant: ButtonVariant::Outline, attributes, "Cancel" }
+                    },
+                }
+            }
+        }
+
+    }
+}
+
+#[component]
+fn LogsSheet(s: SheetSide) -> Element {
+    rsx! {
+        SheetContent { side: s,
+            SheetHeader {
+                SheetTitle { "Sheet Title" }
+                SheetDescription { "Watch the last logs here." }
+            }
+
+            div {
+                display: "grid",
+                flex: "1 1 0%",
+                grid_auto_rows: "min-content",
+                gap: "1.5rem",
+                padding: "0 1rem",
+                div { display: "grid", gap: "0.75rem",
+                    Label { html_for: "sheet-demo-name", "Name" }
+                    Input { id: "sheet-demo-name", initial_value: "Dioxus" }
+                }
+                div { display: "grid", gap: "0.75rem",
+                    Label { html_for: "sheet-demo-username", "Username" }
+                    Input { id: "sheet-demo-username", initial_value: "@dioxus" }
+                }
+            }
+
+            SheetFooter {
+                Button { "Save changes" }
+                SheetClose {
+                    r#as: |attributes| rsx! {
+                        Button { variant: ButtonVariant::Outline, attributes, "Cancel" }
+                    },
+                }
+            }
+        }
+
     }
 }
