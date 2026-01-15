@@ -10,3 +10,6 @@
 
 # games output
 /output/*
+
+# bundle output defined in dioxus.toml [application] / out_dir
+/bundle/*
