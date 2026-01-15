@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           
-          cargo binstall dioxus-cli@0.7.2 --forc
+          cargo binstall dioxus-cli@0.7.2 --force
           chmod +x ./scripts/bundle_app.sh
           ./scripts/bundle_app.sh
           zip --junk-paths bundle 
