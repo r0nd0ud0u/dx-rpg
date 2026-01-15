@@ -1,6 +1,6 @@
 [package]
 name = "dx-rpg"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["rondoudou"]
 edition = "2021"
 
@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.99"
 dioxus = { version = "0.7.2", features = ["router", "fullstack"] }
-lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "6fa83c0928cc0967d8cb38318f8c10e2bcb062ac" }
+lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", tag = "v1.2.0" }
 serde = "1.0.228"
 dioxus-desktop = { version = "0.7.2", optional = true }
 dioxus-html = "0.7.2"
