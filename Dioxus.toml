@@ -10,6 +10,9 @@ default_platform = "fullstack"
 # resource (assets) file folder
 asset_dir = "assets"
 
+# `build` & `serve` output path
+out_dir = "bundle"
+
 [web.app]
 
 # HTML title tag content

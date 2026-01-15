@@ -7,4 +7,9 @@
 **/*.rs.bk
 
 /node_modules/*
-/offlines/games/*
+
+# games output
+/output/games/*
+
+# bundle output defined in dioxus.toml [application] / out_dir
+/bundle/*
