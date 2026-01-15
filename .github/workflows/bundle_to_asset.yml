@@ -23,7 +23,7 @@ jobs:
           cargo binstall dioxus-cli@0.7.2 --force
           chmod +x ./scripts/bundle_app.sh
           ./scripts/bundle_app.sh
-          zip --junk-paths bundle 
+          zip -r bundle.zip bundle 
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
