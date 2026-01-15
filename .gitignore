@@ -7,4 +7,6 @@
 **/*.rs.bk
 
 /node_modules/*
-/offlines/games/*
+
+# games output
+/output/*

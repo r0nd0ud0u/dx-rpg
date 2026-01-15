@@ -20,7 +20,7 @@ pub struct OngoingGames {
 
 #[server]
 pub async fn try_new() -> Result<Application, ServerFnError> {
-    match GameManager::try_new("offlines") {
+    match GameManager::try_new("assets/offlines") {
         Ok(gm) => Ok(Application { game_manager: gm }),
         Err(_) => Err(ServerFnError::new(
             "Failed to create GameManager".to_string(),
