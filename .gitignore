@@ -13,3 +13,4 @@
 
 # bundle output defined in dioxus.toml [application] / out_dir
 /bundle/*
+/db.sqlite-journal
