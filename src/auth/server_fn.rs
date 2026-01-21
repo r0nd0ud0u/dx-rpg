@@ -1,7 +1,7 @@
-use std::collections::HashSet;
 #[cfg(feature = "server")]
-use crate::auth::{auth::Session, auth::User, model::SqlUser, db::get_db};
+use crate::auth::{auth::Session, auth::User, db::get_db, model::SqlUser};
 use dioxus::{logger::tracing, prelude::*};
+use std::collections::HashSet;
 
 #[post("/api/user/login", auth: Session)]
 pub async fn login(
@@ -100,8 +100,7 @@ pub async fn delete_user(
     if username.trim() == "Admin" {
         let msg = format!("Admin cannot be deleted");
         Err(ServerFnError::new(msg))
-    }
-    else if username.trim() == "" || (password.is_empty() && use_password) {
+    } else if username.trim() == "" || (password.is_empty() && use_password) {
         let msg = format!("Username or Password can't be empty!");
         Err(ServerFnError::new(msg))
     } else {
@@ -140,15 +139,14 @@ pub async fn delete_user(
                     Err(ServerFnError::new(msg))
                 }
             } else {
-                let result =
-                    match sqlx::query("DELETE FROM users WHERE username = ?1")
-                        .bind(&username)
-                        .execute(pool)
-                        .await
-                    {
-                        Ok(_) => Ok(()),
-                        Err(e) => Err(ServerFnError::new(format!("{}", e))),
-                    };
+                let result = match sqlx::query("DELETE FROM users WHERE username = ?1")
+                    .bind(&username)
+                    .execute(pool)
+                    .await
+                {
+                    Ok(_) => Ok(()),
+                    Err(e) => Err(ServerFnError::new(format!("{}", e))),
+                };
                 result
             }
         }

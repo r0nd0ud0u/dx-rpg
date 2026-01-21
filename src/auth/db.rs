@@ -25,11 +25,9 @@ async fn db() -> Pool<Sqlite> {
             .await.unwrap();
 
     // permissions
-    pool.execute(
-        r#"INSERT INTO user_permissions (user_id, token) SELECT 1, 'Admin::View'"#,
-    )
-    .await
-    .unwrap();
+    pool.execute(r#"INSERT INTO user_permissions (user_id, token) SELECT 1, 'Admin::View'"#)
+        .await
+        .unwrap();
 
     pool.execute(r#"INSERT INTO user_permissions (user_id, token) SELECT 2, 'Category::View'"#)
         .await

@@ -13,6 +13,11 @@ use once_cell::sync::Lazy;
 
 pub static APP: GlobalSignal<Application> = Signal::global(Application::default);
 
+fn default_user() -> String {
+    "not connected".to_owned()
+}
+pub static USER_NAME: GlobalSignal<String> = Signal::global(default_user);
+
 pub static ENERGY_GRAD: Lazy<LinearGradient> = Lazy::new(|| {
     GradientBuilder::new()
         .html_colors(&["#ff2600ff", "#f2ff00ff", "#11c426ff"])

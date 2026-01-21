@@ -10,7 +10,6 @@ use std::collections::HashSet;
 
 use crate::auth::model::SqlUser;
 
-
 pub type Session = axum_session_auth::AuthSession<User, i64, SessionSqlitePool, SqlitePool>;
 pub type AuthLayer = axum_session_auth::AuthSessionLayer<User, i64, SessionSqlitePool, SqlitePool>;
 
