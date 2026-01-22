@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::application::Application;
+use crate::board_game_components::admin_page::AdminPage;
 use crate::board_game_components::create_server_page::CreateServer;
 use crate::board_game_components::home_page::Home;
 use crate::board_game_components::joinongoinggame_page::JoinOngoingGame;
@@ -12,6 +13,15 @@ use colorgrad::{GradientBuilder, LinearGradient};
 use once_cell::sync::Lazy;
 
 pub static APP: GlobalSignal<Application> = Signal::global(Application::default);
+
+pub fn disconnected_user() -> String {
+    "not connected".to_owned()
+}
+pub fn is_admin() -> bool {
+    USER_NAME() == "Admin"
+}
+
+pub static USER_NAME: GlobalSignal<String> = Signal::global(disconnected_user);
 
 pub static ENERGY_GRAD: Lazy<LinearGradient> = Lazy::new(|| {
     GradientBuilder::new()
@@ -37,6 +47,8 @@ pub enum Route {
     #[layout(Navbar)]
     #[route("/")]
     Home {},
+    #[route("/admin-page")]
+    AdminPage {},
     #[route("/create-server")]
     CreateServer {},
     #[route("/lobby-page")]

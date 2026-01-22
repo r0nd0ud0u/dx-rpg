@@ -49,6 +49,8 @@ body {
 
 .navbar {
   background: #000;
+  display: flex;
+  justify-content: space-between;  
 }
 
 .navbar a {

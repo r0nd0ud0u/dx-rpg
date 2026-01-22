@@ -58,8 +58,13 @@ Use scripts in `scripts` dir to build and run the app.
 Use docker desktop under Windows.
 
 ## Introduction
+
 ### Home page
-<img width="1917" height="415" alt="image" src="https://github.com/user-attachments/assets/4c9bb8bc-83ec-4749-83ed-1626f8147aa2" />
+#### Before login
+![alt text](image.png)
+
+#### After login
+![alt text](image-1.png)
 
 #### Create server page
 <img width="1915" height="323" alt="image" src="https://github.com/user-attachments/assets/6e7bd0a3-7518-4383-8e89-e99acefe97c3" />
