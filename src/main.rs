@@ -28,12 +28,6 @@ fn main() {
         use axum_session_sqlx::SessionSqlitePool;
         use dx_rpg::auth::{auth::AuthLayer, db::get_db};
 
-        // Create an in-memory SQLite database and set up our tables
-        /* let db = SqlitePoolOptions::new()
-        .max_connections(20)
-        .connect_with("sqlite::memory:".parse()?)
-        .await?; */
-
         let pool = get_db().await;
 
         // Create an axum router that dioxus will attach the app to

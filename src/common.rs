@@ -6,6 +6,7 @@ use crate::board_game_components::home_page::Home;
 use crate::board_game_components::joinongoinggame_page::JoinOngoingGame;
 use crate::board_game_components::loadgame_page::LoadGame;
 use crate::board_game_components::lobby_page::LobbyPage;
+use crate::board_game_components::login_page::LoginPage;
 use crate::board_game_components::navbar::Navbar;
 use crate::board_game_components::startgame_page::StartGamePage;
 use colorgrad::{GradientBuilder, LinearGradient};
@@ -13,10 +14,10 @@ use once_cell::sync::Lazy;
 
 pub static APP: GlobalSignal<Application> = Signal::global(Application::default);
 
-fn default_user() -> String {
+pub fn disconnected_user() -> String {
     "not connected".to_owned()
 }
-pub static USER_NAME: GlobalSignal<String> = Signal::global(default_user);
+pub static USER_NAME: GlobalSignal<String> = Signal::global(disconnected_user);
 
 pub static ENERGY_GRAD: Lazy<LinearGradient> = Lazy::new(|| {
     GradientBuilder::new()

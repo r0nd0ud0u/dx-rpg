@@ -1,0 +1,100 @@
+use dioxus::logger::tracing;
+use dioxus::prelude::*;
+use dioxus_primitives::label::Label;
+
+use crate::{
+    auth::server_fn::{login, register},
+    common::{Route, USER_NAME},
+    components::{
+        button::{Button, ButtonVariant},
+        input::Input,
+    },
+};
+
+#[component]
+pub fn LoginPage() -> Element {
+    let mut username = use_signal(|| String::new());
+    let mut register_name = use_signal(|| String::new());
+    let mut logon_answer = use_signal(|| String::new());
+    let mut register_answer = use_signal(|| String::new());
+    let set_username = move |e: FormEvent| {
+        username.set(e.value());
+    };
+    let set_register = move |e: FormEvent| {
+        register_name.set(e.value());
+    };
+    let navigator = use_navigator();
+
+    rsx! {
+        div { class: "home-container",
+            h1 { "Welcome to the RPG game!" }
+            div {
+                display: "grid",
+                flex: "1 1 0%",
+                grid_auto_rows: "min-content",
+                gap: "1.5rem",
+                padding: "0 1rem",
+                div { display: "grid", gap: "0.75rem",
+                    Label { html_for: "sheet-demo-name", "Name" }
+                    Input {
+                        placeholder: "Type a message",
+                        r#type: "text",
+                        value: "{username}",
+                        oninput: set_username,
+                    }
+                    Button {
+                        variant: ButtonVariant::Secondary,
+                        onclick: move |_| async move {
+                            match login(username(), "".to_owned(), false).await {
+                                Ok(()) => {
+                                    logon_answer.set(format!("{} is logged", username()));
+                                    *USER_NAME.write() = username();
+                                    navigator.push(Route::Home {});
+                                }
+                                Err(e) => {
+                                    tracing::info!("{}", e.to_owned());
+                                    logon_answer.set("Invalid login".to_owned());
+                                }
+                            }
+                        },
+                        "Connexion"
+                    }
+                    Label { html_for: "sheet-demo-name", "{logon_answer}" }
+                    Label { html_for: "sheet-demo-name", "Name" }
+                    Input {
+                        placeholder: "Register",
+                        r#type: "text",
+                        value: "{register_name}",
+                        oninput: set_register,
+                    }
+                    Button {
+                        variant: ButtonVariant::Secondary,
+                        onclick: move |_| async move {
+                            match register(username(), "".to_owned(), false).await {
+                                Ok(()) => {
+                                    match login(username(), "".to_owned(), false).await {
+                                        Ok(()) => {
+                                            *USER_NAME.write() = username();
+                                            navigator.push(Route::Home {});
+                                        }
+                                        Err(e) => {
+                                            tracing::info!("{}", e.to_owned());
+                                            register_answer.set("Invalid login".to_owned());
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    tracing::info!("{}", e.to_owned());
+                                    register_answer.set("This name is already used.".to_owned());
+                                }
+                            }
+
+                        },
+                        "Register"
+                    }
+                    Label { html_for: "sheet-demo-name", "{register_answer}" }
+                }
+            }
+        }
+    }
+}
