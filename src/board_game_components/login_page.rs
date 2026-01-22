@@ -3,8 +3,8 @@ use dioxus::prelude::*;
 use dioxus_primitives::label::Label;
 
 use crate::{
-    auth::server_fn::{login, register},
-    common::{Route, USER_NAME},
+    auth::server_fn::{delete_user, login, register},
+    common::{is_admin, Route, USER_NAME},
     components::{
         button::{Button, ButtonVariant},
         input::Input,
@@ -13,17 +13,19 @@ use crate::{
 
 #[component]
 pub fn LoginPage() -> Element {
+    let navigator = use_navigator();
+    // logon
     let mut username = use_signal(|| String::new());
-    let mut register_name = use_signal(|| String::new());
     let mut logon_answer = use_signal(|| String::new());
-    let mut register_answer = use_signal(|| String::new());
     let set_username = move |e: FormEvent| {
         username.set(e.value());
     };
+    // register
+    let mut register_name = use_signal(|| String::new());
+    let mut register_answer = use_signal(|| String::new());
     let set_register = move |e: FormEvent| {
         register_name.set(e.value());
     };
-    let navigator = use_navigator();
 
     rsx! {
         div { class: "home-container",
@@ -35,9 +37,9 @@ pub fn LoginPage() -> Element {
                 gap: "1.5rem",
                 padding: "0 1rem",
                 div { display: "grid", gap: "0.75rem",
-                    Label { html_for: "sheet-demo-name", "Name" }
+                    Label { html_for: "sheet-demo-name", "Sign in" }
                     Input {
-                        placeholder: "Type a message",
+                        placeholder: "Type your username",
                         r#type: "text",
                         value: "{username}",
                         oninput: set_username,
@@ -60,9 +62,9 @@ pub fn LoginPage() -> Element {
                         "Connexion"
                     }
                     Label { html_for: "sheet-demo-name", "{logon_answer}" }
-                    Label { html_for: "sheet-demo-name", "Name" }
+                    Label { html_for: "sheet-demo-name", "Sign up" }
                     Input {
-                        placeholder: "Register",
+                        placeholder: "Choose your username",
                         r#type: "text",
                         value: "{register_name}",
                         oninput: set_register,
@@ -90,7 +92,7 @@ pub fn LoginPage() -> Element {
                             }
 
                         },
-                        "Register"
+                        "Sign up"
                     }
                     Label { html_for: "sheet-demo-name", "{register_answer}" }
                 }

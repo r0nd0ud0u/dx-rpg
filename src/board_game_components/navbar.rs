@@ -13,7 +13,10 @@ pub fn Navbar() -> Element {
     let navigator = use_navigator();
     rsx! {
         div { class: "navbar",
-            Link { to: Route::Home {}, "Home" }
+            div { style: "display: flex; gap: 1rem;",
+                Link { to: Route::Home {}, "Home" }
+                Link { to: Route::AdminPage {}, "Admin" }
+            }
             div {
                 Button {
                     variant: if USER_NAME() == disconnected_user() { ButtonVariant::Secondary } else { ButtonVariant::Destructive },

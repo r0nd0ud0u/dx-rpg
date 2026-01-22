@@ -1,3 +1,4 @@
+pub mod admin_page;
 pub mod character_page;
 pub mod common_comp;
 pub mod create_server_page;
