@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::label::Label;
 
 use crate::{
-    auth::server_fn::delete_user,
+    auth_manager::server_fn::delete_user,
     components::{
         button::{Button, ButtonVariant},
         input::Input,
@@ -13,8 +13,8 @@ use crate::{
 #[component]
 pub fn AdminPage() -> Element {
     // delete
-    let mut delete_name = use_signal(|| String::new());
-    let mut delete_answer = use_signal(|| String::new());
+    let mut delete_name = use_signal(String::new);
+    let mut delete_answer = use_signal(String::new);
     let set_delete = move |e: FormEvent| {
         delete_name.set(e.value());
     };
@@ -52,7 +52,7 @@ pub fn AdminPage() -> Element {
                         "Delete user"
                     }
                     Label { html_for: "sheet-demo-name", "{delete_answer}" }
-                
+
                 }
             }
         }

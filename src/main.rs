@@ -26,7 +26,7 @@ fn main() {
         use axum_session::{SessionConfig, SessionLayer, SessionStore};
         use axum_session_auth::AuthConfig;
         use axum_session_sqlx::SessionSqlitePool;
-        use dx_rpg::auth::{auth::AuthLayer, db::get_db};
+        use dx_rpg::auth_manager::{auth::AuthLayer, db::get_db};
 
         let pool = get_db().await;
 

@@ -3,8 +3,8 @@ use dioxus::prelude::*;
 use dioxus_primitives::label::Label;
 
 use crate::{
-    auth::server_fn::{delete_user, login, register},
-    common::{is_admin, Route, USER_NAME},
+    auth_manager::server_fn::{login, register},
+    common::{Route, USER_NAME},
     components::{
         button::{Button, ButtonVariant},
         input::Input,
@@ -15,14 +15,14 @@ use crate::{
 pub fn LoginPage() -> Element {
     let navigator = use_navigator();
     // logon
-    let mut username = use_signal(|| String::new());
-    let mut logon_answer = use_signal(|| String::new());
+    let mut username = use_signal(String::new);
+    let mut logon_answer = use_signal(String::new);
     let set_username = move |e: FormEvent| {
         username.set(e.value());
     };
     // register
-    let mut register_name = use_signal(|| String::new());
-    let mut register_answer = use_signal(|| String::new());
+    let mut register_name = use_signal(String::new);
+    let mut register_answer = use_signal(String::new);
     let set_register = move |e: FormEvent| {
         register_name.set(e.value());
     };

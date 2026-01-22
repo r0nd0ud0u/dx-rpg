@@ -2,8 +2,8 @@ use dioxus::{logger::tracing, prelude::*};
 use dioxus_primitives::label::Label;
 
 use crate::{
-    auth::server_fn::logout,
-    common::{disconnected_user, Route, USER_NAME},
+    auth_manager::server_fn::logout,
+    common::{disconnected_user, is_admin, Route, USER_NAME},
     components::button::{Button, ButtonVariant},
 };
 
@@ -15,7 +15,9 @@ pub fn Navbar() -> Element {
         div { class: "navbar",
             div { style: "display: flex; gap: 1rem;",
                 Link { to: Route::Home {}, "Home" }
-                Link { to: Route::AdminPage {}, "Admin" }
+                if is_admin() {
+                    Link { to: Route::AdminPage {}, "Admin" }
+                }
             }
             div {
                 Button {

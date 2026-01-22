@@ -1,5 +1,5 @@
 #[cfg(feature = "server")]
-use crate::auth::{auth::Session, auth::User, db::get_db, model::SqlUser};
+use crate::auth_manager::{auth::Session, auth::User, db::get_db, model::SqlUser};
 use dioxus::{logger::tracing, prelude::*};
 use std::collections::HashSet;
 
@@ -10,8 +10,9 @@ pub async fn login(
     use_password: bool,
 ) -> Result<(), ServerFnError> {
     if username.trim() == "" || (password.is_empty() && use_password) {
-        let msg = format!("Username or Password can't be empty!");
-        Err(ServerFnError::new(msg))
+        Err(ServerFnError::new(
+            "Username or Password can't be empty!".to_owned(),
+        ))
     } else {
         let pool = get_db().await;
         let rows: Vec<SqlUser> = sqlx::query_as("SELECT * FROM users WHERE username = ?1")
@@ -20,22 +21,20 @@ pub async fn login(
             .await
             .unwrap();
 
-        if rows.len() == 0 {
-            let msg = format!("Username {} is not registered!", username);
-            Err(ServerFnError::new(msg))
+        if rows.is_empty() {
+            Err(ServerFnError::new(format!(
+                "Username {} is not registered!",
+                username
+            )))
         } else {
-            let is_valid = match bcrypt::verify(password, &rows[0].password) {
-                Ok(_) => true,
-                _ => false,
-            };
+            let is_valid = bcrypt::verify(password, &rows[0].password).is_ok();
 
-            if !use_password || (use_password && is_valid) {
+            if !use_password || is_valid {
                 tracing::info!("{}", format!("{:?}", rows[0].id));
                 auth.login_user(rows[0].id);
                 Ok(())
             } else {
-                let msg = format!("Password is not correct!");
-                Err(ServerFnError::new(msg))
+                Err(ServerFnError::new("Password is not correct!".to_owned()))
             }
         }
     }
@@ -48,8 +47,9 @@ pub async fn register(
     use_password: bool,
 ) -> Result<(), ServerFnError> {
     if username.trim() == "" || (password.is_empty() && use_password) {
-        let msg = format!("Username or Password can't be empty!");
-        Err(ServerFnError::new(msg))
+        Err(ServerFnError::new(
+            "Username or Password can't be empty!".to_owned(),
+        ))
     } else {
         let pool = get_db().await;
         let rows: Vec<SqlUser> = sqlx::query_as("SELECT * FROM users WHERE username = ?1")
@@ -57,36 +57,35 @@ pub async fn register(
             .fetch_all(pool)
             .await
             .unwrap();
-        if rows.len() != 0 {
-            let msg = format!("Username  {} is already taken!", username);
-            Err(ServerFnError::new(msg))
+        if !rows.is_empty() {
+            Err(ServerFnError::new(format!(
+                "Username  {} is already taken!",
+                username
+            )))
+        } else if use_password {
+            let hash_password = bcrypt::hash(password, 10).unwrap();
+            let result = match sqlx::query("INSERT INTO users (username, password) VALUES (?1, ?2)")
+                .bind(&username)
+                .bind(&hash_password)
+                .execute(pool)
+                .await
+            {
+                Ok(_) => Ok(()),
+                Err(e) => Err(ServerFnError::new(format!("{}", e))),
+            };
+            result
         } else {
-            if use_password {
-                let hash_password = bcrypt::hash(password, 10).unwrap();
-                let result =
-                    match sqlx::query("INSERT INTO users (username, password) VALUES (?1, ?2)")
-                        .bind(&username)
-                        .bind(&hash_password)
-                        .execute(pool)
-                        .await
-                    {
-                        Ok(_) => Ok(()),
-                        Err(e) => Err(ServerFnError::new(format!("{}", e))),
-                    };
-                result
-            } else {
-                let result =
-                    match sqlx::query("INSERT INTO users (anonymous, username) VALUES (?1, ?2)")
-                        .bind(false)
-                        .bind(&username)
-                        .execute(pool)
-                        .await
-                    {
-                        Ok(_) => Ok(()),
-                        Err(e) => Err(ServerFnError::new(format!("{}", e))),
-                    };
-                result
-            }
+            let result =
+                match sqlx::query("INSERT INTO users (anonymous, username) VALUES (?1, ?2)")
+                    .bind(false)
+                    .bind(&username)
+                    .execute(pool)
+                    .await
+                {
+                    Ok(_) => Ok(()),
+                    Err(e) => Err(ServerFnError::new(format!("{}", e))),
+                };
+            result
         }
     }
 }
@@ -98,10 +97,10 @@ pub async fn delete_user(
     use_password: bool,
 ) -> Result<(), ServerFnError> {
     if username.trim() == "Admin" {
-        let msg = format!("Admin cannot be deleted");
+        let msg = "Admin cannot be deleted".to_owned();
         Err(ServerFnError::new(msg))
     } else if username.trim() == "" || (password.is_empty() && use_password) {
-        let msg = format!("Username or Password can't be empty!");
+        let msg = "Username or Password can't be empty!".to_owned();
         Err(ServerFnError::new(msg))
     } else {
         let pool = get_db().await;
@@ -111,14 +110,11 @@ pub async fn delete_user(
             .await
             .unwrap();
 
-        if rows.len() == 0 {
+        if rows.is_empty() {
             let msg = format!("Username {} is not registered!", username);
             Err(ServerFnError::new(msg))
         } else {
-            let is_valid = match bcrypt::verify(&password, &rows[0].password) {
-                Ok(_) => true,
-                _ => false,
-            };
+            let is_valid = bcrypt::verify(&password, &rows[0].password).is_ok();
 
             if use_password {
                 if is_valid {
@@ -135,8 +131,7 @@ pub async fn delete_user(
                     };
                     result
                 } else {
-                    let msg = format!("Password is not correct!");
-                    Err(ServerFnError::new(msg))
+                    Err(ServerFnError::new("Password is not correct!".to_owned()))
                 }
             } else {
                 let result = match sqlx::query("DELETE FROM users WHERE username = ?1")

@@ -7,7 +7,6 @@ use crate::board_game_components::home_page::Home;
 use crate::board_game_components::joinongoinggame_page::JoinOngoingGame;
 use crate::board_game_components::loadgame_page::LoadGame;
 use crate::board_game_components::lobby_page::LobbyPage;
-use crate::board_game_components::login_page::LoginPage;
 use crate::board_game_components::navbar::Navbar;
 use crate::board_game_components::startgame_page::StartGamePage;
 use colorgrad::{GradientBuilder, LinearGradient};
