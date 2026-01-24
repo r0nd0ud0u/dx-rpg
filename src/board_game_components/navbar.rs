@@ -3,7 +3,7 @@ use dioxus_primitives::label::Label;
 
 use crate::{
     auth_manager::server_fn::logout,
-    common::{disconnected_user, is_admin, Route, USER_NAME},
+    common::{Route, USER_NAME, disconnected_user, is_admin},
     components::button::{Button, ButtonVariant},
 };
 

@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 
 use crate::{
     board_game_components::{common_comp::ButtonLink, login_page::LoginPage},
-    common::{disconnected_user, Route, USER_NAME},
+    common::{Route, USER_NAME, disconnected_user},
 };
 
 /// Home page

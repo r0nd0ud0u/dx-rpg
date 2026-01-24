@@ -2,7 +2,10 @@ use dioxus::{
     logger::tracing::{self, Level},
     prelude::*,
 };
-use dx_rpg::common::{Route, DX_COMP_CSS};
+use dx_rpg::{
+    common::{DX_COMP_CSS, Route},
+    websocket_components::app::WebsocketApp,
+};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -53,5 +56,6 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: DX_COMP_CSS }
         Router::<Route> {}
+        WebsocketApp {}
     }
 }

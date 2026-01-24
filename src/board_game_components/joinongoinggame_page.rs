@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 
 use crate::{
     application,
-    common::{tempo_const::TIMER_FUTURE_1S, Route, APP},
+    common::{APP, Route, tempo_const::TIMER_FUTURE_1S},
 };
 use dioxus::logger::tracing;
 
