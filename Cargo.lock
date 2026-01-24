@@ -2134,7 +2134,6 @@ dependencies = [
  "dioxus-primitives",
  "dioxus-web",
  "execute",
- "getrandom 0.3.4",
  "http",
  "indexmap",
  "lib-rpg",
