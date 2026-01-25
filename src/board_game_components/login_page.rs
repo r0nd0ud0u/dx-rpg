@@ -1,7 +1,9 @@
-use dioxus::logger::tracing;
+use dioxus::fullstack::CborEncoding;
 use dioxus::prelude::*;
+use dioxus::{fullstack::UseWebsocket, logger::tracing};
 use dioxus_primitives::label::Label;
 
+use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::{
     auth_manager::server_fn::{login, register},
     common::{Route, USER_NAME},
@@ -13,6 +15,9 @@ use crate::{
 
 #[component]
 pub fn LoginPage() -> Element {
+    // socket
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    // nav
     let navigator = use_navigator();
     // logon
     let mut username = use_signal(String::new);
@@ -51,6 +56,8 @@ pub fn LoginPage() -> Element {
                                 Ok(()) => {
                                     logon_answer.set(format!("{} is logged", username()));
                                     *USER_NAME.write() = username();
+                                    // send SetName to server asynchronously; wait for server to send NameAccepted
+                                    let _ = socket.clone().send(ClientEvent::SetName(username())).await;
                                     navigator.push(Route::Home {});
                                 }
                                 Err(e) => {

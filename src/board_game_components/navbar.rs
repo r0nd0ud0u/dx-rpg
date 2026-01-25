@@ -1,15 +1,23 @@
-use dioxus::{logger::tracing, prelude::*};
+use dioxus::{
+    fullstack::{CborEncoding, UseWebsocket},
+    logger::tracing,
+    prelude::*,
+};
 use dioxus_primitives::label::Label;
 
 use crate::{
     auth_manager::server_fn::logout,
     common::{Route, USER_NAME, disconnected_user, is_admin},
     components::button::{Button, ButtonVariant},
+    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
 /// Shared navbar component.
 #[component]
 pub fn Navbar() -> Element {
+    // socket
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    // nav
     let navigator = use_navigator();
     rsx! {
         div { class: "navbar",
@@ -23,16 +31,20 @@ pub fn Navbar() -> Element {
                 Button {
                     variant: if USER_NAME() == disconnected_user() { ButtonVariant::Secondary } else { ButtonVariant::Destructive },
                     onclick: move |_| async move {
+
                         if USER_NAME() != disconnected_user() {
                             match logout().await {
-                                Ok(_) => tracing::info!("{} is logged out", USER_NAME()),
+                                Ok(_) => {
+                                    tracing::info!("{} is logged out", USER_NAME());
+                                    let _ = socket
+
+                                        .clone()
+                                        .send(ClientEvent::Disconnect(USER_NAME()))
+                                        .await;
+                                }
                                 Err(_) => tracing::info!("Error on {} logout", USER_NAME()),
                             }
                             *USER_NAME.write() = disconnected_user();
-                            match logout().await {
-                                Ok(_) => tracing::info!(""),
-                                Err(_) => tracing::info!(""),
-                            }
                         }
                         navigator.push(Route::Home {});
                     },

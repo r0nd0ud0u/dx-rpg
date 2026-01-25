@@ -1,10 +1,14 @@
 use dioxus::{
+    fullstack::{WebSocketOptions, use_websocket},
     logger::tracing::{self, Level},
     prelude::*,
 };
 use dx_rpg::{
     common::{DX_COMP_CSS, Route},
-    websocket_components::app::WebsocketApp,
+    websocket_handler::{
+        event::{ClientEvent, ServerEvent, new_event},
+        game_state::GameStateWebsocket,
+    },
 };
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -51,11 +55,42 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    // Local UI state
+    let mut message = use_signal(String::new);
+    let mut player_id = use_signal(|| 0);
+    let mut game_state = use_signal(GameStateWebsocket::default);
+
+    let socket = use_websocket(|| new_event(WebSocketOptions::new()));
+
+    // Receive events from the websocket and update local signals.
+    use_future(move || {
+        let mut socket = socket;
+        async move {
+            while let Ok(event) = socket.recv().await {
+                match event {
+                    ServerEvent::Message(msg) => {
+                        message.set(msg);
+                    }
+                    ServerEvent::AssignPlayerId(id) => {
+                        player_id.set(id);
+                    }
+                    ServerEvent::SnapshotPlayers(gs) => {
+                        game_state.set(gs);
+                    }
+                }
+            }
+        }
+    });
+
+    use_context_provider(|| socket);
+    use_context_provider(|| player_id);
+    use_context_provider(|| game_state);
+
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: DX_COMP_CSS }
+
         Router::<Route> {}
-        WebsocketApp {}
     }
 }

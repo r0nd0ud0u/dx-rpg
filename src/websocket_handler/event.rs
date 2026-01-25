@@ -17,7 +17,7 @@ use once_cell::sync::Lazy;
 #[cfg(feature = "server")]
 use tokio::sync::mpsc;
 
-use crate::websocket_components::game_state::GameStateWebsocket;
+use crate::websocket_handler::game_state::GameStateWebsocket;
 
 #[cfg(feature = "server")]
 static NEXT_CLIENT_ID: AtomicUsize = AtomicUsize::new(1);
@@ -35,6 +35,7 @@ static GAME_STATE: Lazy<Arc<Mutex<GameStateWebsocket>>> =
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ClientEvent {
     SetName(String),
+    Disconnect(String),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -42,9 +43,6 @@ pub enum ServerEvent {
     Message(String),
     AssignPlayerId(u32),
     SnapshotPlayers(GameStateWebsocket),
-    /// Sent to the client that requested a name change (or initial SetName)
-    /// to confirm the server accepted the name.
-    NameAccepted(String),
 }
 
 #[get("/api/new-event")]
@@ -73,6 +71,8 @@ pub async fn new_event(
 
             // Main loop: handle incoming socket messages and outgoing queued messages
             loop {
+                use dioxus::logger::tracing;
+
                 tokio::select! {
                     // Outgoing messages destined for this client
                     maybe_msg = rx.recv() => {
@@ -88,12 +88,11 @@ pub async fn new_event(
                         match res {
                             Ok(ClientEvent::SetName(name)) => {
                                 println!("Received set_name request from client {}: {:?}", id, name);
-                                let mut map = GAME_STATE.lock().unwrap();
-                                map.players.push(name);
-                                let clients = CLIENTS.lock().unwrap();
-                                for (&_other_id, sender) in clients.iter() {
-                                    let _ = sender.send(ServerEvent::SnapshotPlayers(map.clone()));
-                                }
+                                add_player(name);
+                            }
+                            Ok(ClientEvent::Disconnect(name)) => {
+                                tracing::info!("{} is disconnected", name);
+                                send_disconnection_to_server(name);
                             }
                             Err(_) => {
                                 println!("Client {} disconnected", id);
@@ -112,4 +111,24 @@ pub async fn new_event(
             }
         }
     }))
+}
+
+#[cfg(feature = "server")]
+pub fn add_player(name: String) {
+    let mut map = GAME_STATE.lock().unwrap();
+    map.players.push(name);
+    let clients = CLIENTS.lock().unwrap();
+    for (&_other_id, sender) in clients.iter() {
+        let _ = sender.send(ServerEvent::SnapshotPlayers(map.clone()));
+    }
+}
+
+#[cfg(feature = "server")]
+pub fn send_disconnection_to_server(name: String) {
+    let mut map = GAME_STATE.lock().unwrap();
+    map.players.retain(|player| *player != name);
+    let clients = CLIENTS.lock().unwrap();
+    for (&_other_id, sender) in clients.iter() {
+        let _ = sender.send(ServerEvent::SnapshotPlayers(map.clone()));
+    }
 }
