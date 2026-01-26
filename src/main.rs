@@ -3,10 +3,11 @@ use dioxus::{
     logger::tracing::{self, Level},
     prelude::*,
 };
+use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use dx_rpg::{
-    common::{DX_COMP_CSS, Route},
+    common::{DX_COMP_CSS, Route, disconnected_user},
     websocket_handler::{
-        event::{ClientEvent, ServerEvent, new_event},
+        event::{ServerEvent, new_event},
         game_state::GameStateWebsocket,
     },
 };
@@ -62,6 +63,10 @@ fn App() -> Element {
 
     let socket = use_websocket(|| new_event(WebSocketOptions::new()));
 
+    // synced storage
+    let login_session_local =
+        use_synced_storage::<LocalStorage, String>("synced".to_string(), || disconnected_user());
+
     // Receive events from the websocket and update local signals.
     use_future(move || {
         let mut socket = socket;
@@ -85,6 +90,7 @@ fn App() -> Element {
     use_context_provider(|| socket);
     use_context_provider(|| player_id);
     use_context_provider(|| game_state);
+    use_context_provider(|| login_session_local);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

@@ -4,9 +4,10 @@ use dioxus::{fullstack::UseWebsocket, logger::tracing};
 use dioxus_primitives::label::Label;
 
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
+use crate::websocket_handler::game_state::GameStateWebsocket;
 use crate::{
     auth_manager::server_fn::{login, register},
-    common::{Route, USER_NAME},
+    common::Route,
     components::{
         button::{Button, ButtonVariant},
         input::Input,
@@ -15,8 +16,10 @@ use crate::{
 
 #[component]
 pub fn LoginPage() -> Element {
-    // socket
+    // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let mut local_login_session = use_context::<Signal<String>>();
+    let gsw = use_context::<Signal<GameStateWebsocket>>();
     // nav
     let navigator = use_navigator();
     // logon
@@ -55,9 +58,11 @@ pub fn LoginPage() -> Element {
                             match login(username(), "".to_owned(), false).await {
                                 Ok(()) => {
                                     logon_answer.set(format!("{} is logged", username()));
-                                    *USER_NAME.write() = username();
                                     // send SetName to server asynchronously; wait for server to send NameAccepted
                                     let _ = socket.clone().send(ClientEvent::SetName(username())).await;
+                                    // local storage for login
+                                    *local_login_session.write() = username();
+                                    // change page
                                     navigator.push(Route::Home {});
                                 }
                                 Err(e) => {
@@ -83,7 +88,8 @@ pub fn LoginPage() -> Element {
                                 Ok(()) => {
                                     match login(username(), "".to_owned(), false).await {
                                         Ok(()) => {
-                                            *USER_NAME.write() = username();
+                                            // local storage for login
+                                            *local_login_session.write() = username();
                                             navigator.push(Route::Home {});
                                         }
                                         Err(e) => {

@@ -44,6 +44,7 @@ axum_session_sqlx = { version = "0.6.1", features = ["sqlite"], optional = true 
 bcrypt = {version = "0.18.0", optional = true }
 rand = "0.9.2"
 wasm-bindgen-futures = "0.4.58"
+dioxus-sdk-storage = "0.7.0"
 
 [features]
 default = ["server"]
