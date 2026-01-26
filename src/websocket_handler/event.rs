@@ -53,7 +53,6 @@ pub async fn new_event(
         #[cfg(feature = "server")]
         {
             // Assign id
-            use dioxus::core::Runtime;
             let id = NEXT_CLIENT_ID.fetch_add(1, Ordering::SeqCst) as u32;
 
             // Channel for outgoing messages to this client

@@ -4,7 +4,6 @@ use dioxus::{fullstack::UseWebsocket, logger::tracing};
 use dioxus_primitives::label::Label;
 
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
-use crate::websocket_handler::game_state::GameStateWebsocket;
 use crate::{
     auth_manager::server_fn::{login, register},
     common::Route,
@@ -19,7 +18,6 @@ pub fn LoginPage() -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let mut local_login_session = use_context::<Signal<String>>();
-    let gsw = use_context::<Signal<GameStateWebsocket>>();
     // nav
     let navigator = use_navigator();
     // logon
