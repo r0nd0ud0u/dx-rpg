@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           cargo install cargo-binstall
-          cargo binstall dioxus-cli@0.7.2 --force
+          cargo binstall dioxus-cli@0.7.3 --force
           chmod +x ./scripts/bundle_app.sh
           ./scripts/bundle_app.sh
           zip -r bundle.zip bundle 

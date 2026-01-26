@@ -4,4 +4,5 @@ pub struct SqlUser {
     pub anonymous: bool,
     pub username: String,
     pub password: String,
+    pub is_connected: bool,
 }

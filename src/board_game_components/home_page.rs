@@ -2,13 +2,21 @@ use dioxus::prelude::*;
 
 use crate::{
     board_game_components::{common_comp::ButtonLink, login_page::LoginPage},
-    common::{disconnected_user, Route, USER_NAME},
+    common::{Route, disconnected_user},
+    websocket_handler::game_state::GameStateWebsocket,
 };
 
 /// Home page
 #[component]
 pub fn Home() -> Element {
-    if USER_NAME == disconnected_user() {
+    // contexts
+    let gsw_sig = use_context::<Signal<GameStateWebsocket>>();
+    let local_login_session = use_context::<Signal<String>>();
+    // Snapshot for this render
+    let gsw = gsw_sig();
+    let user_name = local_login_session();
+
+    if user_name == disconnected_user() {
         rsx! {
             LoginPage {}
         }
@@ -24,6 +32,9 @@ pub fn Home() -> Element {
                 ButtonLink {
                     target: Route::JoinOngoingGame {}.into(),
                     name: "Join game".to_string(),
+                }
+                for player in gsw.players {
+                    p { "{player}" }
                 }
             }
         }
