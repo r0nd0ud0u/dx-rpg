@@ -67,7 +67,7 @@ pub fn LoginPage() -> Element {
                                 }
                                 Err(e) => {
                                     tracing::info!("{}", e.to_owned());
-                                    logon_answer.set("Invalid login".to_owned());
+                                    logon_answer.set(format!("{}", e.to_owned()));
                                 }
                             }
                         },
