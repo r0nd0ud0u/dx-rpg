@@ -1,8 +1,16 @@
 use dioxus::{
+    fullstack::{WebSocketOptions, use_websocket},
     logger::tracing::{self, Level},
     prelude::*,
 };
-use dx_rpg::common::{Route, DX_COMP_CSS};
+use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
+use dx_rpg::{
+    common::{DX_COMP_CSS, Route, disconnected_user},
+    websocket_handler::{
+        event::{ServerEvent, new_event},
+        game_state::GameStateWebsocket,
+    },
+};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -48,10 +56,47 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    // Local UI state
+    let mut message = use_signal(String::new);
+    let mut player_id = use_signal(|| 0);
+    let mut game_state = use_signal(GameStateWebsocket::default);
+
+    let socket = use_websocket(|| new_event(WebSocketOptions::new()));
+
+    // synced storage
+    let login_session_local =
+        use_synced_storage::<LocalStorage, String>("synced".to_string(), || disconnected_user());
+
+    // Receive events from the websocket and update local signals.
+    use_future(move || {
+        let mut socket = socket;
+        async move {
+            while let Ok(event) = socket.recv().await {
+                match event {
+                    ServerEvent::Message(msg) => {
+                        message.set(msg);
+                    }
+                    ServerEvent::AssignPlayerId(id) => {
+                        player_id.set(id);
+                    }
+                    ServerEvent::SnapshotPlayers(gs) => {
+                        game_state.set(gs);
+                    }
+                }
+            }
+        }
+    });
+
+    use_context_provider(|| socket);
+    use_context_provider(|| player_id);
+    use_context_provider(|| game_state);
+    use_context_provider(|| login_session_local);
+
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: DX_COMP_CSS }
+
         Router::<Route> {}
     }
 }

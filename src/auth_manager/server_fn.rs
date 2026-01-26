@@ -28,11 +28,26 @@ pub async fn login(
             )))
         } else {
             let is_valid = bcrypt::verify(password, &rows[0].password).is_ok();
-
+            if rows[0].is_connected {
+                return Err(ServerFnError::new(
+                    "That user is already connected.".to_owned(),
+                ));
+            }
             if !use_password || is_valid {
                 tracing::info!("{}", format!("{:?}", rows[0].id));
-                auth.login_user(rows[0].id);
-                Ok(())
+                // update is_connected status in db
+                match update_connection_status(username, true).await {
+                    Ok(()) => {
+                        auth.login_user(rows[0].id);
+                        Ok(())
+                    }
+                    Err(e) => {
+                        tracing::info!("{}", e);
+                        Err(ServerFnError::new(
+                            "Fail to update connection status on db, abort login".to_owned(),
+                        ))
+                    }
+                }
             } else {
                 Err(ServerFnError::new("Password is not correct!".to_owned()))
             }
@@ -59,7 +74,7 @@ pub async fn register(
             .unwrap();
         if !rows.is_empty() {
             Err(ServerFnError::new(format!(
-                "Username  {} is already taken!",
+                "Username {} is already taken!",
                 username
             )))
         } else if use_password {
@@ -170,9 +185,18 @@ pub async fn get_permissions() -> Result<HashSet<String>> {
 
 /// Just like `login`, but this time we log out the user.
 #[post("/api/user/logout", auth: Session)]
-pub async fn logout() -> Result<()> {
-    auth.logout_user();
-    Ok(())
+pub async fn logout() -> Result<(), ServerFnError> {
+    let name = match get_user_name().await {
+        Ok(name) => name,
+        Err(e) => return Err(ServerFnError::new(format!("{}", e))),
+    };
+    match update_connection_status(name, false).await {
+        Ok(()) => {
+            auth.logout_user();
+            Ok(())
+        }
+        Err(_) => Err(ServerFnError::new("abord logout")),
+    }
 }
 
 /// We can access the current user via `auth.current_user`.
@@ -182,4 +206,27 @@ pub async fn logout() -> Result<()> {
 #[post("/api/user/name", auth: Session)]
 pub async fn get_user_name() -> Result<String> {
     Ok(auth.current_user.unwrap().username)
+}
+
+#[cfg(feature = "server")]
+#[server]
+pub async fn update_connection_status(
+    username: String,
+    is_connected: bool,
+) -> Result<(), ServerFnError> {
+    let pool = get_db().await;
+    tracing::info!(
+        "UPDATE users SET is_connected = {} WHERE username = {}",
+        username,
+        is_connected
+    );
+    match sqlx::query("UPDATE users SET is_connected = ?1 WHERE username = ?2")
+        .bind(&is_connected)
+        .bind(&username)
+        .execute(pool)
+        .await
+    {
+        Ok(_) => Ok(()),
+        Err(e) => Err(ServerFnError::new(format!("{}", e))),
+    }
 }

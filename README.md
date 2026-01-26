@@ -14,7 +14,7 @@ cargo install --git https://github.com/DioxusLabs/dioxus dioxus-cli --locked
 or 
 `cargo install cargo-binstall`
 
-`cargo binstall dioxus-cli@0.7.2 --force`
+`cargo binstall dioxus-cli@0.7.3 --force`
 
 ### Lib-rpg
 Add the following lines to fetch lib-rpg:

@@ -13,15 +13,15 @@ async fn db() -> Pool<Sqlite> {
         .unwrap();
 
     // Create the tables (sessions, users)
-    pool.execute(r#"CREATE TABLE IF NOT EXISTS users ( "id" INTEGER PRIMARY KEY, "anonymous" BOOLEAN NOT NULL, "username" VARCHAR(256) NOT NULL, "password" VARCHAR(256))"#,)
+    pool.execute(r#"CREATE TABLE IF NOT EXISTS users ( "id" INTEGER PRIMARY KEY, "anonymous" BOOLEAN NOT NULL, "username" VARCHAR(256) NOT NULL, "password" VARCHAR(256), "is_connected" BOOLEAN NOT NULL)"#,)
             .await.unwrap();
     pool.execute(r#"CREATE TABLE IF NOT EXISTS user_permissions ( "user_id" INTEGER NOT NULL, "token" VARCHAR(256) NOT NULL)"#,)
             .await.unwrap();
 
     // Insert in some test data for two users (one anonymous, one normal)
-    pool.execute(r#"INSERT INTO users (id, anonymous, username, password) SELECT 1, true, 'Admin', '' ON CONFLICT(id) DO UPDATE SET anonymous = EXCLUDED.anonymous, username = EXCLUDED.username, password = EXCLUDED.password"#,)
+    pool.execute(r#"INSERT INTO users (id, anonymous, username, password, is_connected) SELECT 1, true, 'Admin', '', false ON CONFLICT(id) DO UPDATE SET anonymous = EXCLUDED.anonymous, username = EXCLUDED.username, password = EXCLUDED.password, is_connected = EXCLUDED.is_connected"#,)
             .await.unwrap();
-    pool.execute(r#"INSERT INTO users (id, anonymous, username, password) SELECT 2, false, 'Guest', '' ON CONFLICT(id) DO UPDATE SET anonymous = EXCLUDED.anonymous, username = EXCLUDED.username, password = EXCLUDED.password"#,)
+    pool.execute(r#"INSERT INTO users (id, anonymous, username, password, is_connected) SELECT 2, false, 'Guest', '', false ON CONFLICT(id) DO UPDATE SET anonymous = EXCLUDED.anonymous, username = EXCLUDED.username, password = EXCLUDED.password, is_connected = EXCLUDED.is_connected"#,)
             .await.unwrap();
 
     // permissions

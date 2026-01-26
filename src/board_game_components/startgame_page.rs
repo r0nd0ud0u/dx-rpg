@@ -1,7 +1,7 @@
 use crate::{
     application,
     board_game_components::gameboard::GameBoard,
-    common::{ButtonStatus, APP},
+    common::{APP, ButtonStatus},
     components::{
         button::{Button, ButtonVariant},
         input::Input,

@@ -1,10 +1,12 @@
-use dioxus::logger::tracing;
+use dioxus::fullstack::CborEncoding;
 use dioxus::prelude::*;
+use dioxus::{fullstack::UseWebsocket, logger::tracing};
 use dioxus_primitives::label::Label;
 
+use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::{
     auth_manager::server_fn::{login, register},
-    common::{Route, USER_NAME},
+    common::Route,
     components::{
         button::{Button, ButtonVariant},
         input::Input,
@@ -13,6 +15,10 @@ use crate::{
 
 #[component]
 pub fn LoginPage() -> Element {
+    // contexts
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let mut local_login_session = use_context::<Signal<String>>();
+    // nav
     let navigator = use_navigator();
     // logon
     let mut username = use_signal(String::new);
@@ -50,12 +56,16 @@ pub fn LoginPage() -> Element {
                             match login(username(), "".to_owned(), false).await {
                                 Ok(()) => {
                                     logon_answer.set(format!("{} is logged", username()));
-                                    *USER_NAME.write() = username();
+                                    // send SetName to server asynchronously; wait for server to send NameAccepted
+                                    let _ = socket.clone().send(ClientEvent::SetName(username())).await;
+                                    // local storage for login
+                                    *local_login_session.write() = username();
+                                    // change page
                                     navigator.push(Route::Home {});
                                 }
                                 Err(e) => {
                                     tracing::info!("{}", e.to_owned());
-                                    logon_answer.set("Invalid login".to_owned());
+                                    logon_answer.set(format!("{}", e.to_owned()));
                                 }
                             }
                         },
@@ -76,7 +86,8 @@ pub fn LoginPage() -> Element {
                                 Ok(()) => {
                                     match login(username(), "".to_owned(), false).await {
                                         Ok(()) => {
-                                            *USER_NAME.write() = username();
+                                            // local storage for login
+                                            *local_login_session.write() = username();
                                             navigator.push(Route::Home {});
                                         }
                                         Err(e) => {

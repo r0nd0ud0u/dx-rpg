@@ -17,11 +17,6 @@ pub static APP: GlobalSignal<Application> = Signal::global(Application::default)
 pub fn disconnected_user() -> String {
     "not connected".to_owned()
 }
-pub fn is_admin() -> bool {
-    USER_NAME() == "Admin"
-}
-
-pub static USER_NAME: GlobalSignal<String> = Signal::global(disconnected_user);
 
 pub static ENERGY_GRAD: Lazy<LinearGradient> = Lazy::new(|| {
     GradientBuilder::new()

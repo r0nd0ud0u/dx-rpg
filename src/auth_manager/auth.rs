@@ -19,6 +19,7 @@ pub struct User {
     pub anonymous: bool,
     pub username: String,
     pub permissions: HashSet<String>,
+    pub is_connected: bool,
 }
 #[derive(sqlx::FromRow, Clone)]
 pub struct SqlPermissionTokens {
@@ -50,6 +51,7 @@ impl Authentication<User, i64, SqlitePool> for User {
             anonymous: sqluser.anonymous,
             username: sqluser.username,
             permissions: sql_user_perms.into_iter().map(|x| x.token).collect(),
+            is_connected: sqluser.is_connected,
         })
     }
 

@@ -4,7 +4,7 @@ use dioxus_primitives::scroll_area::{ScrollArea, ScrollDirection};
 
 use crate::{
     application,
-    common::{Route, APP},
+    common::{APP, Route},
     components::button::{Button, ButtonVariant},
 };
 

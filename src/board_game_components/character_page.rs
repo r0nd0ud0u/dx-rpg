@@ -1,8 +1,8 @@
 use colorgrad::Gradient;
 use dioxus::prelude::*;
 use dioxus_primitives::{
-    tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     ContentSide,
+    tooltip::{Tooltip, TooltipContent, TooltipTrigger},
 };
 use indexmap::IndexMap;
 use lib_rpg::{
