@@ -85,7 +85,9 @@ fn App() -> Element {
                         game_state.set(gs);
                     }
                     ServerEvent::UpdateApplication(app_update) => {
-                        if SERVER_NAME.read() == app_update.server_name {
+                        if SERVER_NAME() == app_update.server_name {
+                            // check auto update
+                            // lauunch attack
                             app.set(app_update);
                         }
                     }

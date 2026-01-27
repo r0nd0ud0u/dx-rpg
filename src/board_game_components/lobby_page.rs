@@ -7,7 +7,7 @@ use crate::{
     application::{self, Application},
     auth_manager::server_fn::get_user_name,
     board_game_components::common_comp::ButtonLink,
-    common::{APP, Route},
+    common::{APP, Route, SERVER_NAME},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
@@ -22,11 +22,12 @@ pub fn LobbyPage() -> Element {
         spawn(async move {
             let name = match get_user_name().await {
                 Ok(name) => name,
-                Err(e) => "".to_string(),
+                Err(_) => "".to_string(),
             };
             if name.is_empty() {
                 return;
             }
+            *SERVER_NAME.write() = name.clone();
             let _ = socket.send(ClientEvent::StartGame(name)).await;
         });
     });
@@ -34,7 +35,7 @@ pub fn LobbyPage() -> Element {
     rsx! {
         div { class: "home-container",
             h1 { "LobbyPage" }
-            if app.read() {
+            if app.read().is_game_running {
                 ButtonLink {
                     target: Route::StartGamePage {}.into(),
                     name: "Start Game".to_string(),

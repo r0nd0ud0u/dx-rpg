@@ -148,7 +148,7 @@ pub async fn create_new_game_by_player(name: String) {
 
     // add new ongoing game
     match application::try_new().await {
-        Ok(app) => {
+        Ok(mut app) => {
             // start a new game
             app.game_manager.start_new_game();
             let _ = app.game_manager.start_new_turn();
@@ -193,15 +193,15 @@ pub async fn create_new_game_by_player(name: String) {
                 Ok(()) => tracing::info!("Game manager state saved successfully"),
                 Err(e) => tracing::error!("Failed to save game manager state: {}", e),
             }
+            app.is_game_running = true;
+            app.server_name = name;
+            // update for all clients
+            let clients = CLIENTS.lock().unwrap();
+            for (&_other_id, sender) in clients.iter() {
+                let _ = sender.send(ServerEvent::SnapshotPlayers(map.clone()));
+                let _ = sender.send(ServerEvent::UpdateApplication(app.clone()));
+            }
         }
         Err(_) => tracing::error!("no app"),
-    }
-
-    app.is_game_running = true;
-    // update for all clients
-    let clients = CLIENTS.lock().unwrap();
-    for (&_other_id, sender) in clients.iter() {
-        let _ = sender.send(ServerEvent::SnapshotPlayers(map.clone()));
-        let _ = sender.send(ServerEvent::UpdateApplication(app.clone()));
     }
 }
