@@ -39,6 +39,7 @@ pub enum ClientEvent {
     SetName(String),
     Disconnect(String),
     StartGame(String),
+    LaunchAttack(Application),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -90,7 +91,7 @@ pub async fn new_event(
                     res = socket.recv() => {
                         match res {
                             Ok(ClientEvent::SetName(name)) => {
-                                println!("Received set_name request from client {}: {:?}", id, name);
+                                tracing::info!("Received set_name request from client {}: {:?}", id, name);
                                 add_player(name);
                             }
                             Ok(ClientEvent::Disconnect(name)) => {
@@ -101,8 +102,12 @@ pub async fn new_event(
                                 tracing::info!("{} is starting a new game", name);
                                 create_new_game_by_player(name).await;
                             }
+                            Ok(ClientEvent::LaunchAttack(app)) => {
+                                tracing::info!("A new atk has been launched");
+                                update_server_application(app);
+                            }
                             Err(_) => {
-                                println!("Client {} disconnected", id);
+                                tracing::info!("Client {} disconnected", id);
                                 break;
                             }
                         }
@@ -203,5 +208,13 @@ pub async fn create_new_game_by_player(name: String) {
             }
         }
         Err(_) => tracing::error!("no app"),
+    }
+}
+
+#[cfg(feature = "server")]
+pub fn update_server_application(app: Application) {
+    let clients = CLIENTS.lock().unwrap();
+    for (&_other_id, sender) in clients.iter() {
+        let _ = sender.send(ServerEvent::UpdateApplication(app.clone()));
     }
 }
