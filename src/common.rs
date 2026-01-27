@@ -14,6 +14,8 @@ use once_cell::sync::Lazy;
 
 pub static APP: GlobalSignal<Application> = Signal::global(Application::default);
 
+pub static SERVER_NAME: GlobalSignal<String> = Signal::global(String::new);
+
 pub fn disconnected_user() -> String {
     "not connected".to_owned()
 }

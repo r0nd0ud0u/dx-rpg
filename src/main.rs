@@ -5,7 +5,8 @@ use dioxus::{
 };
 use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use dx_rpg::{
-    common::{DX_COMP_CSS, Route, disconnected_user},
+    application::Application,
+    common::{DX_COMP_CSS, Route, SERVER_NAME, disconnected_user},
     websocket_handler::{
         event::{ServerEvent, new_event},
         game_state::GameStateWebsocket,
@@ -60,6 +61,7 @@ fn App() -> Element {
     let mut message = use_signal(String::new);
     let mut player_id = use_signal(|| 0);
     let mut game_state = use_signal(GameStateWebsocket::default);
+    let mut app = use_signal(Application::default);
 
     let socket = use_websocket(|| new_event(WebSocketOptions::new()));
 
@@ -82,6 +84,11 @@ fn App() -> Element {
                     ServerEvent::SnapshotPlayers(gs) => {
                         game_state.set(gs);
                     }
+                    ServerEvent::UpdateApplication(app_update) => {
+                        if SERVER_NAME.read() == app_update.server_name {
+                            app.set(app_update);
+                        }
+                    }
                 }
             }
         }
@@ -91,6 +98,7 @@ fn App() -> Element {
     use_context_provider(|| player_id);
     use_context_provider(|| game_state);
     use_context_provider(|| login_session_local);
+    use_context_provider(|| app);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
