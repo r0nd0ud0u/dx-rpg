@@ -9,7 +9,7 @@ use dx_rpg::{
     common::{DX_COMP_CSS, Route, SERVER_NAME, disconnected_user},
     websocket_handler::{
         event::{ServerEvent, new_event},
-        game_state::GameStateWebsocket,
+        game_state::GameStateManager,
     },
 };
 
@@ -60,7 +60,7 @@ fn App() -> Element {
     // Local UI state
     let mut message = use_signal(String::new);
     let mut player_id = use_signal(|| 0);
-    let mut game_state = use_signal(GameStateWebsocket::default);
+    let mut game_state = use_signal(GameStateManager::default);
     let mut app = use_signal(Application::default);
 
     let socket = use_websocket(|| new_event(WebSocketOptions::new()));
@@ -85,11 +85,7 @@ fn App() -> Element {
                         game_state.set(gs);
                     }
                     ServerEvent::UpdateApplication(app_update) => {
-                        if SERVER_NAME() == app_update.server_name {
-                            // check auto update
-                            // lauunch attack
-                            app.set(app_update);
-                        }
+                        app.set(app_update);
                     }
                 }
             }

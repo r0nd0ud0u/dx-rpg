@@ -18,7 +18,7 @@ use once_cell::sync::Lazy;
 use tokio::sync::mpsc;
 
 use crate::application::Application;
-use crate::websocket_handler::game_state::GameStateWebsocket;
+use crate::websocket_handler::game_state::GameStateManager;
 use dioxus::logger::tracing;
 
 #[cfg(feature = "server")]
@@ -31,22 +31,22 @@ static CLIENTS: Lazy<Arc<Mutex<HashMap<usize, mpsc::UnboundedSender<ServerEvent>
 
 /// server only: shared game state
 #[cfg(feature = "server")]
-static GAME_STATE: Lazy<Arc<Mutex<GameStateWebsocket>>> =
-    Lazy::new(|| Arc::new(Mutex::new(GameStateWebsocket::default())));
+static GAMES_MANAGER: Lazy<Arc<Mutex<GameStateManager>>> =
+    Lazy::new(|| Arc::new(Mutex::new(GameStateManager::default())));
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ClientEvent {
     SetName(String),
     Disconnect(String),
     StartGame(String),
-    LaunchAttack(String), // `String`: atk name
+    LaunchAttack(String, String), // `String`: server_name, `String`: atk name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ServerEvent {
     Message(String),
     AssignPlayerId(u32),
-    SnapshotPlayers(GameStateWebsocket),
+    SnapshotPlayers(GameStateManager),
     UpdateApplication(Application),
 }
 
@@ -89,10 +89,11 @@ pub async fn new_event(
 
                     // Incoming message from client
                     res = socket.recv() => {
+                        tracing::info!("Receiving message from client {}, message: {:?}", id, res);
                         match res {
                             Ok(ClientEvent::SetName(name)) => {
                                 tracing::info!("Received set_name request from client {}: {:?}", id, name);
-                                add_player(name);
+                                add_player(name, id);
                             }
                             Ok(ClientEvent::Disconnect(name)) => {
                                 tracing::info!("{} is disconnected", name);
@@ -100,11 +101,11 @@ pub async fn new_event(
                             }
                             Ok(ClientEvent::StartGame(name)) => {
                                 tracing::info!("{} is starting a new game", name);
-                                create_new_game_by_player(name).await;
+                                create_new_game_by_player(name, id).await;
                             }
-                            Ok(ClientEvent::LaunchAttack(selected_atk)) => {
+                            Ok(ClientEvent::LaunchAttack(server_name, selected_atk)) => {
                                 tracing::info!("A new atk has been launched");
-                                update_server_application(app);
+                                update_app_after_atk(server_name, selected_atk);
                             }
                             Err(_) => {
                                 tracing::info!("Client {} disconnected", id);
@@ -126,9 +127,9 @@ pub async fn new_event(
 }
 
 #[cfg(feature = "server")]
-pub fn add_player(name: String) {
-    let mut map = GAME_STATE.lock().unwrap();
-    map.players.push(name);
+pub fn add_player(name: String, id: u32) {
+    let mut map = GAMES_MANAGER.lock().unwrap();
+    map.players.insert(id, name);
     let clients = CLIENTS.lock().unwrap();
     for (&_other_id, sender) in clients.iter() {
         let _ = sender.send(ServerEvent::SnapshotPlayers(map.clone()));
@@ -137,8 +138,8 @@ pub fn add_player(name: String) {
 
 #[cfg(feature = "server")]
 pub fn send_disconnection_to_server(name: String) {
-    let mut map = GAME_STATE.lock().unwrap();
-    map.players.retain(|player| *player != name);
+    let mut map = GAMES_MANAGER.lock().unwrap();
+    map.players.retain(|_, player_name| player_name != &name);
     let clients = CLIENTS.lock().unwrap();
     for (&_other_id, sender) in clients.iter() {
         let _ = sender.send(ServerEvent::SnapshotPlayers(map.clone()));
@@ -146,15 +147,16 @@ pub fn send_disconnection_to_server(name: String) {
 }
 
 #[cfg(feature = "server")]
-pub async fn create_new_game_by_player(name: String) {
+pub async fn create_new_game_by_player(name: String, id: u32) {
     use crate::application;
-
-    let mut map = GAME_STATE.lock().unwrap();
+    let mut gm = GAMES_MANAGER.lock().unwrap();
 
     // add new ongoing game
     match application::try_new().await {
         Ok(mut app) => {
+            tracing::info!("New application created for player: {}", name);
             // start a new game
+            use crate::websocket_handler::game_state::ServerData;
             app.game_manager.start_new_game();
             let _ = app.game_manager.start_new_turn();
             // update ongoing games status
@@ -163,11 +165,11 @@ pub async fn create_new_game_by_player(name: String) {
                 app.game_manager.game_paths.games_dir.to_string_lossy()
             );
             // add the current game directory to ongoing games
-            map.ongoing_games_path
+            gm.ongoing_games_path
                 .push(app.game_manager.game_paths.current_game_dir.clone());
             match application::save(
                 all_games_dir,
-                serde_json::to_string_pretty(&map.ongoing_games_path).unwrap(),
+                serde_json::to_string_pretty(&gm.ongoing_games_path).unwrap(),
             )
             .await
             {
@@ -199,31 +201,68 @@ pub async fn create_new_game_by_player(name: String) {
                 Err(e) => tracing::error!("Failed to save game manager state: {}", e),
             }
             app.is_game_running = true;
-            app.server_name = name;
-            // update for all clients
-            let clients = CLIENTS.lock().unwrap();
-            for (&_other_id, sender) in clients.iter() {
-                let _ = sender.send(ServerEvent::SnapshotPlayers(map.clone()));
-                let _ = sender.send(ServerEvent::UpdateApplication(app.clone()));
-            }
+            // name of the server
+            // TODO set server name based on user name + random string
+            app.server_name = name.clone();
+            // add to ongoing games map
+            gm.servers_data.insert(
+                name.clone(),
+                ServerData {
+                    app: app.clone(),
+                    clients_ids: vec![id],
+                },
+            );
+            tracing::info!("servers data keys: {:?}", gm.servers_data.keys());
+            // update for the clients connected to that server
+            drop(gm);
+            update_clients_app(name.clone(), app.clone());
         }
         Err(_) => tracing::error!("no app"),
     }
 }
 
 #[cfg(feature = "server")]
-pub fn update_server_application(app: Application) {
+fn update_clients_app(server_name: String, app: Application) {
+    let mut gm = GAMES_MANAGER.lock().unwrap();
+    // update the app in the game state manager
+    let server_data = match gm.servers_data.get_mut(server_name.as_str()) {
+        Some(server_data) => {
+            server_data.app = app.clone();
+            server_data
+        }
+        None => {
+            tracing::info!("no server data for server: {}", server_name);
+            return;
+        }
+    };
+    tracing::info!(
+        "Clients ids: {:?} for server: {}",
+        server_data.clients_ids,
+        server_name
+    );
     let clients = CLIENTS.lock().unwrap();
-    for (&_other_id, sender) in clients.iter() {
-        let _ = sender.send(ServerEvent::UpdateApplication(app.clone()));
+    for (&other_id, sender) in clients.iter() {
+        if server_data.clients_ids.contains(&(other_id as u32)) {
+            tracing::info!("Sending update to client id: {}", other_id);
+            let _ = sender.send(ServerEvent::UpdateApplication(app.clone()));
+        }
     }
 }
 
-pub fn r(){
+#[cfg(feature = "server")]
+pub fn update_app_after_atk(server_name: String, selected_atk_name: String) {
+    // get app by server name
+    let mut gm = GAMES_MANAGER.lock().unwrap();
+    let mut app = match gm.servers_data.get(&server_name) {
+        Some(server_data) => server_data.app.clone(),
+        None => {
+            tracing::error!("No application found for server name: {}", server_name);
+            return;
+        }
+    };
+    drop(gm);
     // launch attack
-    let _ = app.write().game_manager.launch_attack(&selected_atk_name());
-    let clients = CLIENTS.lock().unwrap();
-    for (&_other_id, sender) in clients.iter() {
-        let _ = sender.send(ServerEvent::UpdateApplication(app.clone()));
-    }
+    let _ = app.game_manager.launch_attack(&selected_atk_name);
+    // update clients
+    update_clients_app(server_name, app.clone());
 }

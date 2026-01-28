@@ -1,5 +1,6 @@
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
+    logger::tracing,
     prelude::*,
 };
 
@@ -25,8 +26,10 @@ pub fn LobbyPage() -> Element {
                 Err(_) => "".to_string(),
             };
             if name.is_empty() {
+                tracing::info!("User name is empty, cannot create new game");
                 return;
             }
+            // TODO set server name based on user name + random string
             *SERVER_NAME.write() = name.clone();
             let _ = socket.send(ClientEvent::StartGame(name)).await;
         });
