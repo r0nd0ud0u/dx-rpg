@@ -39,7 +39,7 @@ pub enum ClientEvent {
     SetName(String),
     Disconnect(String),
     StartGame(String),
-    LaunchAttack(Application),
+    LaunchAttack(String), // `String`: atk name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -102,7 +102,7 @@ pub async fn new_event(
                                 tracing::info!("{} is starting a new game", name);
                                 create_new_game_by_player(name).await;
                             }
-                            Ok(ClientEvent::LaunchAttack(app)) => {
+                            Ok(ClientEvent::LaunchAttack(selected_atk)) => {
                                 tracing::info!("A new atk has been launched");
                                 update_server_application(app);
                             }
@@ -163,11 +163,11 @@ pub async fn create_new_game_by_player(name: String) {
                 app.game_manager.game_paths.games_dir.to_string_lossy()
             );
             // add the current game directory to ongoing games
-            map.ongoing_games
+            map.ongoing_games_path
                 .push(app.game_manager.game_paths.current_game_dir.clone());
             match application::save(
                 all_games_dir,
-                serde_json::to_string_pretty(&map.ongoing_games).unwrap(),
+                serde_json::to_string_pretty(&map.ongoing_games_path).unwrap(),
             )
             .await
             {
@@ -213,6 +213,15 @@ pub async fn create_new_game_by_player(name: String) {
 
 #[cfg(feature = "server")]
 pub fn update_server_application(app: Application) {
+    let clients = CLIENTS.lock().unwrap();
+    for (&_other_id, sender) in clients.iter() {
+        let _ = sender.send(ServerEvent::UpdateApplication(app.clone()));
+    }
+}
+
+pub fn r(){
+    // launch attack
+    let _ = app.write().game_manager.launch_attack(&selected_atk_name());
     let clients = CLIENTS.lock().unwrap();
     for (&_other_id, sender) in clients.iter() {
         let _ = sender.send(ServerEvent::UpdateApplication(app.clone()));

@@ -152,15 +152,13 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     Button {
                         variant: ButtonVariant::Destructive,
                         onclick: move |_| async move {
-                            // launch attack
-                            let _ = app.write().game_manager.launch_attack(&selected_atk_name());
                             tracing::debug!(
                                 // reset atk
                                 // update game manager
                                 "launcher  {} {}", app.write().game_manager.game_state.last_result_atk
                                 .launcher_name, selected_atk_name()
                             );
-                            let _ = socket.send(ClientEvent::LaunchAttack(app.read().clone())).await;
+                            let _ = socket.send(ClientEvent::LaunchAttack(selected_atk_name())).await;
                             selected_atk_name.set("".to_string());
                             write_game_manager.set(true);
                         },
