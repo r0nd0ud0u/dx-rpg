@@ -11,10 +11,7 @@ use lib_rpg::{
     common::stats_const::*,
 };
 
-use crate::{
-    application::Application,
-    common::{APP, ENERGY_GRAD},
-};
+use crate::{application::Application, common::ENERGY_GRAD};
 use crate::{
     common::PATH_IMG,
     components::button::{Button, ButtonVariant},

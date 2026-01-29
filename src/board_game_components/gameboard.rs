@@ -1,4 +1,3 @@
-use async_std::task::sleep;
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     logger::tracing,
@@ -13,7 +12,7 @@ use lib_rpg::{
 use crate::{
     application::Application,
     board_game_components::character_page::{AttackList, CharacterPanel},
-    common::{APP, ButtonStatus, SERVER_NAME, tempo_const::TIMER_FUTURE_1S},
+    common::{ButtonStatus, SERVER_NAME},
     components::button::{Button, ButtonVariant},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
@@ -27,10 +26,11 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
     // local signals
     let atk_menu_display = use_signal(|| false);
     let mut write_game_manager = use_signal(|| false);
-    let mut reload_app = use_signal(|| false);
+    let _reload_app = use_signal(|| false);
     let mut selected_atk_name = use_signal(|| "".to_string());
 
-    use_future(move || {
+    // auto atk for boss
+    /* use_future(move || {
         async move {
             loop {
                 // always sleep at start of loop
@@ -64,7 +64,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                 }
             }
         }
-    });
+    }); */
 
     // Timer every second to update the game manager by reading json file
     /* use_future(move || {

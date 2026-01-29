@@ -36,49 +36,44 @@ static GAMES_MANAGER: Lazy<Arc<Mutex<GameStateManager>>> =
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ClientEvent {
-    SetName(String),
-    Disconnect(String),
+    LoginAllSessions(String, i64), // `String`: username, `i64`: sql-id
+    LogOut(String),
     StartGame(String),
     LaunchAttack(String, String), // `String`: server_name, `String`: atk name
+    AddPlayer(String),            // `String`: username
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ServerEvent {
-    Message(String),
+    NewClientOnExistingPlayer(String, u32), // welcome message, player id
     AssignPlayerId(u32),
-    SnapshotPlayers(GameStateManager),
     UpdateApplication(Application),
+    ReconnectAllSessions(String, i64), // username, sql-id
 }
 
 #[get("/api/new-event")]
-pub async fn new_event(
+pub async fn on_rcv_client_event(
     options: WebSocketOptions,
 ) -> Result<Websocket<ClientEvent, ServerEvent, CborEncoding>> {
     Ok(options.on_upgrade(move |mut socket| async move {
         #[cfg(feature = "server")]
         {
             // Assign id
-            let id = NEXT_CLIENT_ID.fetch_add(1, Ordering::SeqCst) as u32;
+            let client_id = NEXT_CLIENT_ID.fetch_add(1, Ordering::SeqCst) as u32;
 
             // Channel for outgoing messages to this client
             let (tx, mut rx) = mpsc::unbounded_channel::<ServerEvent>();
 
             // Register client
             {
-                use crate::auth_manager::server_fn::get_user_name;
-
                 let mut clients = CLIENTS.lock().unwrap();
-                clients.insert(id as usize, tx);
-                tracing::info!("Client {} connected (total: {})", id, clients.len());
-                // Try potential reconnection
-                let username = get_user_name().await.unwrap_or_default();
-                if !username.is_empty() {
-                    reconnection_player(username, id);
-                }
+                clients.insert(client_id as usize, tx);
+                tracing::info!("Client {} connected (total: {})", client_id, clients.len());
             }
 
-            let _ = socket.send(ServerEvent::AssignPlayerId(id)).await;
-            let _ = socket.send(ServerEvent::Message(format!("Welcome! (id={})", id))).await;
+            let _ = socket.send(ServerEvent::AssignPlayerId(client_id)).await;
+            let _ = socket.send(ServerEvent::NewClientOnExistingPlayer(format!("Welcome! (id={})", client_id), client_id)).await;
+
 
             // Main loop: handle incoming socket messages and outgoing queued messages
             loop {
@@ -96,26 +91,33 @@ pub async fn new_event(
 
                     // Incoming message from client
                     res = socket.recv() => {
-                        tracing::info!("Receiving message from client {}, message: {:?}", id, res);
+                        tracing::info!("Receiving message from client {}, message: {:?}", client_id, res);
                         match res {
-                            Ok(ClientEvent::SetName(name)) => {
-                                tracing::info!("Received set_name request from client {}: {:?}", id, name);
-                                add_player(name, id);
+                            Ok(ClientEvent::LoginAllSessions(username, sql_id)) => {
+                                tracing::info!("Received set_name request from client {}: {:?}", sql_id, username);
+                                login_all_sessions(username, sql_id);
                             }
-                            Ok(ClientEvent::Disconnect(name)) => {
-                                tracing::info!("{} is disconnected", name);
-                                send_disconnection_to_server(name);
+                            Ok(ClientEvent::AddPlayer(username)) => {
+                                tracing::info!("Adding new player from client {}: {:?}", client_id, username);
+                                add_player(username, client_id);
+                            }
+                            Ok(ClientEvent::LogOut(user_name)) => {
+                                tracing::info!("{} is logged out", user_name);
+                                send_logout_to_server(user_name);
                             }
                             Ok(ClientEvent::StartGame(name)) => {
                                 tracing::info!("{} is starting a new game", name);
-                                create_new_game_by_player(name, id).await;
+                                create_new_game_by_player(name, client_id).await;
                             }
                             Ok(ClientEvent::LaunchAttack(server_name, selected_atk)) => {
                                 tracing::info!("A new atk has been launched");
                                 update_app_after_atk(server_name, selected_atk);
                             }
                             Err(_) => {
-                                tracing::info!("Client {} disconnected", id);
+                                // ClientEvent::ConnectionClosed
+                                tracing::info!("Client {} disconnected", client_id);
+                                // TODO get server name from GAMES_MANAGER by player id
+                                send_disconnection_to_server(client_id).await;
                                 break;
                             }
                         }
@@ -126,8 +128,8 @@ pub async fn new_event(
             // cleanup on disconnect
             {
                 let mut clients = CLIENTS.lock().unwrap();
-                clients.remove(&(id as usize));
-                tracing::info!("Client {} removed. Remaining: {}", id, clients.len());
+                clients.remove(&(client_id as usize));
+                tracing::info!("Client {} removed. Remaining: {}", client_id, clients.len());
             }
         }
     }))
@@ -135,22 +137,77 @@ pub async fn new_event(
 
 #[cfg(feature = "server")]
 pub fn add_player(name: String, id: u32) {
-    let mut map = GAMES_MANAGER.lock().unwrap();
-    map.players.insert(name, id);
-    /* let clients = CLIENTS.lock().unwrap();
-    for (&_other_id, sender) in clients.iter() {
-        let _ = sender.send(ServerEvent::SnapshotPlayers(map.clone()));
-    } */
+    let mut gm = GAMES_MANAGER.lock().unwrap();
+    gm.players.entry(name.clone()).or_default().push(id);
+    tracing::info!("All connected players: {:?}", gm.players);
 }
 
 #[cfg(feature = "server")]
-pub fn send_disconnection_to_server(name: String) {
-    let mut map = GAMES_MANAGER.lock().unwrap();
-    map.players.retain(|player_name, _| player_name != &name);
-    /*     let clients = CLIENTS.lock().unwrap();
+pub fn login_all_sessions(username: String, sql_id: i64) {
+    let clients = CLIENTS.lock().unwrap();
     for (&_other_id, sender) in clients.iter() {
-        let _ = sender.send(ServerEvent::SnapshotPlayers(map.clone()));
-    } */
+        let _ = sender.send(ServerEvent::ReconnectAllSessions(username.clone(), sql_id));
+    }
+}
+
+#[cfg(feature = "server")]
+pub fn send_logout_to_server(user_name: String) {
+    let mut gm = GAMES_MANAGER.lock().unwrap();
+    // remove player from GameStateManager
+    gm.players
+        .retain(|player_name, _| player_name != &user_name);
+    // remove from servers data
+    if let Some(server_data) = gm.servers_data.get_mut(&user_name) {
+        server_data
+            .players
+            .retain(|player_name, _| player_name != &user_name);
+    }
+    tracing::info!("All connected players after logout: {:?}", gm.players);
+}
+
+#[cfg(feature = "server")]
+pub async fn send_disconnection_to_server(cur_player_id: u32) {
+    let mut gm = GAMES_MANAGER.lock().unwrap();
+    let username = gm
+        .players
+        .iter()
+        .find_map(|(player_name, ids)| {
+            if ids.contains(&cur_player_id) {
+                Some(player_name.clone())
+            } else {
+                None
+            }
+        })
+        .unwrap_or_else(|| "Unknown".to_string());
+    tracing::info!(
+        "Player {} with id {} is disconnecting",
+        username,
+        cur_player_id
+    );
+    // remove player id from GameStateManager
+    gm.players.retain(|player_name, ids| {
+        if player_name == &username {
+            ids.retain(|&id| id != cur_player_id);
+            !ids.is_empty()
+        } else {
+            true
+        }
+    });
+    tracing::info!(
+        "All connected players after disconnection: {:?}",
+        gm.players
+    );
+    // remove from servers data
+    if let Some(server_data) = gm.servers_data.get_mut(&username) {
+        server_data.players.retain(|player_name, ids| {
+            if player_name == &username {
+                ids.retain(|&id| id != cur_player_id);
+                !ids.is_empty()
+            } else {
+                true
+            }
+        });
+    }
 }
 
 #[cfg(feature = "server")]
@@ -216,7 +273,7 @@ pub async fn create_new_game_by_player(name: String, id: u32) {
                 name.clone(),
                 ServerData {
                     app: app.clone(),
-                    players: HashMap::from([(name.clone(), id)]),
+                    players: HashMap::from([(name.clone(), vec![id])]),
                 },
             );
             tracing::info!("servers data keys: {:?}", gm.servers_data.keys());
@@ -252,9 +309,8 @@ fn update_clients_app(server_name: String, app: Application) {
         if server_data
             .players
             .values()
-            .any(|&id| id == other_id as u32)
+            .any(|ids| ids.contains(&(other_id as u32)))
         {
-            tracing::info!("Sending update to client id: {}", other_id);
             let _ = sender.send(ServerEvent::UpdateApplication(app.clone()));
         }
     }
@@ -263,7 +319,7 @@ fn update_clients_app(server_name: String, app: Application) {
 #[cfg(feature = "server")]
 pub fn update_app_after_atk(server_name: String, selected_atk_name: String) {
     // get app by server name
-    let mut gm = GAMES_MANAGER.lock().unwrap();
+    let gm = GAMES_MANAGER.lock().unwrap();
     let mut app = match gm.servers_data.get(&server_name) {
         Some(server_data) => server_data.app.clone(),
         None => {
@@ -276,22 +332,4 @@ pub fn update_app_after_atk(server_name: String, selected_atk_name: String) {
     let _ = app.game_manager.launch_attack(&selected_atk_name);
     // update clients
     update_clients_app(server_name, app.clone());
-}
-
-#[cfg(feature = "server")]
-pub fn reconnection_player(name: String, id: u32) {
-    let mut gm = GAMES_MANAGER.lock().unwrap();
-    for (server_name, server_data) in gm.servers_data.iter_mut() {
-        if server_data.players.contains_key(&name) {
-            // update player's id
-            server_data.players.insert(name.clone(), id);
-            // update client app
-            update_clients_app(
-                name.clone(),
-                gm.servers_data.get(&name).unwrap().app.clone(),
-            );
-            tracing::info!("Player {} reconnected with id {}", name, id);
-            break;
-        }
-    }
 }

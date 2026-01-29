@@ -5,10 +5,10 @@ use dioxus::{
 };
 
 use crate::{
-    application::{self, Application},
+    application::Application,
     auth_manager::server_fn::get_user_name,
     board_game_components::common_comp::ButtonLink,
-    common::{APP, Route, SERVER_NAME},
+    common::{Route, SERVER_NAME},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 

@@ -19,6 +19,7 @@ pub static SERVER_NAME: GlobalSignal<String> = Signal::global(String::new);
 pub fn disconnected_user() -> String {
     "not connected".to_owned()
 }
+pub static ADMIN: Lazy<String> = Lazy::new(|| "Admin".to_string());
 
 pub static ENERGY_GRAD: Lazy<LinearGradient> = Lazy::new(|| {
     GradientBuilder::new()
