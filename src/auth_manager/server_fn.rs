@@ -39,6 +39,13 @@ pub async fn login(
                 match update_connection_status(username, true).await {
                     Ok(()) => {
                         auth.login_user(rows[0].id);
+                        /* auth.current_user.as_mut().unwrap() = &mut User {
+                            id: rows[0].id,
+                            anonymous: rows[0].anonymous,
+                            username: rows[0].username.clone(),
+                            permissions: HashSet::new(),
+                            is_connected: true,
+                        }; */
                         Ok(())
                     }
                     Err(e) => {
@@ -79,7 +86,7 @@ pub async fn register(
             )))
         } else if use_password {
             let hash_password = bcrypt::hash(password, 10).unwrap();
-            let result = match sqlx::query("INSERT INTO users (username, password) VALUES (?1, ?2)")
+            match sqlx::query("INSERT INTO users (username, password) VALUES (?1, ?2)")
                 .bind(&username)
                 .bind(&hash_password)
                 .execute(pool)
@@ -87,20 +94,17 @@ pub async fn register(
             {
                 Ok(_) => Ok(()),
                 Err(e) => Err(ServerFnError::new(format!("{}", e))),
-            };
-            result
+            }
         } else {
-            let result =
-                match sqlx::query("INSERT INTO users (anonymous, username) VALUES (?1, ?2)")
-                    .bind(false)
-                    .bind(&username)
-                    .execute(pool)
-                    .await
-                {
-                    Ok(_) => Ok(()),
-                    Err(e) => Err(ServerFnError::new(format!("{}", e))),
-                };
-            result
+            match sqlx::query("INSERT INTO users (anonymous, username) VALUES (?1, ?2)")
+                .bind(false)
+                .bind(&username)
+                .execute(pool)
+                .await
+            {
+                Ok(_) => Ok(()),
+                Err(e) => Err(ServerFnError::new(format!("{}", e))),
+            }
         }
     }
 }
@@ -133,31 +137,27 @@ pub async fn delete_user(
 
             if use_password {
                 if is_valid {
-                    let result = match sqlx::query(
-                        "DELETE FROM users WHERE username = ?1 AND password = ?2",
-                    )
-                    .bind(&username)
-                    .bind(&password)
-                    .execute(pool)
-                    .await
+                    match sqlx::query("DELETE FROM users WHERE username = ?1 AND password = ?2")
+                        .bind(&username)
+                        .bind(&password)
+                        .execute(pool)
+                        .await
                     {
                         Ok(_) => Ok(()),
                         Err(e) => Err(ServerFnError::new(format!("{}", e))),
-                    };
-                    result
+                    }
                 } else {
                     Err(ServerFnError::new("Password is not correct!".to_owned()))
                 }
             } else {
-                let result = match sqlx::query("DELETE FROM users WHERE username = ?1")
+                match sqlx::query("DELETE FROM users WHERE username = ?1")
                     .bind(&username)
                     .execute(pool)
                     .await
                 {
                     Ok(_) => Ok(()),
                     Err(e) => Err(ServerFnError::new(format!("{}", e))),
-                };
-                result
+                }
             }
         }
     }
@@ -208,6 +208,17 @@ pub async fn get_user_name() -> Result<String> {
     Ok(auth.current_user.unwrap().username)
 }
 
+#[post("/api/get/user/id", auth: Session)]
+pub async fn get_user_id() -> Result<i64> {
+    Ok(auth.current_user.unwrap().id)
+}
+
+#[post("/api/set/user", auth: Session)]
+pub async fn set_user_by_id(user_id: i64) -> Result<()> {
+    auth.login_user(user_id);
+    Ok(())
+}
+
 #[cfg(feature = "server")]
 #[server]
 pub async fn update_connection_status(
@@ -217,11 +228,11 @@ pub async fn update_connection_status(
     let pool = get_db().await;
     tracing::info!(
         "UPDATE users SET is_connected = {} WHERE username = {}",
-        username,
-        is_connected
+        is_connected,
+        username
     );
     match sqlx::query("UPDATE users SET is_connected = ?1 WHERE username = ?2")
-        .bind(&is_connected)
+        .bind(is_connected)
         .bind(&username)
         .execute(pool)
         .await

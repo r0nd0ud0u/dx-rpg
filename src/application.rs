@@ -11,6 +11,9 @@ use std::time::Duration;
 #[derive(Default, Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Application {
     pub game_manager: GameManager,
+    pub game_path: PathBuf,
+    pub server_name: String,
+    pub is_game_running: bool,
 }
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -21,7 +24,12 @@ pub struct OngoingGames {
 #[server]
 pub async fn try_new() -> Result<Application, ServerFnError> {
     match GameManager::try_new("offlines") {
-        Ok(gm) => Ok(Application { game_manager: gm }),
+        Ok(gm) => Ok(Application {
+            game_manager: gm,
+            game_path: PathBuf::from(""),
+            server_name: "Default".to_owned(),
+            is_game_running: false,
+        }),
         Err(_) => Err(ServerFnError::new(
             "Failed to create GameManager".to_string(),
         )),

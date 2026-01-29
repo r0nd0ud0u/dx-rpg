@@ -1,5 +1,7 @@
-use async_std::task::sleep;
-use dioxus::logger::tracing;
+use dioxus::{
+    fullstack::{CborEncoding, UseWebsocket},
+    logger::tracing,
+};
 use lib_rpg::{
     common::{effect_const::EFFECT_NB_COOL_DOWN, stats_const::HP},
     effect::EffectOutcome,
@@ -8,21 +10,27 @@ use lib_rpg::{
 };
 
 use crate::{
-    application,
+    application::Application,
     board_game_components::character_page::{AttackList, CharacterPanel},
-    common::{APP, ButtonStatus, tempo_const::TIMER_FUTURE_1S},
+    common::{ButtonStatus, SERVER_NAME},
     components::button::{Button, ButtonVariant},
+    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 use dioxus::prelude::*;
 
 #[component]
 pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
+    // contexts
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let mut app = use_context::<Signal<Application>>();
+    // local signals
     let atk_menu_display = use_signal(|| false);
     let mut write_game_manager = use_signal(|| false);
-    let mut reload_app = use_signal(|| false);
+    let _reload_app = use_signal(|| false);
     let mut selected_atk_name = use_signal(|| "".to_string());
 
-    use_future(move || {
+    // auto atk for boss
+    /* use_future(move || {
         async move {
             loop {
                 // always sleep at start of loop
@@ -56,10 +64,10 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                 }
             }
         }
-    });
+    }); */
 
     // Timer every second to update the game manager by reading json file
-    use_future(move || {
+    /* use_future(move || {
         async move {
             loop {
                 // always sleep at start of loop
@@ -107,11 +115,11 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                 }
             }
         }
-    });
+    }); */
 
     // Check if the game is at the end of the game and set the game status to ReplayGame
     use_effect(move || {
-        if APP.read().game_manager.game_state.status == GameStatus::EndOfGame {
+        if app.read().game_manager.game_state.status == GameStatus::EndOfGame {
             game_status.set(ButtonStatus::ReplayGame);
         }
     });
@@ -121,10 +129,10 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
         div { class: "grid-board",
             div {
                 // Heroes
-                for c in APP.read().game_manager.pm.active_heroes.iter() {
+                for c in app.read().game_manager.pm.active_heroes.iter() {
                     CharacterPanel {
                         c: c.clone(),
-                        current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
+                        current_player_name: app.read().game_manager.pm.current_player.name.clone(),
                         selected_atk_name,
                         atk_menu_display,
                         write_game_manager,
@@ -135,7 +143,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
             div {
                 if atk_menu_display() {
                     AttackList {
-                        name: APP.read().game_manager.pm.current_player.name.clone(),
+                        name: app.read().game_manager.pm.current_player.name.clone(),
                         display_atklist_sig: atk_menu_display,
                         write_game_manager,
                         selected_atk_name,
@@ -144,14 +152,15 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     Button {
                         variant: ButtonVariant::Destructive,
                         onclick: move |_| async move {
-                            // launch attack
-                            let _ = APP.write().game_manager.launch_attack(&selected_atk_name());
                             tracing::debug!(
                                 // reset atk
                                 // update game manager
-                                "launcher  {} {}", APP.write().game_manager.game_state.last_result_atk
+                                "launcher  {} {}", app.write().game_manager.game_state.last_result_atk
                                 .launcher_name, selected_atk_name()
                             );
+                            let _ = socket
+                                .send(ClientEvent::LaunchAttack(SERVER_NAME(), selected_atk_name()))
+                                .await;
                             selected_atk_name.set("".to_string());
                             write_game_manager.set(true);
                         },
@@ -159,12 +168,12 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     }
                 } else {
                     div {
-                        ResultAtkText { ra: APP.read().game_manager.game_state.last_result_atk.clone() }
+                        ResultAtkText { ra: app.read().game_manager.game_state.last_result_atk.clone() }
                     }
                     div {
-                        if !APP.read().game_manager.game_state.last_result_atk.logs_new_round.is_empty() {
+                        if !app.read().game_manager.game_state.last_result_atk.logs_new_round.is_empty() {
                             "Starting round:\n"
-                            for log in APP.read().game_manager.game_state.last_result_atk.logs_new_round.iter() {
+                            for log in app.read().game_manager.game_state.last_result_atk.logs_new_round.iter() {
                                 "{log}\n"
                             }
                         }
@@ -173,14 +182,14 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
             }
             div {
                 // Bosses
-                for c in APP.read().game_manager.pm.active_bosses.iter() {
+                for c in app.read().game_manager.pm.active_bosses.iter() {
                     CharacterPanel {
                         c: c.clone(),
-                        current_player_name: APP.read().game_manager.pm.current_player.name.clone(),
+                        current_player_name: app.read().game_manager.pm.current_player.name.clone(),
                         selected_atk_name,
                         atk_menu_display,
                         write_game_manager,
-                        is_auto_atk: APP.read().game_manager.pm.current_player.name == c.name,
+                        is_auto_atk: app.read().game_manager.pm.current_player.name == c.name,
                     }
                 }
             }

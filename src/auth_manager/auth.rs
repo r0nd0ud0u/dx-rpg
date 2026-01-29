@@ -13,7 +13,7 @@ use crate::auth_manager::model::SqlUser;
 pub type Session = axum_session_auth::AuthSession<User, i64, SessionSqlitePool, SqlitePool>;
 pub type AuthLayer = axum_session_auth::AuthSessionLayer<User, i64, SessionSqlitePool, SqlitePool>;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     pub id: i64,
     pub anonymous: bool,
