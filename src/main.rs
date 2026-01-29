@@ -101,7 +101,7 @@ fn App() -> Element {
                         player_client_id.set(id);
                     }
                     ServerEvent::UpdateApplication(app_update) => {
-                        app.set(app_update);
+                        app.set(*app_update);
                         *SERVER_NAME.write() = app.read().server_name.clone();
                     }
                     ServerEvent::ReconnectAllSessions(username, sql_id) => {

@@ -26,8 +26,15 @@ static NEXT_CLIENT_ID: AtomicUsize = AtomicUsize::new(1);
 
 /// server only: map of client id -> sender to that client's outgoing queue
 #[cfg(feature = "server")]
-static CLIENTS: Lazy<Arc<Mutex<HashMap<usize, mpsc::UnboundedSender<ServerEvent>>>>> =
-    Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
+type ClientId = usize;
+#[cfg(feature = "server")]
+type ClientTx = mpsc::UnboundedSender<ServerEvent>;
+#[cfg(feature = "server")]
+type ClientsMap = HashMap<ClientId, ClientTx>;
+#[cfg(feature = "server")]
+type SharedClients = Arc<Mutex<ClientsMap>>;
+#[cfg(feature = "server")]
+static CLIENTS: Lazy<SharedClients> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 
 /// server only: shared game state
 #[cfg(feature = "server")]
@@ -47,7 +54,7 @@ pub enum ClientEvent {
 pub enum ServerEvent {
     NewClientOnExistingPlayer(String, u32), // welcome message, player id
     AssignPlayerId(u32),
-    UpdateApplication(Application),
+    UpdateApplication(Box<Application>),
     ReconnectAllSessions(String, i64), // username, sql-id
 }
 
@@ -213,7 +220,6 @@ pub async fn send_disconnection_to_server(cur_player_id: u32) {
 #[cfg(feature = "server")]
 pub async fn create_new_game_by_player(name: String, id: u32) {
     use crate::application;
-    let mut gm = GAMES_MANAGER.lock().unwrap();
 
     // add new ongoing game
     match application::try_new().await {
@@ -229,11 +235,10 @@ pub async fn create_new_game_by_player(name: String, id: u32) {
                 app.game_manager.game_paths.games_dir.to_string_lossy()
             );
             // add the current game directory to ongoing games
-            gm.ongoing_games_path
-                .push(app.game_manager.game_paths.current_game_dir.clone());
             match application::save(
                 all_games_dir,
-                serde_json::to_string_pretty(&gm.ongoing_games_path).unwrap(),
+                serde_json::to_string_pretty(&app.game_manager.game_paths.current_game_dir.clone())
+                    .unwrap(),
             )
             .await
             {
@@ -269,6 +274,9 @@ pub async fn create_new_game_by_player(name: String, id: u32) {
             // TODO set server name based on user name + random string
             app.server_name = name.clone();
             // add to ongoing games map
+            let mut gm = GAMES_MANAGER.lock().unwrap();
+            gm.ongoing_games_path
+                .push(app.game_manager.game_paths.current_game_dir.clone());
             gm.servers_data.insert(
                 name.clone(),
                 ServerData {
@@ -311,7 +319,7 @@ fn update_clients_app(server_name: String, app: Application) {
             .values()
             .any(|ids| ids.contains(&(other_id as u32)))
         {
-            let _ = sender.send(ServerEvent::UpdateApplication(app.clone()));
+            let _ = sender.send(ServerEvent::UpdateApplication(Box::new(app.clone())));
         }
     }
 }
