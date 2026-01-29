@@ -73,7 +73,7 @@ pub async fn new_event(
                 // Try potential reconnection
                 let username = get_user_name().await.unwrap_or_default();
                 if !username.is_empty() {
-                    add_player(username, id);
+                    reconnection_player(username, id);
                 }
             }
 
@@ -147,7 +147,7 @@ pub fn add_player(name: String, id: u32) {
 pub fn send_disconnection_to_server(name: String) {
     let mut map = GAMES_MANAGER.lock().unwrap();
     map.players.retain(|player_name, _| player_name != &name);
-    /*     let clients = CLIENTS.lock().unwrap();
+/*     let clients = CLIENTS.lock().unwrap();
     for (&_other_id, sender) in clients.iter() {
         let _ = sender.send(ServerEvent::SnapshotPlayers(map.clone()));
     } */
@@ -249,11 +249,7 @@ fn update_clients_app(server_name: String, app: Application) {
     );
     let clients = CLIENTS.lock().unwrap();
     for (&other_id, sender) in clients.iter() {
-        if server_data
-            .players
-            .values()
-            .any(|&id| id == other_id as u32)
-        {
+        if server_data.players.values().any(|&id| id == other_id as u32) {
             tracing::info!("Sending update to client id: {}", other_id);
             let _ = sender.send(ServerEvent::UpdateApplication(app.clone()));
         }
@@ -286,12 +282,9 @@ pub fn reconnection_player(name: String, id: u32) {
             // update player's id
             server_data.players.insert(name.clone(), id);
             // update client app
-            update_clients_app(
-                name.clone(),
-                gm.servers_data.get(&name).unwrap().app.clone(),
-            );
+            update_clients_app(name.clone(), gm.servers_data.get(&name).unwrap().app.clone());
             tracing::info!("Player {} reconnected with id {}", name, id);
             break;
         }
-    }
+    } 
 }
