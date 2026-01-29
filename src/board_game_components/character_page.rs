@@ -11,7 +11,7 @@ use lib_rpg::{
     common::stats_const::*,
 };
 
-use crate::common::{APP, ENERGY_GRAD};
+use crate::{application::Application, common::ENERGY_GRAD};
 use crate::{
     common::PATH_IMG,
     components::button::{Button, ButtonVariant},
@@ -107,6 +107,10 @@ pub fn CharacterTargetButton(
     selected_atk_name: Signal<String>,
     write_game_manager: Signal<bool>,
 ) -> Element {
+    // contexts
+    // let _socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let mut app = use_context::<Signal<Application>>();
+
     let mut kind_str = "hero";
     if c.kind == CharacterType::Boss {
         kind_str = "boss";
@@ -127,7 +131,7 @@ pub fn CharacterTargetButton(
                     let async_target_name = c.name.clone();
                     let async_launcher_name = launcher_name.clone();
                     async move {
-                        APP.write()
+                        app.write()
                             .game_manager
                             .pm
                             .set_one_target(
@@ -174,6 +178,10 @@ pub fn NewAtkButton(
     write_game_manager: Signal<bool>,
     selected_atk_name: Signal<String>,
 ) -> Element {
+    // contexts
+    // let _socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let mut app = use_context::<Signal<Application>>();
+    // local signals
     let can_be_launched = launcher.can_be_launched(&attack_type);
     let attack_name = attack_type.name.clone();
     let launcher_name = launcher.name;
@@ -185,7 +193,7 @@ pub fn NewAtkButton(
                 let async_launcher_name = launcher_name.clone();
                 async move {
                     selected_atk_name.set(async_atk_name.clone());
-                    APP.write()
+                    app.write()
                         .game_manager
                         .pm
                         .set_targeted_characters(&async_launcher_name, &async_atk_name);
@@ -207,7 +215,10 @@ pub fn AttackList(
     write_game_manager: Signal<bool>,
     selected_atk_name: Signal<String>,
 ) -> Element {
-    if let Some(c) = APP.read().game_manager.pm.get_active_character(&name) {
+    // contexts
+    // let _socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let app = use_context::<Signal<Application>>();
+    if let Some(c) = app.read().game_manager.pm.get_active_character(&name) {
         rsx! {
             div { class: "attack-list",
                 for (_key , value) in c.attacks_list.iter() {

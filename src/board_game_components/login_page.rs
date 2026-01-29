@@ -3,6 +3,7 @@ use dioxus::prelude::*;
 use dioxus::{fullstack::UseWebsocket, logger::tracing};
 use dioxus_primitives::label::Label;
 
+use crate::auth_manager::server_fn::get_user_id;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::{
     auth_manager::server_fn::{login, register},
@@ -17,7 +18,8 @@ use crate::{
 pub fn LoginPage() -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
-    let mut local_login_session = use_context::<Signal<String>>();
+    let mut local_login_name_session = use_context::<Signal<String>>();
+    let mut local_login_id_session = use_context::<Signal<i64>>();
     // nav
     let navigator = use_navigator();
     // logon
@@ -56,12 +58,27 @@ pub fn LoginPage() -> Element {
                             match login(username(), "".to_owned(), false).await {
                                 Ok(()) => {
                                     logon_answer.set(format!("{} is logged", username()));
-                                    // send SetName to server asynchronously; wait for server to send NameAccepted
-                                    let _ = socket.clone().send(ClientEvent::SetName(username())).await;
-                                    // local storage for login
-                                    *local_login_session.write() = username();
-                                    // change page
-                                    navigator.push(Route::Home {});
+                                    // set local storage for login
+                                    match get_user_id().await {
+                                        Ok(sql_id) => {
+                                            // set local storage
+                                            *local_login_id_session.write() = sql_id;
+                                            *local_login_name_session.write() = username();
+                                            // notify server via websocket
+                                            let _ = socket
+                                                // change page
+
+                                                .clone()
+                                                .send(ClientEvent::LoginAllSessions(username(), sql_id))
+                                                .await;
+                                            navigator.push(Route::Home {});
+                                            sql_id
+                                        }
+                                        Err(e) => {
+                                            tracing::info!("{}", e.to_owned());
+                                            -1
+                                        }
+                                    };
                                 }
                                 Err(e) => {
                                     tracing::info!("{}", e.to_owned());
@@ -87,7 +104,11 @@ pub fn LoginPage() -> Element {
                                     match login(username(), "".to_owned(), false).await {
                                         Ok(()) => {
                                             // local storage for login
-                                            *local_login_session.write() = username();
+                                            *local_login_name_session.write() = username();
+                                            *local_login_id_session.write() = (get_user_id().await) // TODO default value -1
+                                                // change page
+
+                                                .unwrap_or(-1);
                                             navigator.push(Route::Home {});
                                         }
                                         Err(e) => {
@@ -101,7 +122,6 @@ pub fn LoginPage() -> Element {
                                     register_answer.set("This name is already used.".to_owned());
                                 }
                             }
-
                         },
                         "Sign up"
                     }

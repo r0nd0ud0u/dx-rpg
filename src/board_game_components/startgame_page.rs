@@ -1,5 +1,5 @@
 use crate::{
-    application,
+    application::{self, Application},
     board_game_components::gameboard::GameBoard,
     common::{APP, ButtonStatus},
     components::{
@@ -15,6 +15,9 @@ use dioxus_primitives::{label::Label, separator::Separator};
 /// New game
 #[component]
 pub fn StartGamePage() -> Element {
+    // context
+    let app = use_context::<Signal<Application>>();
+    // signals
     let mut state = use_signal(|| ButtonStatus::StartGame);
     let mut ready_to_start = use_signal(|| true);
     use_effect(move || {
@@ -29,14 +32,6 @@ pub fn StartGamePage() -> Element {
                 variant: ButtonVariant::Primary,
                 onclick: move |_| async move {
                     ready_to_start.set(false);
-                    match application::try_new().await {
-                        Ok(app) => {
-                            *APP.write() = app;
-                            APP.write().game_manager.start_new_game();
-                            let _ = APP.write().game_manager.start_new_turn();
-                        }
-                        Err(_) => println!("no app"),
-                    }
                     state.set(ButtonStatus::StartGame);
                 },
                 "Replay game"
@@ -51,7 +46,7 @@ pub fn StartGamePage() -> Element {
             div {
                 div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
                     Sheets {}
-                    h4 { "Turn: {APP.write().game_manager.game_state.current_turn_nb}" }
+                    h4 { "Turn: {app.read().game_manager.game_state.current_turn_nb}" }
                 }
                 Separator {
                     style: "margin: 10px 0; width: 50%;",

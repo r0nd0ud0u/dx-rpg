@@ -5,11 +5,9 @@ use dioxus::{
 };
 use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use dx_rpg::{
-    common::{DX_COMP_CSS, Route, disconnected_user},
-    websocket_handler::{
-        event::{ServerEvent, new_event},
-        game_state::GameStateWebsocket,
-    },
+    application::Application,
+    common::{DX_COMP_CSS, Route, SERVER_NAME, disconnected_user},
+    websocket_handler::event::{ClientEvent, ServerEvent, on_rcv_client_event},
 };
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -42,7 +40,7 @@ fn main() {
         Ok(dioxus::server::router(App)
             .layer(
                 AuthLayer::new(Some(pool.clone()))
-                    .with_config(AuthConfig::<i64>::default().with_anonymous_user_id(Some(1))),
+                    .with_config(AuthConfig::<i64>::default().with_anonymous_user_id(Some(1))), // TODO default anonymous user id, try -1 by default?
             )
             .layer(SessionLayer::new(
                 SessionStore::<SessionSqlitePool>::new(
@@ -58,14 +56,18 @@ fn main() {
 fn App() -> Element {
     // Local UI state
     let mut message = use_signal(String::new);
-    let mut player_id = use_signal(|| 0);
-    let mut game_state = use_signal(GameStateWebsocket::default);
+    let mut player_client_id = use_signal(|| 0);
+    let mut app = use_signal(Application::default);
 
-    let socket = use_websocket(|| new_event(WebSocketOptions::new()));
+    let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
     // synced storage
-    let login_session_local =
-        use_synced_storage::<LocalStorage, String>("synced".to_string(), || disconnected_user());
+    let login_name_session_local_sync =
+        use_synced_storage::<LocalStorage, String>("synced_user_sql_name".to_string(), || {
+            disconnected_user()
+        });
+    let login_id_session_local_sync =
+        use_synced_storage::<LocalStorage, i64>("synced_user_sql_id".to_string(), || -1); // from db, integer primary key not null and from 1 upwards
 
     // Receive events from the websocket and update local signals.
     use_future(move || {
@@ -73,14 +75,59 @@ fn App() -> Element {
         async move {
             while let Ok(event) = socket.recv().await {
                 match event {
-                    ServerEvent::Message(msg) => {
+                    ServerEvent::NewClientOnExistingPlayer(msg, client_id) => {
                         message.set(msg);
+                        let login_name_session_local_sync = login_name_session_local_sync();
+                        let login_id_session_local_sync = login_id_session_local_sync();
+                        // re-send SetName to server
+                        if login_name_session_local_sync != disconnected_user()
+                            && login_id_session_local_sync != -1
+                        {
+                            let _ = socket
+                                .clone()
+                                .send(ClientEvent::AddPlayer(
+                                    login_name_session_local_sync.clone(),
+                                ))
+                                .await;
+                            tracing::info!(
+                                "Client {} sent AddPlayer for player {} (id {})",
+                                client_id,
+                                login_name_session_local_sync,
+                                login_id_session_local_sync
+                            );
+                        }
                     }
                     ServerEvent::AssignPlayerId(id) => {
-                        player_id.set(id);
+                        player_client_id.set(id);
                     }
-                    ServerEvent::SnapshotPlayers(gs) => {
-                        game_state.set(gs);
+                    ServerEvent::UpdateApplication(app_update) => {
+                        app.set(*app_update);
+                        *SERVER_NAME.write() = app.read().server_name.clone();
+                    }
+                    ServerEvent::ReconnectAllSessions(username, sql_id) => {
+                        let login_name_session_local_sync = login_name_session_local_sync();
+                        let login_id_session_local_sync = login_id_session_local_sync();
+                        if login_name_session_local_sync == username
+                            && login_id_session_local_sync == sql_id
+                        {
+                            tracing::info!(
+                                "ReconnectAllSessions for player {}",
+                                login_name_session_local_sync
+                            );
+                            let _ = socket
+                                .clone()
+                                .send(ClientEvent::AddPlayer(
+                                    login_name_session_local_sync.clone(),
+                                ))
+                                .await;
+                        } else {
+                            tracing::info!(
+                                "Skipping ReconnectAllSessions for player {} (username: {}, sql_id: {})",
+                                login_name_session_local_sync,
+                                username,
+                                sql_id
+                            );
+                        }
                     }
                 }
             }
@@ -88,9 +135,10 @@ fn App() -> Element {
     });
 
     use_context_provider(|| socket);
-    use_context_provider(|| player_id);
-    use_context_provider(|| game_state);
-    use_context_provider(|| login_session_local);
+    use_context_provider(|| player_client_id);
+    use_context_provider(|| login_name_session_local_sync);
+    use_context_provider(|| login_id_session_local_sync);
+    use_context_provider(|| app);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
