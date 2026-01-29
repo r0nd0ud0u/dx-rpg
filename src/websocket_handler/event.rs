@@ -65,9 +65,16 @@ pub async fn new_event(
 
             // Register client
             {
+                use crate::auth_manager::server_fn::get_user_name;
+
                 let mut clients = CLIENTS.lock().unwrap();
                 clients.insert(id as usize, tx);
-                println!("Client {} connected (total: {})", id, clients.len());
+                tracing::info!("Client {} connected (total: {})", id, clients.len());
+                // Try potential reconnection
+                let username = get_user_name().await.unwrap_or_default();
+                if !username.is_empty() {
+                    add_player(username, id);
+                }
             }
 
             let _ = socket.send(ServerEvent::AssignPlayerId(id)).await;
@@ -120,7 +127,7 @@ pub async fn new_event(
             {
                 let mut clients = CLIENTS.lock().unwrap();
                 clients.remove(&(id as usize));
-                println!("Client {} removed. Remaining: {}", id, clients.len());
+                tracing::info!("Client {} removed. Remaining: {}", id, clients.len());
             }
         }
     }))
@@ -129,21 +136,21 @@ pub async fn new_event(
 #[cfg(feature = "server")]
 pub fn add_player(name: String, id: u32) {
     let mut map = GAMES_MANAGER.lock().unwrap();
-    map.players.insert(id, name);
-    let clients = CLIENTS.lock().unwrap();
+    map.players.insert(name, id);
+    /* let clients = CLIENTS.lock().unwrap();
     for (&_other_id, sender) in clients.iter() {
         let _ = sender.send(ServerEvent::SnapshotPlayers(map.clone()));
-    }
+    } */
 }
 
 #[cfg(feature = "server")]
 pub fn send_disconnection_to_server(name: String) {
     let mut map = GAMES_MANAGER.lock().unwrap();
-    map.players.retain(|_, player_name| player_name != &name);
-    let clients = CLIENTS.lock().unwrap();
+    map.players.retain(|player_name, _| player_name != &name);
+    /*     let clients = CLIENTS.lock().unwrap();
     for (&_other_id, sender) in clients.iter() {
         let _ = sender.send(ServerEvent::SnapshotPlayers(map.clone()));
-    }
+    } */
 }
 
 #[cfg(feature = "server")]
@@ -209,7 +216,7 @@ pub async fn create_new_game_by_player(name: String, id: u32) {
                 name.clone(),
                 ServerData {
                     app: app.clone(),
-                    clients_ids: vec![id],
+                    players: HashMap::from([(name.clone(), id)]),
                 },
             );
             tracing::info!("servers data keys: {:?}", gm.servers_data.keys());
@@ -237,12 +244,16 @@ fn update_clients_app(server_name: String, app: Application) {
     };
     tracing::info!(
         "Clients ids: {:?} for server: {}",
-        server_data.clients_ids,
+        server_data.players.values(),
         server_name
     );
     let clients = CLIENTS.lock().unwrap();
     for (&other_id, sender) in clients.iter() {
-        if server_data.clients_ids.contains(&(other_id as u32)) {
+        if server_data
+            .players
+            .values()
+            .any(|&id| id == other_id as u32)
+        {
             tracing::info!("Sending update to client id: {}", other_id);
             let _ = sender.send(ServerEvent::UpdateApplication(app.clone()));
         }
@@ -265,4 +276,22 @@ pub fn update_app_after_atk(server_name: String, selected_atk_name: String) {
     let _ = app.game_manager.launch_attack(&selected_atk_name);
     // update clients
     update_clients_app(server_name, app.clone());
+}
+
+#[cfg(feature = "server")]
+pub fn reconnection_player(name: String, id: u32) {
+    let mut gm = GAMES_MANAGER.lock().unwrap();
+    for (server_name, server_data) in gm.servers_data.iter_mut() {
+        if server_data.players.contains_key(&name) {
+            // update player's id
+            server_data.players.insert(name.clone(), id);
+            // update client app
+            update_clients_app(
+                name.clone(),
+                gm.servers_data.get(&name).unwrap().app.clone(),
+            );
+            tracing::info!("Player {} reconnected with id {}", name, id);
+            break;
+        }
+    }
 }

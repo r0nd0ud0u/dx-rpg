@@ -33,9 +33,9 @@ pub fn Home() -> Element {
                     target: Route::JoinOngoingGame {}.into(),
                     name: "Join game".to_string(),
                 }
-                for (key , value) in gsw.players {
+                /* for (key , value) in gsw.players {
                     p { "id: {key}, name: {value}" }
-                }
+                } */
             }
         }
     }

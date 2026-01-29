@@ -86,6 +86,7 @@ fn App() -> Element {
                     }
                     ServerEvent::UpdateApplication(app_update) => {
                         app.set(app_update);
+                        *SERVER_NAME.write() = app.read().server_name.clone();
                     }
                 }
             }
