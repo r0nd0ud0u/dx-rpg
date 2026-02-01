@@ -16,4 +16,4 @@
 /db.sqlite-journal
 
 /offlines/games/*
-
+db.sqlite
