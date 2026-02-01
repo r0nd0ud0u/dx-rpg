@@ -1,3 +1,4 @@
+use async_std::task::sleep;
 use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
 use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -58,6 +59,11 @@ pub enum ServerEvent {
     ReconnectAllSessions(String, i64), // username, sql-id
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum ServerOwnEvent {
+    AutoAtkIsDone(String), // servername
+}
+
 #[get("/api/new-event")]
 pub async fn on_rcv_client_event(
     options: WebSocketOptions,
@@ -70,6 +76,8 @@ pub async fn on_rcv_client_event(
 
             // Channel for outgoing messages to this client
             let (tx, mut rx) = mpsc::unbounded_channel::<ServerEvent>();
+            // channel between main-thread server and another spawn
+            let (tx_server, mut rx_server) = mpsc::unbounded_channel::<ServerOwnEvent>();
 
             // Register client
             {
@@ -96,6 +104,18 @@ pub async fn on_rcv_client_event(
                         }
                     },
 
+                    maybe_server_msg = rx_server.recv() => {
+                        tracing::info!("Receiving message from other-thread server {}, message: {:?}", client_id, maybe_server_msg);
+                        match maybe_server_msg {
+                            Some(ServerOwnEvent::AutoAtkIsDone(server_name)) => {
+                                if let Some(_) = get_app_by_server_name(server_name.clone()){
+                                    update_app_after_atk(&server_name, "SimpleAtk".to_owned());
+                                }
+                            }
+                            None => {}
+                        }
+                    },
+
                     // Incoming message from client
                     res = socket.recv() => {
                         tracing::info!("Receiving message from client {}, message: {:?}", client_id, res);
@@ -118,7 +138,9 @@ pub async fn on_rcv_client_event(
                             }
                             Ok(ClientEvent::LaunchAttack(server_name, selected_atk)) => {
                                 tracing::info!("A new atk has been launched");
-                                update_app_after_atk(server_name, selected_atk);
+                                update_app_after_atk(&server_name, selected_atk);
+                                // is ennemy turn ? 
+                                process_ennemy_atk(&server_name, tx_server.clone()).await;
                             }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
@@ -325,10 +347,10 @@ fn update_clients_app(server_name: String, app: Application) {
 }
 
 #[cfg(feature = "server")]
-pub fn update_app_after_atk(server_name: String, selected_atk_name: String) {
+pub fn update_app_after_atk(server_name: &str, selected_atk_name: String) {
     // get app by server name
     let gm = GAMES_MANAGER.lock().unwrap();
-    let mut app = match gm.servers_data.get(&server_name) {
+    let mut app = match gm.servers_data.get(server_name) {
         Some(server_data) => server_data.app.clone(),
         None => {
             tracing::error!("No application found for server name: {}", server_name);
@@ -339,5 +361,40 @@ pub fn update_app_after_atk(server_name: String, selected_atk_name: String) {
     // launch attack
     let _ = app.game_manager.launch_attack(&selected_atk_name);
     // update clients
-    update_clients_app(server_name, app.clone());
+    update_clients_app(server_name.to_owned(), app.clone());
+}
+
+#[cfg(feature = "server")]
+pub async fn process_ennemy_atk(server_name: &str, tx: mpsc::UnboundedSender<ServerOwnEvent>) {
+    if let Some(app) = get_app_by_server_name(server_name.to_owned())
+        && app.game_manager.is_round_auto()
+    {
+        let nb_in_a_row = app.game_manager.process_nb_bosses_atk_in_a_row();
+        let server_name = server_name.to_string(); // if it was &str
+        tokio::spawn(async move {
+            let mut i = 0;
+            while i < nb_in_a_row {
+                sleep(std::time::Duration::from_millis(3000)).await;
+                let _ = tx.send(ServerOwnEvent::AutoAtkIsDone(server_name.clone()));
+                tracing::info!("process_ennemy_atk in a row : {}", nb_in_a_row);
+                i += 1;
+            }
+        });
+    }
+}
+
+#[cfg(feature = "server")]
+pub fn get_app_by_server_name(server_name: String) -> Option<Application> {
+    // get app by server name
+    let gm = GAMES_MANAGER.lock().unwrap();
+    let app = match gm.servers_data.get(&server_name) {
+        Some(server_data) => server_data.app.clone(),
+        None => {
+            tracing::error!("No application found for server name: {}", server_name);
+            drop(gm);
+            return None;
+        }
+    };
+    drop(gm);
+    Some(app)
 }

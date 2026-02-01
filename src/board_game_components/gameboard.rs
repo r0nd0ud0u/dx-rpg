@@ -25,97 +25,7 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
     let mut app = use_context::<Signal<Application>>();
     // local signals
     let atk_menu_display = use_signal(|| false);
-    let mut write_game_manager = use_signal(|| false);
-    let _reload_app = use_signal(|| false);
     let mut selected_atk_name = use_signal(|| "".to_string());
-
-    // auto atk for boss
-    /* use_future(move || {
-        async move {
-            loop {
-                // always sleep at start of loop
-                sleep(std::time::Duration::from_millis(TIMER_FUTURE_1S)).await;
-                // Auto - atk
-                if APP.write().game_manager.is_round_auto() {
-                    sleep(std::time::Duration::from_millis(3000)).await;
-                    APP.write().game_manager.game_state.last_result_atk =
-                        ResultLaunchAttack::default();
-                    // TODO add other boss attacks
-                    // Launch attack
-                    APP.write().game_manager.launch_attack("SimpleAtk");
-                    tracing::debug!(
-                        "launcher  {} {}",
-                        APP.write()
-                            .game_manager
-                            .game_state
-                            .last_result_atk
-                            .launcher_name,
-                        selected_atk_name()
-                    );
-
-                    let last_result_atk = &APP.write().game_manager.game_state.last_result_atk;
-                    if !last_result_atk.outcomes.is_empty() {
-                        tracing::debug!("target  {}", last_result_atk.outcomes[0].target_name);
-                    }
-                    // reset atk
-                    selected_atk_name.set("".to_string());
-                    // update game manager
-                    write_game_manager.set(true);
-                }
-            }
-        }
-    }); */
-
-    // Timer every second to update the game manager by reading json file
-    /* use_future(move || {
-        async move {
-            loop {
-                // always sleep at start of loop
-                sleep(std::time::Duration::from_millis(TIMER_FUTURE_1S)).await;
-                if !reload_app() {
-                    reload_app.set(true);
-                }
-                if write_game_manager() {
-                    write_game_manager.set(false);
-                    // save the game manager state
-                    let path = format!(
-                        "{}",
-                        &APP.write()
-                            .game_manager
-                            .game_paths
-                            .current_game_dir
-                            .join("game_manager.json")
-                            .to_string_lossy(),
-                    );
-                    let new_dir = APP.write().game_manager.game_paths.current_game_dir.clone();
-                    match application::create_dir(new_dir).await {
-                        Ok(()) => println!("Directory created successfully"),
-                        Err(e) => println!("Failed to create directory: {}", e),
-                    }
-                    let gm = APP.write().game_manager.clone();
-                    match application::save(
-                        path.to_owned(),
-                        serde_json::to_string_pretty(&gm).unwrap(),
-                    )
-                    .await
-                    {
-                        Ok(()) => println!("save"),
-                        Err(e) => println!("{}", e),
-                    }
-                } else if reload_app() {
-                    // write the game manager to the app
-                    reload_app.set(false);
-                    let cur_game_dir = APP.write().game_manager.game_paths.current_game_dir.clone();
-                    match application::get_gamemanager_by_game_dir(cur_game_dir.clone()).await {
-                        Ok(gm) => APP.write().game_manager = gm,
-                        Err(e) => {
-                            tracing::debug!("Error fetching game manager: {}", e)
-                        }
-                    }
-                }
-            }
-        }
-    }); */
 
     // Check if the game is at the end of the game and set the game status to ReplayGame
     use_effect(move || {
@@ -135,7 +45,6 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         current_player_name: app.read().game_manager.pm.current_player.name.clone(),
                         selected_atk_name,
                         atk_menu_display,
-                        write_game_manager,
                         is_auto_atk: false,
                     }
                 }
@@ -145,7 +54,6 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     AttackList {
                         name: app.read().game_manager.pm.current_player.name.clone(),
                         display_atklist_sig: atk_menu_display,
-                        write_game_manager,
                         selected_atk_name,
                     }
                 } else if !selected_atk_name().is_empty() {
@@ -154,7 +62,6 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         onclick: move |_| async move {
                             tracing::debug!(
                                 // reset atk
-                                // update game manager
                                 "launcher  {} {}", app.write().game_manager.game_state.last_result_atk
                                 .launcher_name, selected_atk_name()
                             );
@@ -162,7 +69,6 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                                 .send(ClientEvent::LaunchAttack(SERVER_NAME(), selected_atk_name()))
                                 .await;
                             selected_atk_name.set("".to_string());
-                            write_game_manager.set(true);
                         },
                         "launch atk"
                     }
@@ -188,7 +94,6 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         current_player_name: app.read().game_manager.pm.current_player.name.clone(),
                         selected_atk_name,
                         atk_menu_display,
-                        write_game_manager,
                         is_auto_atk: app.read().game_manager.pm.current_player.name == c.name,
                     }
                 }
