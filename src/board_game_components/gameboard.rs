@@ -25,8 +25,6 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
     let mut app = use_context::<Signal<Application>>();
     // local signals
     let atk_menu_display = use_signal(|| false);
-    let mut write_game_manager = use_signal(|| false);
-    let _reload_app = use_signal(|| false);
     let mut selected_atk_name = use_signal(|| "".to_string());
 
     // auto atk for boss
@@ -135,7 +133,6 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         current_player_name: app.read().game_manager.pm.current_player.name.clone(),
                         selected_atk_name,
                         atk_menu_display,
-                        write_game_manager,
                         is_auto_atk: false,
                     }
                 }
@@ -145,7 +142,6 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                     AttackList {
                         name: app.read().game_manager.pm.current_player.name.clone(),
                         display_atklist_sig: atk_menu_display,
-                        write_game_manager,
                         selected_atk_name,
                     }
                 } else if !selected_atk_name().is_empty() {
@@ -154,7 +150,6 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         onclick: move |_| async move {
                             tracing::debug!(
                                 // reset atk
-                                // update game manager
                                 "launcher  {} {}", app.write().game_manager.game_state.last_result_atk
                                 .launcher_name, selected_atk_name()
                             );
@@ -162,7 +157,6 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                                 .send(ClientEvent::LaunchAttack(SERVER_NAME(), selected_atk_name()))
                                 .await;
                             selected_atk_name.set("".to_string());
-                            write_game_manager.set(true);
                         },
                         "launch atk"
                     }
@@ -188,7 +182,6 @@ pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
                         current_player_name: app.read().game_manager.pm.current_player.name.clone(),
                         selected_atk_name,
                         atk_menu_display,
-                        write_game_manager,
                         is_auto_atk: app.read().game_manager.pm.current_player.name == c.name,
                     }
                 }

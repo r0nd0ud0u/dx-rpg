@@ -24,7 +24,6 @@ pub fn CharacterPanel(
     current_player_name: String,
     selected_atk_name: Signal<String>,
     atk_menu_display: Signal<bool>,
-    write_game_manager: Signal<bool>,
     is_auto_atk: ReadSignal<bool>,
 ) -> Element {
     // if boss is dead, panel is hidden
@@ -94,7 +93,6 @@ pub fn CharacterPanel(
                 launcher_name: current_player_name,
                 c: c.clone(),
                 selected_atk_name,
-                write_game_manager,
             }
         }
     }
@@ -105,7 +103,6 @@ pub fn CharacterTargetButton(
     launcher_name: String,
     c: Character,
     selected_atk_name: Signal<String>,
-    write_game_manager: Signal<bool>,
 ) -> Element {
     // contexts
     // let _socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
@@ -143,7 +140,6 @@ pub fn CharacterTargetButton(
                             "l:{} t:{}, a:{}", async_launcher_name.clone(), async_target_name
                             .clone(), selected_atk_name.read().clone()
                         );
-                        write_game_manager.set(true);
                     }
                 },
                 ""
@@ -175,11 +171,9 @@ pub fn NewAtkButton(
     attack_type: AttackType,
     display_atklist_sig: Signal<bool>,
     launcher: Character,
-    write_game_manager: Signal<bool>,
     selected_atk_name: Signal<String>,
 ) -> Element {
     // contexts
-    // let _socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let mut app = use_context::<Signal<Application>>();
     // local signals
     let can_be_launched = launcher.can_be_launched(&attack_type);
@@ -199,7 +193,6 @@ pub fn NewAtkButton(
                         .set_targeted_characters(&async_launcher_name, &async_atk_name);
                     tracing::debug!("set_targeted_characters");
                     *display_atklist_sig.write() = false;
-                    write_game_manager.set(true);
                 }
             },
             disabled: !can_be_launched,
@@ -212,7 +205,6 @@ pub fn NewAtkButton(
 pub fn AttackList(
     name: String,
     display_atklist_sig: Signal<bool>,
-    write_game_manager: Signal<bool>,
     selected_atk_name: Signal<String>,
 ) -> Element {
     // contexts
@@ -233,7 +225,6 @@ pub fn AttackList(
                                 attack_type: value.clone(),
                                 display_atklist_sig,
                                 launcher: c.clone(),
-                                write_game_manager,
                                 selected_atk_name,
                             }
                         }
