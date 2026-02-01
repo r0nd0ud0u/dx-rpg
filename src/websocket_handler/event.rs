@@ -350,7 +350,7 @@ fn update_clients_app(server_name: String, app: Application) {
 pub fn update_app_after_atk(server_name: &str, selected_atk_name: String) {
     // get app by server name
     let gm = GAMES_MANAGER.lock().unwrap();
-    let mut app = match gm.servers_data.get(&server_name.to_owned()) {
+    let mut app = match gm.servers_data.get(server_name) {
         Some(server_data) => server_data.app.clone(),
         None => {
             tracing::error!("No application found for server name: {}", server_name);
@@ -366,15 +366,15 @@ pub fn update_app_after_atk(server_name: &str, selected_atk_name: String) {
 
 #[cfg(feature = "server")]
 pub async fn process_ennemy_atk(server_name: &str, tx: mpsc::UnboundedSender<ServerOwnEvent>) {
-    if let Some(app) = get_app_by_server_name(server_name.to_owned()) {
-        if app.game_manager.is_round_auto() {
-            let server_name = server_name.to_string(); // if it was &str
-            tokio::spawn(async move {
-                sleep(std::time::Duration::from_millis(3000)).await;
-                let _ = tx.send(ServerOwnEvent::AutoAtkIsDone(server_name));
-            });
+    if let Some(app) = get_app_by_server_name(server_name.to_owned())
+        && app.game_manager.is_round_auto()
+    {
+        let server_name = server_name.to_string(); // if it was &str
+        tokio::spawn(async move {
+            sleep(std::time::Duration::from_millis(3000)).await;
+            let _ = tx.send(ServerOwnEvent::AutoAtkIsDone(server_name));
             tracing::info!("process_ennemy_atk");
-        }
+        });
     }
 }
 
