@@ -108,8 +108,8 @@ pub async fn on_rcv_client_event(
                         tracing::info!("Receiving message from other-thread server {}, message: {:?}", client_id, maybe_server_msg);
                         match maybe_server_msg {
                             Some(ServerOwnEvent::AutoAtkIsDone(server_name)) => {
-                                if let Some(app) = get_app_by_server_name(server_name.clone()){
-                                    update_clients_app(server_name.clone(), app);
+                                if let Some(_) = get_app_by_server_name(server_name.clone()){
+                                    update_app_after_atk(&server_name, "SimpleAtk".to_owned());
                                 }
                             }
                             None => {}
@@ -369,11 +369,16 @@ pub async fn process_ennemy_atk(server_name: &str, tx: mpsc::UnboundedSender<Ser
     if let Some(app) = get_app_by_server_name(server_name.to_owned())
         && app.game_manager.is_round_auto()
     {
+        let nb_in_a_row = app.game_manager.process_nb_bosses_atk_in_a_row();
         let server_name = server_name.to_string(); // if it was &str
         tokio::spawn(async move {
-            sleep(std::time::Duration::from_millis(3000)).await;
-            let _ = tx.send(ServerOwnEvent::AutoAtkIsDone(server_name));
-            tracing::info!("process_ennemy_atk");
+            let mut i = 0;
+            while i < nb_in_a_row {
+                sleep(std::time::Duration::from_millis(3000)).await;
+                let _ = tx.send(ServerOwnEvent::AutoAtkIsDone(server_name.clone()));
+                tracing::info!("process_ennemy_atk in a row : {}", nb_in_a_row);
+                i += 1;
+            }
         });
     }
 }
