@@ -7,7 +7,8 @@ use dioxus_primitives::{
 use indexmap::IndexMap;
 use lib_rpg::{
     attack_type::AttackType,
-    character::{Character, CharacterType, ExtendedCharacter, HotsBufs},
+    character::{Character, CharacterType},
+    character_mod::fight_information::{CharacterFightInfo, HotsBufs},
     common::stats_const::*,
 };
 
@@ -43,7 +44,7 @@ pub fn CharacterPanel(
     ]);
 
     rsx! {
-        CharacterTooltip { hots_bufs: ExtendedCharacter::get_hot_and_buf_nbs_txts(&c.all_effects) }
+        CharacterTooltip { hots_bufs: CharacterFightInfo::get_hot_and_buf_nbs_txts(&c.all_effects) }
         div { class: "character", background_color: bg,
             div {
                 img {

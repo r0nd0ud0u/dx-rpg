@@ -1,5 +1,6 @@
 use async_std::task::sleep;
 use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
+use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +21,6 @@ use tokio::sync::mpsc;
 
 use crate::application::Application;
 use crate::websocket_handler::game_state::GameStateManager;
-use dioxus::logger::tracing;
 
 #[cfg(feature = "server")]
 static NEXT_CLIENT_ID: AtomicUsize = AtomicUsize::new(1);
@@ -92,8 +92,6 @@ pub async fn on_rcv_client_event(
 
             // Main loop: handle incoming socket messages and outgoing queued messages
             loop {
-                use dioxus::logger::tracing;
-
                 tokio::select! {
                     // Outgoing messages destined for this client
                     maybe_msg = rx.recv() => {
@@ -109,7 +107,7 @@ pub async fn on_rcv_client_event(
                         match maybe_server_msg {
                             Some(ServerOwnEvent::AutoAtkIsDone(server_name)) => {
                                 if let Some(_) = get_app_by_server_name(server_name.clone()){
-                                    update_app_after_atk(&server_name, "SimpleAtk".to_owned());
+                                    update_app_after_atk(&server_name, None);
                                 }
                             }
                             None => {}
@@ -138,7 +136,7 @@ pub async fn on_rcv_client_event(
                             }
                             Ok(ClientEvent::LaunchAttack(server_name, selected_atk)) => {
                                 tracing::info!("A new atk has been launched");
-                                update_app_after_atk(&server_name, selected_atk);
+                                update_app_after_atk(&server_name, Some(&selected_atk));
                                 // is ennemy turn ? 
                                 process_ennemy_atk(&server_name, tx_server.clone()).await;
                             }
@@ -347,7 +345,7 @@ fn update_clients_app(server_name: String, app: Application) {
 }
 
 #[cfg(feature = "server")]
-pub fn update_app_after_atk(server_name: &str, selected_atk_name: String) {
+pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) {
     // get app by server name
     let gm = GAMES_MANAGER.lock().unwrap();
     let mut app = match gm.servers_data.get(server_name) {
@@ -359,7 +357,7 @@ pub fn update_app_after_atk(server_name: &str, selected_atk_name: String) {
     };
     drop(gm);
     // launch attack
-    let _ = app.game_manager.launch_attack(&selected_atk_name);
+    let _ = app.game_manager.launch_attack(selected_atk_name);
     // update clients
     update_clients_app(server_name.to_owned(), app.clone());
 }
