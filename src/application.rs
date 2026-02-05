@@ -1,3 +1,4 @@
+use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use dioxus::{prelude::ServerFnError, prelude::server};
 use lib_rpg::game_manager::GameManager;
@@ -16,24 +17,56 @@ pub struct Application {
     pub is_game_running: bool,
 }
 
+impl Application {
+    #[server]
+    pub async fn try_new() -> Result<Application, ServerFnError> {
+        match GameManager::try_new("offlines") {
+            Ok(gm) => Ok(Application {
+                game_manager: gm,
+                game_path: PathBuf::from(""),
+                server_name: "Default".to_owned(),
+                is_game_running: false,
+            }),
+            Err(_) => Err(ServerFnError::new(
+                "Failed to create GameManager".to_string(),
+            )),
+        }
+    }
+}
+
+#[cfg(feature = "server")]
+pub fn init_application(name: &String, app: &mut Application) {
+    app.game_manager.init_new_game();
+    // update app state
+    app.is_game_running = true;
+    // name of the server
+    // TODO set server name based on user name + random string
+    app.server_name = name.clone();
+}
+
+#[cfg(feature = "server")]
+pub async fn save_on_going_games(app: &Application) -> Result<(), ServerFnError> {
+    let all_games_dir = format!(
+        "{}/ongoing-games.json",
+        app.game_manager.game_paths.games_dir.to_string_lossy()
+    );
+    // add the current game directory to ongoing games
+    match save(
+        all_games_dir,
+        serde_json::to_string_pretty(&app.game_manager.game_paths.current_game_dir.clone())
+            .unwrap(),
+    )
+    .await
+    {
+        Ok(_) => tracing::info!("Game state saved successfully"),
+        Err(e) => tracing::error!("Failed to save game state: {}", e),
+    }
+    Ok(())
+}
+
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct OngoingGames {
     pub all_games: Vec<PathBuf>,
-}
-
-#[server]
-pub async fn try_new() -> Result<Application, ServerFnError> {
-    match GameManager::try_new("offlines") {
-        Ok(gm) => Ok(Application {
-            game_manager: gm,
-            game_path: PathBuf::from(""),
-            server_name: "Default".to_owned(),
-            is_game_running: false,
-        }),
-        Err(_) => Err(ServerFnError::new(
-            "Failed to create GameManager".to_string(),
-        )),
-    }
 }
 
 #[server]

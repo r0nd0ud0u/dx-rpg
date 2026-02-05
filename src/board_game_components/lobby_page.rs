@@ -18,14 +18,6 @@ pub fn LobbyPage() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let app = use_context::<Signal<Application>>();
 
-    // send message to server to create a new game
-    use_effect(move || {
-        spawn(async move {
-            // TODO Maybe create a simple Button below and call that method on click
-            send_start_game(socket.clone()).await;
-        });
-    });
-
     rsx! {
         div { class: "home-container",
             h1 { "LobbyPage" }

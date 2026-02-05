@@ -1,3 +1,7 @@
+#[cfg(feature = "server")]
+use crate::application::save_on_going_games;
+#[cfg(feature = "server")]
+use crate::{application::init_application, websocket_handler::game_state::ServerData};
 use async_std::task::sleep;
 use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
 use dioxus::logger::tracing;
@@ -44,12 +48,12 @@ static GAMES_MANAGER: Lazy<Arc<Mutex<GameStateManager>>> =
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ClientEvent {
-    LoginAllSessions(String, i64), // `String`: username, `i64`: sql-id
-    LogOut(String),
-    InitializeGame(String), // `String`: username
-    StartGame(String),
-    LaunchAttack(String, String), // `String`: server_name, `String`: atk name
-    AddPlayer(String),            // `String`: username
+    LoginAllSessions(String, i64),  // `String`: username, `i64`: sql-id
+    LogOut(String),                 // `String`: username
+    InitializeGame(String, String), // `String`: server_name, `String`: player_name
+    StartGame(String),              // `String`: server_name
+    LaunchAttack(String, String),   // `String`: server_name, `String`: atk name
+    AddPlayer(String),              // `String`: username
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -131,13 +135,13 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("{} is logged out", user_name);
                                 send_logout_to_server(user_name);
                             }
-                            Ok(ClientEvent::StartGame(name)) => {
-                                tracing::info!("{} is starting a new game", name);
-                                start_new_game_by_player(name, client_id).await;
+                            Ok(ClientEvent::StartGame(server_name)) => {
+                                tracing::info!("{} is starting a new game", server_name);
+                                start_new_game_by_player(&server_name, client_id).await;
                             }
-                            Ok(ClientEvent::InitializeGame(username)) => {
-                                tracing::info!("{} is initializing a new game", username);
-                                init_new_game_by_player(username, client_id).await;
+                            Ok(ClientEvent::InitializeGame(server_name, player_name)) => {
+                                tracing::info!("{} is initializing a new game", server_name);
+                                init_new_game_by_player(server_name, client_id, &player_name).await;
                             }
                             Ok(ClientEvent::LaunchAttack(server_name, selected_atk)) => {
                                 tracing::info!("A new atk has been launched");
@@ -243,90 +247,68 @@ pub async fn send_disconnection_to_server(cur_player_id: u32) {
 }
 
 #[cfg(feature = "server")]
-pub async fn start_new_game_by_player(server_name: String, id: u32) {
+pub async fn start_new_game_by_player(server_name: &str, id: u32) {
     update_clients_app(
-        server_name.clone(),
-        get_app_by_server_name(&server_name).unwrap_or_else(|| Application::default()),
+        server_name,
+        &get_app_by_server_name(server_name).unwrap_or_default(),
     );
 }
 
 #[cfg(feature = "server")]
-pub async fn init_new_game_by_player(name: String, id: u32) {
+pub async fn init_new_game_by_player(server_name: String, id: u32, player_name: &str) {
     // add new ongoing game
-    match application::try_new().await {
+    match Application::try_new().await {
         Ok(mut app) => {
-            tracing::info!("New application created for player: {}", name);
-            // start a new game
-            use crate::websocket_handler::game_state::ServerData;
-            app.game_manager.start_new_game();
-            let _ = app.game_manager.start_new_turn();
+            tracing::info!("New application created for player: {}", server_name);
+            // init a new game
+            init_application(&server_name, &mut app);
             // update ongoing games status
-            let all_games_dir = format!(
-                "{}/ongoing-games.json",
-                app.game_manager.game_paths.games_dir.to_string_lossy()
-            );
-            // add the current game directory to ongoing games
-            match application::save(
-                all_games_dir,
-                serde_json::to_string_pretty(&app.game_manager.game_paths.current_game_dir.clone())
-                    .unwrap(),
-            )
-            .await
-            {
-                Ok(_) => tracing::info!("Game state saved successfully"),
-                Err(e) => tracing::error!("Failed to save game state: {}", e),
-            }
-            // save the game manager state
-            let path = format!(
-                "{}",
-                &app.game_manager
-                    .game_paths
-                    .current_game_dir
-                    .join("game_manager.json")
-                    .to_string_lossy(),
-            );
-            match application::create_dir(app.game_manager.game_paths.current_game_dir.clone())
+            save_on_going_games(&app)
                 .await
-            {
-                Ok(()) => tracing::info!("Directory created successfully"),
-                Err(e) => tracing::error!("Failed to create directory: {}", e),
-            }
-            match application::save(
-                path.to_owned(),
-                serde_json::to_string_pretty(&app.game_manager.clone()).unwrap(),
-            )
-            .await
-            {
-                Ok(()) => tracing::info!("Game manager state saved successfully"),
-                Err(e) => tracing::error!("Failed to save game manager state: {}", e),
-            }
-            // update app state
-            app.is_game_running = true;
-            // name of the server
-            // TODO set server name based on user name + random string
-            app.server_name = name.clone();
-            // add to ongoing games map
-            let mut gm = GAMES_MANAGER.lock().unwrap();
+                .unwrap_or_else(|e| tracing::error!("Failed to update ongoing games: {}", e));
+            // save the game manager state
+            save_game_manager_state(&app).await;
+            // update ongoing servers data list
+            let mut gm: std::sync::MutexGuard<'_, GameStateManager> = GAMES_MANAGER.lock().unwrap();
             gm.ongoing_games_path
                 .push(app.game_manager.game_paths.current_game_dir.clone());
-            gm.servers_data.insert(
-                name.clone(),
-                ServerData {
-                    app: app.clone(),
-                    players: HashMap::from([(name.clone(), vec![id])]),
-                },
-            );
-            tracing::info!("servers data keys: {:?}", gm.servers_data.keys());
-            // update for the clients connected to that server
             drop(gm);
-            update_clients_app(name.clone(), app.clone());
+            // add server data
+            add_server_data_with_player(&app, &server_name, id, player_name);
+            // update for the clients connected to that server
+            update_clients_app(&server_name, &app);
         }
         Err(_) => tracing::error!("no app"),
     }
 }
 
 #[cfg(feature = "server")]
-fn update_clients_app(server_name: String, app: Application) {
+async fn save_game_manager_state(app: &Application) {
+    let path = format!(
+        "{}",
+        &app.game_manager
+            .game_paths
+            .current_game_dir
+            .join("game_manager.json")
+            .to_string_lossy(),
+    );
+    match application::create_dir(app.game_manager.game_paths.current_game_dir.clone()).await {
+        Ok(()) => tracing::info!("Directory created successfully"),
+        Err(e) => tracing::error!("Failed to create directory: {}", e),
+    }
+    match application::save(
+        path.to_owned(),
+        serde_json::to_string_pretty(&app.game_manager.clone()).unwrap(),
+    )
+    .await
+    {
+        Ok(()) => tracing::info!("Game manager state saved successfully"),
+        Err(e) => tracing::error!("Failed to save game manager state: {}", e),
+    }
+}
+
+#[cfg(feature = "server")]
+fn update_clients_app(server_name: &str, app: &Application) {
     let mut gm = GAMES_MANAGER.lock().unwrap();
     // update the app in the game state manager
     let server_data = match gm.servers_data.get_mut(&server_name.to_string()) {
@@ -371,7 +353,7 @@ pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) 
     // launch attack
     let _ = app.game_manager.launch_attack(selected_atk_name);
     // update clients
-    update_clients_app(server_name.to_owned(), app.clone());
+    update_clients_app(server_name, &app);
 }
 
 #[cfg(feature = "server")]
@@ -407,4 +389,17 @@ pub fn get_app_by_server_name(server_name: &str) -> Option<Application> {
     };
     drop(gm);
     Some(app)
+}
+
+#[cfg(feature = "server")]
+pub fn add_server_data_with_player(
+    app: &Application,
+    server_name: &str,
+    id: u32,
+    player_name: &str,
+) {
+    let mut gm: std::sync::MutexGuard<'_, GameStateManager> = GAMES_MANAGER.lock().unwrap();
+    gm.add_server_data(server_name, app);
+    gm.add_player_to_server(server_name, player_name, id);
+    tracing::info!("servers data keys: {:?}", gm.servers_data.keys());
 }

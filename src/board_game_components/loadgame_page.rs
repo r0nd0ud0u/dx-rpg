@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::scroll_area::{ScrollArea, ScrollDirection};
 
 use crate::{
-    application,
+    application::{self, Application},
     common::{APP, Route},
     components::button::{Button, ButtonVariant},
 };
@@ -17,7 +17,7 @@ pub fn LoadGame() -> Element {
     let games_list = use_resource(move || async move {
         // read signal active_button to rerun the resource when active_button is set again.
         println!("active button: {active_button}");
-        match application::try_new().await {
+        match Application::try_new().await {
             Ok(app) => *APP.write() = app,
             Err(_) => println!("no app"),
         }

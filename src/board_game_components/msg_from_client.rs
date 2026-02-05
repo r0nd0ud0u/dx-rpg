@@ -10,20 +10,22 @@ use crate::{
 };
 
 pub async fn send_initialize_game(
+    user_name: &str,
     socket: UseWebsocket<ClientEvent, ServerEvent, CborEncoding>,
-    username: String,
 ) {
-    let name = match get_user_name().await {
-        Ok(name) => name,
-        Err(_) => "".to_string(),
-    };
-    if name.is_empty() {
+    if user_name.is_empty() {
         tracing::info!("User name is empty, cannot create new game");
         return;
     }
     // TODO set server name based on user name + random string
-    *SERVER_NAME.write() = name.clone();
-    let _ = socket.send(ClientEvent::InitializeGame(name)).await;
+    *SERVER_NAME.write() = user_name.to_string();
+    tracing::info!("Sending InitializeGame with server name: {}", SERVER_NAME());
+    let _ = socket
+        .send(ClientEvent::InitializeGame(
+            SERVER_NAME().clone(),
+            user_name.to_string(),
+        ))
+        .await;
 }
 
 pub async fn send_start_game(socket: UseWebsocket<ClientEvent, ServerEvent, CborEncoding>) {
