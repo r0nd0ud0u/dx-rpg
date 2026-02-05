@@ -7,7 +7,6 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Application {
@@ -20,7 +19,7 @@ pub struct Application {
 impl Application {
     #[server]
     pub async fn try_new() -> Result<Application, ServerFnError> {
-        match GameManager::try_new("offlines") {
+        match GameManager::try_new("offlines", false) {
             Ok(gm) => Ok(Application {
                 game_manager: gm,
                 game_path: PathBuf::from(""),
@@ -82,13 +81,6 @@ pub async fn create_dir(path: PathBuf) -> Result<(), ServerFnError> {
     if let Err(e) = fs::create_dir_all(path) {
         eprintln!("Failed to create directory: {}", e);
     }
-    Ok(())
-}
-
-#[server]
-pub async fn sleep_from_millis(millis: u64) -> Result<(), ServerFnError> {
-    #[cfg(not(target_arch = "wasm32"))]
-    tokio::time::sleep(Duration::from_millis(millis)).await;
     Ok(())
 }
 

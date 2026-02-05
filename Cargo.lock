@@ -1446,7 +1446,7 @@ dependencies = [
  "global-hotkey",
  "infer",
  "jni",
- "lazy-js-bundle 0.7.3",
+ "lazy-js-bundle",
  "libc",
  "muda",
  "ndk",
@@ -1517,7 +1517,7 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "generational-box",
- "lazy-js-bundle 0.7.3",
+ "lazy-js-bundle",
  "serde",
  "serde_json",
  "tracing",
@@ -1675,7 +1675,7 @@ dependencies = [
  "futures-util",
  "generational-box",
  "keyboard-types",
- "lazy-js-bundle 0.7.3",
+ "lazy-js-bundle",
  "rustversion",
  "serde",
  "serde_json",
@@ -1705,7 +1705,7 @@ dependencies = [
  "dioxus-core-types",
  "dioxus-html",
  "js-sys",
- "lazy-js-bundle 0.7.3",
+ "lazy-js-bundle",
  "rustc-hash 2.1.1",
  "serde",
  "sledgehammer_bindgen",
@@ -1753,19 +1753,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "tracing-wasm",
-]
-
-[[package]]
-name = "dioxus-primitives"
-version = "0.0.1"
-source = "git+https://github.com/DioxusLabs/components?rev=1443c71#1443c71520c03f8ac8086b93ee68eda8c221c2ad"
-dependencies = [
- "dioxus",
- "dioxus-sdk-time",
- "lazy-js-bundle 0.6.2",
- "num-integer",
- "time",
- "tracing",
 ]
 
 [[package]]
@@ -1836,18 +1823,6 @@ dependencies = [
  "wasm-bindgen",
  "web-sys",
  "yazi",
-]
-
-[[package]]
-name = "dioxus-sdk-time"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80c25ae93a3f72e734873b97fbd09d9b1b6adff97205fb0ffd8543e3564fb78e"
-dependencies = [
- "dioxus",
- "futures",
- "gloo-timers",
- "tokio",
 ]
 
 [[package]]
@@ -1982,7 +1957,7 @@ dependencies = [
  "generational-box",
  "gloo-timers",
  "js-sys",
- "lazy-js-bundle 0.7.3",
+ "lazy-js-bundle",
  "rustc-hash 2.1.1",
  "send_wrapper",
  "serde",
@@ -2146,7 +2121,6 @@ dependencies = [
  "dioxus",
  "dioxus-desktop",
  "dioxus-html",
- "dioxus-primitives",
  "dioxus-sdk-storage",
  "dioxus-web",
  "execute",
@@ -3524,12 +3498,6 @@ dependencies = [
 
 [[package]]
 name = "lazy-js-bundle"
-version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e49596223b9d9d4947a14a25c142a6e7d8ab3f27eb3ade269d238bb8b5c267e2"
-
-[[package]]
-name = "lazy-js-bundle"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7b88b715ab1496c6e6b8f5e927be961c4235196121b6ae59bcb51077a21dd36"
@@ -3546,7 +3514,7 @@ dependencies = [
 [[package]]
 name = "lib-rpg"
 version = "1.3.0"
-source = "git+https://github.com/r0nd0ud0u/lib-rpg.git?rev=574912018990ba9a176a8e719c02176b1c6f2b5f#574912018990ba9a176a8e719c02176b1c6f2b5f"
+source = "git+https://github.com/r0nd0ud0u/lib-rpg.git?rev=0a4b253d2b6471eb041a90b450fa62a7ffece3fd#0a4b253d2b6471eb041a90b450fa62a7ffece3fd"
 dependencies = [
  "anyhow",
  "chrono",
