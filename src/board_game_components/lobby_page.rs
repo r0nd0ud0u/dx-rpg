@@ -7,7 +7,7 @@ use dioxus::{
 use crate::{
     application::Application,
     auth_manager::server_fn::get_user_name,
-    board_game_components::common_comp::ButtonLink,
+    board_game_components::{common_comp::ButtonLink, msg_from_client::send_start_game},
     common::{Route, SERVER_NAME},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
@@ -21,17 +21,8 @@ pub fn LobbyPage() -> Element {
     // send message to server to create a new game
     use_effect(move || {
         spawn(async move {
-            let name = match get_user_name().await {
-                Ok(name) => name,
-                Err(_) => "".to_string(),
-            };
-            if name.is_empty() {
-                tracing::info!("User name is empty, cannot create new game");
-                return;
-            }
-            // TODO set server name based on user name + random string
-            *SERVER_NAME.write() = name.clone();
-            let _ = socket.send(ClientEvent::StartGame(name)).await;
+            // TODO Maybe create a simple Button below and call that method on click
+            send_start_game(socket.clone()).await;
         });
     });
 
@@ -42,6 +33,9 @@ pub fn LobbyPage() -> Element {
                 ButtonLink {
                     target: Route::StartGamePage {}.into(),
                     name: "Start Game".to_string(),
+                    onclick: move |_| async move {
+                        send_start_game(socket.clone()).await;
+                    },
                 }
             }
         }

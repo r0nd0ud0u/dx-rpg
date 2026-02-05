@@ -19,7 +19,7 @@ use once_cell::sync::Lazy;
 #[cfg(feature = "server")]
 use tokio::sync::mpsc;
 
-use crate::application::Application;
+use crate::application::{self, Application};
 use crate::websocket_handler::game_state::GameStateManager;
 
 #[cfg(feature = "server")]
@@ -46,6 +46,7 @@ static GAMES_MANAGER: Lazy<Arc<Mutex<GameStateManager>>> =
 pub enum ClientEvent {
     LoginAllSessions(String, i64), // `String`: username, `i64`: sql-id
     LogOut(String),
+    InitializeGame(String), // `String`: username
     StartGame(String),
     LaunchAttack(String, String), // `String`: server_name, `String`: atk name
     AddPlayer(String),            // `String`: username
@@ -132,7 +133,11 @@ pub async fn on_rcv_client_event(
                             }
                             Ok(ClientEvent::StartGame(name)) => {
                                 tracing::info!("{} is starting a new game", name);
-                                create_new_game_by_player(name, client_id).await;
+                                start_new_game_by_player(name, client_id).await;
+                            }
+                            Ok(ClientEvent::InitializeGame(username)) => {
+                                tracing::info!("{} is initializing a new game", username);
+                                init_new_game_by_player(username, client_id).await;
                             }
                             Ok(ClientEvent::LaunchAttack(server_name, selected_atk)) => {
                                 tracing::info!("A new atk has been launched");
@@ -238,9 +243,15 @@ pub async fn send_disconnection_to_server(cur_player_id: u32) {
 }
 
 #[cfg(feature = "server")]
-pub async fn create_new_game_by_player(name: String, id: u32) {
-    use crate::application;
+pub async fn start_new_game_by_player(server_name: String, id: u32) {
+    update_clients_app(
+        server_name.clone(),
+        get_app_by_server_name(&server_name).unwrap_or_else(|| Application::default()),
+    );
+}
 
+#[cfg(feature = "server")]
+pub async fn init_new_game_by_player(name: String, id: u32) {
     // add new ongoing game
     match application::try_new().await {
         Ok(mut app) => {
@@ -289,6 +300,7 @@ pub async fn create_new_game_by_player(name: String, id: u32) {
                 Ok(()) => tracing::info!("Game manager state saved successfully"),
                 Err(e) => tracing::error!("Failed to save game manager state: {}", e),
             }
+            // update app state
             app.is_game_running = true;
             // name of the server
             // TODO set server name based on user name + random string
@@ -382,7 +394,7 @@ pub async fn process_ennemy_atk(server_name: &str, tx: mpsc::UnboundedSender<Ser
 }
 
 #[cfg(feature = "server")]
-pub fn get_app_by_server_name(server_name: String) -> Option<Application> {
+pub fn get_app_by_server_name(server_name: &str) -> Option<Application> {
     // get app by server name
     let gm = GAMES_MANAGER.lock().unwrap();
     let app = match gm.servers_data.get(&server_name) {
