@@ -1,4 +1,7 @@
-use dioxus::{fullstack::CborEncoding, logger::tracing};
+use dioxus::{
+    fullstack::{CborEncoding, UseWebsocket},
+    logger::tracing,
+};
 
 use crate::{
     auth_manager::server_fn::get_user_name,
@@ -24,8 +27,7 @@ pub async fn send_initialize_game(
 }
 
 pub async fn send_start_game(socket: UseWebsocket<ClientEvent, ServerEvent, CborEncoding>) {
-    *SERVER_NAME.write() = name.clone();
     let _ = socket
-        .send(ClientEvent::StartGame(SERVER_NAME.read().clone()))
+        .send(ClientEvent::StartGame(SERVER_NAME().clone()))
         .await;
 }

@@ -4,7 +4,7 @@ version = "0.3.0"
 authors = ["rondoudou"]
 edition = "2024"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# See more keys and their dexfinitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 anyhow = "1.0.99"
 dioxus = { version = "0.7.3", features = ["router", "fullstack"] }

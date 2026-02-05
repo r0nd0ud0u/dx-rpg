@@ -107,7 +107,7 @@ pub async fn on_rcv_client_event(
                         tracing::info!("Receiving message from other-thread server {}, message: {:?}", client_id, maybe_server_msg);
                         match maybe_server_msg {
                             Some(ServerOwnEvent::AutoAtkIsDone(server_name)) => {
-                                if let Some(_) = get_app_by_server_name(server_name.clone()){
+                                if let Some(_) = get_app_by_server_name(&server_name){
                                     update_app_after_atk(&server_name, None);
                                 }
                             }
@@ -329,7 +329,7 @@ pub async fn init_new_game_by_player(name: String, id: u32) {
 fn update_clients_app(server_name: String, app: Application) {
     let mut gm = GAMES_MANAGER.lock().unwrap();
     // update the app in the game state manager
-    let server_data = match gm.servers_data.get_mut(server_name.as_str()) {
+    let server_data = match gm.servers_data.get_mut(&server_name.to_string()) {
         Some(server_data) => {
             server_data.app = app.clone();
             server_data
@@ -376,7 +376,7 @@ pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) 
 
 #[cfg(feature = "server")]
 pub async fn process_ennemy_atk(server_name: &str, tx: mpsc::UnboundedSender<ServerOwnEvent>) {
-    if let Some(app) = get_app_by_server_name(server_name.to_owned())
+    if let Some(app) = get_app_by_server_name(&server_name)
         && app.game_manager.is_round_auto()
     {
         let nb_in_a_row = app.game_manager.process_nb_bosses_atk_in_a_row();
@@ -397,7 +397,7 @@ pub async fn process_ennemy_atk(server_name: &str, tx: mpsc::UnboundedSender<Ser
 pub fn get_app_by_server_name(server_name: &str) -> Option<Application> {
     // get app by server name
     let gm = GAMES_MANAGER.lock().unwrap();
-    let app = match gm.servers_data.get(&server_name) {
+    let app = match gm.servers_data.get(&server_name.to_string()) {
         Some(server_data) => server_data.app.clone(),
         None => {
             tracing::error!("No application found for server name: {}", server_name);

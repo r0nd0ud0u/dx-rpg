@@ -87,6 +87,7 @@ pub fn LoadGame() -> Element {
                 },
                 "Start Game"
             }
+
             Button {
                 variant: ButtonVariant::Secondary,
                 disabled: active_button() == -1,
