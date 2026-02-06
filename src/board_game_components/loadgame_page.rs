@@ -1,11 +1,14 @@
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
-use dioxus_primitives::scroll_area::{ScrollArea, ScrollDirection};
+use dioxus_primitives::scroll_area::ScrollDirection;
 
 use crate::{
     application::{self, Application},
     common::{APP, Route},
-    components::button::{Button, ButtonVariant},
+    components::{
+        button::{Button, ButtonVariant},
+        scroll_area::ScrollArea,
+    },
 };
 
 #[component]

@@ -1,7 +1,10 @@
 use dioxus::prelude::*;
 
 use crate::{
-    board_game_components::{common_comp::ButtonLink, login_page::LoginPage},
+    board_game_components::{
+        character_select::Demo, common_comp::ButtonLink, login_page::LoginPage,
+        popover_comp::PopoverComp,
+    },
     common::{Route, disconnected_user},
 };
 
@@ -21,7 +24,6 @@ pub fn Home() -> Element {
         rsx! {
             div { class: "home-container",
                 h1 { "Welcome to the RPG game!" }
-
                 ButtonLink {
                     target: Route::CreateServer {}.into(),
                     name: "Create Server".to_string(),

@@ -1,9 +1,9 @@
+use crate::components::label::Label;
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     logger::tracing,
     prelude::*,
 };
-use dioxus_primitives::label::Label;
 
 use crate::{
     auth_manager::server_fn::logout,
@@ -63,6 +63,7 @@ pub fn Navbar() -> Element {
                     }
                 }
                 Label { html_for: "navbar", "({snap_local_login_name_session})" }
+                        //Label { html_for: "navbar", "Test" }
             }
         }
 

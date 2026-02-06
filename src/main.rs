@@ -69,6 +69,16 @@ fn App() -> Element {
     let login_id_session_local_sync =
         use_synced_storage::<LocalStorage, i64>("synced_user_sql_id".to_string(), || -1); // from db, integer primary key not null and from 1 upwards
 
+    // Set the theme to dark on app load
+    use_effect(|| {
+        if let Some(window) = web_sys::window() {
+            if let Some(document) = window.document() {
+                if let Some(html) = document.document_element() {
+                    html.set_attribute("data-theme", "dark").ok();
+                }
+            }
+        }
+    });
     // Receive events from the websocket and update local signals.
     use_future(move || {
         let mut socket = socket;

@@ -1,12 +1,12 @@
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
-use dioxus_primitives::label::Label;
 
 use crate::{
     auth_manager::server_fn::delete_user,
     components::{
         button::{Button, ButtonVariant},
         input::Input,
+        label::Label,
     },
 };
 
