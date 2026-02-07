@@ -4,11 +4,11 @@ version = "0.3.0"
 authors = ["rondoudou"]
 edition = "2024"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# See more keys and their dexfinitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 anyhow = "1.0.99"
 dioxus = { version = "0.7.3", features = ["router", "fullstack"] }
-lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "682ee708436220b13d35d1c7ea1f3c33271e51a7" }
+lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "e2013bdd9f2f8935c7da60f653ad91fa9b3b1b72" }
 serde = "1.0.228"
 dioxus-desktop = { version = "0.7.3", optional = true }
 dioxus-html = "0.7.3"
@@ -21,7 +21,7 @@ web-time = "1.1.0"
 async-std = "1.13.2"
 # dioxus 0.7 is using getrandom 0.3.3
 getrandom = { version = "0.3.4", features = ["wasm_js"] }
-dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "1443c71", default-features = false }
+dioxus-primitives = { git = "https://github.com/DioxusLabs/components", default-features = false, version = "0.0.1" }
 
 async-trait = { version = "0.1.88", optional = true }
 sqlx = { version = "0.8.6", features = [
@@ -46,6 +46,7 @@ bcrypt = {version = "0.18.0", optional = true }
 rand = "0.9.2"
 wasm-bindgen-futures = "0.4.58"
 dioxus-sdk-storage = "0.7.0"
+web-sys = "0.3.85"
 
 [features]
 default = ["server"]

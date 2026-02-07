@@ -1,3 +1,8 @@
+#[cfg(feature = "server")]
+use crate::application::init_application;
+#[cfg(feature = "server")]
+use crate::application::save_on_going_games;
+use crate::websocket_handler::game_state::ServerData;
 use async_std::task::sleep;
 use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
 use dioxus::logger::tracing;
@@ -19,7 +24,7 @@ use once_cell::sync::Lazy;
 #[cfg(feature = "server")]
 use tokio::sync::mpsc;
 
-use crate::application::Application;
+use crate::application::{self, Application};
 use crate::websocket_handler::game_state::GameStateManager;
 
 #[cfg(feature = "server")]
@@ -44,11 +49,13 @@ static GAMES_MANAGER: Lazy<Arc<Mutex<GameStateManager>>> =
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ClientEvent {
-    LoginAllSessions(String, i64), // `String`: username, `i64`: sql-id
-    LogOut(String),
-    StartGame(String),
-    LaunchAttack(String, String), // `String`: server_name, `String`: atk name
-    AddPlayer(String),            // `String`: username
+    LoginAllSessions(String, i64),  // `String`: username, `i64`: sql-id
+    LogOut(String),                 // `String`: username
+    InitializeGame(String, String), // `String`: server_name, `String`: player_name
+    AddCharacterOnServerData(String, String, String), // `String`: server_name, `String`: player_name, `String`: character_name
+    StartGame(String),                                // `String`: server_name
+    LaunchAttack(String, String),                     // `String`: server_name, `String`: atk name
+    AddPlayer(String),                                // `String`: username
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -57,6 +64,7 @@ pub enum ServerEvent {
     AssignPlayerId(u32),
     UpdateApplication(Box<Application>),
     ReconnectAllSessions(String, i64), // username, sql-id
+    UpdateServerData(Box<ServerData>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -106,7 +114,7 @@ pub async fn on_rcv_client_event(
                         tracing::info!("Receiving message from other-thread server {}, message: {:?}", client_id, maybe_server_msg);
                         match maybe_server_msg {
                             Some(ServerOwnEvent::AutoAtkIsDone(server_name)) => {
-                                if let Some(_) = get_app_by_server_name(server_name.clone()){
+                                if get_app_by_server_name(&server_name).is_some(){
                                     update_app_after_atk(&server_name, None);
                                 }
                             }
@@ -130,13 +138,53 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("{} is logged out", user_name);
                                 send_logout_to_server(user_name);
                             }
-                            Ok(ClientEvent::StartGame(name)) => {
-                                tracing::info!("{} is starting a new game", name);
-                                create_new_game_by_player(name, client_id).await;
+                            Ok(ClientEvent::StartGame(server_name)) => {
+                                tracing::info!("{} is starting a new game", server_name);
+                                start_new_game_by_player(&server_name).await;
+                            }
+                            Ok(ClientEvent::InitializeGame(server_name, player_name)) => {
+                                tracing::info!("{} is initializing a new game", server_name);
+                                init_new_game_by_player(&server_name, client_id, &player_name).await;
+                                update_clients_server_data(&server_name);
+                            }
+                            Ok(ClientEvent::AddCharacterOnServerData(server_name, player_name, character_name)) => {
+                                tracing::info!("{} is adding character {} to server data", player_name, character_name);
+                                let mut gm = GAMES_MANAGER.lock().unwrap();
+                                if let Some(server_data) = gm.servers_data.get_mut(&server_name) {
+                                    // remove character from all players in server data
+                                    server_data
+                                        .players
+                                        .entry(player_name.clone())
+                                        .or_default()
+                                        .character_names.clear();
+                                    server_data
+                                        .players
+                                        .entry(player_name.clone())
+                                        .or_default()
+                                        .character_names.push(character_name.clone());
+                                    // find character in pm and set it as active for all players in server data
+                                    server_data.app.game_manager.pm.active_heroes.clear();
+                                    server_data
+                                        .players.values()
+                                        .for_each(|player_info| {
+                                            if player_info.character_names.contains(&character_name) {
+                                                server_data.app.game_manager.pm.active_heroes.push(
+                                                    server_data.app.game_manager.pm.all_heroes.iter().find(|h| h.name == character_name).unwrap().clone()
+                                                );
+                                            }
+                                        });
+                                    tracing::info!("Player {} added character {} to server data for server {}", player_name, character_name, server_name);
+                                } else {
+                                    tracing::error!("Server data not found for server: {}", server_name);
+                                }
+                                drop(gm);
+                                update_clients_server_data(&server_name);
+                                update_clients_app(&server_name, &get_app_by_server_name(&server_name).unwrap_or_default());
                             }
                             Ok(ClientEvent::LaunchAttack(server_name, selected_atk)) => {
                                 tracing::info!("A new atk has been launched");
                                 update_app_after_atk(&server_name, Some(&selected_atk));
+                                update_clients_server_data(&server_name);
                                 // is ennemy turn ? 
                                 process_ennemy_atk(&server_name, tx_server.clone()).await;
                             }
@@ -226,10 +274,10 @@ pub async fn send_disconnection_to_server(cur_player_id: u32) {
     );
     // remove from servers data
     if let Some(server_data) = gm.servers_data.get_mut(&username) {
-        server_data.players.retain(|player_name, ids| {
+        server_data.players.retain(|player_name, pl| {
             if player_name == &username {
-                ids.retain(|&id| id != cur_player_id);
-                !ids.is_empty()
+                pl.player_ids.retain(|&id| id != cur_player_id);
+                !pl.player_ids.is_empty()
             } else {
                 true
             }
@@ -238,86 +286,79 @@ pub async fn send_disconnection_to_server(cur_player_id: u32) {
 }
 
 #[cfg(feature = "server")]
-pub async fn create_new_game_by_player(name: String, id: u32) {
-    use crate::application;
+pub async fn start_new_game_by_player(server_name: &str) {
+    // update app state
+    let mut gm = GAMES_MANAGER.lock().unwrap();
+    if let Some(server_data) = gm.servers_data.get_mut(server_name) {
+        server_data.app.game_manager.start_game();
+    }
+    drop(gm);
+    update_clients_app(
+        server_name,
+        &get_app_by_server_name(server_name).unwrap_or_default(),
+    );
+    update_clients_server_data(server_name);
+}
 
+#[cfg(feature = "server")]
+pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &str) {
     // add new ongoing game
-    match application::try_new().await {
+    match Application::try_new().await {
         Ok(mut app) => {
-            tracing::info!("New application created for player: {}", name);
-            // start a new game
-            use crate::websocket_handler::game_state::ServerData;
-            app.game_manager.start_new_game();
-            let _ = app.game_manager.start_new_turn();
+            tracing::info!("New application created for player: {}", server_name);
+            // init a new game
+            init_application(server_name, &mut app);
             // update ongoing games status
-            let all_games_dir = format!(
-                "{}/ongoing-games.json",
-                app.game_manager.game_paths.games_dir.to_string_lossy()
-            );
-            // add the current game directory to ongoing games
-            match application::save(
-                all_games_dir,
-                serde_json::to_string_pretty(&app.game_manager.game_paths.current_game_dir.clone())
-                    .unwrap(),
-            )
-            .await
-            {
-                Ok(_) => tracing::info!("Game state saved successfully"),
-                Err(e) => tracing::error!("Failed to save game state: {}", e),
-            }
-            // save the game manager state
-            let path = format!(
-                "{}",
-                &app.game_manager
-                    .game_paths
-                    .current_game_dir
-                    .join("game_manager.json")
-                    .to_string_lossy(),
-            );
-            match application::create_dir(app.game_manager.game_paths.current_game_dir.clone())
+            save_on_going_games(&app)
                 .await
-            {
-                Ok(()) => tracing::info!("Directory created successfully"),
-                Err(e) => tracing::error!("Failed to create directory: {}", e),
-            }
-            match application::save(
-                path.to_owned(),
-                serde_json::to_string_pretty(&app.game_manager.clone()).unwrap(),
-            )
-            .await
-            {
-                Ok(()) => tracing::info!("Game manager state saved successfully"),
-                Err(e) => tracing::error!("Failed to save game manager state: {}", e),
-            }
-            app.is_game_running = true;
-            // name of the server
-            // TODO set server name based on user name + random string
-            app.server_name = name.clone();
-            // add to ongoing games map
-            let mut gm = GAMES_MANAGER.lock().unwrap();
+                .unwrap_or_else(|e| tracing::error!("Failed to update ongoing games: {}", e));
+            // save the game manager state
+            save_game_manager_state(&app).await;
+            // update ongoing servers data list
+            let mut gm: std::sync::MutexGuard<'_, GameStateManager> = GAMES_MANAGER.lock().unwrap();
             gm.ongoing_games_path
                 .push(app.game_manager.game_paths.current_game_dir.clone());
-            gm.servers_data.insert(
-                name.clone(),
-                ServerData {
-                    app: app.clone(),
-                    players: HashMap::from([(name.clone(), vec![id])]),
-                },
-            );
-            tracing::info!("servers data keys: {:?}", gm.servers_data.keys());
-            // update for the clients connected to that server
             drop(gm);
-            update_clients_app(name.clone(), app.clone());
+            // add server data
+            add_server_data_with_player(&app, server_name, id, player_name);
+            // update for the clients connected to that server
+            update_clients_app(server_name, &app);
+            update_clients_server_data(server_name);
         }
         Err(_) => tracing::error!("no app"),
     }
 }
 
 #[cfg(feature = "server")]
-fn update_clients_app(server_name: String, app: Application) {
+async fn save_game_manager_state(app: &Application) {
+    let path = format!(
+        "{}",
+        &app.game_manager
+            .game_paths
+            .current_game_dir
+            .join("game_manager.json")
+            .to_string_lossy(),
+    );
+    match application::create_dir(app.game_manager.game_paths.current_game_dir.clone()).await {
+        Ok(()) => tracing::info!("Directory created successfully"),
+        Err(e) => tracing::error!("Failed to create directory: {}", e),
+    }
+    match application::save(
+        path.to_owned(),
+        serde_json::to_string_pretty(&app.game_manager.clone()).unwrap(),
+    )
+    .await
+    {
+        Ok(()) => tracing::info!("Game manager state saved successfully"),
+        Err(e) => tracing::error!("Failed to save game manager state: {}", e),
+    }
+}
+
+#[cfg(feature = "server")]
+fn update_clients_app(server_name: &str, app: &Application) {
     let mut gm = GAMES_MANAGER.lock().unwrap();
     // update the app in the game state manager
-    let server_data = match gm.servers_data.get_mut(server_name.as_str()) {
+    let server_data = match gm.servers_data.get_mut(server_name) {
         Some(server_data) => {
             server_data.app = app.clone();
             server_data
@@ -337,9 +378,38 @@ fn update_clients_app(server_name: String, app: Application) {
         if server_data
             .players
             .values()
-            .any(|ids| ids.contains(&(other_id as u32)))
+            .any(|player_info| player_info.player_ids.contains(&(other_id as u32)))
         {
             let _ = sender.send(ServerEvent::UpdateApplication(Box::new(app.clone())));
+        }
+    }
+}
+
+#[cfg(feature = "server")]
+fn update_clients_server_data(server_name: &str) {
+    let server_data = match get_server_data_by_server_name(server_name) {
+        Some(server_data) => {
+            tracing::info!(
+                "Clients ids: {:?} for server: {}",
+                server_data.players.values(),
+                server_name
+            );
+            server_data
+        }
+        None => {
+            tracing::info!("no server data for server: {}", server_name);
+            return;
+        }
+    };
+
+    let clients = CLIENTS.lock().unwrap();
+    for (&other_id, sender) in clients.iter() {
+        if server_data
+            .players
+            .values()
+            .any(|player_info| player_info.player_ids.contains(&(other_id as u32)))
+        {
+            let _ = sender.send(ServerEvent::UpdateServerData(Box::new(server_data.clone())));
         }
     }
 }
@@ -359,12 +429,13 @@ pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) 
     // launch attack
     let _ = app.game_manager.launch_attack(selected_atk_name);
     // update clients
-    update_clients_app(server_name.to_owned(), app.clone());
+    update_clients_app(server_name, &app);
+    update_clients_server_data(server_name);
 }
 
 #[cfg(feature = "server")]
 pub async fn process_ennemy_atk(server_name: &str, tx: mpsc::UnboundedSender<ServerOwnEvent>) {
-    if let Some(app) = get_app_by_server_name(server_name.to_owned())
+    if let Some(app) = get_app_by_server_name(server_name)
         && app.game_manager.is_round_auto()
     {
         let nb_in_a_row = app.game_manager.process_nb_bosses_atk_in_a_row();
@@ -382,10 +453,10 @@ pub async fn process_ennemy_atk(server_name: &str, tx: mpsc::UnboundedSender<Ser
 }
 
 #[cfg(feature = "server")]
-pub fn get_app_by_server_name(server_name: String) -> Option<Application> {
+pub fn get_app_by_server_name(server_name: &str) -> Option<Application> {
     // get app by server name
     let gm = GAMES_MANAGER.lock().unwrap();
-    let app = match gm.servers_data.get(&server_name) {
+    let app = match gm.servers_data.get(server_name) {
         Some(server_data) => server_data.app.clone(),
         None => {
             tracing::error!("No application found for server name: {}", server_name);
@@ -395,4 +466,33 @@ pub fn get_app_by_server_name(server_name: String) -> Option<Application> {
     };
     drop(gm);
     Some(app)
+}
+
+#[cfg(feature = "server")]
+pub fn get_server_data_by_server_name(server_name: &str) -> Option<ServerData> {
+    // get server-data by server name
+    let gm = GAMES_MANAGER.lock().unwrap();
+    let server_data = match gm.servers_data.get(server_name) {
+        Some(server_data) => server_data.clone(),
+        None => {
+            tracing::error!("No server data found for server name: {}", server_name);
+            drop(gm);
+            return None;
+        }
+    };
+    drop(gm);
+    Some(server_data)
+}
+
+#[cfg(feature = "server")]
+pub fn add_server_data_with_player(
+    app: &Application,
+    server_name: &str,
+    id: u32,
+    player_name: &str,
+) {
+    let mut gm: std::sync::MutexGuard<'_, GameStateManager> = GAMES_MANAGER.lock().unwrap();
+    gm.add_server_data(server_name, app);
+    gm.add_player_to_server(server_name, player_name, id);
+    tracing::info!("servers data keys: {:?}", gm.servers_data.keys());
 }
