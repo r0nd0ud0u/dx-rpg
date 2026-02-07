@@ -8,7 +8,7 @@ pub fn ButtonLink(
 ) -> Element {
     rsx! {
         div { class: "button-link",
-            Link { class: "header-text", to: target, onclick: onclick.clone(), "{name}" }
+            Link { class: "header-text", to: target, onclick, "{name}" }
         }
     }
 }

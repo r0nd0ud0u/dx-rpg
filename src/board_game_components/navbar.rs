@@ -63,7 +63,6 @@ pub fn Navbar() -> Element {
                     }
                 }
                 Label { html_for: "navbar", "({snap_local_login_name_session})" }
-                        //Label { html_for: "navbar", "Test" }
             }
         }
 

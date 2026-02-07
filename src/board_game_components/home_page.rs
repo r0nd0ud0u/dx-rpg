@@ -1,10 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::{
-    board_game_components::{
-        character_select::Demo, common_comp::ButtonLink, login_page::LoginPage,
-        popover_comp::PopoverComp,
-    },
+    board_game_components::{common_comp::ButtonLink, login_page::LoginPage},
     common::{Route, disconnected_user},
 };
 

@@ -7,7 +7,10 @@ use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use dx_rpg::{
     application::Application,
     common::{DX_COMP_CSS, Route, SERVER_NAME, disconnected_user},
-    websocket_handler::event::{ClientEvent, ServerEvent, on_rcv_client_event},
+    websocket_handler::{
+        event::{ClientEvent, ServerEvent, on_rcv_client_event},
+        game_state::ServerData,
+    },
 };
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -58,6 +61,7 @@ fn App() -> Element {
     let mut message = use_signal(String::new);
     let mut player_client_id = use_signal(|| 0);
     let mut app = use_signal(Application::default);
+    let mut server_data = use_signal(ServerData::default);
 
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
@@ -71,12 +75,11 @@ fn App() -> Element {
 
     // Set the theme to dark on app load
     use_effect(|| {
-        if let Some(window) = web_sys::window() {
-            if let Some(document) = window.document() {
-                if let Some(html) = document.document_element() {
-                    html.set_attribute("data-theme", "dark").ok();
-                }
-            }
+        if let Some(window) = web_sys::window()
+            && let Some(document) = window.document()
+            && let Some(html) = document.document_element()
+        {
+            html.set_attribute("data-theme", "dark").ok();
         }
     });
     // Receive events from the websocket and update local signals.
@@ -114,6 +117,9 @@ fn App() -> Element {
                         app.set(*app_update);
                         *SERVER_NAME.write() = app.read().server_name.clone();
                     }
+                    ServerEvent::UpdateServerData(server_data_update) => {
+                        server_data.set(*server_data_update);
+                    }
                     ServerEvent::ReconnectAllSessions(username, sql_id) => {
                         let login_name_session_local_sync = login_name_session_local_sync();
                         let login_id_session_local_sync = login_id_session_local_sync();
@@ -149,6 +155,7 @@ fn App() -> Element {
     use_context_provider(|| login_name_session_local_sync);
     use_context_provider(|| login_id_session_local_sync);
     use_context_provider(|| app);
+    use_context_provider(|| server_data);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

@@ -15,7 +15,13 @@ pub struct GameStateManager {
 #[derive(Default, Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct ServerData {
     pub app: Application,
-    pub players: HashMap<String, Vec<u32>>, // key is player_name, value is player_id
+    pub players: HashMap<String, PlayerInfo>,
+}
+
+#[derive(Default, Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
+pub struct PlayerInfo {
+    pub character_names: Vec<String>,
+    pub player_ids: Vec<u32>,
 }
 
 impl GameStateManager {
@@ -28,7 +34,10 @@ impl GameStateManager {
     }
 
     pub fn add_player(&mut self, player_name: String, player_id: u32) {
-        self.players.entry(player_name).or_default().push(player_id);
+        self.players
+            .entry(player_name.clone())
+            .or_default()
+            .push(player_id);
     }
 
     pub fn add_server_data(&mut self, server_name: &str, app: &Application) {
@@ -47,6 +56,7 @@ impl GameStateManager {
                 .players
                 .entry(player_name.to_string())
                 .or_default()
+                .player_ids
                 .push(player_id);
         }
     }

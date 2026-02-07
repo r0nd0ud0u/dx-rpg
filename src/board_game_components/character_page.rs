@@ -107,7 +107,6 @@ pub fn CharacterTargetButton(
     selected_atk_name: Signal<String>,
 ) -> Element {
     // contexts
-    // let _socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let mut app = use_context::<Signal<Application>>();
 
     let mut kind_str = "hero";

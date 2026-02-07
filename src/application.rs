@@ -34,13 +34,13 @@ impl Application {
 }
 
 #[cfg(feature = "server")]
-pub fn init_application(name: &String, app: &mut Application) {
+pub fn init_application(name: &str, app: &mut Application) {
     app.game_manager.init_new_game();
     // update app state
     app.is_game_running = true;
     // name of the server
     // TODO set server name based on user name + random string
-    app.server_name = name.clone();
+    app.server_name = name.to_string();
 }
 
 #[cfg(feature = "server")]

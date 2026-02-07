@@ -4,7 +4,6 @@ use dioxus::{
 };
 
 use crate::{
-    auth_manager::server_fn::get_user_name,
     common::SERVER_NAME,
     websocket_handler::event::{ClientEvent, ServerEvent},
 };

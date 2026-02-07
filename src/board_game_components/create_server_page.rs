@@ -22,7 +22,6 @@ pub fn CreateServer() -> Element {
                 target: Route::LobbyPage {}.into(),
                 name: "New Game".to_string(),
                 onclick: move |_| {
-                    let socket = socket.clone();
                     let user_name = local_login_name_session();
                     async move {
                         send_initialize_game(&user_name, socket).await;

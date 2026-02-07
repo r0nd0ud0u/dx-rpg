@@ -1,14 +1,15 @@
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
-    logger::tracing,
     prelude::*,
 };
 
 use crate::{
     application::Application,
-    auth_manager::server_fn::get_user_name,
-    board_game_components::{common_comp::ButtonLink, msg_from_client::send_start_game},
-    common::{Route, SERVER_NAME},
+    board_game_components::{
+        character_select::CharacterSelect, common_comp::ButtonLink,
+        msg_from_client::send_start_game,
+    },
+    common::Route,
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
@@ -20,16 +21,21 @@ pub fn LobbyPage() -> Element {
 
     rsx! {
         div { class: "home-container",
+            // style: "display: flex; flex-direction: column;",
             h1 { "LobbyPage" }
+
             if app.read().is_game_running {
                 ButtonLink {
                     target: Route::StartGamePage {}.into(),
                     name: "Start Game".to_string(),
                     onclick: move |_| async move {
-                        send_start_game(socket.clone()).await;
+                        send_start_game(socket).await;
                     },
                 }
+                CharacterSelect {}
             }
+        
         }
+
     }
 }
