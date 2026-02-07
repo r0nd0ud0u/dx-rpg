@@ -2,7 +2,9 @@
 pub mod button;
 pub mod input;
 pub mod label;
+pub mod popover;
 pub mod scroll_area;
+pub mod select;
 pub mod separator;
 pub mod sheet;
 pub mod tooltip;

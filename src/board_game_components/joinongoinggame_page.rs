@@ -2,7 +2,7 @@ use async_std::task::sleep;
 use dioxus::prelude::*;
 
 use crate::{
-    application,
+    application::{self, Application},
     common::{APP, Route, tempo_const::TIMER_FUTURE_1S},
 };
 use dioxus::logger::tracing;
@@ -11,11 +11,10 @@ use dioxus::logger::tracing;
 pub fn JoinOngoingGame() -> Element {
     use_effect(|| {
         spawn(async move {
-            match application::try_new().await {
+            match Application::try_new().await {
                 Ok(app) => {
                     *APP.write() = app;
-                    APP.write().game_manager.start_new_game();
-                    let _ = APP.write().game_manager.start_new_turn();
+                    APP.write().game_manager.init_new_game();
                 }
                 Err(_) => println!("no app"),
             }

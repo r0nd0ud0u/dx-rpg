@@ -1,9 +1,6 @@
 use colorgrad::Gradient;
 use dioxus::prelude::*;
-use dioxus_primitives::{
-    ContentSide,
-    tooltip::{Tooltip, TooltipContent, TooltipTrigger},
-};
+use dioxus_primitives::ContentSide;
 use indexmap::IndexMap;
 use lib_rpg::{
     attack_type::AttackType,
@@ -12,7 +9,11 @@ use lib_rpg::{
     common::stats_const::*,
 };
 
-use crate::{application::Application, common::ENERGY_GRAD};
+use crate::{
+    application::Application,
+    common::ENERGY_GRAD,
+    components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
+};
 use crate::{
     common::PATH_IMG,
     components::button::{Button, ButtonVariant},
@@ -106,7 +107,6 @@ pub fn CharacterTargetButton(
     selected_atk_name: Signal<String>,
 ) -> Element {
     // contexts
-    // let _socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let mut app = use_context::<Signal<Application>>();
 
     let mut kind_str = "hero";

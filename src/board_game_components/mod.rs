@@ -1,5 +1,6 @@
 pub mod admin_page;
 pub mod character_page;
+pub mod character_select;
 pub mod common_comp;
 pub mod create_server_page;
 pub mod gameboard;
@@ -8,5 +9,7 @@ pub mod joinongoinggame_page;
 pub mod loadgame_page;
 pub mod lobby_page;
 pub mod login_page;
+pub mod msg_from_client;
 pub mod navbar;
+pub mod popover_comp;
 pub mod startgame_page;

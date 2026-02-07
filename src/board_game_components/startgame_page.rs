@@ -1,3 +1,4 @@
+use crate::components::label::Label;
 use crate::{
     application::{self, Application},
     board_game_components::gameboard::GameBoard,
@@ -5,12 +6,12 @@ use crate::{
     components::{
         button::{Button, ButtonVariant},
         input::Input,
+        separator::Separator,
         sheet::*,
     },
 };
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
-use dioxus_primitives::{label::Label, separator::Separator};
 
 /// New game
 #[component]

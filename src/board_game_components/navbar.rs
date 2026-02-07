@@ -1,9 +1,9 @@
+use crate::components::label::Label;
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     logger::tracing,
     prelude::*,
 };
-use dioxus_primitives::label::Label;
 
 use crate::{
     auth_manager::server_fn::logout,
