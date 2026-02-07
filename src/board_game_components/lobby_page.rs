@@ -34,7 +34,7 @@ pub fn LobbyPage() -> Element {
                 }
                 CharacterSelect {}
             }
-        
+
         }
 
     }

@@ -37,7 +37,7 @@ pub fn CharacterSelect() -> Element {
                     ClassSelect {}
                 }
             }
-        
+
         }
 
     }
