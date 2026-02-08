@@ -67,7 +67,7 @@ pub fn ClassSelect(player_name: String) -> Element {
     let character_name = server_data()
         .players_info
         .get(&player_name)
-        .and_then(|player_info| player_info.character_names.get(0).cloned())
+        .and_then(|player_info| player_info.character_names.first().cloned())
         .unwrap_or_else(|| "Select your character".to_string());
     tracing::trace!(
         "Character name for player {}: {}",

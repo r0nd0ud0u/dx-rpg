@@ -118,7 +118,7 @@ fn App() -> Element {
                         app.set(*app_update);
                         *SERVER_NAME.write() = app.read().server_name.clone();
                     }
-                    ServerEvent::UpdateServerData(server_data_update, route_to_update) => {
+                    ServerEvent::UpdateServerData(server_data_update) => {
                         server_data.set(*server_data_update);
                     }
                     ServerEvent::UpdateOngoingGames(ongoing_games_update) => {
