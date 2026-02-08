@@ -4,13 +4,16 @@ use dioxus::{
 };
 
 use crate::{
-    application::Application, board_game_components::{
-        character_select::CharacterSelect, common_comp::ButtonLink,
-        msg_from_client::send_start_game, startgame_page::StartGamePage,
-    }, common::{Route, SERVER_NAME}, components::button::Button, websocket_handler::{
+    board_game_components::{
+        character_select::CharacterSelect, msg_from_client::send_start_game,
+        startgame_page::StartGamePage,
+    },
+    common::SERVER_NAME,
+    components::button::Button,
+    websocket_handler::{
         event::{ClientEvent, ServerEvent},
         game_state::ServerData,
-    }
+    },
 };
 
 #[component]
