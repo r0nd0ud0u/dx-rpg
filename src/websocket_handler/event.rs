@@ -276,7 +276,7 @@ pub async fn start_new_game_by_player(server_name: &str) {
         server_name,
         &get_app_by_server_name(server_name).unwrap_or_default(),
     );
-    update_clients_server_data(server_name, Some(Route::StartGamePage {  }));
+    update_clients_server_data(server_name, Some(Route::StartGamePage {}));
 }
 
 #[cfg(feature = "server")]
@@ -386,7 +386,10 @@ fn update_clients_server_data(server_name: &str, route_to_update: Option<Route>)
             .values()
             .any(|player_info| player_info.player_ids.contains(&(other_id as u32)))
         {
-            let _ = sender.send(ServerEvent::UpdateServerData(Box::new(server_data.clone()), route_to_update.clone()));
+            let _ = sender.send(ServerEvent::UpdateServerData(
+                Box::new(server_data.clone()),
+                route_to_update.clone(),
+            ));
         }
     }
 }
