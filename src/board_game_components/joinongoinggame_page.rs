@@ -4,18 +4,13 @@ use dioxus::{
 };
 
 use crate::{
-    application::{self, Application},
-    board_game_components::{
-        common_comp::ButtonLink,
-        msg_from_client::{send_join_server_data, send_start_game},
-    },
+    board_game_components::{common_comp::ButtonLink, msg_from_client::send_join_server_data},
     common::Route,
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
         game_state::OnGoingGame,
     },
 };
-use dioxus::logger::tracing;
 
 #[component]
 pub fn JoinOngoingGame() -> Element {
