@@ -96,11 +96,14 @@ pub async fn register(
                 Err(e) => Err(ServerFnError::new(format!("{}", e))),
             }
         } else {
-            match sqlx::query("INSERT INTO users (anonymous, username) VALUES (?1, ?2)")
-                .bind(false)
-                .bind(&username)
-                .execute(pool)
-                .await
+            match sqlx::query(
+                "INSERT INTO users (anonymous, username, is_connected) VALUES (?1, ?2, ?3)",
+            )
+            .bind(false)
+            .bind(&username)
+            .bind(false)
+            .execute(pool)
+            .await
             {
                 Ok(_) => Ok(()),
                 Err(e) => Err(ServerFnError::new(format!("{}", e))),

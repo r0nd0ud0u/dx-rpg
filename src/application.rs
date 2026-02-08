@@ -63,11 +63,6 @@ pub async fn save_on_going_games(app: &Application) -> Result<(), ServerFnError>
     Ok(())
 }
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct OngoingGames {
-    pub all_games: Vec<PathBuf>,
-}
-
 #[server]
 pub async fn save(path: String, value: String) -> Result<(), ServerFnError> {
     match fs::write(path, value) {
@@ -117,14 +112,5 @@ pub async fn get_gamemanager_by_game_dir(
             "Failed to read game state {:?}",
             game_dir_path
         )))
-    }
-}
-
-#[server]
-pub async fn read_ongoinggames_from_json(path: String) -> Result<OngoingGames, ServerFnError> {
-    if let Ok(value) = utils::read_from_json::<_, OngoingGames>(&path) {
-        Ok(value)
-    } else {
-        Err(ServerFnError::new(format!("Unknown file: {:?}", path)))
     }
 }
