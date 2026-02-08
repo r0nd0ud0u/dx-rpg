@@ -33,7 +33,7 @@ pub fn JoinOngoingGame() -> Element {
                 GamePanel {
                     server_name: game.server_name.clone(),
                     player_name: local_login_name_session().clone(),
-
+                
                 }
             }
         }

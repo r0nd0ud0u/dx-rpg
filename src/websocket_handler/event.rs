@@ -270,6 +270,8 @@ pub async fn start_new_game_by_player(server_name: &str) {
     let mut gm = GAMES_MANAGER.lock().unwrap();
     if let Some(server_data) = gm.servers_data.get_mut(server_name) {
         server_data.app.game_manager.start_game();
+        // update app state
+        server_data.app.is_game_running = true;
     }
     drop(gm);
     update_clients_app(
