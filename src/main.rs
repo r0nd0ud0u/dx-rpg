@@ -62,7 +62,7 @@ fn App() -> Element {
     let mut player_client_id = use_signal(|| 0);
     let mut app = use_signal(Application::default);
     let mut server_data = use_signal(ServerData::default);
-    let mut all_games = use_signal(Vec::new);
+    let mut ongoing_games = use_signal(Vec::new);
 
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
@@ -118,11 +118,11 @@ fn App() -> Element {
                         app.set(*app_update);
                         *SERVER_NAME.write() = app.read().server_name.clone();
                     }
-                    ServerEvent::UpdateServerData(server_data_update) => {
+                    ServerEvent::UpdateServerData(server_data_update, route_to_update) => {
                         server_data.set(*server_data_update);
                     }
                     ServerEvent::UpdateOngoingGames(ongoing_games_update) => {
-                        all_games.set(ongoing_games_update);
+                        ongoing_games.set(ongoing_games_update);
                     }
                     ServerEvent::ReconnectAllSessions(username, sql_id) => {
                         let login_name_session_local_sync = login_name_session_local_sync();
@@ -160,7 +160,7 @@ fn App() -> Element {
     use_context_provider(|| login_id_session_local_sync);
     use_context_provider(|| app);
     use_context_provider(|| server_data);
-    use_context_provider(|| all_games);
+    use_context_provider(|| ongoing_games);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

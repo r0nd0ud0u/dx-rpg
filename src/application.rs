@@ -114,13 +114,3 @@ pub async fn get_gamemanager_by_game_dir(
         )))
     }
 }
-
-/* #[server]
-pub async fn read_ongoinggames_from_json(path: String) -> Result<OngoingGames, ServerFnError> {
-    if let Ok(value) = utils::read_from_json::<_, OngoingGames>(&path) {
-        Ok(value)
-    } else {
-        Err(ServerFnError::new(format!("Unknown file: {:?}", path)))
-    }
-}
- */

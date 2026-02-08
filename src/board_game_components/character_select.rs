@@ -5,7 +5,6 @@ use dioxus::{
     logger::tracing,
     prelude::*,
 };
-use dioxus_html::g::local;
 
 use crate::{
     components::{
@@ -26,16 +25,17 @@ pub fn CharacterSelect() -> Element {
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
-    // snapshot except local_login_name_session because it's used in the ClassSelect component
-    // I retrieve a filtered hashmap
-    let local_name = local_login_name_session();
 
-    let filtered: HashMap<String, PlayerInfo> = server_data()
+    // snapshot except local_login_name_session because it's used in the ClassSelect component
+    let local_name = local_login_name_session();
+    // filter hashmap
+    let players_except_current_client: HashMap<String, PlayerInfo> = server_data()
         .players_info
         .iter()
         .filter(|(k, _)| k.as_str() != local_name.as_str())
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect();
+
     rsx! {
         div { style: "display: flex; flex-direction: column; height: 40px; gap: 10px;",
             div { "Players:" }
@@ -43,7 +43,7 @@ pub fn CharacterSelect() -> Element {
                 Label { html_for: "sheet-demo-name", "{local_login_name_session().clone()}" }
                 ClassSelect { player_name: local_login_name_session().clone() }
             }
-            for player in filtered {
+            for player in players_except_current_client {
                 div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
                     Label { html_for: "sheet-demo-name", "{player.0}" }
                     Label { html_for: "sheet-demo-name",
@@ -63,12 +63,13 @@ pub fn ClassSelect(player_name: String) -> Element {
     let server_data = use_context::<Signal<ServerData>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
 
+    // get character name for the player
     let character_name = server_data()
         .players_info
         .get(&player_name)
         .and_then(|player_info| player_info.character_names.get(0).cloned())
         .unwrap_or_else(|| "Select your character".to_string());
-    tracing::info!(
+    tracing::trace!(
         "Character name for player {}: {}",
         player_name,
         character_name
@@ -87,6 +88,7 @@ pub fn ClassSelect(player_name: String) -> Element {
         rsx! {
             SelectOption::<String> { index: i, value: c.to_string(), text_value: "{c}",
                 {
+                    // TODO: use actual icons for each character
                     format!(
                         "{} {c}",
                         match c {
@@ -102,6 +104,7 @@ pub fn ClassSelect(player_name: String) -> Element {
         }
     });
 
+    // callback for when the selected character changes
     let on_value_change_selected_character = move |e: Option<String>| {
         let l_player_name = player_name.clone();
         async move {
@@ -122,6 +125,8 @@ pub fn ClassSelect(player_name: String) -> Element {
             }
         }
     };
+
+    // render the select component
     rsx! {
 
         Select::<String> {

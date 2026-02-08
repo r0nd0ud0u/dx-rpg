@@ -9,7 +9,7 @@ use crate::{
         common_comp::ButtonLink,
         msg_from_client::{send_join_server_data, send_start_game},
     },
-    common::{APP, Route},
+    common::Route,
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
         game_state::OnGoingGame,

@@ -34,7 +34,7 @@ pub enum ButtonStatus {
     ReplayGame,
 }
 
-#[derive(Debug, Clone, Routable, PartialEq)]
+#[derive(Debug, Clone, Routable, PartialEq, serde::Serialize, serde::Deserialize,)]
 #[rustfmt::skip]
 pub enum Route {
     #[layout(Navbar)]
