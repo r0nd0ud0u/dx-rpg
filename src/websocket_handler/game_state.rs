@@ -10,12 +10,15 @@ pub struct GameStateManager {
     pub ongoing_games: Vec<OnGoingGame>,
     /// key is server_name, value is the server data (app state and players connected to the server)
     pub servers_data: HashMap<String, ServerData>,
+    /// List of paths to saved games, used to display on the load game page
+    pub saved_games_list: Vec<PathBuf>,
 }
 
 #[derive(Default, Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct OnGoingGame {
     pub path: PathBuf,
     pub server_name: String,
+    pub owner_player_name: String,
 }
 
 #[derive(Default, Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
@@ -36,6 +39,7 @@ impl GameStateManager {
             players: HashMap::new(),
             ongoing_games: Vec::new(),
             servers_data: HashMap::new(),
+            saved_games_list: Vec::new(),
         }
     }
 

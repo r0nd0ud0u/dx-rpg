@@ -1,4 +1,3 @@
-use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use dioxus::{prelude::ServerFnError, prelude::server};
 use lib_rpg::game_manager::GameManager;
@@ -39,26 +38,6 @@ pub fn init_application(name: &str, app: &mut Application) {
     // name of the server
     // TODO set server name based on user name + random string
     app.server_name = name.to_string();
-}
-
-#[cfg(feature = "server")]
-pub async fn save_on_going_games(app: &Application) -> Result<(), ServerFnError> {
-    let all_games_dir = format!(
-        "{}/ongoing-games.json",
-        app.game_manager.game_paths.games_dir.to_string_lossy()
-    );
-    // add the current game directory to ongoing games
-    match save(
-        all_games_dir,
-        serde_json::to_string_pretty(&app.game_manager.game_paths.current_game_dir.clone())
-            .unwrap(),
-    )
-    .await
-    {
-        Ok(_) => tracing::info!("Game state saved successfully"),
-        Err(e) => tracing::error!("Failed to save game state: {}", e),
-    }
-    Ok(())
 }
 
 #[server]

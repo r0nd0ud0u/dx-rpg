@@ -1,15 +1,17 @@
 #[cfg(feature = "server")]
 use crate::application::init_application;
-#[cfg(feature = "server")]
-use crate::application::save_on_going_games;
 use crate::websocket_handler::game_state::OnGoingGame;
 use crate::websocket_handler::game_state::ServerData;
+#[cfg(feature = "server")]
 use async_std::task::sleep;
 use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
+#[cfg(feature = "server")]
+use lib_rpg::common::paths_const::GAMES_DIR;
 use serde::{Deserialize, Serialize};
 
+use std::path::PathBuf;
 #[cfg(feature = "server")]
 use std::{
     collections::HashMap,
@@ -58,6 +60,9 @@ pub enum ClientEvent {
     LaunchAttack(String, String),                     // `String`: server_name, `String`: atk name
     AddPlayer(String),                                // `String`: username
     JoinServerData(String, String), // `String`: server_name, `String`: player_name
+    RequestSavedGameList,
+    RequestOnGoingGamesList,
+    LoadGame(PathBuf, String), // `PathBuf`: game path, `String`: player name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -68,6 +73,7 @@ pub enum ServerEvent {
     ReconnectAllSessions(String, i64), // username, sql-id
     UpdateServerData(Box<ServerData>), // server data
     UpdateOngoingGames(Vec<OnGoingGame>),
+    AnswerSavedGameList(Vec<PathBuf>), // list of saved games paths
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -99,7 +105,6 @@ pub async fn on_rcv_client_event(
 
             let _ = socket.send(ServerEvent::AssignPlayerId(client_id)).await;
             let _ = socket.send(ServerEvent::NewClientOnExistingPlayer(format!("Welcome! (id={})", client_id), client_id)).await;
-
 
             // Main loop: handle incoming socket messages and outgoing queued messages
             loop {
@@ -165,6 +170,18 @@ pub async fn on_rcv_client_event(
                             Ok(ClientEvent::JoinServerData(server_name, player_name)) => {
                                 tracing::info!("Player {} with id {} is joining server data for server {}", player_name, client_id, server_name);
                                 update_lobby_page_after_joining_game(&server_name, &player_name, client_id);
+                            }
+                            Ok(ClientEvent::RequestSavedGameList) => {
+                                tracing::info!("Client {} requested saved game list", client_id);
+                                update_saved_game_list_display().await;
+                            }
+                            Ok(ClientEvent::LoadGame(game_path, player_name)) => {
+                                tracing::info!("Player {} with id {} is loading game: {}", player_name, client_id, game_path.to_string_lossy());
+                                load_game_by_player(game_path, player_name, client_id).await;
+                            }
+                            Ok(ClientEvent::RequestOnGoingGamesList) => {
+                                tracing::info!("Client {} requested ongoing games list", client_id);
+                                update_ongoing_games_list_display(client_id).await;
                             }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
@@ -288,17 +305,17 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
             tracing::info!("New application created for player: {}", server_name);
             // init a new game
             init_application(server_name, &mut app);
-            // update ongoing games status
-            save_on_going_games(&app)
-                .await
-                .unwrap_or_else(|e| tracing::error!("Failed to update ongoing games: {}", e));
             // save the game manager state
             save_game_manager_state(&app).await;
             // update ongoing servers data list
             let mut gm: std::sync::MutexGuard<'_, GameStateManager> = GAMES_MANAGER.lock().unwrap();
+            // remove ongoing game if already exists for the server name
+            gm.ongoing_games.retain(|ongoing_game| ongoing_game.server_name != server_name);
+            // add ongoing game
             gm.ongoing_games.push(OnGoingGame {
                 path: app.game_manager.game_paths.current_game_dir.clone(),
                 server_name: server_name.to_string(),
+                owner_player_name: player_name.to_string(),
             });
             drop(gm);
             // add server data
@@ -394,6 +411,7 @@ fn update_clients_server_data(server_name: &str) {
 
 #[cfg(feature = "server")]
 fn update_clients_ongoing_games() {
+    tracing::info!("Updating clients with ongoing games");
     let clients = CLIENTS.lock().unwrap();
     for (&_other_id, sender) in clients.iter() {
         let _ = sender.send(ServerEvent::UpdateOngoingGames(
@@ -568,4 +586,76 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
         server_name,
         &get_app_by_server_name(server_name).unwrap_or_default(),
     );
+}
+
+#[cfg(feature = "server")]
+async fn update_saved_game_list_display() {
+    let games_list = match application::get_game_list(GAMES_DIR.to_path_buf()).await {
+        Ok(games) => {
+            for game in &games {
+                tracing::info!("Game: {}", game.to_string_lossy());
+            }
+            games
+        }
+        Err(e) => {
+            tracing::error!("Error fetching game list: {}", e);
+            vec![]
+        }
+    };
+
+    let clients = CLIENTS.lock().unwrap();
+    for (&_other_id, sender) in clients.iter() {
+        let _ = sender.send(ServerEvent::AnswerSavedGameList(games_list.clone()));
+    }
+}
+
+#[cfg(feature = "server")]
+async fn load_game_by_player(game_path: PathBuf, player_name: String, client_id: u32) {
+    match application::get_gamemanager_by_game_dir(game_path.clone()).await {
+        Ok(gm) => {
+            let app = Application {
+                game_manager: gm,
+                game_path: game_path.clone(),
+                server_name: player_name.clone(), // TODO set server name based on user name + random string
+                is_game_running: false,
+            };
+            // save the game manager state
+            save_game_manager_state(&app).await;
+            // update ongoing servers data list
+            let mut gm: std::sync::MutexGuard<'_, GameStateManager> = GAMES_MANAGER.lock().unwrap();
+            // remove ongoing game if already exists for the server name
+            gm.ongoing_games.retain(|ongoing_game| ongoing_game.server_name != server_name);
+            // add ongoing game
+            gm.ongoing_games.push(OnGoingGame {
+                path: app.game_manager.game_paths.current_game_dir.clone(),
+                server_name: app.server_name.clone(),
+                owner_player_name: player_name.clone(),
+            });
+            drop(gm);
+            // add server data with player
+            add_server_data_with_player(&app, &app.server_name, client_id, &player_name);
+            // update for the clients connected to that server
+            update_clients_app(&app.server_name, &app);
+            update_clients_server_data(&app.server_name);
+            update_clients_ongoing_games();
+        }
+        Err(e) => tracing::error!(
+            "Error loading game manager for player {}: {}",
+            player_name,
+            e
+        ),
+    }
+}
+
+#[cfg(feature = "server")]
+async fn update_ongoing_games_list_display(client_id: u32) {
+    let gm = GAMES_MANAGER.lock().unwrap();
+    let ongoing_games = gm.ongoing_games.clone();
+    drop(gm);
+    let clients = CLIENTS.lock().unwrap();
+    for (&other_id, sender) in clients.iter() {
+        if other_id as u32 == client_id {
+            let _ = sender.send(ServerEvent::UpdateOngoingGames(ongoing_games.clone()));
+        }
+    }
 }
