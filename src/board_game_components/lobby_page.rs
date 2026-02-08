@@ -10,21 +10,23 @@ use crate::{
         msg_from_client::send_start_game,
     },
     common::Route,
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    websocket_handler::{
+        event::{ClientEvent, ServerEvent},
+        game_state::ServerData,
+    },
 };
 
 #[component]
 pub fn LobbyPage() -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
-    let app = use_context::<Signal<Application>>();
+    let server_data = use_context::<Signal<ServerData>>();
 
     rsx! {
         div { class: "home-container",
-            // style: "display: flex; flex-direction: column;",
             h1 { "LobbyPage" }
 
-            if app.read().is_game_running {
+            if server_data.read().app.is_game_running {
                 ButtonLink {
                     target: Route::StartGamePage {}.into(),
                     name: "Start Game".to_string(),

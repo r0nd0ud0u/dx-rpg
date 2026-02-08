@@ -98,12 +98,12 @@ pub fn LoginPage() -> Element {
                     Button {
                         variant: ButtonVariant::Secondary,
                         onclick: move |_| async move {
-                            match register(username(), "".to_owned(), false).await {
+                            match register(register_name(), "".to_owned(), false).await {
                                 Ok(()) => {
-                                    match login(username(), "".to_owned(), false).await {
+                                    match login(register_name(), "".to_owned(), false).await {
                                         Ok(()) => {
                                             // local storage for login
-                                            *local_login_name_session.write() = username();
+                                            *local_login_name_session.write() = register_name();
                                             *local_login_id_session.write() = (get_user_id().await) // TODO default value -1
                                                 // change page
                                                 .unwrap_or(-1);
