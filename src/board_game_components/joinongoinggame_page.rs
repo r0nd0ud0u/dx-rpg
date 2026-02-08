@@ -1,84 +1,61 @@
-use async_std::task::sleep;
-use dioxus::prelude::*;
+use dioxus::{
+    fullstack::{CborEncoding, UseWebsocket},
+    prelude::*,
+};
 
 use crate::{
     application::{self, Application},
-    common::{APP, Route, tempo_const::TIMER_FUTURE_1S},
+    board_game_components::{
+        common_comp::ButtonLink,
+        msg_from_client::{send_join_server_data, send_start_game},
+    },
+    common::{APP, Route},
+    websocket_handler::{
+        event::{ClientEvent, ServerEvent},
+        game_state::OnGoingGame,
+    },
 };
 use dioxus::logger::tracing;
 
 #[component]
 pub fn JoinOngoingGame() -> Element {
-    use_effect(|| {
-        spawn(async move {
-            match Application::try_new().await {
-                Ok(app) => {
-                    *APP.write() = app;
-                    APP.write().game_manager.init_new_game();
-                }
-                Err(_) => println!("no app"),
-            }
-        });
-    });
+    // contexts
+    let ongoing_games_sig = use_context::<Signal<Vec<OnGoingGame>>>();
+    let local_login_name_session = use_context::<Signal<String>>();
 
-    let mut ongoing_games_sig = use_signal(application::OngoingGames::default);
-    use_future(move || {
-        async move {
-            loop {
-                // always sleep at start of loop
-                sleep(std::time::Duration::from_millis(TIMER_FUTURE_1S)).await;
-                // update ongoing games status
-                let all_games_dir = format!(
-                    "{}/ongoing-games.json",
-                    APP.write()
-                        .game_manager
-                        .game_paths
-                        .games_dir
-                        .to_string_lossy()
-                );
-                let ongoing_games =
-                    match application::read_ongoinggames_from_json(all_games_dir.clone()).await {
-                        Ok(og) => {
-                            tracing::debug!("ongoing games: {:?}", og.all_games);
-                            if !og.all_games.is_empty() {
-                                match application::get_gamemanager_by_game_dir(
-                                    og.all_games[0].clone(),
-                                )
-                                .await
-                                {
-                                    Ok(gm) => APP.write().game_manager = gm,
-                                    Err(e) => {
-                                        tracing::debug!("Error fetching game manager: {}", e);
-                                    }
-                                }
-                                og
-                            } else {
-                                tracing::debug!("No ongoing games found");
-                                application::OngoingGames::default()
-                            }
-                        }
-                        Err(e) => {
-                            tracing::debug!("Error reading ongoing games: {}", e);
-                            application::OngoingGames::default()
-                        }
-                    };
-                ongoing_games_sig.set(ongoing_games.clone());
-            }
-        }
-    });
-    if !ongoing_games_sig().all_games.is_empty() {
-        rsx! {
-            div { class: "ongoing-games-container",
-                h4 { "Ongoing Games" }
-                div { class: "ongoing-game-item",
-                    Link { to: Route::StartGamePage {}, "Join Game" }
-                    "{ongoing_games_sig().all_games[0].to_string_lossy()}"
+    // snapshots
+    let snap_ongoing_games = ongoing_games_sig().clone();
+
+    rsx! {
+        div { class: "ongoing-games-container",
+            h4 { "Ongoing Games" }
+            for game in snap_ongoing_games.iter() {
+                GamePanel {
+                    server_name: game.server_name.clone(),
+                    player_name: local_login_name_session().clone(),
+                
                 }
             }
         }
-    } else {
-        rsx! {
-            div { "No loading ongoing games" }
+    }
+}
+
+#[component]
+pub fn GamePanel(server_name: String, player_name: String) -> Element {
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    rsx! {
+        div { class: "ongoing-game-item",
+            ButtonLink {
+                target: Route::LobbyPage {}.into(),
+                name: server_name.clone(),
+                onclick: move |_| {
+                    let l_server_name = server_name.clone();
+                    let l_player_name = player_name.clone();
+                    async move {
+                        send_join_server_data(socket, &l_server_name, &l_player_name).await;
+                    }
+                },
+            }
         }
     }
 }

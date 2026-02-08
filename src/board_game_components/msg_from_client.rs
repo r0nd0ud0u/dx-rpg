@@ -32,3 +32,16 @@ pub async fn send_start_game(socket: UseWebsocket<ClientEvent, ServerEvent, Cbor
         .send(ClientEvent::StartGame(SERVER_NAME().clone()))
         .await;
 }
+
+pub async fn send_join_server_data(
+    socket: UseWebsocket<ClientEvent, ServerEvent, CborEncoding>,
+    server_name: &str,
+    player_name: &str,
+) {
+    let _ = socket
+        .send(ClientEvent::JoinServerData(
+            server_name.to_string(),
+            player_name.to_string(),
+        ))
+        .await;
+}

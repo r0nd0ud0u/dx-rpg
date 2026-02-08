@@ -28,11 +28,6 @@ pub static ENERGY_GRAD: Lazy<LinearGradient> = Lazy::new(|| {
         .expect("Failed to build gradient")
 });
 
-pub mod tempo_const {
-    pub const AUTO_ATK_TEMPO_MS: u64 = 3000;
-    pub const TIMER_FUTURE_1S: u64 = 1000;
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum ButtonStatus {
     StartGame = 0,

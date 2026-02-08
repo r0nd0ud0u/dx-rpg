@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     logger::tracing,
     prelude::*,
 };
+use dioxus_html::g::local;
 
 use crate::{
     components::{
@@ -14,7 +17,7 @@ use crate::{
     },
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
-        game_state::ServerData,
+        game_state::{PlayerInfo, ServerData},
     },
 };
 
@@ -22,35 +25,55 @@ use crate::{
 pub fn CharacterSelect() -> Element {
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
-    // snapshot
-    let snap_players_list = server_data()
-        .players
-        .keys()
-        .cloned()
-        .collect::<Vec<String>>();
+    let local_login_name_session = use_context::<Signal<String>>();
+    // snapshot except local_login_name_session because it's used in the ClassSelect component
+    // I retrieve a filtered hashmap
+    let local_name = local_login_name_session();
+
+    let filtered: HashMap<String, PlayerInfo> = server_data()
+        .players_info
+        .iter()
+        .filter(|(k, _)| k.as_str() != local_name.as_str())
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
     rsx! {
         div { style: "display: flex; flex-direction: column; height: 40px; gap: 10px;",
             div { "Players:" }
-            for player in snap_players_list {
+            div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
+                Label { html_for: "sheet-demo-name", "{local_login_name_session().clone()}" }
+                ClassSelect { player_name: local_login_name_session().clone() }
+            }
+            for player in filtered {
                 div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
-                    Label { html_for: "sheet-demo-name", "{player}" }
-                    ClassSelect {}
+                    Label { html_for: "sheet-demo-name", "{player.0}" }
+                    Label { html_for: "sheet-demo-name",
+                        "{player.1.character_names.get(0).unwrap_or(&\"No character selected\".to_string())}"
+                    }
                 }
             }
-
+        
         }
 
     }
 }
 
 #[component]
-pub fn ClassSelect() -> Element {
+pub fn ClassSelect(player_name: String) -> Element {
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
-    let local_login_name_session = use_context::<Signal<String>>();
 
-    let mut selected_value = use_signal(String::new);
+    let character_name = server_data()
+        .players_info
+        .get(&player_name)
+        .and_then(|player_info| player_info.character_names.get(0).cloned())
+        .unwrap_or_else(|| "Select your character".to_string());
+    tracing::info!(
+        "Character name for player {}: {}",
+        player_name,
+        character_name
+    );
+
     let players_name = server_data()
         .app
         .game_manager
@@ -79,29 +102,31 @@ pub fn ClassSelect() -> Element {
         }
     });
 
-    let on_value_change_selected_character = move |e: Option<String>| async move {
-        match e {
-            Some(value) => {
-                tracing::info!("Selected character: {}", value);
-                let _ = socket
-                    .send(ClientEvent::AddCharacterOnServerData(
-                        server_data().app.server_name.clone(),
-                        local_login_name_session(),
-                        value.clone(),
-                    ))
-                    .await;
-                selected_value.set(value)
-            }
-            None => {
-                tracing::info!("No character selected");
-                selected_value.set("".to_string())
+    let on_value_change_selected_character = move |e: Option<String>| {
+        let l_player_name = player_name.clone();
+        async move {
+            match e {
+                Some(value) => {
+                    tracing::info!("Selected character: {}", value);
+                    let _ = socket
+                        .send(ClientEvent::AddCharacterOnServerData(
+                            server_data().app.server_name.clone(),
+                            l_player_name.clone(),
+                            value.clone(),
+                        ))
+                        .await;
+                }
+                None => {
+                    tracing::info!("No character selected");
+                }
             }
         }
     };
     rsx! {
 
         Select::<String> {
-            placeholder: "Select a character...",
+            placeholder: "Select your character",
+            default_value: character_name.clone(),
             on_value_change: on_value_change_selected_character,
             SelectTrigger { aria_label: "Select Trigger", width: "12rem", SelectValue {} }
             SelectList { aria_label: "Select Demo",
