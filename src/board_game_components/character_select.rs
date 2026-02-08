@@ -51,7 +51,7 @@ pub fn CharacterSelect() -> Element {
                     }
                 }
             }
-        
+
         }
 
     }
