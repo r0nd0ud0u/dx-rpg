@@ -7,10 +7,11 @@ use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::common::{SAVED_GAME_MANAGER, SAVED_GAME_MANAGER_REPLAY};
+
 #[derive(Default, Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Application {
     pub game_manager: GameManager,
-    pub game_path: PathBuf,
     pub server_name: String,
     pub is_game_running: bool,
 }
@@ -21,7 +22,6 @@ impl Application {
         match GameManager::try_new("offlines", false) {
             Ok(gm) => Ok(Application {
                 game_manager: gm,
-                game_path: PathBuf::from(""),
                 server_name: "Default".to_owned(),
                 is_game_running: false,
             }),
@@ -80,8 +80,13 @@ pub async fn delete_game(game_path: PathBuf) -> Result<(), ServerFnError> {
 #[server]
 pub async fn get_gamemanager_by_game_dir(
     game_dir_path: PathBuf,
+    is_replay: bool,
 ) -> Result<GameManager, ServerFnError> {
-    let game_manager_file = game_dir_path.join(Path::new("game_manager.json"));
+    let game_manager_file = if is_replay {
+        game_dir_path.join(Path::new(SAVED_GAME_MANAGER_REPLAY))
+    } else {
+        game_dir_path.join(Path::new(SAVED_GAME_MANAGER))
+    };
     if let Ok(value) = utils::read_from_json::<_, GameManager>(&game_manager_file) {
         Ok(value)
     } else {

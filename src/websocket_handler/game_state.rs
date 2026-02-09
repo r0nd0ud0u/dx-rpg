@@ -18,13 +18,13 @@ pub struct GameStateManager {
 pub struct OnGoingGame {
     pub path: PathBuf,
     pub server_name: String,
-    pub owner_player_name: String,
 }
 
 #[derive(Default, Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct ServerData {
     pub app: Application,
     pub players_info: HashMap<String, PlayerInfo>,
+    pub owner_player_name: String,
 }
 
 #[derive(Default, Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
@@ -50,12 +50,13 @@ impl GameStateManager {
             .push(player_id);
     }
 
-    pub fn add_server_data(&mut self, server_name: &str, app: &Application) {
+    pub fn add_server_data(&mut self, server_name: &str, app: &Application, player_name: &str) {
         self.servers_data.insert(
             server_name.to_string(),
             ServerData {
                 app: app.clone(),
                 players_info: HashMap::new(),
+                owner_player_name: player_name.to_string(),
             },
         );
     }
