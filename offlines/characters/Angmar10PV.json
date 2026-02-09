@@ -105,7 +105,7 @@
         "is_heal_atk_blocked": false,
         "is_random_target": false
     },
-    "Level": 2147483647,
+    "Level": 1,
     "Name": "Angmar10PV",
     "Photo": "Angmar",
     "Powers": {

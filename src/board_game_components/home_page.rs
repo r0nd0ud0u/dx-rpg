@@ -1,8 +1,12 @@
-use dioxus::prelude::*;
+use dioxus::{
+    fullstack::{CborEncoding, UseWebsocket},
+    prelude::*,
+};
 
 use crate::{
     board_game_components::{common_comp::ButtonLink, login_page::LoginPage},
     common::{Route, disconnected_user},
+    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
 /// Home page
@@ -10,6 +14,7 @@ use crate::{
 pub fn Home() -> Element {
     // contexts
     let local_login_name_session = use_context::<Signal<String>>();
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     // Snapshot for this render
     let user_name = local_login_name_session();
 
@@ -28,6 +33,11 @@ pub fn Home() -> Element {
                 ButtonLink {
                     target: Route::JoinOngoingGame {}.into(),
                     name: "Join game".to_string(),
+                    onclick: move |_| {
+                        async move {
+                            let _ = socket.send(ClientEvent::RequestOnGoingGamesList).await;
+                        }
+                    },
                 }
             }
         }
