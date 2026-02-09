@@ -18,7 +18,7 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 fn main() {
     // Init logger
-    dioxus::logger::init(Level::TRACE).expect("failed to init logger");
+    dioxus::logger::init(Level::INFO).expect("failed to init logger");
     tracing::info!("Rendering app!");
     // On the client, we simply launch the app as normal, taking over the main thread
     #[cfg(not(feature = "server"))]

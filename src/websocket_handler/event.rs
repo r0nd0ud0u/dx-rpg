@@ -508,17 +508,11 @@ pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) 
         );
         return;
     }
-    // who is the current player
+    let _ = app.game_manager.launch_attack(selected_atk_name);
     tracing::info!(
-        "Current player before launching attack for server {}: {}",
+        "Attack launched for server: {},  atk: {:?}",
         server_name,
-        app.game_manager.pm.current_player.name
-    );
-    let result = app.game_manager.launch_attack(selected_atk_name);
-    tracing::info!(
-        "Attack launched for server: {}, result atk: {:?}",
-        server_name,
-        result
+        selected_atk_name
     );
     // update clients
     update_clients_app(server_name, &app);
