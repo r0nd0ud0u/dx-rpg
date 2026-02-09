@@ -28,12 +28,6 @@ pub static ENERGY_GRAD: Lazy<LinearGradient> = Lazy::new(|| {
         .expect("Failed to build gradient")
 });
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum ButtonStatus {
-    StartGame = 0,
-    ReplayGame,
-}
-
 #[derive(Debug, Clone, Routable, PartialEq, serde::Serialize, serde::Deserialize,)]
 #[rustfmt::skip]
 pub enum Route {
@@ -56,3 +50,5 @@ pub enum Route {
 
 pub const PATH_IMG: Asset = asset!("/assets/img");
 pub const DX_COMP_CSS: Asset = asset!("/assets/dx-components-theme.css");
+pub const SAVED_GAME_MANAGER: &str = "game_manager.json";
+pub const SAVED_GAME_MANAGER_REPLAY: &str = "game_manager_replay.json";

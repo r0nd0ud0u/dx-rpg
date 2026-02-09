@@ -45,3 +45,9 @@ pub async fn send_join_server_data(
         ))
         .await;
 }
+
+pub async fn request_update_saved_game_list_display(
+    socket: UseWebsocket<ClientEvent, ServerEvent, CborEncoding>,
+) {
+    let _ = socket.send(ClientEvent::RequestSavedGameList).await;
+}

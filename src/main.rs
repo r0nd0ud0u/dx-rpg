@@ -63,6 +63,7 @@ fn App() -> Element {
     let mut app = use_signal(Application::default);
     let mut server_data = use_signal(ServerData::default);
     let mut ongoing_games = use_signal(Vec::new);
+    let mut saved_game_list = use_signal(Vec::new);
 
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
@@ -149,6 +150,10 @@ fn App() -> Element {
                             );
                         }
                     }
+                    ServerEvent::AnswerSavedGameList(games_list) => {
+                        tracing::info!("Received saved game list with {} games", games_list.len());
+                        saved_game_list.set(games_list);
+                    }
                 }
             }
         }
@@ -161,6 +166,7 @@ fn App() -> Element {
     use_context_provider(|| app);
     use_context_provider(|| server_data);
     use_context_provider(|| ongoing_games);
+    use_context_provider(|| saved_game_list);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

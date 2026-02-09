@@ -1,5 +1,8 @@
 use colorgrad::Gradient;
-use dioxus::prelude::*;
+use dioxus::{
+    fullstack::{CborEncoding, UseWebsocket},
+    prelude::*,
+};
 use dioxus_primitives::ContentSide;
 use indexmap::IndexMap;
 use lib_rpg::{
@@ -11,8 +14,9 @@ use lib_rpg::{
 
 use crate::{
     application::Application,
-    common::ENERGY_GRAD,
+    common::{ENERGY_GRAD, SERVER_NAME},
     components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
+    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 use crate::{
     common::PATH_IMG,
@@ -107,7 +111,8 @@ pub fn CharacterTargetButton(
     selected_atk_name: Signal<String>,
 ) -> Element {
     // contexts
-    let mut app = use_context::<Signal<Application>>();
+    let app = use_context::<Signal<Application>>();
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
 
     let mut kind_str = "hero";
     if c.kind == CharacterType::Boss {
@@ -129,18 +134,20 @@ pub fn CharacterTargetButton(
                     let async_target_name = c.name.clone();
                     let async_launcher_name = launcher_name.clone();
                     async move {
-                        app.write()
-                            .game_manager
-                            .pm
-                            .set_one_target(
-                                &async_launcher_name,
-                                &selected_atk_name(),
-                                &async_target_name,
-                            );
-                        tracing::debug!(
+                        tracing::info!(
                             "l:{} t:{}, a:{}", async_launcher_name.clone(), async_target_name
                             .clone(), selected_atk_name.read().clone()
                         );
+                        let _ = socket
+                            .send(
+                                ClientEvent::RequestSetOneTarget(
+                                    SERVER_NAME(),
+                                    async_launcher_name.clone(),
+                                    selected_atk_name.read().clone(),
+                                    async_target_name.clone(),
+                                ),
+                            )
+                            .await;
                     }
                 },
                 ""
@@ -176,6 +183,7 @@ pub fn NewAtkButton(
 ) -> Element {
     // contexts
     let mut app = use_context::<Signal<Application>>();
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     // local signals
     let can_be_launched = launcher.can_be_launched(&attack_type);
     let attack_name = attack_type.name.clone();
@@ -188,12 +196,22 @@ pub fn NewAtkButton(
                 let async_launcher_name = launcher_name.clone();
                 async move {
                     selected_atk_name.set(async_atk_name.clone());
-                    app.write()
-                        .game_manager
-                        .pm
-                        .set_targeted_characters(&async_launcher_name, &async_atk_name);
-                    tracing::debug!("set_targeted_characters");
+
                     *display_atklist_sig.write() = false;
+                    // update target
+                    let _ = socket
+                        .send(
+                            ClientEvent::RequestTargetedCharacter(
+                                SERVER_NAME(),
+                                async_launcher_name.clone(),
+                                async_atk_name.clone(),
+                            ),
+                        )
+                        .await;
+                    tracing::info!(
+                        "set_targeted_characters {} for atk {}", async_launcher_name.clone(),
+                        async_atk_name.clone()
+                    );
                 }
             },
             disabled: !can_be_launched,

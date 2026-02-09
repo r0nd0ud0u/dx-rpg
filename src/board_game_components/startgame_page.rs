@@ -1,8 +1,11 @@
+use crate::common::{Route, SERVER_NAME};
 use crate::components::label::Label;
+use crate::websocket_handler::event::{ClientEvent, ServerEvent};
+use crate::websocket_handler::game_state::ServerData;
 use crate::{
     application::{self, Application},
     board_game_components::gameboard::GameBoard,
-    common::{APP, ButtonStatus},
+    common::APP,
     components::{
         button::{Button, ButtonVariant},
         input::Input,
@@ -10,35 +13,44 @@ use crate::{
         sheet::*,
     },
 };
+use dioxus::fullstack::{CborEncoding, UseWebsocket};
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
+use lib_rpg::game_state::GameStatus;
 
 /// New game
 #[component]
 pub fn StartGamePage() -> Element {
     // context
     let app = use_context::<Signal<Application>>();
-    // signals
-    let mut state = use_signal(|| ButtonStatus::StartGame);
-    let mut ready_to_start = use_signal(|| true);
-    use_effect(move || {
-        if state() == ButtonStatus::StartGame {
-            ready_to_start.set(true);
-        }
-    });
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let server_data = use_context::<Signal<ServerData>>();
+    let local_login_name_session = use_context::<Signal<String>>();
+    // navigator
+    let navigator = use_navigator();
 
     rsx! {
-        if state() == ButtonStatus::ReplayGame {
+        if app().game_manager.game_state.status == GameStatus::EndOfGame {
+            h1 { "Game Over" }
             Button {
                 variant: ButtonVariant::Primary,
                 onclick: move |_| async move {
-                    ready_to_start.set(false);
-                    state.set(ButtonStatus::StartGame);
+                    // for now, we just disconnect the user from the server, but we can implement a better way to handle this in the future
+                    let _ = socket.send(ClientEvent::DisconnectFromServerData(SERVER_NAME())).await;
+                    navigator.push(Route::Home {});
                 },
-                "Replay game"
+                "Quit"
             }
-        }
-        if state() == ButtonStatus::StartGame && ready_to_start() {
+            if server_data().owner_player_name == local_login_name_session() {
+                Button {
+                    variant: ButtonVariant::Primary,
+                    onclick: move |_| async move {
+                        let _ = socket.send(ClientEvent::ReplayGame(SERVER_NAME())).await;
+                    },
+                    "Replay game"
+                }
+            }
+        } else {
             Separator {
                 style: "margin: 10px 0; width: 50%;",
                 horizontal: true,
@@ -54,10 +66,8 @@ pub fn StartGamePage() -> Element {
                     horizontal: true,
                     decorative: true,
                 }
-                GameBoard { game_status: state }
+                GameBoard {}
             }
-        } else if state() == ButtonStatus::StartGame && !ready_to_start() {
-            h4 { "Loading..." }
         }
     }
 }

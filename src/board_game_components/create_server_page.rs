@@ -4,7 +4,10 @@ use dioxus::{
 };
 
 use crate::{
-    board_game_components::{common_comp::ButtonLink, msg_from_client::send_initialize_game},
+    board_game_components::{
+        common_comp::ButtonLink,
+        msg_from_client::{request_update_saved_game_list_display, send_initialize_game},
+    },
     common::Route,
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
@@ -31,6 +34,11 @@ pub fn CreateServer() -> Element {
             ButtonLink {
                 target: Route::LoadGame {}.into(),
                 name: "Load Game".to_string(),
+                onclick: move |_| {
+                    async move {
+                        request_update_saved_game_list_display(socket).await;
+                    }
+                },
             }
         }
     }

@@ -1,10 +1,12 @@
-use dioxus::logger::tracing;
+use dioxus::fullstack::CborEncoding;
 use dioxus::prelude::*;
+use dioxus::{fullstack::UseWebsocket, logger::tracing};
 use dioxus_primitives::scroll_area::ScrollDirection;
 
+use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::{
-    application::{self, Application},
-    common::{APP, Route},
+    application,
+    common::Route,
     components::{
         button::{Button, ButtonVariant},
         scroll_area::ScrollArea,
@@ -13,33 +15,14 @@ use crate::{
 
 #[component]
 pub fn LoadGame() -> Element {
+    // contexts
+    let games_list = use_context::<Signal<Vec<std::path::PathBuf>>>();
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let local_login_name_session = use_context::<Signal<String>>();
+
+    // states
     let mut active_button: Signal<i64> = use_signal(|| -1);
     let navigator = use_navigator();
-
-    // get_game_list
-    let games_list = use_resource(move || async move {
-        // read signal active_button to rerun the resource when active_button is set again.
-        println!("active button: {active_button}");
-        match Application::try_new().await {
-            Ok(app) => *APP.write() = app,
-            Err(_) => println!("no app"),
-        }
-        let path_dir = APP.write().game_manager.game_paths.clone();
-        match application::get_game_list(path_dir.games_dir).await {
-            Ok(games) => {
-                for game in &games {
-                    println!("Game: {}", game.to_string_lossy());
-                }
-                games
-            }
-            Err(e) => {
-                println!("Error fetching game list: {}", e);
-                vec![]
-            }
-        }
-    });
-    let button1_game_list = games_list().clone().unwrap_or_default();
-    let button2_game_list = games_list().clone().unwrap_or_default();
 
     rsx! {
         div { class: "home-container",
@@ -53,7 +36,7 @@ pub fn LoadGame() -> Element {
                 direction: ScrollDirection::Vertical,
                 tabindex: "0",
                 div { class: "scroll-content",
-                    for (index , i) in button1_game_list.clone().iter().enumerate() {
+                    for (index , i) in games_list.read().iter().enumerate() {
                         Button {
                             variant: if active_button() as usize == index { ButtonVariant::Destructive } else { ButtonVariant::Primary },
                             disabled: active_button() == index as i64,
@@ -68,24 +51,19 @@ pub fn LoadGame() -> Element {
                 variant: ButtonVariant::Secondary,
                 disabled: active_button() == -1,
                 onclick: move |_| {
-                    let cur_game = button1_game_list
-                        .clone()
+                    let cur_game = games_list
+                        .read()
                         .get(active_button() as usize)
                         .unwrap()
                         .to_owned();
                     async move {
-                        tracing::info!("loading game: {}", cur_game.clone().to_string_lossy());
-                        let gm = match application::get_gamemanager_by_game_dir(cur_game.clone())
-                            .await
-                        {
-                            Ok(gm) => gm,
-                            Err(e) => {
-                                tracing::info!("Error fetching game manager: {}", e);
-                                return;
-                            }
-                        };
-                        APP.write().game_manager = gm;
-                        navigator.push(Route::StartGamePage {});
+                        let _ = socket
+                            .clone()
+                            .send(
+                                ClientEvent::LoadGame(cur_game.clone(), local_login_name_session()),
+                            )
+                            .await;
+                        navigator.push(Route::LobbyPage {});
                     }
                 },
                 "Start Game"
@@ -95,8 +73,8 @@ pub fn LoadGame() -> Element {
                 variant: ButtonVariant::Secondary,
                 disabled: active_button() == -1,
                 onclick: move |_| {
-                    let cur_game = button2_game_list
-                        .clone()
+                    let cur_game = games_list
+                        .read()
                         .get(active_button() as usize)
                         .unwrap()
                         .to_owned();
@@ -104,7 +82,7 @@ pub fn LoadGame() -> Element {
                         match application::delete_game(cur_game.clone()).await {
                             Ok(_) => {}
                             Err(e) => {
-                                tracing::debug!("Error deleting game: {}", e);
+                                tracing::error!("Error deleting game: {}", e);
                                 return;
                             }
                         };

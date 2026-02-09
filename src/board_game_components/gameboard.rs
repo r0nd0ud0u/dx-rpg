@@ -12,27 +12,20 @@ use lib_rpg::{
 use crate::{
     application::Application,
     board_game_components::character_page::{AttackList, CharacterPanel},
-    common::{ButtonStatus, SERVER_NAME},
+    common::SERVER_NAME,
     components::button::{Button, ButtonVariant},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 use dioxus::prelude::*;
 
 #[component]
-pub fn GameBoard(game_status: Signal<ButtonStatus>) -> Element {
+pub fn GameBoard() -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let mut app = use_context::<Signal<Application>>();
     // local signals
     let atk_menu_display = use_signal(|| false);
     let mut selected_atk_name = use_signal(|| "".to_string());
-
-    // Check if the game is at the end of the game and set the game status to ReplayGame
-    use_effect(move || {
-        if app.read().game_manager.game_state.status == GameStatus::EndOfGame {
-            game_status.set(ButtonStatus::ReplayGame);
-        }
-    });
 
     // Display the game board with characters and attacks
     rsx! {
