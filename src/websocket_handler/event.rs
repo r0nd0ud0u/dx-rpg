@@ -198,7 +198,11 @@ pub async fn on_rcv_client_event(
                             Ok(ClientEvent::DisconnectFromServerData(server_name)) => {
                                 tracing::info!("Client {} requested disconnection from server-data {}", client_id, server_name);
                                 send_disconnection_to_server_data(client_id, &server_name).await;
-                                break;
+                                // remove ongoing game if exists for the server name
+                                let mut sm = SERVER_MANAGER.lock().unwrap();
+                                sm.ongoing_games.retain(|ongoing_game| ongoing_game.server_name != server_name);
+                                drop(sm);
+                                update_clients_ongoing_games();
                             }
                             Ok(ClientEvent::RequestTargetedCharacter(server_name, launcher_name, atk_name)) => {
                                 tracing::info!("Client {} requested update target with target {} and atk {}", client_id, launcher_name, atk_name);
@@ -315,15 +319,16 @@ pub async fn send_disconnection_to_server_data(cur_player_id: u32, server_name: 
             !pl.player_ids.is_empty()
         });
     }
+    drop(sm);
     tracing::info!(
         "Player with id {} is disconnecting from server data {}",
         cur_player_id,
         server_name
     );
-    tracing::info!(
-        "All connected players after disconnection from server data {}: {:?}",
+    update_clients_server_data(server_name);
+    update_clients_app(
         server_name,
-        sm.servers_data.get(server_name).map(|sd| &sd.players_info)
+        &get_app_by_server_name(server_name).unwrap_or_default(),
     );
 }
 
