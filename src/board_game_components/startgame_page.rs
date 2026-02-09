@@ -50,24 +50,23 @@ pub fn StartGamePage() -> Element {
                     "Replay game"
                 }
             }
-        } else {
+        }
+        Separator {
+            style: "margin: 10px 0; width: 50%;",
+            horizontal: true,
+            decorative: true,
+        }
+        div {
+            div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
+                Sheets {}
+                h4 { "Turn: {app.read().game_manager.game_state.current_turn_nb}" }
+            }
             Separator {
                 style: "margin: 10px 0; width: 50%;",
                 horizontal: true,
                 decorative: true,
             }
-            div {
-                div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
-                    Sheets {}
-                    h4 { "Turn: {app.read().game_manager.game_state.current_turn_nb}" }
-                }
-                Separator {
-                    style: "margin: 10px 0; width: 50%;",
-                    horizontal: true,
-                    decorative: true,
-                }
-                GameBoard {}
-            }
+            GameBoard {}
         }
     }
 }
