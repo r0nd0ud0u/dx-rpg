@@ -6,7 +6,7 @@ use dioxus::{
 use crate::{
     board_game_components::{common_comp::ButtonLink, login_page::LoginPage},
     common::{Route, disconnected_user},
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    websocket_handler::{event::{ClientEvent, ServerEvent}, game_state::GamePhase},
 };
 
 /// Home page
@@ -15,6 +15,7 @@ pub fn Home() -> Element {
     // contexts
     let local_login_name_session = use_context::<Signal<String>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let mut game_phase = use_context::<Signal<crate::websocket_handler::game_state::GamePhase>>();
     // Snapshot for this render
     let user_name = local_login_name_session();
 
@@ -29,6 +30,9 @@ pub fn Home() -> Element {
                 ButtonLink {
                     target: Route::CreateServer {}.into(),
                     name: "Create Server".to_string(),
+                    onclick: move |_| {
+                        *game_phase.write() = GamePhase::InitGame;
+                    },
                 }
                 ButtonLink {
                     target: Route::JoinOngoingGame {}.into(),
