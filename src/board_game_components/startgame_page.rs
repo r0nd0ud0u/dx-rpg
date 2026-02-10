@@ -22,7 +22,6 @@ use lib_rpg::game_state::GameStatus;
 #[component]
 pub fn StartGamePage() -> Element {
     // context
-    let app = use_context::<Signal<Application>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
@@ -30,17 +29,31 @@ pub fn StartGamePage() -> Element {
     let navigator = use_navigator();
 
     rsx! {
-        if app().game_manager.game_state.status == GameStatus::EndOfGame {
+        if server_data().app.game_manager.game_state.status == GameStatus::EndOfGame {
             h1 { "Game Over" }
+            h2 { "Remaining players: {server_data().players_info.len()}" }
+
             Button {
                 variant: ButtonVariant::Primary,
-                onclick: move |_| async move {
-                    // for now, we just disconnect the user from the server, but we can implement a better way to handle this in the future
-                    let _ = socket.send(ClientEvent::DisconnectFromServerData(SERVER_NAME())).await;
-                    navigator.push(Route::Home {});
+                onclick: move |_| {
+                    let l_server_data = server_data.read().clone();
+                    async move {
+                        if !l_server_data.players_info.is_empty() {
+                            let _ = socket
+                                .send( // for now, we just disconnect the user from the server, but we can implement a better way to handle this in the future
+                                    ClientEvent::DisconnectFromServerData(
+                                        SERVER_NAME(),
+                                        local_login_name_session(),
+                                    ),
+                                )
+                                .await;
+                        }
+                        navigator.push(Route::Home {});
+                    }
                 },
                 "Quit"
             }
+            // TODO if nobody quits -> store the number of players at start? and compare with the number of remaining players to know if we are in a "nobody quits" end of game scenario, and handle it differently (ex: show "nobody quits" message and "replay game" button)
             if server_data().owner_player_name == local_login_name_session() {
                 Button {
                     variant: ButtonVariant::Primary,
@@ -59,7 +72,7 @@ pub fn StartGamePage() -> Element {
         div {
             div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
                 Sheets {}
-                h4 { "Turn: {app.read().game_manager.game_state.current_turn_nb}" }
+                h4 { "Turn: {server_data().app.game_manager.game_state.current_turn_nb}" }
             }
             Separator {
                 style: "margin: 10px 0; width: 50%;",

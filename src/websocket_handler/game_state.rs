@@ -72,3 +72,12 @@ impl GameStateManager {
         }
     }
 }
+
+#[derive(Default, Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
+pub enum GamePhase {
+    #[default]
+    Default,
+    InitGame,
+    Running,
+    Ended,
+}

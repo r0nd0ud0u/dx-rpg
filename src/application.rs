@@ -8,12 +8,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::common::{SAVED_GAME_MANAGER, SAVED_GAME_MANAGER_REPLAY};
+use crate::websocket_handler::game_state::GamePhase;
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Application {
     pub game_manager: GameManager,
     pub server_name: String,
-    pub is_game_running: bool,
+    pub game_phase: GamePhase,
 }
 
 impl Application {
@@ -23,7 +24,7 @@ impl Application {
             Ok(gm) => Ok(Application {
                 game_manager: gm,
                 server_name: "Default".to_owned(),
-                is_game_running: false,
+                game_phase: GamePhase::Default,
             }),
             Err(_) => Err(ServerFnError::new(
                 "Failed to create GameManager".to_string(),

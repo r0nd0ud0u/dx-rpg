@@ -1,3 +1,4 @@
+use dioxus::logger::tracing;
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
@@ -5,14 +6,14 @@ use dioxus::{
 
 use crate::{
     board_game_components::{
-        character_select::CharacterSelect, msg_from_client::send_start_game,
-        startgame_page::StartGamePage,
+        character_select::CharacterSelect, common_comp::ButtonLink,
+        msg_from_client::send_start_game, startgame_page::StartGamePage,
     },
-    common::SERVER_NAME,
+    common::{Route, SERVER_NAME},
     components::button::Button,
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
-        game_state::ServerData,
+        game_state::{GamePhase, ServerData},
     },
 };
 
@@ -22,10 +23,11 @@ pub fn LobbyPage() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
+    let game_phase = use_context::<Signal<GamePhase>>();
 
     rsx! {
         // if the game is not running, show the lobby page, otherwise show the start game page
-        if !server_data.read().app.is_game_running {
+        if game_phase() == GamePhase::InitGame {
             div { class: "home-container",
                 h1 { "LobbyPage" }
                 // if the current client is the host, show start game button
@@ -40,9 +42,13 @@ pub fn LobbyPage() -> Element {
                 // show character select page
                 CharacterSelect {}
             }
-        } else {
+        } else if game_phase() == GamePhase::Running {
             StartGamePage {}
+        } else if game_phase() == GamePhase::Ended {
+            ButtonLink {
+                target: Route::Home {}.into(),
+                name: "No more game, back to Home".to_string(),
+            }
         }
-
     }
 }

@@ -9,7 +9,7 @@ use dx_rpg::{
     common::{DX_COMP_CSS, Route, SERVER_NAME, disconnected_user},
     websocket_handler::{
         event::{ClientEvent, ServerEvent, on_rcv_client_event},
-        game_state::ServerData,
+        game_state::{GamePhase, ServerData},
     },
 };
 
@@ -64,6 +64,7 @@ fn App() -> Element {
     let mut server_data = use_signal(ServerData::default);
     let mut ongoing_games = use_signal(Vec::new);
     let mut saved_game_list = use_signal(Vec::new);
+    let mut game_phase = use_signal(|| GamePhase::Default);
 
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
@@ -120,7 +121,9 @@ fn App() -> Element {
                         *SERVER_NAME.write() = app.read().server_name.clone();
                     }
                     ServerEvent::UpdateServerData(server_data_update) => {
-                        server_data.set(*server_data_update);
+                        server_data.set(*server_data_update.clone());
+                        // update game phase based on server data
+                        game_phase.set(server_data_update.app.game_phase.clone());
                     }
                     ServerEvent::UpdateOngoingGames(ongoing_games_update) => {
                         ongoing_games.set(ongoing_games_update);
@@ -154,6 +157,12 @@ fn App() -> Element {
                         tracing::info!("Received saved game list with {} games", games_list.len());
                         saved_game_list.set(games_list);
                     }
+                    ServerEvent::EndOfServerData => {
+                        server_data.set(ServerData::default());
+                        app.set(Application::default());
+                        SERVER_NAME.write().clear();
+                        game_phase.set(GamePhase::Ended);
+                    }
                 }
             }
         }
@@ -167,6 +176,7 @@ fn App() -> Element {
     use_context_provider(|| server_data);
     use_context_provider(|| ongoing_games);
     use_context_provider(|| saved_game_list);
+    use_context_provider(|| game_phase);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

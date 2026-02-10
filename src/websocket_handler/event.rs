@@ -2,6 +2,7 @@
 use crate::application::init_application;
 #[cfg(feature = "server")]
 use crate::common::{SAVED_GAME_MANAGER, SAVED_GAME_MANAGER_REPLAY};
+use crate::websocket_handler::game_state::GamePhase;
 use crate::websocket_handler::game_state::OnGoingGame;
 use crate::websocket_handler::game_state::ServerData;
 #[cfg(feature = "server")]
@@ -68,7 +69,7 @@ pub enum ClientEvent {
     RequestOnGoingGamesList,
     LoadGame(PathBuf, String), // `PathBuf`: game path, `String`: player name
     ReplayGame(String),        // `String`: server name
-    DisconnectFromServerData(String), // `String`: server name
+    DisconnectFromServerData(String, String), // `String`: server name, `String`: player name
     RequestTargetedCharacter(String, String, String), // `String`: launcher name, `String`: server name, `String`: atk name
     RequestSetOneTarget(String, String, String, String), // `String`: launcher name, `String`: server name, `String`: atk name, `String`: target name
 }
@@ -82,6 +83,7 @@ pub enum ServerEvent {
     UpdateServerData(Box<ServerData>), // server data
     UpdateOngoingGames(Vec<OnGoingGame>),
     AnswerSavedGameList(Vec<PathBuf>), // list of saved games paths
+    EndOfServerData,                   // server name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -161,7 +163,6 @@ pub async fn on_rcv_client_event(
                             Ok(ClientEvent::InitializeGame(server_name, player_name)) => {
                                 tracing::info!("{} is initializing a new game", server_name);
                                 init_new_game_by_player(&server_name, client_id, &player_name).await;
-                                update_clients_server_data(&server_name);
                             }
                             Ok(ClientEvent::AddCharacterOnServerData(server_name, player_name, character_name)) => {
                                 tracing::info!("{} is adding character {} to server data", player_name, character_name);
@@ -195,14 +196,9 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("Client {} requested replay game", client_id);
                                 process_replay_game(&server_name, client_id).await;
                             }
-                            Ok(ClientEvent::DisconnectFromServerData(server_name)) => {
+                            Ok(ClientEvent::DisconnectFromServerData(server_name, player_name)) => {
                                 tracing::info!("Client {} requested disconnection from server-data {}", client_id, server_name);
-                                send_disconnection_to_server_data(client_id, &server_name).await;
-                                // remove ongoing game if exists for the server name
-                                let mut sm = SERVER_MANAGER.lock().unwrap();
-                                sm.ongoing_games.retain(|ongoing_game| ongoing_game.server_name != server_name);
-                                drop(sm);
-                                update_clients_ongoing_games();
+                                send_disconnection_to_server_data(client_id, &server_name, &player_name).await;
                             }
                             Ok(ClientEvent::RequestTargetedCharacter(server_name, launcher_name, atk_name)) => {
                                 tracing::info!("Client {} requested update target with target {} and atk {}", client_id, launcher_name, atk_name);
@@ -310,26 +306,69 @@ pub async fn send_disconnection_to_server_manager(cur_player_id: u32) {
 }
 
 #[cfg(feature = "server")]
-pub async fn send_disconnection_to_server_data(cur_player_id: u32, server_name: &str) {
+pub async fn send_disconnection_to_server_data(
+    client_id: u32,
+    server_name: &str,
+    player_name: &str,
+) {
     let mut sm = SERVER_MANAGER.lock().unwrap();
+    let Some(is_owner_disconnecting) = sm
+        .servers_data
+        .get(server_name)
+        .map(|server_data| server_data.owner_player_name == player_name)
+    else {
+        tracing::info!(
+            "Player {} with id {} is disconnecting from server data {}, but no server data found for that server",
+            player_name,
+            client_id,
+            server_name
+        );
+        return;
+    };
+    if is_owner_disconnecting {
+        // remove ongoing game if exists for the server name
+        sm.ongoing_games
+            .retain(|ongoing_game| ongoing_game.server_name != server_name);
+        drop(sm);
+        update_clients_ongoing_games();
+    }
+
+    // send end of game to clients before deleting the ids from the server data, so that the clients can know which game is ending based on the server data they have
+    send_end_of_serverdata(server_name, client_id, is_owner_disconnecting);
+
     // remove from servers data
+    let mut sm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
-        server_data.players_info.retain(|player_name, pl| {
-            pl.player_ids.retain(|&id| id != cur_player_id);
-            !pl.player_ids.is_empty()
-        });
+        if player_name == server_data.owner_player_name {
+            // if the owner player is disconnecting, we consider that the server data is not relevant anymore, and we remove it
+            sm.servers_data.remove(server_name);
+            tracing::info!(
+                "Owner player {} is disconnecting, removing server data for server {}",
+                player_name,
+                server_name
+            );
+        } else {
+            server_data.players_info.retain(|player_name, pl| {
+                pl.player_ids.retain(|&id| id != client_id);
+                !pl.player_ids.is_empty()
+            });
+            tracing::info!(
+                "Player {} with id {} is disconnecting from server data {}, remaining players in server data: {:?}",
+                player_name,
+                client_id,
+                server_name,
+                server_data.players_info
+            );
+        }
+    } else {
+        tracing::info!(
+            "Player {} with id {} is disconnecting from server data {}, but no server data found for that server",
+            player_name,
+            client_id,
+            server_name
+        );
     }
     drop(sm);
-    tracing::info!(
-        "Player with id {} is disconnecting from server data {}",
-        cur_player_id,
-        server_name
-    );
-    update_clients_server_data(server_name);
-    update_clients_app(
-        server_name,
-        &get_app_by_server_name(server_name).unwrap_or_default(),
-    );
 }
 
 #[cfg(feature = "server")]
@@ -338,11 +377,13 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
     let mut gm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = gm.servers_data.get_mut(server_name) {
         // if it's a replay, the game manager state is already updated by loading the saved game, so we don't need to update it again by starting a new game
+
+        use crate::websocket_handler::game_state::GamePhase;
         if !is_replay {
             server_data.app.game_manager.start_game();
         }
-        // update app state
-        server_data.app.is_game_running = true;
+        // update app phase to running
+        server_data.app.game_phase = GamePhase::Running;
         tracing::info!("Game started for server: {}", server_name);
         // print the state of the game manager
         tracing::info!(
@@ -388,10 +429,11 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
             });
             drop(gm);
             // add server data
+            app.game_phase = GamePhase::InitGame;
             add_server_data_with_player(&app, server_name, id, player_name);
             // update for the clients connected to that server
-            update_clients_app(server_name, &app);
             update_clients_server_data(server_name);
+            update_clients_app(server_name, &app);
             update_clients_ongoing_games();
         }
         Err(_) => tracing::error!("no app"),
@@ -486,6 +528,32 @@ fn update_clients_ongoing_games() {
         let _ = sender.send(ServerEvent::UpdateOngoingGames(
             SERVER_MANAGER.lock().unwrap().ongoing_games.clone(),
         ));
+    }
+}
+
+#[cfg(feature = "server")]
+fn send_end_of_serverdata(server_name: &str, client_id: u32, is_owner_disconnecting: bool) {
+    // get server data
+    let sm = SERVER_MANAGER.lock().unwrap();
+    let server_data = match sm.servers_data.get(server_name) {
+        Some(server_data) => server_data.clone(),
+        None => {
+            tracing::info!("no server data for server: {}", server_name);
+            return;
+        }
+    };
+    drop(sm);
+    let clients = CLIENTS.lock().unwrap();
+    for (&other_id, sender) in clients.iter() {
+        if (!is_owner_disconnecting && client_id == other_id as u32)
+            || (is_owner_disconnecting
+                && server_data
+                    .players_info
+                    .values()
+                    .any(|player_info| player_info.player_ids.contains(&(other_id as u32))))
+        {
+            let _ = sender.send(ServerEvent::EndOfServerData);
+        }
     }
 }
 
@@ -714,7 +782,11 @@ async fn load_game_by_player(
             let app = Application {
                 game_manager: gm,
                 server_name: server_name.clone(), // TODO set server name based on user name + random string
-                is_game_running: is_replay, // if it's a replay, the game is already finished, so we can set is_game_running to true to display the correct page
+                game_phase: if is_replay {
+                    GamePhase::Running
+                } else {
+                    GamePhase::InitGame
+                }, // if it's a replay, the game is already finished, so we can set is_game_running to true to display the correct page
             };
             // save the game manager state
             save_game_manager_state(&app, SAVED_GAME_MANAGER).await;
