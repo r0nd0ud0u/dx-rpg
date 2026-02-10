@@ -6,7 +6,6 @@ use lib_rpg::{
     common::{effect_const::EFFECT_NB_COOL_DOWN, stats_const::HP},
     effect::EffectOutcome,
     game_manager::ResultLaunchAttack,
-    game_state::GameStatus,
 };
 
 use crate::{

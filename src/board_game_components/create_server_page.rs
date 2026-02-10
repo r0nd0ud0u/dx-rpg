@@ -2,11 +2,9 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
-use dioxus_html::nav;
 
 use crate::{
     board_game_components::{
-        common_comp::ButtonLink,
         msg_from_client::{request_update_saved_game_list_display, send_initialize_game},
     },
     common::Route,

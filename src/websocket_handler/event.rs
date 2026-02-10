@@ -11,8 +11,6 @@ use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
 #[cfg(feature = "server")]
-use dioxus::server::server;
-#[cfg(feature = "server")]
 use lib_rpg::common::paths_const::GAMES_DIR;
 use serde::{Deserialize, Serialize};
 
@@ -348,7 +346,7 @@ pub async fn send_disconnection_to_server_data(
                 server_name
             );
         } else {
-            server_data.players_info.retain(|player_name, pl| {
+            server_data.players_info.retain(|_player_name, pl| {
                 pl.player_ids.retain(|&id| id != client_id);
                 !pl.player_ids.is_empty()
             });
@@ -373,31 +371,29 @@ pub async fn send_disconnection_to_server_data(
 
 #[cfg(feature = "server")]
 pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
-    // update app state
-    let mut gm = SERVER_MANAGER.lock().unwrap();
-    if let Some(server_data) = gm.servers_data.get_mut(server_name) {
-        // if it's a replay, the game manager state is already updated by loading the saved game, so we don't need to update it again by starting a new game
+    let app = {
+        let mut sm = SERVER_MANAGER.lock().unwrap();
 
-        use crate::websocket_handler::game_state::GamePhase;
+        let Some(server_data) = sm.servers_data.get_mut(server_name) else {
+            tracing::error!("No server data found for server name: {}", server_name);
+            return;
+        };
+
         if !is_replay {
             server_data.app.game_manager.start_game();
         }
-        // update app phase to running
+
         server_data.app.game_phase = GamePhase::Running;
         tracing::info!("Game started for server: {}", server_name);
-        // print the state of the game manager
-        tracing::info!(
-            "Game manager state after starting game: {:?}",
-            server_data.app.game_manager.game_state.status
-        );
-        // save the game manager state
-        save_game_manager_state(&server_data.app, SAVED_GAME_MANAGER).await;
-        save_game_manager_state(&server_data.app, SAVED_GAME_MANAGER_REPLAY).await;
-    } else {
-        tracing::error!("No server data found for server name: {}", server_name);
-        return;
-    }
-    drop(gm);
+
+        // clone what you need *inside* the lock
+        server_data.app.clone()
+    }; // sm is guaranteed dropped here
+
+    // async work happens after the lock is gone
+    save_game_manager_state(&app, SAVED_GAME_MANAGER).await;
+    save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY).await;
+
     update_clients_app(
         server_name,
         &get_app_by_server_name(server_name).unwrap_or_default(),
@@ -772,70 +768,79 @@ async fn load_game_by_player(
     is_replay: bool,
     server_name_opt: Option<String>,
 ) {
-    let server_name = if let Some(server_name) = server_name_opt {
-        server_name
-    } else {
-        player_name.clone() // TODO set server name based on user name + random string
-    };
-    match application::get_gamemanager_by_game_dir(game_path.clone(), is_replay).await {
-        Ok(gm) => {
-            let app = Application {
-                game_manager: gm,
-                server_name: server_name.clone(), // TODO set server name based on user name + random string
-                game_phase: if is_replay {
-                    GamePhase::Running
-                } else {
-                    GamePhase::InitGame
-                }, // if it's a replay, the game is already finished, so we can set is_game_running to true to display the correct page
-            };
-            // save the game manager state
-            save_game_manager_state(&app, SAVED_GAME_MANAGER).await;
-            save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY).await;
-            // update ongoing servers data list
-            let mut gm: std::sync::MutexGuard<'_, GameStateManager> =
-                SERVER_MANAGER.lock().unwrap();
-            // remove ongoing game if already exists for the server name
-            gm.ongoing_games
-                .retain(|ongoing_game| ongoing_game.server_name != server_name);
-            // add ongoing game
-            gm.ongoing_games.push(OnGoingGame {
-                path: app.game_manager.game_paths.current_game_dir.clone(),
-                server_name: app.server_name.clone(),
-            });
-            drop(gm);
-            if !is_replay {
-                // add server data with player
-                add_server_data_with_player(&app, &app.server_name, client_id, &player_name);
-                update_clients_app(
-                    &app.server_name,
-                    &get_app_by_server_name(&app.server_name).unwrap_or_default(),
-                );
-                update_clients_server_data(&app.server_name);
-            } else {
-                // for replay we don't add server data
-                // start the game and update for the clients connected to that server
-                tracing::info!("Starting replay for server: {}", server_name);
-                // update serverdata by app
-                let mut gm = SERVER_MANAGER.lock().unwrap();
-                if let Some(server_data) = gm.servers_data.get_mut(&server_name) {
-                    server_data.app = app.clone();
-                } else {
-                    tracing::error!("No server data found for server name: {}", server_name);
-                    drop(gm);
-                    return;
-                }
-                drop(gm);
-                start_new_game_by_player(&app.server_name, is_replay).await;
-            }
-            // update clients for ongoing games list
-            update_clients_ongoing_games();
+    let server_name = server_name_opt.unwrap_or_else(|| player_name.clone());
+
+    let gm = match application::get_gamemanager_by_game_dir(game_path.clone(), is_replay).await {
+        Ok(gm) => gm,
+        Err(e) => {
+            tracing::error!(
+                "Error loading game manager for player {}: {}",
+                player_name,
+                e
+            );
+            return;
         }
-        Err(e) => tracing::error!(
-            "Error loading game manager for player {}: {}",
-            player_name,
-            e
-        ),
+    };
+
+    let app = Application {
+        game_manager: gm,
+        server_name: server_name.clone(),
+        game_phase: if is_replay {
+            GamePhase::Running
+        } else {
+            GamePhase::InitGame
+        },
+    };
+
+    // persist state (no locks involved)
+    save_game_manager_state(&app, SAVED_GAME_MANAGER).await;
+    save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY).await;
+
+    // ---- update ongoing games (lock scope #1) ----
+    {
+        let mut sm = SERVER_MANAGER.lock().unwrap();
+
+        sm.ongoing_games
+            .retain(|g| g.server_name != server_name);
+
+        sm.ongoing_games.push(OnGoingGame {
+            path: app.game_manager.game_paths.current_game_dir.clone(),
+            server_name: app.server_name.clone(),
+        });
+    } // lock released here
+
+    if !is_replay {
+        add_server_data_with_player(&app, &app.server_name, client_id, &player_name);
+
+        update_clients_app(
+            &app.server_name,
+            &get_app_by_server_name(&app.server_name).unwrap_or_default(),
+        );
+        update_clients_server_data(&app.server_name);
+    } else {
+        tracing::info!("Starting replay for server: {}", server_name);
+
+        // ---- update server data by app (lock scope #2) ----
+        let server_exists = {
+            let mut sm = SERVER_MANAGER.lock().unwrap();
+
+            if let Some(server_data) = sm.servers_data.get_mut(&server_name) {
+                server_data.app = app.clone();
+                true
+            } else {
+                false
+            }
+        }; // lock released here
+
+        if !server_exists {
+            tracing::error!("No server data found for server name: {}", server_name);
+            return;
+        }
+
+        start_new_game_by_player(&server_name, is_replay).await;
     }
+
+    update_clients_ongoing_games();
 }
 
 #[cfg(feature = "server")]

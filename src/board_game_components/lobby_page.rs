@@ -1,4 +1,3 @@
-use dioxus::logger::tracing;
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
@@ -13,7 +12,7 @@ use crate::{
     components::button::Button,
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
-        game_state::{GamePhase, ServerData},
+        game_state::GamePhase,
     },
 };
 
@@ -21,7 +20,6 @@ use crate::{
 pub fn LobbyPage() -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
-    let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
     let game_phase = use_context::<Signal<GamePhase>>();
 

@@ -111,7 +111,6 @@ pub fn CharacterTargetButton(
     selected_atk_name: Signal<String>,
 ) -> Element {
     // contexts
-    let app = use_context::<Signal<Application>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
 
     let mut kind_str = "hero";
@@ -182,7 +181,6 @@ pub fn NewAtkButton(
     selected_atk_name: Signal<String>,
 ) -> Element {
     // contexts
-    let mut app = use_context::<Signal<Application>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     // local signals
     let can_be_launched = launcher.can_be_launched(&attack_type);

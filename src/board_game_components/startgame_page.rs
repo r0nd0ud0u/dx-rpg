@@ -3,7 +3,7 @@ use crate::components::label::Label;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::websocket_handler::game_state::ServerData;
 use crate::{
-    application::{self, Application},
+    application,
     board_game_components::gameboard::GameBoard,
     common::APP,
     components::{
