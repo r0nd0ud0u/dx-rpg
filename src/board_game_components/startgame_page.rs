@@ -86,13 +86,22 @@ pub fn StartGamePage() -> Element {
 
 #[component]
 fn SaveButton(is_saved: Signal<bool>) -> Element {
+    // contexts
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+
     rsx! {
         Button {
             variant: ButtonVariant::Destructive,
-            onclick: move |_| {
+            onclick: move |_|{
+                    async move {
+                        send_request(socket).await;
+                    }
+                }
+
+             /* {
                 let gm = APP.read().game_manager.clone();
                 async move {
-                    tracing::info!("Saving game state...");
+                    request_save_game
                     let path = format!(
                         "{}",
                         &APP
@@ -126,7 +135,7 @@ fn SaveButton(is_saved: Signal<bool>) -> Element {
                         Err(e) => tracing::trace!("{}", e),
                     }
                 }
-            },
+            } */,
             "Save"
         }
     }

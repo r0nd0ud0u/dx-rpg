@@ -70,6 +70,7 @@ pub enum ClientEvent {
     DisconnectFromServerData(String, String), // `String`: server name, `String`: player name
     RequestTargetedCharacter(String, String, String), // `String`: launcher name, `String`: server name, `String`: atk name
     RequestSetOneTarget(String, String, String, String), // `String`: launcher name, `String`: server name, `String`: atk name, `String`: target name
+    SaveGame(String),                                    // `String`: server name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -205,6 +206,10 @@ pub async fn on_rcv_client_event(
                             Ok(ClientEvent::RequestSetOneTarget(server_name, launcher_name, atk_name, target_name)) => {
                                 tracing::info!("Client {} requested update target with target {} and atk {}", client_id, launcher_name, atk_name);
                                 request_set_one_target(&server_name, &launcher_name, &atk_name, &target_name);
+                            }
+                            Ok(ClientEvent::SaveGame(server_name)) => {
+                                tracing::info!("Client {} requested replay game", client_id);
+                                process_save_game(&server_name, client_id).await;
                             }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
@@ -800,8 +805,7 @@ async fn load_game_by_player(
     {
         let mut sm = SERVER_MANAGER.lock().unwrap();
 
-        sm.ongoing_games
-            .retain(|g| g.server_name != server_name);
+        sm.ongoing_games.retain(|g| g.server_name != server_name);
 
         sm.ongoing_games.push(OnGoingGame {
             path: app.game_manager.game_paths.current_game_dir.clone(),
@@ -928,4 +932,46 @@ fn request_set_one_target(
         &get_app_by_server_name(server_name).unwrap_or_default(),
     );
     update_clients_server_data(server_name);
+}
+
+#[cfg(feature = "server")]
+async fn process_save_game(server_name: &str) {
+    // get server data by server name
+    let server_data = match get_server_data_by_server_name(server_name) {
+        Some(server_data) => server_data,
+        None => {
+            tracing::error!("No server data found for server name: {}", server_name);
+            return;
+        }
+    };
+    let cur_game_path = match get_app_by_server_name(server_name) {
+        Some(app) => app
+            .game_manager
+            .game_paths
+            .current_game_dir
+            .clone()
+            .join("game_manager.json")
+            .to_string_lossy(),
+        None => {
+            tracing::error!("No application found for server name: {}", server_name);
+            return;
+        }
+    };
+    match application::create_dir(app.game_manager.game_paths.current_game_dir.clone()).await {
+        Ok(()) => {
+            tracing::info!("Directory created or already existing successfully")
+        }
+        Err(e) => tracing::info!("Failed to create directory: {}", e),
+    }
+    match application::save(
+        cur_game_path.to_owned(),
+        serde_json::to_string_pretty(&app.game_manager).unwrap(),
+    )
+    .await
+    {
+        Ok(()) => {
+            tracing::trace!("save");
+        }
+        Err(e) => tracing::trace!("{}", e),
+    }
 }
