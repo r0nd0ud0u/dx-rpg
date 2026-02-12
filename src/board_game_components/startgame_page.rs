@@ -1,11 +1,10 @@
+use crate::board_game_components::msg_from_client::request_save_game;
 use crate::common::{Route, SERVER_NAME};
 use crate::components::label::Label;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::websocket_handler::game_state::ServerData;
 use crate::{
-    application,
     board_game_components::gameboard::GameBoard,
-    common::APP,
     components::{
         button::{Button, ButtonVariant},
         input::Input,
@@ -14,7 +13,6 @@ use crate::{
     },
 };
 use dioxus::fullstack::{CborEncoding, UseWebsocket};
-use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use lib_rpg::game_state::GameStatus;
 
@@ -92,50 +90,12 @@ fn SaveButton(is_saved: Signal<bool>) -> Element {
     rsx! {
         Button {
             variant: ButtonVariant::Destructive,
-            onclick: move |_|{
-                    async move {
-                        send_request(socket).await;
-                    }
-                }
-
-             /* {
-                let gm = APP.read().game_manager.clone();
+            onclick: move |_| {
                 async move {
-                    request_save_game
-                    let path = format!(
-                        "{}",
-                        &APP
-                            .read()
-                            .game_manager
-                            .game_paths
-                            .current_game_dir
-                            .join("game_manager.json")
-                            .to_string_lossy(),
-                    );
-                    match application::create_dir(
-                            APP.read().game_manager.game_paths.current_game_dir.clone(),
-                        )
-                        .await
-                    {
-                        Ok(()) => {
-                            tracing::info!("Directory created or already existing successfully")
-                        }
-                        Err(e) => tracing::info!("Failed to create directory: {}", e),
-                    }
-                    match application::save(
-                            path.to_owned(),
-                            serde_json::to_string_pretty(&gm).unwrap(),
-                        )
-                        .await
-                    {
-                        Ok(()) => {
-                            tracing::trace!("save");
-                            is_saved.set(true);
-                        }
-                        Err(e) => tracing::trace!("{}", e),
-                    }
+                    request_save_game(socket).await;
+                    is_saved.set(true);
                 }
-            } */,
+            },
             "Save"
         }
     }
@@ -246,11 +206,12 @@ fn InventorySheet(s: SheetSide) -> Element {
 
 #[component]
 fn GameStatsSheet(s: SheetSide) -> Element {
-    let gm = &APP.read().game_manager;
+    // context
+    let server_data = use_context::<Signal<ServerData>>();
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "Game Stats {gm.game_state.current_round}" }
+                SheetTitle { "Game Stats {server_data().app.game_manager.game_state.current_round}" }
                 SheetDescription { "Assess the evolution of the game here." }
             }
 

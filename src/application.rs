@@ -42,7 +42,7 @@ pub fn init_application(name: &str, app: &mut Application) {
 }
 
 #[server]
-pub async fn save(path: String, value: String) -> Result<(), ServerFnError> {
+pub async fn save(path: PathBuf, value: String) -> Result<(), ServerFnError> {
     match fs::write(path, value) {
         Ok(_) => Ok(()),
         Err(_) => Err(ServerFnError::new("Failed to save file".to_string())),

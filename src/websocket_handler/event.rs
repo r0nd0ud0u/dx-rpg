@@ -208,8 +208,8 @@ pub async fn on_rcv_client_event(
                                 request_set_one_target(&server_name, &launcher_name, &atk_name, &target_name);
                             }
                             Ok(ClientEvent::SaveGame(server_name)) => {
-                                tracing::info!("Client {} requested replay game", client_id);
-                                process_save_game(&server_name, client_id).await;
+                                tracing::info!("Client {} requested save game", client_id);
+                                process_save_game(&server_name).await;
                             }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
@@ -443,20 +443,17 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
 
 #[cfg(feature = "server")]
 async fn save_game_manager_state(app: &Application, save_game_name: &str) {
-    let path = format!(
-        "{}",
-        &app.game_manager
-            .game_paths
-            .current_game_dir
-            .join(save_game_name)
-            .to_string_lossy(),
-    );
+    let path = app
+        .game_manager
+        .game_paths
+        .current_game_dir
+        .join(save_game_name);
     match application::create_dir(app.game_manager.game_paths.current_game_dir.clone()).await {
         Ok(()) => {}
         Err(e) => tracing::error!("Failed to create directory: {}", e),
     }
     match application::save(
-        path.to_owned(),
+        path,
         serde_json::to_string_pretty(&app.game_manager.clone()).unwrap(),
     )
     .await
@@ -944,28 +941,31 @@ async fn process_save_game(server_name: &str) {
             return;
         }
     };
-    let cur_game_path = match get_app_by_server_name(server_name) {
-        Some(app) => app
+    let cur_game_path = server_data
+        .app
+        .game_manager
+        .game_paths
+        .current_game_dir
+        .clone()
+        .join("game_manager.json");
+    match application::create_dir(
+        server_data
+            .app
             .game_manager
             .game_paths
             .current_game_dir
-            .clone()
-            .join("game_manager.json")
-            .to_string_lossy(),
-        None => {
-            tracing::error!("No application found for server name: {}", server_name);
-            return;
-        }
-    };
-    match application::create_dir(app.game_manager.game_paths.current_game_dir.clone()).await {
+            .clone(),
+    )
+    .await
+    {
         Ok(()) => {
             tracing::info!("Directory created or already existing successfully")
         }
         Err(e) => tracing::info!("Failed to create directory: {}", e),
     }
     match application::save(
-        cur_game_path.to_owned(),
-        serde_json::to_string_pretty(&app.game_manager).unwrap(),
+        cur_game_path,
+        serde_json::to_string_pretty(&server_data.app.game_manager).unwrap(),
     )
     .await
     {
