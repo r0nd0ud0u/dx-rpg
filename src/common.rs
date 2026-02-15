@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
 
-use crate::application::Application;
 use crate::board_game_components::admin_page::AdminPage;
 use crate::board_game_components::create_server_page::CreateServer;
 use crate::board_game_components::home_page::Home;
@@ -11,8 +10,6 @@ use crate::board_game_components::navbar::Navbar;
 use crate::board_game_components::startgame_page::StartGamePage;
 use colorgrad::{GradientBuilder, LinearGradient};
 use once_cell::sync::Lazy;
-
-pub static APP: GlobalSignal<Application> = Signal::global(Application::default);
 
 pub static SERVER_NAME: GlobalSignal<String> = Signal::global(String::new);
 

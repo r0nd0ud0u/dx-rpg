@@ -4,8 +4,8 @@ use dioxus::{
 };
 
 use crate::{
-    board_game_components::{
-        msg_from_client::{request_update_saved_game_list_display, send_initialize_game},
+    board_game_components::msg_from_client::{
+        request_update_saved_game_list_display, send_initialize_game,
     },
     common::Route,
     components::button::Button,
