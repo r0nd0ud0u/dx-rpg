@@ -6,7 +6,10 @@ use dioxus::{
 use crate::{
     board_game_components::{common_comp::ButtonLink, login_page::LoginPage},
     common::{Route, disconnected_user},
-    websocket_handler::{event::{ClientEvent, ServerEvent}, game_state::GamePhase},
+    websocket_handler::{
+        event::{ClientEvent, ServerEvent},
+        game_state::GamePhase,
+    },
 };
 
 /// Home page

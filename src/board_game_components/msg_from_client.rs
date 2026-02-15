@@ -33,6 +33,12 @@ pub async fn send_start_game(socket: UseWebsocket<ClientEvent, ServerEvent, Cbor
         .await;
 }
 
+pub async fn request_save_game(socket: UseWebsocket<ClientEvent, ServerEvent, CborEncoding>) {
+    let _ = socket
+        .send(ClientEvent::SaveGame(SERVER_NAME().clone()))
+        .await;
+}
+
 pub async fn send_join_server_data(
     socket: UseWebsocket<ClientEvent, ServerEvent, CborEncoding>,
     server_name: &str,
