@@ -31,6 +31,7 @@ use once_cell::sync::Lazy;
 use tokio::sync::mpsc;
 
 use crate::application::{self, Application};
+#[cfg(feature = "server")]
 use crate::websocket_handler::game_state::GameStateManager;
 
 #[cfg(feature = "server")]
@@ -82,7 +83,7 @@ pub enum ServerEvent {
     UpdateServerData(Box<ServerData>), // server data
     UpdateOngoingGames(Vec<OnGoingGame>),
     AnswerSavedGameList(Vec<PathBuf>), // list of saved games paths
-    EndOfServerData,                   // server name
+    ResetClientFromServerData,         // server name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -334,8 +335,9 @@ pub async fn send_disconnection_to_server_data(
             .retain(|ongoing_game| ongoing_game.server_name != server_name);
         drop(sm);
         update_clients_ongoing_games();
+    } else {
+        drop(sm);
     }
-
     // send end of game to clients before deleting the ids from the server data, so that the clients can know which game is ending based on the server data they have
     send_end_of_serverdata(server_name, client_id, is_owner_disconnecting);
 
@@ -372,6 +374,9 @@ pub async fn send_disconnection_to_server_data(
         );
     }
     drop(sm);
+
+    // update all clients
+    update_clients_server_data(server_name);
 }
 
 #[cfg(feature = "server")]
@@ -550,7 +555,7 @@ fn send_end_of_serverdata(server_name: &str, client_id: u32, is_owner_disconnect
                     .values()
                     .any(|player_info| player_info.player_ids.contains(&(other_id as u32))))
         {
-            let _ = sender.send(ServerEvent::EndOfServerData);
+            let _ = sender.send(ServerEvent::ResetClientFromServerData);
         }
     }
 }

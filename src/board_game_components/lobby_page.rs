@@ -48,9 +48,22 @@ pub fn LobbyPage() -> Element {
             {
                 StartGamePage {}
             } else {
+
                 ButtonLink {
                     target: Route::Home {}.into(),
                     name: "Not enough players".to_string(),
+                    onclick: move |_| {
+                        async move {
+                            let _ = socket
+                                .send(
+                                    ClientEvent::DisconnectFromServerData(
+                                        SERVER_NAME(),
+                                        local_login_name_session(),
+                                    ),
+                                )
+                                .await;
+                        }
+                    },
                 }
             }
         } else if game_phase() == GamePhase::Ended {
