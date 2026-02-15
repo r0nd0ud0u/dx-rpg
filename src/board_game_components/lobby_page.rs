@@ -71,6 +71,11 @@ pub fn LobbyPage() -> Element {
                 target: Route::Home {}.into(),
                 name: "No more game, back to Home".to_string(),
             }
+        } else if game_phase() == GamePhase::Default {
+            ButtonLink {
+                target: Route::Home {}.into(),
+                name: "Disconnected, back to home".to_string(),
+            }
         }
     }
 }
