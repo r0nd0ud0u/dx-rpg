@@ -10,13 +10,17 @@ use lib_rpg::{
     character::{Character, CharacterType},
     character_mod::fight_information::{CharacterFightInfo, HotsBufs},
     common::stats_const::*,
+    players_manager,
 };
 
 use crate::{
     application::Application,
     common::{ENERGY_GRAD, SERVER_NAME},
     components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    websocket_handler::{
+        event::{ClientEvent, ServerEvent},
+        game_state::ServerData,
+    },
 };
 use crate::{
     common::PATH_IMG,
@@ -32,6 +36,25 @@ pub fn CharacterPanel(
     atk_menu_display: Signal<bool>,
     is_auto_atk: ReadSignal<bool>,
 ) -> Element {
+    // contexts
+    let server_data = use_context::<Signal<ServerData>>();
+    let local_session_player_name = use_context::<Signal<String>>();
+    // get first player of the list
+    let current_character = match server_data()
+        .players_info
+        .get(&local_session_player_name())
+        .map(|info| info.character_names.first().cloned())
+        .flatten()
+    {
+        Some(player_name) => player_name,
+        None => {
+            tracing::error!(
+                "No player found for session player name: {}",
+                local_session_player_name()
+            );
+            String::new()
+        }
+    };
     // if boss is dead, panel is hidden
     if c.is_dead().is_some_and(|value| value) && c.kind == CharacterType::Boss {
         return rsx! {};
@@ -79,14 +102,19 @@ pub fn CharacterPanel(
         } else if c.kind == CharacterType::Hero && current_player_name == c.name {
             Button {
                 variant: ButtonVariant::AtkMenu,
+                disabled: current_character != c.name,
                 onclick: move |_| async move {
                     atk_menu_display.set(!atk_menu_display());
                 },
-                "ATK"
+                if current_character == c.name {
+                    "ATK"
+                } else {
+                    "playing..."
+                }
             }
         }
         div { class: "character-name-grid-container",
-            // name button
+            // name buttons
             Button {
                 variant: ButtonVariant::CharacterName,
                 onclick: move |_| async move {},
