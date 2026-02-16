@@ -1355,7 +1355,7 @@ dependencies = [
 [[package]]
 name = "dioxus-attributes"
 version = "0.1.0"
-source = "git+https://github.com/DioxusLabs/components#4acbf53dd86b1b3dc8cd7e409002bf922f37b4e1"
+source = "git+https://github.com/DioxusLabs/components#8d65778356dfd5415cf4b1b7261f185551840261"
 dependencies = [
  "dioxus-rsx",
  "proc-macro2",
@@ -1769,7 +1769,7 @@ dependencies = [
 [[package]]
 name = "dioxus-primitives"
 version = "0.0.1"
-source = "git+https://github.com/DioxusLabs/components#4acbf53dd86b1b3dc8cd7e409002bf922f37b4e1"
+source = "git+https://github.com/DioxusLabs/components#8d65778356dfd5415cf4b1b7261f185551840261"
 dependencies = [
  "dioxus",
  "dioxus-attributes",
@@ -4128,6 +4128,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "num_threads"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c7398b9c8b70908f6371f47ed36737907c87c52af34c268fed0bf0ceb92ead9"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "objc"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6211,7 +6220,9 @@ checksum = "9da98b7d9b7dad93488a84b8248efc35352b0b2657397d4167e7ad67e5d535e5"
 dependencies = [
  "deranged",
  "itoa",
+ "libc",
  "num-conv",
+ "num_threads",
  "powerfmt",
  "serde_core",
  "time-core",
@@ -7053,7 +7064,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
