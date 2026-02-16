@@ -293,11 +293,17 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
         sm.players
     );
     // remove from servers data
-    let mut server_name = String::new();
-    // TODO get_server_name_by_id
-
+    let mut server_name = match sm
+        .get_server_name_by_player_id(client_id)
+        .map(|server_name| server_name.clone())
+    {
+        Some(name) => name,
+        None => {
+            tracing::error!("No server name found for player id: {}", client_id);
+            return;
+        }
+    };
     if let Some(server_data) = sm.servers_data.get_mut(&username) {
-        server_name = server_data.owner_player_name.clone();
         server_data.players_info.retain(|player_name, pl| {
             if player_name == &username {
                 pl.player_ids.retain(|&id| id != client_id);

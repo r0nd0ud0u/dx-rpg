@@ -72,7 +72,17 @@ impl GameStateManager {
         }
     }
 
-    // TODO get_server_name_by_id
+    /// Get the server name associated with a given player ID by searching through the servers data.
+    pub fn get_server_name_by_player_id(&self, player_id: u32) -> Option<String> {
+        for (server_name, server_data) in &self.servers_data {
+            for player_info in server_data.players_info.values() {
+                if player_info.player_ids.contains(&player_id) {
+                    return Some(server_name.clone());
+                }
+            }
+        }
+        None
+    }
 }
 
 #[derive(Default, Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
