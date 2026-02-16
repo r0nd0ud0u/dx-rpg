@@ -5,7 +5,6 @@ use dioxus::{
 };
 use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use dx_rpg::{
-    application::Application,
     common::{DX_COMP_CSS, Route, SERVER_NAME, disconnected_user},
     websocket_handler::{
         event::{ClientEvent, ServerEvent, on_rcv_client_event},
@@ -60,7 +59,6 @@ fn App() -> Element {
     // Local UI state
     let mut message = use_signal(String::new);
     let mut player_client_id = use_signal(|| 0);
-    let mut app = use_signal(Application::default);
     let mut server_data = use_signal(ServerData::default);
     let mut ongoing_games = use_signal(Vec::new);
     let mut saved_game_list = use_signal(Vec::new);
@@ -116,10 +114,6 @@ fn App() -> Element {
                     ServerEvent::AssignPlayerId(id) => {
                         player_client_id.set(id);
                     }
-                    ServerEvent::UpdateApplication(app_update) => {
-                        app.set(*app_update);
-                        *SERVER_NAME.write() = app.read().server_name.clone();
-                    }
                     ServerEvent::UpdateServerData(server_data_update) => {
                         server_data.set(*server_data_update.clone());
                         // update game phase based on server data
@@ -160,7 +154,6 @@ fn App() -> Element {
                     ServerEvent::ResetClientFromServerData => {
                         tracing::info!("Reset client from server-data {}", SERVER_NAME());
                         server_data.set(ServerData::default());
-                        app.set(Application::default());
                         SERVER_NAME.write().clear();
                         game_phase.set(GamePhase::Ended);
                     }
@@ -173,7 +166,6 @@ fn App() -> Element {
     use_context_provider(|| player_client_id);
     use_context_provider(|| login_name_session_local_sync);
     use_context_provider(|| login_id_session_local_sync);
-    use_context_provider(|| app);
     use_context_provider(|| server_data);
     use_context_provider(|| ongoing_games);
     use_context_provider(|| saved_game_list);
