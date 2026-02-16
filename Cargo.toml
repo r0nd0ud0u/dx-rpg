@@ -6,7 +6,7 @@ edition = "2024"
 
 # See more keys and their dexfinitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-anyhow = "1.0.99"
+anyhow = "1.0.101"
 dioxus = { version = "0.7.3", features = ["router", "fullstack"] }
 lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "4588a04015bd6bce94dbc389da0c287403e13872" }
 serde = "1.0.228"
