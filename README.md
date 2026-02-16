@@ -61,28 +61,23 @@ Use docker desktop under Windows.
 
 ### Home page
 #### Before login
-![alt text](image.png)
+<img width="1909" height="431" alt="image" src="https://github.com/user-attachments/assets/09e2e271-29fa-4d1a-a13c-4fb26255f2b4" />
 
 #### After login
-![alt text](image-1.png)
+<img width="1904" height="346" alt="image" src="https://github.com/user-attachments/assets/bc050e92-1b10-4293-ac90-4dc8e706e622" />
 
 #### Create server page
-<img width="1915" height="323" alt="image" src="https://github.com/user-attachments/assets/6e7bd0a3-7518-4383-8e89-e99acefe97c3" />
+<img width="1899" height="253" alt="image" src="https://github.com/user-attachments/assets/073c230f-7344-48d0-b75f-75121b36f2d2" />
 
 ##### New game page
 
-- lobby page
-<img width="1918" height="271" alt="image" src="https://github.com/user-attachments/assets/ee1a7ae4-ead9-49f4-a156-b96fa569f7e5" />
-
-Then
-
-<img width="1872" height="913" alt="image" src="https://github.com/user-attachments/assets/e61b029b-0e72-4461-a068-1133074077d5" />
+<img width="1911" height="268" alt="image" src="https://github.com/user-attachments/assets/4b7284e2-ee13-4ff8-9ac1-31742ed2cf1a" />
 
 ##### Load game page
 
-<img width="1913" height="492" alt="image" src="https://github.com/user-attachments/assets/1540f9a5-37d0-43ed-9204-41a5ae1bda99" />
-
+<img width="1903" height="416" alt="image" src="https://github.com/user-attachments/assets/86e63864-2df6-4862-a95d-fe3eb41422e9" />
 
 #### Join game page
 
-<img width="1918" height="272" alt="image" src="https://github.com/user-attachments/assets/c487c7a2-6890-45be-9ae1-e4a9ced7e87c" />
+<img width="1916" height="189" alt="image" src="https://github.com/user-attachments/assets/541fd928-f228-4c35-a7d4-a4ca86b3b5a2" />
+
