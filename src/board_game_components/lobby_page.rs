@@ -2,7 +2,6 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
-use lib_rpg::common::all_target_const::TARGET_ALL_HEROES;
 
 use crate::{
     board_game_components::{

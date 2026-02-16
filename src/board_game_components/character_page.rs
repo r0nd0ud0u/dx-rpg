@@ -14,17 +14,16 @@ use lib_rpg::{
 };
 
 use crate::{
-    application::Application,
+    common::PATH_IMG,
+    components::button::{Button, ButtonVariant},
+};
+use crate::{
     common::{ENERGY_GRAD, SERVER_NAME},
     components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
         game_state::ServerData,
     },
-};
-use crate::{
-    common::PATH_IMG,
-    components::button::{Button, ButtonVariant},
 };
 use dioxus::logger::tracing;
 
@@ -253,9 +252,13 @@ pub fn AttackList(
     selected_atk_name: Signal<String>,
 ) -> Element {
     // contexts
-    // let _socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
-    let app = use_context::<Signal<Application>>();
-    if let Some(c) = app.read().game_manager.pm.get_active_character(&name) {
+    let server_data = use_context::<Signal<ServerData>>();
+    if let Some(c) = server_data()
+        .app
+        .game_manager
+        .pm
+        .get_active_character(&name)
+    {
         rsx! {
             div { class: "attack-list",
                 for (_key , value) in c.attacks_list.iter() {
