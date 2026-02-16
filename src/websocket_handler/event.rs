@@ -293,43 +293,40 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
         sm.players
     );
     // remove from servers data
-    let mut server_name = match sm
-        .get_server_name_by_player_id(client_id)
-        .map(|server_name| server_name.clone())
-    {
-        Some(name) => name,
+    let mut server_data = match sm.get_server_data_by_player_id(client_id) {
+        Some(server_data) => server_data,
         None => {
-            tracing::error!("No server name found for player id: {}", client_id);
+            tracing::error!(
+                "Player {} with id {} is disconnecting, but no server data found for that player",
+                username,
+                client_id
+            );
             return;
         }
     };
-    if let Some(server_data) = sm.servers_data.get_mut(&username) {
-        server_data.players_info.retain(|player_name, pl| {
-            if player_name == &username {
-                pl.player_ids.retain(|&id| id != client_id);
-                !pl.player_ids.is_empty()
-            } else {
-                true
-            }
-        });
-    }
-
-    // reset other players of the game
-    if let Some(server_data) = sm.servers_data.get_mut(&server_name) {
-        let clients = CLIENTS.lock().unwrap();
-        for (&other_id, sender) in clients.iter() {
-            if server_data
-                .players_info
-                .values()
-                .any(|player_info| player_info.player_ids.contains(&(other_id as u32)))
-            {
-                let _ = sender.send(ServerEvent::ResetClientFromServerData);
-            }
+    // remove player id from server data
+    server_data.players_info.retain(|player_name, pl| {
+        if player_name == &username {
+            pl.player_ids.retain(|&id| id != client_id);
+            !pl.player_ids.is_empty()
+        } else {
+            true
         }
-        drop(clients);
-    } else {
-        tracing::error!("no server data found");
+    });
+
+    // reset the remaining clients in the same server data to reset their lobby page if they are in the lobby
+    // or to reset their game page if they are in the game,
+    let clients = CLIENTS.lock().unwrap();
+    for (&other_id, sender) in clients.iter() {
+        if server_data
+            .players_info
+            .values()
+            .any(|player_info| player_info.player_ids.contains(&(other_id as u32)))
+        {
+            let _ = sender.send(ServerEvent::ResetClientFromServerData);
+        }
     }
+    drop(clients);
     // remove ongoing game if exists for the server name
     sm.ongoing_games
         .retain(|ongoing_game| ongoing_game.server_name != username);
