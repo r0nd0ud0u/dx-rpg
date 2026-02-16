@@ -13,14 +13,16 @@ use lib_rpg::{
 };
 
 use crate::{
-    application::Application,
-    common::{ENERGY_GRAD, SERVER_NAME},
-    components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
-    websocket_handler::event::{ClientEvent, ServerEvent},
-};
-use crate::{
     common::PATH_IMG,
     components::button::{Button, ButtonVariant},
+};
+use crate::{
+    common::{ENERGY_GRAD, SERVER_NAME},
+    components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
+    websocket_handler::{
+        event::{ClientEvent, ServerEvent},
+        game_state::ServerData,
+    },
 };
 use dioxus::logger::tracing;
 
@@ -32,6 +34,24 @@ pub fn CharacterPanel(
     atk_menu_display: Signal<bool>,
     is_auto_atk: ReadSignal<bool>,
 ) -> Element {
+    // contexts
+    let server_data = use_context::<Signal<ServerData>>();
+    let local_session_player_name = use_context::<Signal<String>>();
+    // get first player of the list
+    let current_character = match server_data()
+        .players_info
+        .get(&local_session_player_name())
+        .and_then(|info| info.character_names.first().cloned())
+    {
+        Some(player_name) => player_name,
+        None => {
+            tracing::error!(
+                "No player found for session player name: {}",
+                local_session_player_name()
+            );
+            String::new()
+        }
+    };
     // if boss is dead, panel is hidden
     if c.is_dead().is_some_and(|value| value) && c.kind == CharacterType::Boss {
         return rsx! {};
@@ -79,14 +99,19 @@ pub fn CharacterPanel(
         } else if c.kind == CharacterType::Hero && current_player_name == c.name {
             Button {
                 variant: ButtonVariant::AtkMenu,
+                disabled: current_character != c.name,
                 onclick: move |_| async move {
                     atk_menu_display.set(!atk_menu_display());
                 },
-                "ATK"
+                if current_character == c.name {
+                    "ATK"
+                } else {
+                    "playing..."
+                }
             }
         }
         div { class: "character-name-grid-container",
-            // name button
+            // name buttons
             Button {
                 variant: ButtonVariant::CharacterName,
                 onclick: move |_| async move {},
@@ -225,9 +250,13 @@ pub fn AttackList(
     selected_atk_name: Signal<String>,
 ) -> Element {
     // contexts
-    // let _socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
-    let app = use_context::<Signal<Application>>();
-    if let Some(c) = app.read().game_manager.pm.get_active_character(&name) {
+    let server_data = use_context::<Signal<ServerData>>();
+    if let Some(c) = server_data()
+        .app
+        .game_manager
+        .pm
+        .get_active_character(&name)
+    {
         rsx! {
             div { class: "attack-list",
                 for (_key , value) in c.attacks_list.iter() {
