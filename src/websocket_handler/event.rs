@@ -78,9 +78,8 @@ pub enum ClientEvent {
 pub enum ServerEvent {
     NewClientOnExistingPlayer(String, u32), // welcome message, player id
     AssignPlayerId(u32),                    // player id
-    UpdateApplication(Box<Application>),
-    ReconnectAllSessions(String, i64), // username, sql-id
-    UpdateServerData(Box<ServerData>), // server data
+    ReconnectAllSessions(String, i64),      // username, sql-id
+    UpdateServerData(Box<ServerData>),      // server data
     UpdateOngoingGames(Vec<OnGoingGame>),
     AnswerSavedGameList(Vec<PathBuf>), // list of saved games paths
     ResetClientFromServerData,         // server name
@@ -235,9 +234,9 @@ pub async fn on_rcv_client_event(
 
 #[cfg(feature = "server")]
 pub fn add_player(name: String, id: u32) {
-    let mut gm = SERVER_MANAGER.lock().unwrap();
-    gm.players.entry(name.clone()).or_default().push(id);
-    tracing::info!("All connected players: {:?}", gm.players);
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    sm.players.entry(name.clone()).or_default().push(id);
+    tracing::info!("All connected players: {:?}", sm.players);
 }
 
 #[cfg(feature = "server")]
@@ -250,17 +249,17 @@ pub fn login_all_sessions(username: String, sql_id: i64) {
 
 #[cfg(feature = "server")]
 pub fn send_logout_to_server(user_name: String) {
-    let mut gm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = SERVER_MANAGER.lock().unwrap();
     // remove player from GameStateManager
-    gm.players
+    sm.players
         .retain(|player_name, _| player_name != &user_name);
     // remove from servers data
-    if let Some(server_data) = gm.servers_data.get_mut(&user_name) {
+    if let Some(server_data) = sm.servers_data.get_mut(&user_name) {
         server_data
             .players_info
             .retain(|player_name, _| player_name != &user_name);
     }
-    tracing::info!("All connected players after logout: {:?}", gm.players);
+    tracing::info!("All connected players after logout: {:?}", sm.players);
 }
 
 #[cfg(feature = "server")]
@@ -408,7 +407,6 @@ pub async fn send_disconnection_to_server_data(
 pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
     let app = {
         let mut sm = SERVER_MANAGER.lock().unwrap();
-
         let Some(server_data) = sm.servers_data.get_mut(server_name) else {
             tracing::error!("No server data found for server name: {}", server_name);
             return;
@@ -421,7 +419,6 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
         server_data.app.game_phase = GamePhase::Running;
         tracing::info!("Game started for server: {}", server_name);
 
-        // clone what you need *inside* the lock
         server_data.app.clone()
     }; // sm is guaranteed dropped here
 
@@ -429,10 +426,6 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
     save_game_manager_state(&app, SAVED_GAME_MANAGER).await;
     save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY).await;
 
-    update_clients_app(
-        server_name,
-        &get_app_by_server_name(server_name).unwrap_or_default(),
-    );
     update_clients_server_data(server_name);
 }
 
@@ -448,23 +441,21 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
             save_game_manager_state(&app, SAVED_GAME_MANAGER).await;
             save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY).await;
             // update ongoing servers data list
-            let mut gm: std::sync::MutexGuard<'_, GameStateManager> =
-                SERVER_MANAGER.lock().unwrap();
+            let mut sm = SERVER_MANAGER.lock().unwrap();
             // remove ongoing game if already exists for the server name
-            gm.ongoing_games
+            sm.ongoing_games
                 .retain(|ongoing_game| ongoing_game.server_name != server_name);
             // add ongoing game
-            gm.ongoing_games.push(OnGoingGame {
+            sm.ongoing_games.push(OnGoingGame {
                 path: app.game_manager.game_paths.current_game_dir.clone(),
                 server_name: server_name.to_string(),
             });
-            drop(gm);
+            drop(sm);
             // add server data
             app.game_phase = GamePhase::InitGame;
             add_server_data_with_player(&app, server_name, id, player_name);
             // update for the clients connected to that server
             update_clients_server_data(server_name);
-            update_clients_app(server_name, &app);
             update_clients_ongoing_games();
         }
         Err(_) => tracing::error!("no app"),
@@ -490,32 +481,6 @@ async fn save_game_manager_state(app: &Application, save_game_name: &str) {
     {
         Ok(()) => tracing::info!("Game manager state saved successfully {}", save_game_name),
         Err(e) => tracing::error!("Failed to save game manager state: {}", e),
-    }
-}
-
-#[cfg(feature = "server")]
-fn update_clients_app(server_name: &str, app: &Application) {
-    let mut gm = SERVER_MANAGER.lock().unwrap();
-    // update the app in the game state manager
-    let server_data = match gm.servers_data.get_mut(server_name) {
-        Some(server_data) => {
-            server_data.app = app.clone();
-            server_data
-        }
-        None => {
-            tracing::info!("no server data for server: {}", server_name);
-            return;
-        }
-    };
-    let clients = CLIENTS.lock().unwrap();
-    for (&other_id, sender) in clients.iter() {
-        if server_data
-            .players_info
-            .values()
-            .any(|player_info| player_info.player_ids.contains(&(other_id as u32)))
-        {
-            let _ = sender.send(ServerEvent::UpdateApplication(Box::new(app.clone())));
-        }
     }
 }
 
@@ -587,36 +552,36 @@ fn send_end_of_serverdata(server_name: &str, client_id: u32, is_owner_disconnect
 
 #[cfg(feature = "server")]
 pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) {
-    // get app by server name
-
     use lib_rpg::game_state::GameStatus;
-    let gm = SERVER_MANAGER.lock().unwrap();
-    let mut app = match gm.servers_data.get(server_name) {
-        Some(server_data) => server_data.app.clone(),
+    let sm = SERVER_MANAGER.lock().unwrap();
+    let mut server_data = match sm.servers_data.get(server_name) {
+        Some(server_data) => server_data.clone(),
         None => {
             tracing::error!("No application found for server name: {}", server_name);
             return;
         }
     };
-    drop(gm);
+    drop(sm);
     // launch attack
     // case several ennemy-auto-atk in a row and one atk ended the game, the next atk should not reach.
     // and the state of the game should not be updated anymore
-    if app.game_manager.game_state.status == GameStatus::EndOfGame {
+    if server_data.app.game_manager.game_state.status == GameStatus::EndOfGame {
         tracing::info!(
             "Game is already ended for server: {}, skipping atk processing",
             server_name
         );
         return;
     }
-    let _ = app.game_manager.launch_attack(selected_atk_name);
+    let _ = server_data
+        .app
+        .game_manager
+        .launch_attack(selected_atk_name);
     tracing::info!(
         "Attack launched for server: {},  atk: {:?}",
         server_name,
         selected_atk_name
     );
     // update clients
-    update_clients_app(server_name, &app);
     update_clients_server_data(server_name);
 }
 
@@ -642,32 +607,32 @@ pub async fn process_ennemy_atk(server_name: &str, tx: mpsc::UnboundedSender<Ser
 #[cfg(feature = "server")]
 pub fn get_app_by_server_name(server_name: &str) -> Option<Application> {
     // get app by server name
-    let gm = SERVER_MANAGER.lock().unwrap();
-    let app = match gm.servers_data.get(server_name) {
+    let sm = SERVER_MANAGER.lock().unwrap();
+    let app = match sm.servers_data.get(server_name) {
         Some(server_data) => server_data.app.clone(),
         None => {
             tracing::error!("No application found for server name: {}", server_name);
-            drop(gm);
+            drop(sm);
             return None;
         }
     };
-    drop(gm);
+    drop(sm);
     Some(app)
 }
 
 #[cfg(feature = "server")]
 pub fn get_server_data_by_server_name(server_name: &str) -> Option<ServerData> {
     // get server-data by server name
-    let gm = SERVER_MANAGER.lock().unwrap();
-    let server_data = match gm.servers_data.get(server_name) {
+    let sm = SERVER_MANAGER.lock().unwrap();
+    let server_data = match sm.servers_data.get(server_name) {
         Some(server_data) => server_data.clone(),
         None => {
             tracing::error!("No server data found for server name: {}", server_name);
-            drop(gm);
+            drop(sm);
             return None;
         }
     };
-    drop(gm);
+    drop(sm);
     Some(server_data)
 }
 
@@ -678,25 +643,25 @@ pub fn add_server_data_with_player(
     id: u32,
     player_name: &str,
 ) {
-    let mut gm: std::sync::MutexGuard<'_, GameStateManager> = SERVER_MANAGER.lock().unwrap();
-    gm.add_server_data(server_name, app, player_name);
-    gm.add_player_to_server(server_name, player_name, id);
-    tracing::info!("servers data keys: {:?}", gm.servers_data.keys());
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    sm.add_server_data(server_name, app, player_name);
+    sm.add_player_to_server(server_name, player_name, id);
+    tracing::info!("servers data keys: {:?}", sm.servers_data.keys());
 }
 
 #[cfg(feature = "server")]
 fn update_lobby_page_after_joining_game(server_name: &str, player_name: &str, client_id: u32) {
     // update lobby page for the player who joined the game
-    let mut gm: std::sync::MutexGuard<'_, GameStateManager> = SERVER_MANAGER.lock().unwrap();
-    gm.add_player_to_server(server_name, player_name, client_id);
-    drop(gm);
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    sm.add_player_to_server(server_name, player_name, client_id);
+    drop(sm);
     update_clients_server_data(server_name);
 }
 
 #[cfg(feature = "server")]
 fn add_character_on_server_data(server_name: &str, player_name: &str, character_name: &str) {
-    let mut gm = SERVER_MANAGER.lock().unwrap();
-    if let Some(server_data) = gm.servers_data.get_mut(server_name) {
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         // remove character from all players in server data
         server_data
             .players_info
@@ -749,7 +714,7 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
     } else {
         tracing::error!("Server data not found for server: {}", server_name);
     }
-    drop(gm);
+    drop(sm);
     // comment active heroes for all players in server data
     tracing::debug!(
         "active heroes for server {}: {:?}",
@@ -763,10 +728,6 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
             .collect::<Vec<String>>())
     );
     update_clients_server_data(server_name);
-    update_clients_app(
-        server_name,
-        &get_app_by_server_name(server_name).unwrap_or_default(),
-    );
 }
 
 #[cfg(feature = "server")]
@@ -842,11 +803,6 @@ async fn load_game_by_player(
 
     if !is_replay {
         add_server_data_with_player(&app, &app.server_name, client_id, &player_name);
-
-        update_clients_app(
-            &app.server_name,
-            &get_app_by_server_name(&app.server_name).unwrap_or_default(),
-        );
         update_clients_server_data(&app.server_name);
     } else {
         tracing::info!("Starting replay for server: {}", server_name);
@@ -876,9 +832,9 @@ async fn load_game_by_player(
 
 #[cfg(feature = "server")]
 async fn update_ongoing_games_list_display(client_id: u32) {
-    let gm = SERVER_MANAGER.lock().unwrap();
-    let ongoing_games = gm.ongoing_games.clone();
-    drop(gm);
+    let sm = SERVER_MANAGER.lock().unwrap();
+    let ongoing_games = sm.ongoing_games.clone();
+    drop(sm);
     let clients = CLIENTS.lock().unwrap();
     for (&other_id, sender) in clients.iter() {
         if other_id as u32 == client_id {
@@ -918,8 +874,8 @@ async fn process_replay_game(server_name: &str, client_id: u32) {
 
 #[cfg(feature = "server")]
 fn request_set_targeted_characters(server_name: &str, launcher_name: &str, atk_name: &str) {
-    let mut gm = SERVER_MANAGER.lock().unwrap();
-    if let Some(server_data) = gm.servers_data.get_mut(server_name) {
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         server_data
             .app
             .game_manager
@@ -928,11 +884,7 @@ fn request_set_targeted_characters(server_name: &str, launcher_name: &str, atk_n
     } else {
         tracing::error!("No server data found for server name: {}", server_name);
     }
-    drop(gm);
-    update_clients_app(
-        server_name,
-        &get_app_by_server_name(server_name).unwrap_or_default(),
-    );
+    drop(sm);
     update_clients_server_data(server_name);
 }
 
@@ -943,8 +895,8 @@ fn request_set_one_target(
     atk_name: &str,
     target_name: &str,
 ) {
-    let mut gm = SERVER_MANAGER.lock().unwrap();
-    if let Some(server_data) = gm.servers_data.get_mut(server_name) {
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         server_data
             .app
             .game_manager
@@ -953,11 +905,7 @@ fn request_set_one_target(
     } else {
         tracing::error!("No server data found for server name: {}", server_name);
     }
-    drop(gm);
-    update_clients_app(
-        server_name,
-        &get_app_by_server_name(server_name).unwrap_or_default(),
-    );
+    drop(sm);
     update_clients_server_data(server_name);
 }
 

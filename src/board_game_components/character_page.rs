@@ -10,7 +10,6 @@ use lib_rpg::{
     character::{Character, CharacterType},
     character_mod::fight_information::{CharacterFightInfo, HotsBufs},
     common::stats_const::*,
-    players_manager,
 };
 
 use crate::{
@@ -42,8 +41,7 @@ pub fn CharacterPanel(
     let current_character = match server_data()
         .players_info
         .get(&local_session_player_name())
-        .map(|info| info.character_names.first().cloned())
-        .flatten()
+        .and_then(|info| info.character_names.first().cloned())
     {
         Some(player_name) => player_name,
         None => {
