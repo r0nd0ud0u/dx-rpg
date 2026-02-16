@@ -31,6 +31,7 @@ use once_cell::sync::Lazy;
 use tokio::sync::mpsc;
 
 use crate::application::{self, Application};
+#[cfg(feature = "server")]
 use crate::websocket_handler::game_state::GameStateManager;
 
 #[cfg(feature = "server")]
@@ -82,7 +83,7 @@ pub enum ServerEvent {
     UpdateServerData(Box<ServerData>), // server data
     UpdateOngoingGames(Vec<OnGoingGame>),
     AnswerSavedGameList(Vec<PathBuf>), // list of saved games paths
-    EndOfServerData,                   // server name
+    ResetClientFromServerData,         // server name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -214,7 +215,6 @@ pub async fn on_rcv_client_event(
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
                                 tracing::info!("Client {} disconnected", client_id);
-                                // TODO get server name from GAMES_MANAGER by player id
                                 send_disconnection_to_server_manager(client_id).await;
                                 break;
                             }
@@ -264,28 +264,25 @@ pub fn send_logout_to_server(user_name: String) {
 }
 
 #[cfg(feature = "server")]
-pub async fn send_disconnection_to_server_manager(cur_player_id: u32) {
+pub async fn send_disconnection_to_server_manager(client_id: u32) {
+    // TODO username is used as servername
     let mut sm = SERVER_MANAGER.lock().unwrap();
     let username = sm
         .players
         .iter()
         .find_map(|(player_name, ids)| {
-            if ids.contains(&cur_player_id) {
+            if ids.contains(&client_id) {
                 Some(player_name.clone())
             } else {
                 None
             }
         })
         .unwrap_or_else(|| "Unknown".to_string());
-    tracing::info!(
-        "Player {} with id {} is disconnecting",
-        username,
-        cur_player_id
-    );
+    tracing::info!("Player {} with id {} is disconnecting", username, client_id);
     // remove player id from GameStateManager
     sm.players.retain(|player_name, ids| {
         if player_name == &username {
-            ids.retain(|&id| id != cur_player_id);
+            ids.retain(|&id| id != client_id);
             !ids.is_empty()
         } else {
             true
@@ -296,16 +293,45 @@ pub async fn send_disconnection_to_server_manager(cur_player_id: u32) {
         sm.players
     );
     // remove from servers data
-    if let Some(server_data) = sm.servers_data.get_mut(&username) {
-        server_data.players_info.retain(|player_name, pl| {
-            if player_name == &username {
-                pl.player_ids.retain(|&id| id != cur_player_id);
-                !pl.player_ids.is_empty()
-            } else {
-                true
-            }
-        });
+    let mut server_data = match sm.get_server_data_by_player_id(client_id) {
+        Some(server_data) => server_data,
+        None => {
+            tracing::error!(
+                "Player {} with id {} is disconnecting, but no server data found for that player",
+                username,
+                client_id
+            );
+            return;
+        }
+    };
+    // remove player id from server data
+    server_data.players_info.retain(|player_name, pl| {
+        if player_name == &username {
+            pl.player_ids.retain(|&id| id != client_id);
+            !pl.player_ids.is_empty()
+        } else {
+            true
+        }
+    });
+
+    // reset the remaining clients in the same server data to reset their lobby page if they are in the lobby
+    // or to reset their game page if they are in the game,
+    let clients = CLIENTS.lock().unwrap();
+    for (&other_id, sender) in clients.iter() {
+        if server_data
+            .players_info
+            .values()
+            .any(|player_info| player_info.player_ids.contains(&(other_id as u32)))
+        {
+            let _ = sender.send(ServerEvent::ResetClientFromServerData);
+        }
     }
+    drop(clients);
+    // remove ongoing game if exists for the server name
+    sm.ongoing_games
+        .retain(|ongoing_game| ongoing_game.server_name != username);
+    drop(sm);
+    update_clients_ongoing_games();
 }
 
 #[cfg(feature = "server")]
@@ -334,8 +360,9 @@ pub async fn send_disconnection_to_server_data(
             .retain(|ongoing_game| ongoing_game.server_name != server_name);
         drop(sm);
         update_clients_ongoing_games();
+    } else {
+        drop(sm);
     }
-
     // send end of game to clients before deleting the ids from the server data, so that the clients can know which game is ending based on the server data they have
     send_end_of_serverdata(server_name, client_id, is_owner_disconnecting);
 
@@ -372,6 +399,9 @@ pub async fn send_disconnection_to_server_data(
         );
     }
     drop(sm);
+
+    // update all clients
+    update_clients_server_data(server_name);
 }
 
 #[cfg(feature = "server")]
@@ -550,7 +580,7 @@ fn send_end_of_serverdata(server_name: &str, client_id: u32, is_owner_disconnect
                     .values()
                     .any(|player_info| player_info.player_ids.contains(&(other_id as u32))))
         {
-            let _ = sender.send(ServerEvent::EndOfServerData);
+            let _ = sender.send(ServerEvent::ResetClientFromServerData);
         }
     }
 }

@@ -71,6 +71,18 @@ impl GameStateManager {
                 .push(player_id);
         }
     }
+
+    /// Get the server data associated with a given player ID by searching through the servers data.
+    pub fn get_server_data_by_player_id(&self, player_id: u32) -> Option<ServerData> {
+        for server_data in self.servers_data.values() {
+            for player_info in server_data.players_info.values() {
+                if player_info.player_ids.contains(&player_id) {
+                    return Some(server_data.clone());
+                }
+            }
+        }
+        None
+    }
 }
 
 #[derive(Default, Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
