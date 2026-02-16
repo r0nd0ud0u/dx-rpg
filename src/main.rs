@@ -157,7 +157,8 @@ fn App() -> Element {
                         tracing::info!("Received saved game list with {} games", games_list.len());
                         saved_game_list.set(games_list);
                     }
-                    ServerEvent::EndOfServerData => {
+                    ServerEvent::ResetClientFromServerData => {
+                        tracing::info!("Reset client from server-data {}", SERVER_NAME());
                         server_data.set(ServerData::default());
                         app.set(Application::default());
                         SERVER_NAME.write().clear();

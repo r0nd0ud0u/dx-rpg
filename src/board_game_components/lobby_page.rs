@@ -12,7 +12,7 @@ use crate::{
     components::button::Button,
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
-        game_state::GamePhase,
+        game_state::{GamePhase, ServerData},
     },
 };
 
@@ -22,6 +22,7 @@ pub fn LobbyPage() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let local_login_name_session = use_context::<Signal<String>>();
     let game_phase = use_context::<Signal<GamePhase>>();
+    let server_data = use_context::<Signal<ServerData>>();
 
     rsx! {
         // if the game is not running, show the lobby page, otherwise show the start game page
@@ -41,11 +42,39 @@ pub fn LobbyPage() -> Element {
                 CharacterSelect {}
             }
         } else if game_phase() == GamePhase::Running {
-            StartGamePage {}
+            // check if there is more characters in game than users
+            if server_data().app.game_manager.pm.active_heroes.len()
+                <= server_data().players_info.len()
+            {
+                StartGamePage {}
+            } else {
+
+                ButtonLink {
+                    target: Route::Home {}.into(),
+                    name: "Not enough players".to_string(),
+                    onclick: move |_| {
+                        async move {
+                            let _ = socket
+                                .send(
+                                    ClientEvent::DisconnectFromServerData(
+                                        SERVER_NAME(),
+                                        local_login_name_session(),
+                                    ),
+                                )
+                                .await;
+                        }
+                    },
+                }
+            }
         } else if game_phase() == GamePhase::Ended {
             ButtonLink {
                 target: Route::Home {}.into(),
                 name: "No more game, back to Home".to_string(),
+            }
+        } else if game_phase() == GamePhase::Default {
+            ButtonLink {
+                target: Route::Home {}.into(),
+                name: "Disconnected, back to home".to_string(),
             }
         }
     }
