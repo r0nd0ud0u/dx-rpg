@@ -4,6 +4,7 @@ use dioxus::{
 };
 
 use crate::{
+    board_game_components::msg_from_client::send_disconnect_from_server_data,
     common::{Route, SERVER_NAME},
     components::{
         alert_dialog::{
@@ -40,15 +41,7 @@ pub fn AlertDialogComp() -> Element {
                     AlertDialogAction {
                         on_click: move |_| {
                             async move {
-                                let _ = socket
-                                    // back to host
-                                    .send(
-                                        ClientEvent::DisconnectFromServerData(
-                                            SERVER_NAME(),
-                                            local_login_name_session(),
-                                        ),
-                                    )
-                                    .await;
+                                send_disconnect_from_server_data(socket, &local_login_name_session()).await;
                                 let navigator = use_navigator();
                                 navigator.push(Route::Home {});
                             }

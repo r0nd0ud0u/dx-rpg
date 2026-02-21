@@ -8,7 +8,7 @@ use crate::{
     common::{Route, disconnected_user},
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
-        game_state::GamePhase,
+        game_state::{GamePhase, ServerData},
     },
 };
 
@@ -18,7 +18,7 @@ pub fn Home() -> Element {
     // contexts
     let local_login_name_session = use_context::<Signal<String>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
-    let mut game_phase = use_context::<Signal<crate::websocket_handler::game_state::GamePhase>>();
+    let mut server_data = use_context::<Signal<ServerData>>;
     // Snapshot for this render
     let user_name = local_login_name_session();
 
@@ -34,7 +34,7 @@ pub fn Home() -> Element {
                     target: Route::CreateServer {}.into(),
                     name: "Create Server".to_string(),
                     onclick: move |_| {
-                        *game_phase.write() = GamePhase::InitGame;
+                        server_data().write().app.game_phase = GamePhase::InitGame;
                     },
                 }
                 ButtonLink {

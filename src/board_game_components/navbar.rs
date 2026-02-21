@@ -1,4 +1,7 @@
-use crate::{components::label::Label, widgets::alert_dialog::AlertDialogComp};
+use crate::{
+    board_game_components::msg_from_client::send_disconnect_from_server_data,
+    components::label::Label, widgets::alert_dialog::AlertDialogComp,
+};
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     logger::tracing,
@@ -28,7 +31,13 @@ pub fn Navbar() -> Element {
     rsx! {
         div { class: "navbar",
             div { style: "display: flex; gap: 1rem;",
-                Link { to: Route::Home {}, "Home" }
+                Link {
+                    to: Route::Home {},
+                    onclick: move |_| async move {
+                        send_disconnect_from_server_data(socket, &local_login_name_session()).await;
+                    },
+                    "Home"
+                }
                 if snap_local_login_name_session == ADMIN.to_string() {
                     Link { to: Route::AdminPage {}, "Admin" }
                 }

@@ -46,12 +46,12 @@ pub fn LobbyPage() -> Element {
             || server_data_snap.app.game_phase == GamePhase::Loading
         {
             div { class: "home-container",
-                h1 { "LobbyPage" }
                 if server_data_snap.app.game_phase == GamePhase::InitGame {
-                    h4 { "InitGame" }
-                }
-                if server_data_snap.app.game_phase == GamePhase::Loading {
-                    h4 { "loading" }
+                    h1 { "Init game" }
+                } else if server_data_snap.app.game_phase == GamePhase::Loading {
+                    h1 { "Loading" }
+                } else {
+                    h1 { "Lobby page" }
                 }
                 // if the current client is the host, show start game button
                 if SERVER_NAME() == local_login_name_session() && all_players_have_character_name
