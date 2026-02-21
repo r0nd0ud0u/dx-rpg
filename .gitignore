@@ -9,7 +9,7 @@
 /node_modules/*
 
 # games output
-/output/games/*
+saved_data/*
 
 # bundle output defined in dioxus.toml [application] / out_dir
 /bundle/*

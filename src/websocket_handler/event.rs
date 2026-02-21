@@ -64,14 +64,14 @@ pub enum ClientEvent {
     LaunchAttack(String, String),                     // `String`: server_name, `String`: atk name
     AddPlayer(String),                                // `String`: username
     JoinServerData(String, String), // `String`: server_name, `String`: player_name
-    RequestSavedGameList,
+    RequestSavedGameList(String),   // `String`: player_name
     RequestOnGoingGamesList,
     LoadGame(PathBuf, String), // `PathBuf`: game path, `String`: player name
     ReplayGame(String),        // `String`: server name
     DisconnectFromServerData(String, String), // `String`: server name, `String`: player name
     RequestTargetedCharacter(String, String, String), // `String`: launcher name, `String`: server name, `String`: atk name
     RequestSetOneTarget(String, String, String, String), // `String`: launcher name, `String`: server name, `String`: atk name, `String`: target name
-    SaveGame(String),                                    // `String`: server name
+    SaveGame(String, String), // `String`: server name, `String`: player name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -179,9 +179,9 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("Player {} with id {} is joining server data for server {}", player_name, client_id, server_name);
                                 update_lobby_page_after_joining_game(&server_name, &player_name, client_id);
                             }
-                            Ok(ClientEvent::RequestSavedGameList) => {
+                            Ok(ClientEvent::RequestSavedGameList(player_name)) => {
                                 tracing::info!("Client {} requested saved game list", client_id);
-                                update_saved_game_list_display().await;
+                                update_saved_game_list_display(&player_name).await;
                             }
                             Ok(ClientEvent::LoadGame(game_path, player_name)) => {
                                 tracing::info!("Player {} with id {} is loading game: {}", player_name, client_id, game_path.to_string_lossy());
@@ -207,9 +207,9 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("Client {} requested update target with target {} and atk {}", client_id, launcher_name, atk_name);
                                 request_set_one_target(&server_name, &launcher_name, &atk_name, &target_name);
                             }
-                            Ok(ClientEvent::SaveGame(server_name)) => {
-                                tracing::info!("Client {} requested save game", client_id);
-                                process_save_game(&server_name).await;
+                            Ok(ClientEvent::SaveGame(server_name, player_name)) => {
+                                tracing::info!("Client {} requested save game by {}", client_id, player_name);
+                                process_save_game(&server_name, &player_name).await;
                             }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
@@ -405,7 +405,7 @@ pub async fn send_disconnection_to_server_data(
 
 #[cfg(feature = "server")]
 pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
-    let app = {
+    let (app, server_owner) = {
         let mut sm = SERVER_MANAGER.lock().unwrap();
         let Some(server_data) = sm.servers_data.get_mut(server_name) else {
             tracing::error!("No server data found for server name: {}", server_name);
@@ -419,12 +419,15 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
         server_data.app.game_phase = GamePhase::Running;
         tracing::info!("Game started for server: {}", server_name);
 
-        server_data.app.clone()
+        (
+            server_data.app.clone(),
+            server_data.owner_player_name.clone(),
+        )
     }; // sm is guaranteed dropped here
 
     // async work happens after the lock is gone
-    save_game_manager_state(&app, SAVED_GAME_MANAGER).await;
-    save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY).await;
+    save_game_manager_state(&app, SAVED_GAME_MANAGER, &server_owner).await;
+    save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY, &server_owner).await;
 
     update_clients_server_data(server_name);
 }
@@ -438,8 +441,8 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
             // init a new game
             init_application(server_name, &mut app);
             // save the game manager state
-            save_game_manager_state(&app, SAVED_GAME_MANAGER).await;
-            save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY).await;
+            save_game_manager_state(&app, SAVED_GAME_MANAGER, player_name).await;
+            save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY, player_name).await;
             // update ongoing servers data list
             let mut sm = SERVER_MANAGER.lock().unwrap();
             // remove ongoing game if already exists for the server name
@@ -463,18 +466,19 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
 }
 
 #[cfg(feature = "server")]
-async fn save_game_manager_state(app: &Application, save_game_name: &str) {
-    let path = app
-        .game_manager
-        .game_paths
-        .current_game_dir
-        .join(save_game_name);
-    match application::create_dir(app.game_manager.game_paths.current_game_dir.clone()).await {
+async fn save_game_manager_state(app: &Application, save_game_name: &str, player_name: &str) {
+    // create dir
+    use crate::common::SAVED_DATA;
+    let mut saved_dir: PathBuf = SAVED_DATA.join(PathBuf::from(player_name));
+    saved_dir = saved_dir.join(app.game_manager.game_paths.current_game_dir.clone());
+    match application::create_dir(saved_dir.clone()).await {
         Ok(()) => {}
         Err(e) => tracing::error!("Failed to create directory: {}", e),
     }
+    // save game
+    let cur_game_path = saved_dir.join(save_game_name);
     match application::save(
-        path,
+        cur_game_path,
         serde_json::to_string_pretty(&app.game_manager.clone()).unwrap(),
     )
     .await
@@ -731,8 +735,11 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
 }
 
 #[cfg(feature = "server")]
-async fn update_saved_game_list_display() {
-    let games_list = match application::get_game_list(GAMES_DIR.to_path_buf()).await {
+async fn update_saved_game_list_display(player_name: &str) {
+    use crate::common::SAVED_DATA;
+
+    let saved_dir = SAVED_DATA.join(player_name).join(GAMES_DIR.to_path_buf());
+    let games_list = match application::get_game_list(saved_dir).await {
         Ok(games) => {
             for game in &games {
                 tracing::info!("Game: {}", game.to_string_lossy());
@@ -786,8 +793,8 @@ async fn load_game_by_player(
     };
 
     // persist state (no locks involved)
-    save_game_manager_state(&app, SAVED_GAME_MANAGER).await;
-    save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY).await;
+    save_game_manager_state(&app, SAVED_GAME_MANAGER, &player_name).await;
+    save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY, &player_name).await;
 
     // ---- update ongoing games (lock scope #1) ----
     {
@@ -910,7 +917,7 @@ fn request_set_one_target(
 }
 
 #[cfg(feature = "server")]
-async fn process_save_game(server_name: &str) {
+async fn process_save_game(server_name: &str, player_name: &str) {
     // get server data by server name
     let server_data = match get_server_data_by_server_name(server_name) {
         Some(server_data) => server_data,
@@ -919,37 +926,5 @@ async fn process_save_game(server_name: &str) {
             return;
         }
     };
-    let cur_game_path = server_data
-        .app
-        .game_manager
-        .game_paths
-        .current_game_dir
-        .clone()
-        .join("game_manager.json");
-    match application::create_dir(
-        server_data
-            .app
-            .game_manager
-            .game_paths
-            .current_game_dir
-            .clone(),
-    )
-    .await
-    {
-        Ok(()) => {
-            tracing::info!("Directory created or already existing successfully")
-        }
-        Err(e) => tracing::info!("Failed to create directory: {}", e),
-    }
-    match application::save(
-        cur_game_path,
-        serde_json::to_string_pretty(&server_data.app.game_manager).unwrap(),
-    )
-    .await
-    {
-        Ok(()) => {
-            tracing::trace!("save");
-        }
-        Err(e) => tracing::trace!("{}", e),
-    }
+    save_game_manager_state(&server_data.app, SAVED_GAME_MANAGER, player_name).await;
 }

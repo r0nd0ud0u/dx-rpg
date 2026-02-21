@@ -34,8 +34,9 @@ pub fn CreateServer() -> Element {
             }
             Button {
                 onclick: move |_| {
+                    let user_name = local_login_name_session();
                     async move {
-                        request_update_saved_game_list_display(socket).await;
+                        request_update_saved_game_list_display(socket, &user_name).await;
                         let navigator = use_navigator();
                         navigator.push(Route::LoadGame {});
                     }
