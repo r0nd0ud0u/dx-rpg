@@ -209,6 +209,7 @@ fn InventorySheet(s: SheetSide) -> Element {
 fn GameStatsSheet(s: SheetSide) -> Element {
     // context
     let server_data = use_context::<Signal<ServerData>>();
+
     rsx! {
         SheetContent { side: s,
             SheetHeader {

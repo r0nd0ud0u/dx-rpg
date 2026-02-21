@@ -12,7 +12,10 @@ use crate::{
         },
         button::Button,
     },
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    websocket_handler::{
+        event::{ClientEvent, ServerEvent},
+        game_state::{GamePhase, ServerData},
+    },
 };
 
 #[component]
@@ -20,10 +23,13 @@ pub fn AlertDialogComp() -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let local_login_name_session = use_context::<Signal<String>>();
+    let server_data = use_context::<Signal<ServerData>>();
     // local signal
     let mut open = use_signal(|| false);
     rsx! {
-        Button { onclick: move |_| open.set(true), r#type: "button", "Quit game" }
+        if server_data().app.game_phase == GamePhase::Running {
+            Button { onclick: move |_| open.set(true), r#type: "button", "Quit game" }
+        }
         AlertDialogRoot { open: open(), on_open_change: move |v| open.set(v),
             AlertDialogContent {
                 // You may pass class/style for custom appearance

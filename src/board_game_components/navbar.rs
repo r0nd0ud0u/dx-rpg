@@ -23,7 +23,7 @@ pub fn Navbar() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let mut local_login_name_session = use_context::<Signal<String>>();
     let mut local_login_id_session = use_context::<Signal<i64>>();
-    let server_data = use_context::<Signal<ServerData>>();
+
     // nav
     let navigator = use_navigator();
 
@@ -38,9 +38,7 @@ pub fn Navbar() -> Element {
                 }
             }
             div { style: "display: flex; flex-direction: row; gap: 1rem;",
-                if server_data().app.game_phase == GamePhase::Running {
-                    AlertDialogComp {}
-                }
+                AlertDialogComp {}
                 Button {
                     variant: if snap_local_login_name_session == disconnected_user() { ButtonVariant::Secondary } else { ButtonVariant::Destructive },
                     onclick: move |_| async move {

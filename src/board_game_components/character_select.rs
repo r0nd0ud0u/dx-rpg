@@ -29,21 +29,22 @@ pub fn CharacterSelect() -> Element {
 
     // snapshot except local_login_name_session because it's used in the ClassSelect component
     let local_name = local_login_name_session();
-    let server_data = server_data();
+    let server_data_snap = server_data();
+
     // filter hashmap
-    let players_except_current_client: HashMap<String, PlayerInfo> = server_data
+    let players_except_current_client: HashMap<String, PlayerInfo> = server_data_snap
         .players_info
         .iter()
         .filter(|(k, _)| k.as_str() != local_name.as_str())
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect();
 
-    let connected: HashMap<String, String> = server_data
+    let connected: HashMap<String, String> = server_data_snap
         .app
         .heroes_chosen
         .iter()
         .map(|(key, value)| {
-            let status = if server_data.players_info.contains_key(key) {
+            let status = if server_data_snap.players_info.contains_key(key) {
                 "✅"
             } else {
                 "❌"

@@ -1,3 +1,5 @@
+use std::{collections::HashMap, hash::Hash};
+
 use dioxus::{
     fullstack::{WebSocketOptions, use_websocket},
     logger::tracing::{self, Level},
@@ -5,6 +7,7 @@ use dioxus::{
 };
 use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use dx_rpg::{
+    application::Application,
     common::{DX_COMP_CSS, Route, SERVER_NAME, disconnected_user},
     websocket_handler::{
         event::{ClientEvent, ServerEvent, on_rcv_client_event},
@@ -18,6 +21,7 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 fn main() {
     // Init logger
     dioxus::logger::init(Level::INFO).expect("failed to init logger");
+    console_error_panic_hook::set_once();
     tracing::info!("Rendering app!");
     // On the client, we simply launch the app as normal, taking over the main thread
     #[cfg(not(feature = "server"))]
