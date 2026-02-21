@@ -1,3 +1,4 @@
+use dioxus::logger::tracing;
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
@@ -25,10 +26,20 @@ pub fn LobbyPage() -> Element {
     let server_data = use_context::<Signal<ServerData>>();
 
     // all players info have a character name
-    let all_players_have_character_name = server_data()
-        .players_info
-        .values()
-        .all(|player_info| !player_info.character_names.is_empty());
+    let server_data_snap = server_data();
+
+    let all_players_have_character_name = if server_data_snap.players_info.is_empty() {
+        false
+    } else {
+        server_data_snap
+            .players_info
+            .values()
+            .all(|p| !p.character_names.is_empty())
+    };
+    tracing::info!(
+        "all_players_have_character_name: {}",
+        all_players_have_character_name
+    );
 
     rsx! {
         // if the game is not running, show the lobby page, otherwise show the start game page
@@ -45,8 +56,8 @@ pub fn LobbyPage() -> Element {
                 if SERVER_NAME() == local_login_name_session() && all_players_have_character_name
                     && (game_phase() == GamePhase::InitGame
                         || game_phase() == GamePhase::Loading
-                            && server_data().app.players_nb
-                                == server_data().players_info.len() as i64)
+                            && server_data_snap.app.players_nb
+                                == server_data_snap.players_info.len() as i64)
                 {
                     Button {
                         onclick: move |_| async move {
@@ -61,8 +72,8 @@ pub fn LobbyPage() -> Element {
             }
         } else if game_phase() == GamePhase::Running {
             // check if there is more characters in game than users
-            if server_data().app.game_manager.pm.active_heroes.len()
-                <= server_data().players_info.len()
+            if server_data_snap.app.game_manager.pm.active_heroes.len()
+                <= server_data_snap.players_info.len()
             {
                 StartGamePage {}
             } else {
