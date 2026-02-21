@@ -4,17 +4,23 @@ use lib_rpg::game_manager::GameManager;
 use lib_rpg::utils::{self, list_dirs_in_dir};
 use serde::Deserialize;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::common::{SAVED_GAME_MANAGER, SAVED_GAME_MANAGER_REPLAY};
+use crate::common::{SAVED_APP, SAVED_APP_REPLAY};
 use crate::websocket_handler::game_state::GamePhase;
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Application {
     pub game_manager: GameManager,
+    /// TODO use in ServerData struct
     pub server_name: String,
     pub game_phase: GamePhase,
+    /// reload info: players_nb
+    pub players_nb: i64,
+    /// reload info: key: username, value: character-name
+    pub heroes_chosen: HashMap<String, String>,
 }
 
 impl Application {
@@ -25,6 +31,8 @@ impl Application {
                 game_manager: gm,
                 server_name: "Default".to_owned(),
                 game_phase: GamePhase::Default,
+                players_nb: 0,
+                heroes_chosen: HashMap::new(),
             }),
             Err(_) => Err(ServerFnError::new(
                 "Failed to create GameManager".to_string(),
@@ -79,16 +87,16 @@ pub async fn delete_game(game_path: PathBuf) -> Result<(), ServerFnError> {
 }
 
 #[server]
-pub async fn get_gamemanager_by_game_dir(
+pub async fn get_application_by_game_dir(
     game_dir_path: PathBuf,
     is_replay: bool,
-) -> Result<GameManager, ServerFnError> {
-    let game_manager_file = if is_replay {
-        game_dir_path.join(Path::new(SAVED_GAME_MANAGER_REPLAY))
+) -> Result<Application, ServerFnError> {
+    let app_file = if is_replay {
+        game_dir_path.join(Path::new(SAVED_APP_REPLAY))
     } else {
-        game_dir_path.join(Path::new(SAVED_GAME_MANAGER))
+        game_dir_path.join(Path::new(SAVED_APP))
     };
-    if let Ok(value) = utils::read_from_json::<_, GameManager>(&game_manager_file) {
+    if let Ok(value) = utils::read_from_json::<_, Application>(&app_file) {
         Ok(value)
     } else {
         Err(ServerFnError::new(format!(

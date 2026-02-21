@@ -54,5 +54,5 @@ pub enum Route {
 
 pub const PATH_IMG: Asset = asset!("/assets/img");
 pub const DX_COMP_CSS: Asset = asset!("/assets/dx-components-theme.css");
-pub const SAVED_GAME_MANAGER: &str = "game_manager.json";
-pub const SAVED_GAME_MANAGER_REPLAY: &str = "game_manager_replay.json";
+pub const SAVED_APP: &str = "application.json";
+pub const SAVED_APP_REPLAY: &str = "application_replay.json";

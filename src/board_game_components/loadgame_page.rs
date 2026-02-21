@@ -66,7 +66,7 @@ pub fn LoadGame() -> Element {
                         navigator.push(Route::LobbyPage {});
                     }
                 },
-                "Start Game"
+                "Valid"
             }
 
             Button {

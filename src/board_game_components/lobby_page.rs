@@ -32,11 +32,22 @@ pub fn LobbyPage() -> Element {
 
     rsx! {
         // if the game is not running, show the lobby page, otherwise show the start game page
-        if game_phase() == GamePhase::InitGame {
+        if game_phase() == GamePhase::InitGame || game_phase() == GamePhase::Loading {
             div { class: "home-container",
                 h1 { "LobbyPage" }
+                if game_phase() == GamePhase::InitGame {
+                    h4 { "InitGame" }
+                }
+                if game_phase() == GamePhase::Loading {
+                    h4 { "loading" }
+                }
                 // if the current client is the host, show start game button
-                if SERVER_NAME() == local_login_name_session() && all_players_have_character_name {
+                if SERVER_NAME() == local_login_name_session() && all_players_have_character_name
+                    && (game_phase() == GamePhase::InitGame
+                        || game_phase() == GamePhase::Loading
+                            && server_data().app.players_nb
+                                == server_data().players_info.len() as i64)
+                {
                     Button {
                         onclick: move |_| async move {
                             send_start_game(socket).await;
@@ -44,6 +55,7 @@ pub fn LobbyPage() -> Element {
                         "Start Game"
                     }
                 }
+
                 // show character select page
                 CharacterSelect {}
             }
