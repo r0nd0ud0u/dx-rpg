@@ -505,7 +505,7 @@ fn update_clients_server_data(server_name: &str) {
             server_data
         }
         None => {
-            tracing::error!("no server data for server: {}", server_name);
+            tracing::info!("no server data for server: {}", server_name);
             return;
         }
     };

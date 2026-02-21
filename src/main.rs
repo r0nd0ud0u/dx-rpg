@@ -8,7 +8,7 @@ use dx_rpg::{
     common::{DX_COMP_CSS, Route, SERVER_NAME, disconnected_user},
     websocket_handler::{
         event::{ClientEvent, ServerEvent, on_rcv_client_event},
-        game_state::ServerData,
+        game_state::{GamePhase, ServerData},
     },
 };
 
@@ -158,7 +158,7 @@ fn App() -> Element {
                     }
                     ServerEvent::ResetClientFromServerData => {
                         tracing::info!("Reset client from server-data {}", SERVER_NAME());
-                        server_data.set(ServerData::default());
+                        server_data.set(ServerData::reset(GamePhase::Ended));
                         SERVER_NAME.write().clear();
                     }
                 }

@@ -34,7 +34,7 @@ pub fn Home() -> Element {
                     target: Route::CreateServer {}.into(),
                     name: "Create Server".to_string(),
                     onclick: move |_| {
-                        server_data().write().app.game_phase = GamePhase::InitGame;
+                        server_data().write().app.game_phase = GamePhase::Default;
                     },
                 }
                 ButtonLink {

@@ -96,11 +96,13 @@ pub fn LobbyPage() -> Element {
                     },
                 }
             }
-        } else if server_data_snap.app.game_phase == GamePhase::Default {
+        } else if server_data_snap.app.game_phase == GamePhase::Ended {
             ButtonLink {
                 target: Route::Home {}.into(),
                 name: "No more game, back to home".to_string(),
             }
+        } else if server_data_snap.app.game_phase == GamePhase::Default {
+            // nothing to display
         }
     }
 }

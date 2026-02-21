@@ -27,6 +27,12 @@ pub struct ServerData {
     pub owner_player_name: String,
 }
 
+impl ServerData {
+    pub fn reset(game_phase: GamePhase)-> ServerData{
+        ServerData { app: Application { game_phase, ..Default::default() }, ..Default::default() }
+    }
+}
+
 #[derive(Default, Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct PlayerInfo {
     pub character_names: Vec<String>,
@@ -104,4 +110,5 @@ pub enum GamePhase {
     Default,
     InitGame,
     Running,
+    Ended
 }

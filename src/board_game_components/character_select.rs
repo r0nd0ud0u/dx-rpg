@@ -30,6 +30,9 @@ pub fn CharacterSelect() -> Element {
     let local_name = local_login_name_session();
     let server_data_snap = server_data();
 
+    if server_data_snap.players_info.is_empty(){
+        return rsx!{}
+    }
     // filter hashmap
     let players_except_current_client: HashMap<String, PlayerInfo> = server_data_snap
         .players_info
