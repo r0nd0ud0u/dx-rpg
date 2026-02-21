@@ -1,5 +1,3 @@
-use std::{collections::HashMap, hash::Hash};
-
 use dioxus::{
     fullstack::{WebSocketOptions, use_websocket},
     logger::tracing::{self, Level},
@@ -7,11 +5,10 @@ use dioxus::{
 };
 use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use dx_rpg::{
-    application::Application,
     common::{DX_COMP_CSS, Route, SERVER_NAME, disconnected_user},
     websocket_handler::{
         event::{ClientEvent, ServerEvent, on_rcv_client_event},
-        game_state::{GamePhase, ServerData},
+        game_state::ServerData,
     },
 };
 
@@ -21,7 +18,6 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 fn main() {
     // Init logger
     dioxus::logger::init(Level::INFO).expect("failed to init logger");
-    console_error_panic_hook::set_once();
     tracing::info!("Rendering app!");
     // On the client, we simply launch the app as normal, taking over the main thread
     #[cfg(not(feature = "server"))]
@@ -127,8 +123,6 @@ fn App() -> Element {
                         // update server info
                         server_data.set(*server_data_update.clone());
                         *SERVER_NAME.write() = server_data_update.app.server_name.clone();
-                        // update game phase based on server data
-                        game_phase.set(server_data_update.app.game_phase.clone());
                     }
                     ServerEvent::UpdateOngoingGames(ongoing_games_update) => {
                         ongoing_games.set(ongoing_games_update);
