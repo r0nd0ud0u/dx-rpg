@@ -446,9 +446,6 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
             tracing::info!("New application created for player: {}", server_name);
             // init a new game
             init_application(server_name, &mut app);
-            // save the game manager state
-            save_application(&app, SAVED_APP, player_name).await;
-            save_application(&app, SAVED_APP_REPLAY, player_name).await;
             // update ongoing servers data list
             let mut sm = SERVER_MANAGER.lock().unwrap();
             // remove ongoing game if already exists for the server name
