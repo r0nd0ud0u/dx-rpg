@@ -60,8 +60,10 @@ pub async fn save(path: PathBuf, value: String) -> Result<(), ServerFnError> {
 
 #[server]
 pub async fn create_dir(path: PathBuf) -> Result<(), ServerFnError> {
-    fs::create_dir_all(path).map_err(|e| ServerFnError::new(e));
-    Ok(())
+    match fs::create_dir_all(path) {
+        Ok(_) => Ok(()),
+        Err(_) => Err(ServerFnError::new("Failed to save file".to_string())),
+    }
 }
 
 #[server]

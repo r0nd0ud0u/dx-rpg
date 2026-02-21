@@ -72,17 +72,15 @@ impl GameStateManager {
             if server_data.app.game_phase == GamePhase::InitGame {
                 server_data.app.players_nb += 1;
             }
-            if server_data.app.game_phase == GamePhase::Loading {
-                if let Some(character_name) =
-                    server_data.app.heroes_chosen.get(&player_name.to_string())
-                {
-                    server_data
-                        .players_info
-                        .entry(player_name.to_string())
-                        .or_default()
-                        .character_names
-                        .push(character_name.clone());
-                }
+            if server_data.app.game_phase == GamePhase::Loading
+                && let Some(character_name) = server_data.app.heroes_chosen.get(player_name)
+            {
+                server_data
+                    .players_info
+                    .entry(player_name.to_string())
+                    .or_default()
+                    .character_names
+                    .push(character_name.clone());
             }
         }
     }

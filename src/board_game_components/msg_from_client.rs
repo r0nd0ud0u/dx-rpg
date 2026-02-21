@@ -40,7 +40,7 @@ pub async fn request_save_game(
     let _ = socket
         .send(ClientEvent::SaveGame(
             SERVER_NAME().clone(),
-            player_name.clone().to_owned(),
+            player_name.to_owned(),
         ))
         .await;
 }
