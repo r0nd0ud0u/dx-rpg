@@ -488,8 +488,8 @@ async fn save_application(app: &Application, save_game_name: &str, player_name: 
     )
     .await
     {
-        Ok(()) => tracing::info!("Game manager state saved successfully {}", save_game_name),
-        Err(e) => tracing::error!("Failed to save game manager state: {}", e),
+        Ok(()) => tracing::info!("Application saved successfully {}", save_game_name),
+        Err(e) => tracing::error!("Failed to save Application: {}", e),
     }
 }
 
