@@ -26,7 +26,7 @@ pub fn LoadGame() -> Element {
 
     rsx! {
         div { class: "home-container",
-            h4 { "Load game" }
+            h4 { "Load game (games saved: {games_list().len()})" }
             ScrollArea {
                 width: "25em",
                 height: "10em",
@@ -66,7 +66,7 @@ pub fn LoadGame() -> Element {
                         navigator.push(Route::LobbyPage {});
                     }
                 },
-                "Start Game"
+                "Valid"
             }
 
             Button {
@@ -80,7 +80,16 @@ pub fn LoadGame() -> Element {
                         .to_owned();
                     async move {
                         match application::delete_game(cur_game.clone()).await {
-                            Ok(_) => {}
+                            Ok(_) => {
+                                let _ = socket
+                                    .clone()
+                                    .send(
+                                        ClientEvent::RequestSavedGameList(
+                                            local_login_name_session().clone(),
+                                        ),
+                                    )
+                                    .await;
+                            }
                             Err(e) => {
                                 tracing::error!("Error deleting game: {}", e);
                                 return;

@@ -121,7 +121,9 @@ fn App() -> Element {
                         player_client_id.set(id);
                     }
                     ServerEvent::UpdateServerData(server_data_update) => {
+                        // update server info
                         server_data.set(*server_data_update.clone());
+                        *SERVER_NAME.write() = server_data_update.app.server_name.clone();
                         // update game phase based on server data
                         game_phase.set(server_data_update.app.game_phase.clone());
                     }
