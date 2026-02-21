@@ -109,6 +109,12 @@ fn App() -> Element {
                                 login_name_session_local_sync,
                                 login_id_session_local_sync
                             );
+                            let _ = socket
+                                .clone()
+                                .send(ClientEvent::RequestSavedGameList(
+                                    login_name_session_local_sync.clone(),
+                                ))
+                                .await;
                         }
                     }
                     ServerEvent::AssignPlayerId(id) => {
