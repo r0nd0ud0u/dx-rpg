@@ -412,10 +412,7 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
             return;
         };
 
-        // start_game only for initialized game the first time
-        // not for replay
-        // not for loaded
-        if !is_replay && server_data.app.game_phase == GamePhase::InitGame {
+        if !is_replay {
             server_data.app.game_manager.start_game();
         }
 
@@ -429,8 +426,8 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
     }; // sm is guaranteed dropped here
 
     // async work happens after the lock is gone
-    save_application(&app, SAVED_APP, &server_owner).await;
-    save_application(&app, SAVED_APP_REPLAY, &server_owner).await;
+    save_game_manager_state(&app, SAVED_GAME_MANAGER, &server_owner).await;
+    save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY, &server_owner).await;
 
     update_clients_server_data(server_name);
 }
@@ -444,8 +441,8 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
             // init a new game
             init_application(server_name, &mut app);
             // save the game manager state
-            save_application(&app, SAVED_APP, player_name).await;
-            save_application(&app, SAVED_APP_REPLAY, player_name).await;
+            save_game_manager_state(&app, SAVED_GAME_MANAGER, player_name).await;
+            save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY, player_name).await;
             // update ongoing servers data list
             let mut sm = SERVER_MANAGER.lock().unwrap();
             // remove ongoing game if already exists for the server name
@@ -459,8 +456,6 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
             drop(sm);
             // add server data
             app.game_phase = GamePhase::InitGame;
-            // add first player
-            app.players_nb = 0;
             add_server_data_with_player(&app, server_name, id, player_name);
             // update for the clients connected to that server
             update_clients_server_data(server_name);
@@ -471,7 +466,7 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
 }
 
 #[cfg(feature = "server")]
-async fn save_application(app: &Application, save_game_name: &str, player_name: &str) {
+async fn save_game_manager_state(app: &Application, save_game_name: &str, player_name: &str) {
     // create dir
     use crate::common::SAVED_DATA;
     let mut saved_dir: PathBuf = SAVED_DATA.join(PathBuf::from(player_name));
@@ -484,7 +479,7 @@ async fn save_application(app: &Application, save_game_name: &str, player_name: 
     let cur_game_path = saved_dir.join(save_game_name);
     match application::save(
         cur_game_path,
-        serde_json::to_string_pretty(&app.clone()).unwrap(),
+        serde_json::to_string_pretty(&app.game_manager.clone()).unwrap(),
     )
     .await
     {
@@ -667,7 +662,6 @@ fn update_lobby_page_after_joining_game(server_name: &str, player_name: &str, cl
     update_clients_server_data(server_name);
 }
 
-// Used when GamePhase::InitGame
 #[cfg(feature = "server")]
 fn add_character_on_server_data(server_name: &str, player_name: &str, character_name: &str) {
     let mut sm = SERVER_MANAGER.lock().unwrap();
@@ -687,10 +681,8 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
             .push(character_name.to_string());
         // find character in pm and set it as active for all players in server data
         server_data.app.game_manager.pm.active_heroes.clear();
-        server_data.app.heroes_chosen.clear();
-        server_data.players_info.iter().for_each(|player_info| {
+        server_data.players_info.values().for_each(|player_info| {
             player_info
-                .1
                 .character_names
                 .iter()
                 .for_each(|character_name| {
@@ -708,10 +700,6 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
                             .pm
                             .active_heroes
                             .push(character.clone());
-                        server_data
-                            .app
-                            .heroes_chosen
-                            .insert(player_info.0.clone(), character.name.clone());
                     } else {
                         tracing::error!(
                             "Character {} not found in pm for server {}",
@@ -752,7 +740,12 @@ async fn update_saved_game_list_display(player_name: &str) {
 
     let saved_dir = SAVED_DATA.join(player_name).join(GAMES_DIR.to_path_buf());
     let games_list = match application::get_game_list(saved_dir).await {
-        Ok(games) => games,
+        Ok(games) => {
+            for game in &games {
+                tracing::info!("Game: {}", game.to_string_lossy());
+            }
+            games
+        }
         Err(e) => {
             tracing::error!("Error fetching game list: {}", e);
             vec![]
@@ -777,9 +770,8 @@ async fn load_game_by_player(
 ) {
     let server_name = server_name_opt.unwrap_or_else(|| player_name.clone());
 
-    let mut app = match application::get_application_by_game_dir(game_path.clone(), is_replay).await
-    {
-        Ok(get_app) => get_app,
+    let gm = match application::get_gamemanager_by_game_dir(game_path.clone(), is_replay).await {
+        Ok(gm) => gm,
         Err(e) => {
             tracing::error!(
                 "Error loading game manager for player {}: {}",
@@ -790,15 +782,19 @@ async fn load_game_by_player(
         }
     };
 
-    app.game_phase = if is_replay {
-        GamePhase::Running
-    } else {
-        GamePhase::Loading
+    let app = Application {
+        game_manager: gm,
+        server_name: server_name.clone(),
+        game_phase: if is_replay {
+            GamePhase::Running
+        } else {
+            GamePhase::InitGame
+        },
     };
 
     // persist state (no locks involved)
-    save_application(&app, SAVED_APP, &player_name).await;
-    save_application(&app, SAVED_APP_REPLAY, &player_name).await;
+    save_game_manager_state(&app, SAVED_GAME_MANAGER, &player_name).await;
+    save_game_manager_state(&app, SAVED_GAME_MANAGER_REPLAY, &player_name).await;
 
     // ---- update ongoing games (lock scope #1) ----
     {
@@ -821,6 +817,7 @@ async fn load_game_by_player(
         // ---- update server data by app (lock scope #2) ----
         let server_exists = {
             let mut sm = SERVER_MANAGER.lock().unwrap();
+
             if let Some(server_data) = sm.servers_data.get_mut(&server_name) {
                 server_data.app = app.clone();
                 true
@@ -833,6 +830,8 @@ async fn load_game_by_player(
             tracing::error!("No server data found for server name: {}", server_name);
             return;
         }
+
+        start_new_game_by_player(&server_name, is_replay).await;
     }
 
     update_clients_ongoing_games();
@@ -878,7 +877,6 @@ async fn process_replay_game(server_name: &str, client_id: u32) {
         Some(server_name.to_string()),
     )
     .await;
-    start_new_game_by_player(server_name, true).await;
 }
 
 #[cfg(feature = "server")]
@@ -928,5 +926,5 @@ async fn process_save_game(server_name: &str, player_name: &str) {
             return;
         }
     };
-    save_application(&server_data.app, SAVED_APP, player_name).await;
+    save_game_manager_state(&server_data.app, SAVED_GAME_MANAGER, player_name).await;
 }
