@@ -740,12 +740,7 @@ async fn update_saved_game_list_display(player_name: &str) {
 
     let saved_dir = SAVED_DATA.join(player_name).join(GAMES_DIR.to_path_buf());
     let games_list = match application::get_game_list(saved_dir).await {
-        Ok(games) => {
-            for game in &games {
-                tracing::info!("Game: {}", game.to_string_lossy());
-            }
-            games
-        }
+        Ok(games) => games,
         Err(e) => {
             tracing::error!("Error fetching game list: {}", e);
             vec![]
