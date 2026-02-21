@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use dioxus::prelude::*;
 
 use crate::board_game_components::admin_page::AdminPage;
@@ -11,12 +13,17 @@ use crate::board_game_components::startgame_page::StartGamePage;
 use colorgrad::{GradientBuilder, LinearGradient};
 use once_cell::sync::Lazy;
 
+// Global signals
 pub static SERVER_NAME: GlobalSignal<String> = Signal::global(String::new);
 
+// TODO could be lazy
 pub fn disconnected_user() -> String {
     "not connected".to_owned()
 }
+
+// Lazy
 pub static ADMIN: Lazy<String> = Lazy::new(|| "Admin".to_string());
+pub static SAVED_DATA: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("saved_data"));
 
 pub static ENERGY_GRAD: Lazy<LinearGradient> = Lazy::new(|| {
     GradientBuilder::new()

@@ -86,13 +86,14 @@ pub fn StartGamePage() -> Element {
 fn SaveButton(is_saved: Signal<bool>) -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let local_login_name_session = use_context::<Signal<String>>();
 
     rsx! {
         Button {
             variant: ButtonVariant::Destructive,
             onclick: move |_| {
                 async move {
-                    request_save_game(socket).await;
+                    request_save_game(socket, &local_login_name_session()).await;
                     is_saved.set(true);
                 }
             },

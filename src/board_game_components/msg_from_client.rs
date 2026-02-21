@@ -33,9 +33,15 @@ pub async fn send_start_game(socket: UseWebsocket<ClientEvent, ServerEvent, Cbor
         .await;
 }
 
-pub async fn request_save_game(socket: UseWebsocket<ClientEvent, ServerEvent, CborEncoding>) {
+pub async fn request_save_game(
+    socket: UseWebsocket<ClientEvent, ServerEvent, CborEncoding>,
+    player_name: &str,
+) {
     let _ = socket
-        .send(ClientEvent::SaveGame(SERVER_NAME().clone()))
+        .send(ClientEvent::SaveGame(
+            SERVER_NAME().clone(),
+            player_name.clone().to_owned(),
+        ))
         .await;
 }
 
@@ -54,6 +60,9 @@ pub async fn send_join_server_data(
 
 pub async fn request_update_saved_game_list_display(
     socket: UseWebsocket<ClientEvent, ServerEvent, CborEncoding>,
+    player_name: &str,
 ) {
-    let _ = socket.send(ClientEvent::RequestSavedGameList).await;
+    let _ = socket
+        .send(ClientEvent::RequestSavedGameList(player_name.to_owned()))
+        .await;
 }
