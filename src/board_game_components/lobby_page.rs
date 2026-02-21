@@ -22,7 +22,6 @@ pub fn LobbyPage() -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let local_login_name_session = use_context::<Signal<String>>();
-    let game_phase = use_context::<Signal<GamePhase>>();
     let server_data = use_context::<Signal<ServerData>>();
 
     // all players info have a character name
@@ -43,19 +42,21 @@ pub fn LobbyPage() -> Element {
 
     rsx! {
         // if the game is not running, show the lobby page, otherwise show the start game page
-        if game_phase() == GamePhase::InitGame || game_phase() == GamePhase::Loading {
+        if server_data_snap.app.game_phase == GamePhase::InitGame
+            || server_data_snap.app.game_phase == GamePhase::Loading
+        {
             div { class: "home-container",
                 h1 { "LobbyPage" }
-                if game_phase() == GamePhase::InitGame {
+                if server_data_snap.app.game_phase == GamePhase::InitGame {
                     h4 { "InitGame" }
                 }
-                if game_phase() == GamePhase::Loading {
+                if server_data_snap.app.game_phase == GamePhase::Loading {
                     h4 { "loading" }
                 }
                 // if the current client is the host, show start game button
                 if SERVER_NAME() == local_login_name_session() && all_players_have_character_name
-                    && (game_phase() == GamePhase::InitGame
-                        || game_phase() == GamePhase::Loading
+                    && (server_data_snap.app.game_phase == GamePhase::InitGame
+                        || server_data_snap.app.game_phase == GamePhase::Loading
                             && server_data_snap.app.players_nb
                                 == server_data_snap.players_info.len() as i64)
                 {
@@ -70,7 +71,7 @@ pub fn LobbyPage() -> Element {
                 // show character select page
                 CharacterSelect {}
             }
-        } else if game_phase() == GamePhase::Running {
+        } else if server_data_snap.app.game_phase == GamePhase::Running {
             // check if there is more characters in game than users
             if server_data_snap.app.game_manager.pm.active_heroes.len()
                 <= server_data_snap.players_info.len()
@@ -95,15 +96,10 @@ pub fn LobbyPage() -> Element {
                     },
                 }
             }
-        } else if game_phase() == GamePhase::Ended {
+        } else if server_data_snap.app.game_phase == GamePhase::Default {
             ButtonLink {
                 target: Route::Home {}.into(),
-                name: "No more game, back to Home".to_string(),
-            }
-        } else if game_phase() == GamePhase::Default {
-            ButtonLink {
-                target: Route::Home {}.into(),
-                name: "Disconnected, back to home".to_string(),
+                name: "No more game, back to home".to_string(),
             }
         }
     }

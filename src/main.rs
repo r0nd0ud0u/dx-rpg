@@ -66,7 +66,6 @@ fn App() -> Element {
     let mut server_data = use_signal(ServerData::default);
     let mut ongoing_games = use_signal(Vec::new);
     let mut saved_game_list = use_signal(Vec::new);
-    let mut game_phase = use_signal(|| GamePhase::Default);
 
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
@@ -167,7 +166,6 @@ fn App() -> Element {
                         tracing::info!("Reset client from server-data {}", SERVER_NAME());
                         server_data.set(ServerData::default());
                         SERVER_NAME.write().clear();
-                        game_phase.set(GamePhase::Ended);
                     }
                 }
             }
@@ -181,7 +179,6 @@ fn App() -> Element {
     use_context_provider(|| server_data);
     use_context_provider(|| ongoing_games);
     use_context_provider(|| saved_game_list);
-    use_context_provider(|| game_phase);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

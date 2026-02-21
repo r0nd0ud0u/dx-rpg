@@ -104,5 +104,4 @@ pub enum GamePhase {
     Default,
     InitGame,
     Running,
-    Ended,
 }
