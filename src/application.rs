@@ -1,3 +1,4 @@
+use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use dioxus::{prelude::ServerFnError, prelude::server};
 use lib_rpg::game_manager::GameManager;
@@ -59,26 +60,24 @@ pub async fn save(path: PathBuf, value: String) -> Result<(), ServerFnError> {
 
 #[server]
 pub async fn create_dir(path: PathBuf) -> Result<(), ServerFnError> {
-    if let Err(e) = fs::create_dir_all(path) {
-        eprintln!("Failed to create directory: {}", e);
-    }
+    fs::create_dir_all(path).map_err(|e| ServerFnError::new(e));
     Ok(())
 }
 
 #[server]
 pub async fn get_game_list(game_dir_path: PathBuf) -> Result<Vec<PathBuf>, ServerFnError> {
-    println!("Fetching game list from: {:?}", game_dir_path);
     let games_list = match list_dirs_in_dir(&game_dir_path) {
         Ok(list) => list,
         Err(_) => return Err(ServerFnError::new("Failed to list games".to_string())),
     };
-    println!("List games: {:?}", games_list);
+    tracing::info!("List games length: {}", games_list.len());
+    tracing::trace!("List games: {:?}", games_list);
     Ok(games_list)
 }
 
 #[server]
 pub async fn delete_game(game_path: PathBuf) -> Result<(), ServerFnError> {
-    println!("Deleting game from: {:?}", game_path);
+    tracing::info!("Deleting game from: {:?}", game_path);
     match fs::remove_dir_all(&game_path) {
         Ok(_) => (),
         Err(_) => return Err(ServerFnError::new("Failed to delete game".to_owned())),
