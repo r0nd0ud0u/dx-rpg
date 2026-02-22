@@ -1,3 +1,4 @@
+use dioxus::logger::tracing;
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
@@ -21,32 +22,43 @@ pub fn LobbyPage() -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let local_login_name_session = use_context::<Signal<String>>();
-    let game_phase = use_context::<Signal<GamePhase>>();
     let server_data = use_context::<Signal<ServerData>>();
 
     // all players info have a character name
-    let all_players_have_character_name = server_data()
-        .players_info
-        .values()
-        .all(|player_info| !player_info.character_names.is_empty());
+    let server_data_snap = server_data();
+
+    let all_players_have_character_name = if server_data_snap.players_info.is_empty() {
+        false
+    } else {
+        server_data_snap
+            .players_info
+            .values()
+            .all(|p| !p.character_names.is_empty())
+    };
+    tracing::trace!(
+        "all_players_have_character_name: {}",
+        all_players_have_character_name
+    );
 
     rsx! {
         // if the game is not running, show the lobby page, otherwise show the start game page
-        if game_phase() == GamePhase::InitGame || game_phase() == GamePhase::Loading {
+        if server_data_snap.app.game_phase == GamePhase::InitGame
+            || server_data_snap.app.game_phase == GamePhase::Loading
+        {
             div { class: "home-container",
-                h1 { "LobbyPage" }
-                if game_phase() == GamePhase::InitGame {
-                    h4 { "InitGame" }
-                }
-                if game_phase() == GamePhase::Loading {
-                    h4 { "loading" }
+                if server_data_snap.app.game_phase == GamePhase::InitGame {
+                    h1 { "Init game" }
+                } else if server_data_snap.app.game_phase == GamePhase::Loading {
+                    h1 { "Loading" }
+                } else {
+                    h1 { "Lobby page" }
                 }
                 // if the current client is the host, show start game button
                 if SERVER_NAME() == local_login_name_session() && all_players_have_character_name
-                    && (game_phase() == GamePhase::InitGame
-                        || game_phase() == GamePhase::Loading
-                            && server_data().app.players_nb
-                                == server_data().players_info.len() as i64)
+                    && (server_data_snap.app.game_phase == GamePhase::InitGame
+                        || server_data_snap.app.game_phase == GamePhase::Loading
+                            && server_data_snap.app.players_nb
+                                == server_data_snap.players_info.len() as i64)
                 {
                     Button {
                         onclick: move |_| async move {
@@ -59,10 +71,10 @@ pub fn LobbyPage() -> Element {
                 // show character select page
                 CharacterSelect {}
             }
-        } else if game_phase() == GamePhase::Running {
+        } else if server_data_snap.app.game_phase == GamePhase::Running {
             // check if there is more characters in game than users
-            if server_data().app.game_manager.pm.active_heroes.len()
-                <= server_data().players_info.len()
+            if server_data_snap.app.game_manager.pm.active_heroes.len()
+                <= server_data_snap.players_info.len()
             {
                 StartGamePage {}
             } else {
@@ -84,16 +96,13 @@ pub fn LobbyPage() -> Element {
                     },
                 }
             }
-        } else if game_phase() == GamePhase::Ended {
+        } else if server_data_snap.app.game_phase == GamePhase::Ended {
             ButtonLink {
                 target: Route::Home {}.into(),
-                name: "No more game, back to Home".to_string(),
+                name: "No more game, back to home".to_string(),
             }
-        } else if game_phase() == GamePhase::Default {
-            ButtonLink {
-                target: Route::Home {}.into(),
-                name: "Disconnected, back to home".to_string(),
-            }
+        } else if server_data_snap.app.game_phase == GamePhase::Default {
+
         }
     }
 }

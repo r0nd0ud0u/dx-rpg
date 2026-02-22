@@ -1,4 +1,6 @@
-use crate::board_game_components::msg_from_client::request_save_game;
+use crate::board_game_components::msg_from_client::{
+    request_save_game, send_disconnect_from_server_data,
+};
 use crate::common::{Route, SERVER_NAME};
 use crate::components::label::Label;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
@@ -23,8 +25,6 @@ pub fn StartGamePage() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
-    // navigator
-    let navigator = use_navigator();
 
     rsx! {
         if server_data().app.game_manager.game_state.status == GameStatus::EndOfGame {
@@ -34,24 +34,16 @@ pub fn StartGamePage() -> Element {
             Button {
                 variant: ButtonVariant::Primary,
                 onclick: move |_| {
-                    let l_server_data = server_data.read().clone();
                     async move {
-                        if !l_server_data.players_info.is_empty() {
-                            let _ = socket
-                                .send( // for now, we just disconnect the user from the server, but we can implement a better way to handle this in the future
-                                    ClientEvent::DisconnectFromServerData(
-                                        SERVER_NAME(),
-                                        local_login_name_session(),
-                                    ),
-                                )
-                                .await;
-                        }
+                        send_disconnect_from_server_data(socket, &local_login_name_session()).await;
+                        let navigator = use_navigator();
                         navigator.push(Route::Home {});
                     }
                 },
                 "Quit"
             }
-            // TODO if nobody quits -> store the number of players at start? and compare with the number of remaining players to know if we are in a "nobody quits" end of game scenario, and handle it differently (ex: show "nobody quits" message and "replay game" button)
+            // TODO if nobody quits -> store the number of players at start? and compare with the number of remaining players to know
+            // if we are in a "nobody quits" end of game scenario, and handle it differently (ex: show "nobody quits" message and "replay game" button)
             if server_data().owner_player_name == local_login_name_session() {
                 Button {
                     variant: ButtonVariant::Primary,
@@ -209,6 +201,7 @@ fn InventorySheet(s: SheetSide) -> Element {
 fn GameStatsSheet(s: SheetSide) -> Element {
     // context
     let server_data = use_context::<Signal<ServerData>>();
+
     rsx! {
         SheetContent { side: s,
             SheetHeader {

@@ -408,7 +408,10 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
     let (app, server_owner) = {
         let mut sm = SERVER_MANAGER.lock().unwrap();
         let Some(server_data) = sm.servers_data.get_mut(server_name) else {
-            tracing::error!("No server data found for server name: {}", server_name);
+            tracing::error!(
+                "start_new_game_by_player: No server data found for server name: {}",
+                server_name
+            );
             return;
         };
 
@@ -443,9 +446,6 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
             tracing::info!("New application created for player: {}", server_name);
             // init a new game
             init_application(server_name, &mut app);
-            // save the game manager state
-            save_application(&app, SAVED_APP, player_name).await;
-            save_application(&app, SAVED_APP_REPLAY, player_name).await;
             // update ongoing servers data list
             let mut sm = SERVER_MANAGER.lock().unwrap();
             // remove ongoing game if already exists for the server name
@@ -488,8 +488,8 @@ async fn save_application(app: &Application, save_game_name: &str, player_name: 
     )
     .await
     {
-        Ok(()) => tracing::info!("Game manager state saved successfully {}", save_game_name),
-        Err(e) => tracing::error!("Failed to save game manager state: {}", e),
+        Ok(()) => tracing::info!("Application saved successfully {}", save_game_name),
+        Err(e) => tracing::error!("Failed to save Application: {}", e),
     }
 }
 
@@ -540,7 +540,10 @@ fn send_end_of_serverdata(server_name: &str, client_id: u32, is_owner_disconnect
     let server_data = match sm.servers_data.get(server_name) {
         Some(server_data) => server_data.clone(),
         None => {
-            tracing::info!("no server data for server: {}", server_name);
+            tracing::info!(
+                "send_end_of_serverdata: no server data for server: {}",
+                server_name
+            );
             return;
         }
     };
@@ -636,7 +639,6 @@ pub fn get_server_data_by_server_name(server_name: &str) -> Option<ServerData> {
     let server_data = match sm.servers_data.get(server_name) {
         Some(server_data) => server_data.clone(),
         None => {
-            tracing::error!("No server data found for server name: {}", server_name);
             drop(sm);
             return None;
         }
@@ -830,7 +832,10 @@ async fn load_game_by_player(
         }; // lock released here
 
         if !server_exists {
-            tracing::error!("No server data found for server name: {}", server_name);
+            tracing::error!(
+                "load_game_by_player: No server data found for server name: {}",
+                server_name
+            );
             return;
         }
     }
@@ -857,7 +862,10 @@ async fn process_replay_game(server_name: &str, client_id: u32) {
     let server_data = match get_server_data_by_server_name(server_name) {
         Some(server_data) => server_data,
         None => {
-            tracing::error!("No server data found for server name: {}", server_name);
+            tracing::error!(
+                "process_replay_game: No server data found for server name: {}",
+                server_name
+            );
             return;
         }
     };
@@ -879,6 +887,7 @@ async fn process_replay_game(server_name: &str, client_id: u32) {
     )
     .await;
     start_new_game_by_player(server_name, true).await;
+   
 }
 
 #[cfg(feature = "server")]
@@ -891,7 +900,10 @@ fn request_set_targeted_characters(server_name: &str, launcher_name: &str, atk_n
             .pm
             .set_targeted_characters(launcher_name, atk_name);
     } else {
-        tracing::error!("No server data found for server name: {}", server_name);
+        tracing::error!(
+            "request_set_targeted_characters: No server data found for server name: {}",
+            server_name
+        );
     }
     drop(sm);
     update_clients_server_data(server_name);
@@ -912,7 +924,10 @@ fn request_set_one_target(
             .pm
             .set_one_target(launcher_name, atk_name, target_name);
     } else {
-        tracing::error!("No server data found for server name: {}", server_name);
+        tracing::error!(
+            "request_set_one_target: No server data found for server name: {}",
+            server_name
+        );
     }
     drop(sm);
     update_clients_server_data(server_name);
@@ -924,7 +939,10 @@ async fn process_save_game(server_name: &str, player_name: &str) {
     let server_data = match get_server_data_by_server_name(server_name) {
         Some(server_data) => server_data,
         None => {
-            tracing::error!("No server data found for server name: {}", server_name);
+            tracing::error!(
+                "process_save_game: No server data found for server name: {}",
+                server_name
+            );
             return;
         }
     };

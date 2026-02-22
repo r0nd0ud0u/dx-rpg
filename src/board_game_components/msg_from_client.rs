@@ -66,3 +66,15 @@ pub async fn request_update_saved_game_list_display(
         .send(ClientEvent::RequestSavedGameList(player_name.to_owned()))
         .await;
 }
+
+pub async fn send_disconnect_from_server_data(
+    socket: UseWebsocket<ClientEvent, ServerEvent, CborEncoding>,
+    player_name: &str,
+) {
+    let _ = socket
+        .send(ClientEvent::DisconnectFromServerData(
+            SERVER_NAME().clone(),
+            player_name.to_string(),
+        ))
+        .await;
+}

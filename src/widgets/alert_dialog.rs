@@ -4,7 +4,8 @@ use dioxus::{
 };
 
 use crate::{
-    common::{Route, SERVER_NAME},
+    board_game_components::msg_from_client::send_disconnect_from_server_data,
+    common::Route,
     components::{
         alert_dialog::{
             AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -12,7 +13,10 @@ use crate::{
         },
         button::Button,
     },
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    websocket_handler::{
+        event::{ClientEvent, ServerEvent},
+        game_state::{GamePhase, ServerData},
+    },
 };
 
 #[component]
@@ -20,10 +24,13 @@ pub fn AlertDialogComp() -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let local_login_name_session = use_context::<Signal<String>>();
+    let server_data = use_context::<Signal<ServerData>>();
     // local signal
     let mut open = use_signal(|| false);
     rsx! {
-        Button { onclick: move |_| open.set(true), r#type: "button", "Quit game" }
+        if server_data().app.game_phase == GamePhase::Running {
+            Button { onclick: move |_| open.set(true), r#type: "button", "Quit game" }
+        }
         AlertDialogRoot { open: open(), on_open_change: move |v| open.set(v),
             AlertDialogContent {
                 // You may pass class/style for custom appearance
@@ -34,15 +41,7 @@ pub fn AlertDialogComp() -> Element {
                     AlertDialogAction {
                         on_click: move |_| {
                             async move {
-                                let _ = socket
-                                    // back to host
-                                    .send(
-                                        ClientEvent::DisconnectFromServerData(
-                                            SERVER_NAME(),
-                                            local_login_name_session(),
-                                        ),
-                                    )
-                                    .await;
+                                send_disconnect_from_server_data(socket, &local_login_name_session()).await;
                                 let navigator = use_navigator();
                                 navigator.push(Route::Home {});
                             }
