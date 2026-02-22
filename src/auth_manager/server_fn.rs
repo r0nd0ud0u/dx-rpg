@@ -39,13 +39,6 @@ pub async fn login(
                 match update_connection_status(username, true).await {
                     Ok(()) => {
                         auth.login_user(rows[0].id);
-                        /* auth.current_user.as_mut().unwrap() = &mut User {
-                            id: rows[0].id,
-                            anonymous: rows[0].anonymous,
-                            username: rows[0].username.clone(),
-                            permissions: HashSet::new(),
-                            is_connected: true,
-                        }; */
                         Ok(())
                     }
                     Err(e) => {
@@ -237,6 +230,21 @@ pub async fn update_connection_status(
     match sqlx::query("UPDATE users SET is_connected = ?1 WHERE username = ?2")
         .bind(is_connected)
         .bind(&username)
+        .execute(pool)
+        .await
+    {
+        Ok(_) => Ok(()),
+        Err(e) => Err(ServerFnError::new(format!("{}", e))),
+    }
+}
+
+#[cfg(feature = "server")]
+#[server]
+pub async fn update_all_connection_status(is_connected: bool) -> Result<(), ServerFnError> {
+    let pool = get_db().await;
+    tracing::info!("UPDATE users SET is_connected = {}", is_connected,);
+    match sqlx::query("UPDATE users SET is_connected = ?")
+        .bind(is_connected)
         .execute(pool)
         .await
     {

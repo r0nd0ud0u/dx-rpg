@@ -264,72 +264,96 @@ pub fn send_logout_to_server(user_name: String) {
 
 #[cfg(feature = "server")]
 pub async fn send_disconnection_to_server_manager(client_id: u32) {
-    // TODO username is used as servername
-    let mut sm = SERVER_MANAGER.lock().unwrap();
-    let username = sm
-        .players
-        .iter()
-        .find_map(|(player_name, ids)| {
-            if ids.contains(&client_id) {
-                Some(player_name.clone())
-            } else {
-                None
-            }
-        })
-        .unwrap_or_else(|| "Unknown".to_string());
-    tracing::info!("Player {} with id {} is disconnecting", username, client_id);
-    // remove player id from GameStateManager
-    sm.players.retain(|player_name, ids| {
-        if player_name == &username {
-            ids.retain(|&id| id != client_id);
-            !ids.is_empty()
-        } else {
-            true
-        }
-    });
-    tracing::info!(
-        "All connected players after disconnection: {:?}",
-        sm.players
-    );
-    // remove from servers data
-    let mut server_data = match sm.get_server_data_by_player_id(client_id) {
-        Some(server_data) => server_data,
-        None => {
-            tracing::error!(
-                "Player {} with id {} is disconnecting, but no server data found for that player",
-                username,
-                client_id
-            );
-            return;
-        }
-    };
-    // remove player id from server data
-    server_data.players_info.retain(|player_name, pl| {
-        if player_name == &username {
-            pl.player_ids.retain(|&id| id != client_id);
-            !pl.player_ids.is_empty()
-        } else {
-            true
-        }
-    });
+    use crate::auth_manager::server_fn::update_connection_status;
 
-    // reset the remaining clients in the same server data to reset their lobby page if they are in the lobby
-    // or to reset their game page if they are in the game,
-    let clients = CLIENTS.lock().unwrap();
-    for (&other_id, sender) in clients.iter() {
-        if server_data
+    // ----------------------------------------
+    //  Extract username + mutate players
+    // ----------------------------------------
+    let username = {
+        let mut sm = SERVER_MANAGER.lock().unwrap();
+
+        let username = sm
+            .players
+            .iter()
+            .find_map(|(player_name, ids)| ids.contains(&client_id).then(|| player_name.clone()))
+            .unwrap_or_else(|| "Unknown".to_string());
+
+        tracing::info!("Player {} with id {} is disconnecting", username, client_id);
+
+        sm.players.retain(|player_name, ids| {
+            if player_name == &username {
+                ids.retain(|&id| id != client_id);
+                !ids.is_empty()
+            } else {
+                true
+            }
+        });
+
+        tracing::info!("All connected players: {:?}", sm.players);
+
+        username
+    }; // LOCK DROPPED HERE
+
+    // ----------------------------------------
+    //  DB update (no locks held)
+    // ----------------------------------------
+    match update_connection_status(username.clone(), false).await {
+        Ok(_) => tracing::info!("{} disconnected from db", username),
+        Err(e) => tracing::error!("DB error: {:?}", e),
+    };
+
+    // ----------------------------------------
+    //  Modify server data
+    // ----------------------------------------
+    let other_clients: Vec<u32> = {
+        let mut sm = SERVER_MANAGER.lock().unwrap();
+
+        let mut server_data = match sm.get_server_data_by_player_id(client_id) {
+            Some(sd) => sd,
+            None => {
+                tracing::error!(
+                    "Player {} with id {} disconnecting, no server data found",
+                    username,
+                    client_id
+                );
+                return;
+            }
+        };
+
+        server_data.players_info.retain(|player_name, pl| {
+            if player_name == &username {
+                pl.player_ids.retain(|&id| id != client_id);
+                !pl.player_ids.is_empty()
+            } else {
+                true
+            }
+        });
+
+        // Collect affected client IDs before unlocking
+        let ids = server_data
             .players_info
             .values()
-            .any(|player_info| player_info.player_ids.contains(&(other_id as u32)))
-        {
-            let _ = sender.send(ServerEvent::ResetClientFromServerData);
+            .flat_map(|p| p.player_ids.iter().copied())
+            .collect::<Vec<u32>>();
+
+        sm.ongoing_games.retain(|g| g.server_name != username);
+
+        ids
+    }; // LOCK DROPPED HERE
+
+    // ----------------------------------------
+    //  Notify clients (separate lock)
+    // ----------------------------------------
+    {
+        let clients = CLIENTS.lock().unwrap();
+
+        for other_id in other_clients {
+            if let Some(sender) = clients.get(&(other_id as usize)) {
+                let _ = sender.send(ServerEvent::ResetClientFromServerData);
+            }
         }
-    }
-    drop(clients);
-    // remove ongoing game if exists for the server name
-    sm.ongoing_games
-        .retain(|ongoing_game| ongoing_game.server_name != username);
-    drop(sm);
+    } // LOCK DROPPED
+
     update_clients_ongoing_games();
 }
 
