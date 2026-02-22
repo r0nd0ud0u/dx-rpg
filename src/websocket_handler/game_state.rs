@@ -115,6 +115,7 @@ pub enum GamePhase {
     #[default]
     Default,
     InitGame,
+    Loading,
     Running,
     Ended,
 }
