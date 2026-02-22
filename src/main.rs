@@ -62,7 +62,6 @@ fn App() -> Element {
     let mut server_data = use_signal(ServerData::default);
     let mut ongoing_games = use_signal(Vec::new);
     let mut saved_game_list = use_signal(Vec::new);
-    let mut game_phase = use_signal(|| GamePhase::Default);
 
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
@@ -94,9 +93,7 @@ fn App() -> Element {
                         let login_name_session_local_sync = login_name_session_local_sync();
                         let login_id_session_local_sync = login_id_session_local_sync();
                         // re-send SetName to server
-                        if login_name_session_local_sync != disconnected_user()
-                            && login_id_session_local_sync != -1
-                        {
+                        if login_name_session_local_sync != disconnected_user() {
                             let _ = socket
                                 .clone()
                                 .send(ClientEvent::AddPlayer(
@@ -115,6 +112,10 @@ fn App() -> Element {
                                     login_name_session_local_sync.clone(),
                                 ))
                                 .await;
+                            let _ = socket
+                                .clone()
+                                .send(ClientEvent::RequestOnGoingGamesList)
+                                .await;
                         }
                     }
                     ServerEvent::AssignPlayerId(id) => {
@@ -124,8 +125,6 @@ fn App() -> Element {
                         // update server info
                         server_data.set(*server_data_update.clone());
                         *SERVER_NAME.write() = server_data_update.app.server_name.clone();
-                        // update game phase based on server data
-                        game_phase.set(server_data_update.app.game_phase.clone());
                     }
                     ServerEvent::UpdateOngoingGames(ongoing_games_update) => {
                         ongoing_games.set(ongoing_games_update);
@@ -161,9 +160,8 @@ fn App() -> Element {
                     }
                     ServerEvent::ResetClientFromServerData => {
                         tracing::info!("Reset client from server-data {}", SERVER_NAME());
-                        server_data.set(ServerData::default());
+                        server_data.set(ServerData::reset(GamePhase::Ended));
                         SERVER_NAME.write().clear();
-                        game_phase.set(GamePhase::Ended);
                     }
                 }
             }
@@ -177,7 +175,6 @@ fn App() -> Element {
     use_context_provider(|| server_data);
     use_context_provider(|| ongoing_games);
     use_context_provider(|| saved_game_list);
-    use_context_provider(|| game_phase);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

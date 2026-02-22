@@ -25,6 +25,11 @@ pub fn GameBoard() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
 
+    // eval server_data
+    if server_data() == ServerData::default() {
+        return rsx! {};
+    }
+
     // local signals
     let atk_menu_display = use_signal(|| false);
     let mut selected_atk_name = use_signal(|| "".to_string());

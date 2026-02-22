@@ -25,25 +25,29 @@ pub fn CharacterSelect() -> Element {
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
-    let game_phase = use_context::<Signal<GamePhase>>();
 
     // snapshot except local_login_name_session because it's used in the ClassSelect component
     let local_name = local_login_name_session();
-    let server_data = server_data();
+    let server_data_snap = server_data();
+
+    // avoid unexpected behavior for the select display
+    if server_data_snap.players_info.is_empty() {
+        return rsx! {};
+    }
     // filter hashmap
-    let players_except_current_client: HashMap<String, PlayerInfo> = server_data
+    let players_except_current_client: HashMap<String, PlayerInfo> = server_data_snap
         .players_info
         .iter()
         .filter(|(k, _)| k.as_str() != local_name.as_str())
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect();
 
-    let connected: HashMap<String, String> = server_data
+    let connected: HashMap<String, String> = server_data_snap
         .app
         .heroes_chosen
         .iter()
         .map(|(key, value)| {
-            let status = if server_data.players_info.contains_key(key) {
+            let status = if server_data_snap.players_info.contains_key(key) {
                 "✅"
             } else {
                 "❌"
@@ -56,7 +60,7 @@ pub fn CharacterSelect() -> Element {
         div { style: "display: flex; flex-direction: column; height: 40px; gap: 10px;",
             h3 { "Players:" }
             div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
-                if game_phase() == GamePhase::InitGame {
+                if server_data_snap.app.game_phase == GamePhase::InitGame {
                     ClassSelect { player_name: local_login_name_session().clone() }
                 } else {
                     div { style: "display: flex; flex-direction: column; height: 40px; gap: 10px;",
@@ -67,7 +71,7 @@ pub fn CharacterSelect() -> Element {
                     }
                 }
             }
-            if game_phase() == GamePhase::InitGame {
+            if server_data_snap.app.game_phase == GamePhase::InitGame {
                 for player in players_except_current_client.clone() {
                     div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
                         Label { html_for: "sheet-demo-name", "{player.0}" }

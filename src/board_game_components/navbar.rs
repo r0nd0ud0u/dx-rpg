@@ -1,7 +1,6 @@
 use crate::{
-    components::label::Label,
-    websocket_handler::game_state::{GamePhase, ServerData},
-    widgets::alert_dialog::AlertDialogComp,
+    board_game_components::msg_from_client::send_disconnect_from_server_data,
+    components::label::Label, widgets::alert_dialog::AlertDialogComp,
 };
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
@@ -23,7 +22,7 @@ pub fn Navbar() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let mut local_login_name_session = use_context::<Signal<String>>();
     let mut local_login_id_session = use_context::<Signal<i64>>();
-    let server_data = use_context::<Signal<ServerData>>();
+
     // nav
     let navigator = use_navigator();
 
@@ -32,15 +31,19 @@ pub fn Navbar() -> Element {
     rsx! {
         div { class: "navbar",
             div { style: "display: flex; gap: 1rem;",
-                Link { to: Route::Home {}, "Home" }
+                Link {
+                    to: Route::Home {},
+                    onclick: move |_| async move {
+                        send_disconnect_from_server_data(socket, &local_login_name_session()).await;
+                    },
+                    "Home"
+                }
                 if snap_local_login_name_session == ADMIN.to_string() {
                     Link { to: Route::AdminPage {}, "Admin" }
                 }
             }
             div { style: "display: flex; flex-direction: row; gap: 1rem;",
-                if server_data().app.game_phase == GamePhase::Running {
-                    AlertDialogComp {}
-                }
+                AlertDialogComp {}
                 Button {
                     variant: if snap_local_login_name_session == disconnected_user() { ButtonVariant::Secondary } else { ButtonVariant::Destructive },
                     onclick: move |_| async move {

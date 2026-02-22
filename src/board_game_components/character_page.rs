@@ -37,6 +37,7 @@ pub fn CharacterPanel(
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
     let local_session_player_name = use_context::<Signal<String>>();
+
     // get first player of the list
     let current_character = match server_data()
         .players_info
@@ -251,6 +252,7 @@ pub fn AttackList(
 ) -> Element {
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
+
     if let Some(c) = server_data()
         .app
         .game_manager
