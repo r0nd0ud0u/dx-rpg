@@ -74,7 +74,7 @@ html[data-theme="light"] {
     var(--light, var(--primary-color));
   --secondary-info-color: var(--dark, var(--primary-color-7))
     var(--light, var(--secondary-color-3));
-  --high-green-color-1: var(--dark, #0b6407) var(--light, #17c311);
+  --high-green-color-1: var(--dark, #17c311) var(--light, #17c311);
   --high-orange-color-1: var(--dark, #d47c18) var(--light, #e8a738);
   --high-grey-color-1: var(--dark, #a1a1a1) var(--light, #848484);
 }
