@@ -35,7 +35,7 @@ pub fn LobbyPage() -> Element {
             .values()
             .all(|p| !p.character_names.is_empty())
     };
-    tracing::info!(
+    tracing::trace!(
         "all_players_have_character_name: {}",
         all_players_have_character_name
     );
