@@ -54,7 +54,7 @@ pub fn Navbar() -> Element {
                                     // notify server via websocket
                                     let _ = socket
                                         .clone()
-                                        .send(ClientEvent::LogOut(local_login_name_session()))
+                                        .send(ClientEvent::RequestLogOut(local_login_name_session()))
                                         .await;
                                     // local storage for login
                                     *local_login_name_session.write() = disconnected_user();

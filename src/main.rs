@@ -73,11 +73,11 @@ fn App() -> Element {
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
     // synced storage
-    let login_name_session_local_sync =
+    let mut login_name_session_local_sync =
         use_synced_storage::<LocalStorage, String>("synced_user_sql_name".to_string(), || {
             disconnected_user()
         });
-    let login_id_session_local_sync =
+    let mut login_id_session_local_sync =
         use_synced_storage::<LocalStorage, i64>("synced_user_sql_id".to_string(), || -1); // from db, integer primary key not null and from 1 upwards
 
     // Set the theme to dark on app load
@@ -171,6 +171,13 @@ fn App() -> Element {
                         tracing::info!("Reset client from server-data {}", SERVER_NAME());
                         server_data.set(ServerData::reset(GamePhase::Ended));
                         SERVER_NAME.write().clear();
+                    }
+                    ServerEvent::LogOut => {
+                        tracing::info!("Received LogOut event, resetting client data");
+                        server_data.set(ServerData::default());
+                        SERVER_NAME.write().clear();
+                        login_name_session_local_sync.set(disconnected_user());
+                        login_id_session_local_sync.set(-1);
                     }
                 }
             }

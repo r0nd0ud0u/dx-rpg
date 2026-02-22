@@ -70,7 +70,12 @@ pub async fn create_dir(path: PathBuf) -> Result<(), ServerFnError> {
 pub async fn get_game_list(game_dir_path: PathBuf) -> Result<Vec<PathBuf>, ServerFnError> {
     let games_list = match list_dirs_in_dir(&game_dir_path) {
         Ok(list) => list,
-        Err(_) => return Err(ServerFnError::new("Failed to list games".to_string())),
+        Err(_) => {
+            return Err(ServerFnError::new(format!(
+                "Failed to list games from {:?}",
+                game_dir_path
+            )));
+        }
     };
     tracing::info!("List games length: {}", games_list.len());
     tracing::trace!("List games: {:?}", games_list);

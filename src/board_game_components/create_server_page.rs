@@ -19,8 +19,10 @@ pub fn CreateServer() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let local_login_name_session = use_context::<Signal<String>>();
     rsx! {
-        div { class: "home-container",
+        div { style: "display: flex;flex-direction: column; align-items: center; gap: 1rem;",
             h1 { "Create a server" }
+        }
+        div { class: "home-container",
             ButtonLink {
                 target: Route::LobbyPage {}.into(),
                 name: "New Game",

@@ -18,6 +18,7 @@ pub enum ButtonVariant {
     Destructive,
     Outline,
     Ghost,
+    GreenType,
 }
 
 impl ButtonVariant {
@@ -34,11 +35,13 @@ impl ButtonVariant {
             // Button atk name
             ButtonVariant::AtkName => "atk-name",
             ButtonVariant::AtkNameBlocked => "atk-name-blocked",
+            // other buttons
             ButtonVariant::Primary => "primary",
             ButtonVariant::Secondary => "secondary",
             ButtonVariant::Destructive => "destructive",
             ButtonVariant::Outline => "outline",
             ButtonVariant::Ghost => "ghost",
+            ButtonVariant::GreenType => "green-type",
         }
     }
 }

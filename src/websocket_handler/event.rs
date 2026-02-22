@@ -57,7 +57,7 @@ static SERVER_MANAGER: Lazy<Arc<Mutex<GameStateManager>>> =
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ClientEvent {
     LoginAllSessions(String, i64),  // `String`: username, `i64`: sql-id
-    LogOut(String),                 // `String`: username
+    RequestLogOut(String),          // `String`: username
     InitializeGame(String, String), // `String`: server_name, `String`: player_name
     AddCharacterOnServerData(String, String, String), // `String`: server_name, `String`: player_name, `String`: character_name
     StartGame(String),                                // `String`: server_name
@@ -83,6 +83,7 @@ pub enum ServerEvent {
     UpdateOngoingGames(Vec<OnGoingGame>),
     AnswerSavedGameList(Vec<PathBuf>), // list of saved games paths
     ResetClientFromServerData,         // server name
+    LogOut,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -151,9 +152,9 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("Adding new player from client {}: {:?}", client_id, username);
                                 add_player(username, client_id);
                             }
-                            Ok(ClientEvent::LogOut(user_name)) => {
+                            Ok(ClientEvent::RequestLogOut(user_name)) => {
                                 tracing::info!("{} is logged out", user_name);
-                                send_logout_to_server(user_name);
+                                send_logout_to_server(user_name, client_id);
                             }
                             Ok(ClientEvent::StartGame(server_name)) => {
                                 tracing::info!("{} is starting a new game", server_name);
@@ -248,7 +249,7 @@ pub fn login_all_sessions(username: String, sql_id: i64) {
 }
 
 #[cfg(feature = "server")]
-pub fn send_logout_to_server(user_name: String) {
+pub fn send_logout_to_server(user_name: String, client_id: u32) {
     let mut sm = SERVER_MANAGER.lock().unwrap();
     // remove player from GameStateManager
     sm.players
@@ -260,6 +261,15 @@ pub fn send_logout_to_server(user_name: String) {
             .retain(|player_name, _| player_name != &user_name);
     }
     tracing::info!("All connected players after logout: {:?}", sm.players);
+
+    // update logged out client
+    let clients = CLIENTS.lock().unwrap();
+    for (&other_id, sender) in clients.iter() {
+        if other_id as u32 == client_id {
+            let _ = sender.send(ServerEvent::LogOut);
+            break;
+        }
+    }
 }
 
 #[cfg(feature = "server")]

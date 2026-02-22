@@ -46,7 +46,7 @@ pub fn LobbyPage() -> Element {
         if server_data_snap.app.game_phase == GamePhase::InitGame
             || server_data_snap.app.game_phase == GamePhase::Loading
         {
-            div { class: "home-container",
+            div { style: "display: flex;flex-direction: column; align-items: center; gap: 1rem;",
                 if server_data_snap.app.game_phase == GamePhase::InitGame {
                     h1 { "Init game" }
                 } else if server_data_snap.app.game_phase == GamePhase::Loading {
@@ -54,6 +54,9 @@ pub fn LobbyPage() -> Element {
                 } else {
                     h1 { "Lobby page" }
                 }
+            }
+            div { class: "server-page-container",
+
                 // show character select page
                 CharacterSelect {}
                 // if the current client is the host, show start game button

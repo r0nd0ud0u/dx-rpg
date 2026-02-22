@@ -12,6 +12,10 @@
   box-shadow: 0 0 0 2px var(--focused-border-color);
 }
 
+.button:disabled {
+  cursor: not-allowed;
+}
+
 .button[data-style="primary"] {
   background-color: var(--secondary-color-2);
   color: var(--secondary-color);
@@ -24,10 +28,6 @@
   background-color: var(--secondary-color-1);
 }
 
-.button[data-style="primary"]:disabled {
-  cursor: not-allowed;
-}
-
 .button[data-style="atk-default-type"] {
   background-color: var(--secondary-color-6);
   color: var(--primary-color);
@@ -36,10 +36,6 @@
 
 .button[data-style="atk-default-type"]:hover {
   background-color: var(--secondary-color-5);
-}
-
-.button[data-style="atk-default-type"]:disabled {
-  cursor: not-allowed;
 }
 
 .button[data-style="atk-mana-type"] {
@@ -52,10 +48,6 @@
   background-color: var(--high-green-color-1);
 }
 
-.button[data-style="atk-mana-type"]:disabled {
-  cursor: not-allowed;
-}
-
 .button[data-style="atk-vigor-type"] {
   background-color: var(--orange-color-1);
   color: var(--primary-color);
@@ -66,10 +58,6 @@
   background-color: var(--high-orange-color-1);
 }
 
-.button[data-style="atk-vigor-type"]:disabled {
-  cursor: not-allowed;
-}
-
 .button[data-style="atk-berserk-type"] {
   background-color: var(--red-color-1);
   color: var(--primary-color);
@@ -78,10 +66,6 @@
 
 .button[data-style="atk-berserk-type"]:hover {
   background-color: var(--secondary-error-color);
-}
-
-.button[data-style="atk-berserk-type"]:disabled {
-  cursor: not-allowed;
 }
 
 .button[data-style="atk-name"] {
@@ -151,10 +135,6 @@
   background-color: var(--secondary-color-3);
 }
 
-.button[data-style="secondary"]:disabled {
-  cursor: not-allowed;
-}
-
 .button[data-style="ghost"] {
   background-color: transparent;
   color: var(--secondary-color-4);
@@ -177,10 +157,19 @@
 }
 
 .button[data-style="destructive"] {
-  background-color: var(--primary-error-color);
+  background-color: var(--secondary-error-color);
   color: var(--contrast-error-color);
 }
 
 .button[data-style="destructive"]:hover {
-  background-color: var(--secondary-error-color);
+  background-color: var(--red-color-1);
+}
+
+.button[data-style="green-type"] {
+  background-color: var(--green-color-1);
+  color: var(--black-color-1);
+}
+
+.button[data-style="green-type"]:hover {
+  background-color: var(--high-green-color-1);
 }
