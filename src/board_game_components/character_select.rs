@@ -65,7 +65,6 @@ pub fn CharacterSelect() -> Element {
                 } else {
                     div { style: "display: flex; flex-direction: column; height: 40px; gap: 10px;",
                         for player in connected.clone() {
-
                             Label { html_for: "sheet-demo-name", "{player.0}: {player.1} " }
                         }
                     }
