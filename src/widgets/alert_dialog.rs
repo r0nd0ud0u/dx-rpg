@@ -5,7 +5,7 @@ use dioxus::{
 
 use crate::{
     board_game_components::msg_from_client::send_disconnect_from_server_data,
-    common::{Route, SERVER_NAME},
+    common::Route,
     components::{
         alert_dialog::{
             AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,

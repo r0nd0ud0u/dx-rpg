@@ -93,9 +93,7 @@ fn App() -> Element {
                         let login_name_session_local_sync = login_name_session_local_sync();
                         let login_id_session_local_sync = login_id_session_local_sync();
                         // re-send SetName to server
-                        if login_name_session_local_sync != disconnected_user()
-                            && login_id_session_local_sync != -1
-                        {
+                        if login_name_session_local_sync != disconnected_user() {
                             let _ = socket
                                 .clone()
                                 .send(ClientEvent::AddPlayer(
@@ -113,6 +111,10 @@ fn App() -> Element {
                                 .send(ClientEvent::RequestSavedGameList(
                                     login_name_session_local_sync.clone(),
                                 ))
+                                .await;
+                            let _ = socket
+                                .clone()
+                                .send(ClientEvent::RequestOnGoingGamesList)
                                 .await;
                         }
                     }

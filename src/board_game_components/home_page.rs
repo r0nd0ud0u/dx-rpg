@@ -18,7 +18,7 @@ pub fn Home() -> Element {
     // contexts
     let local_login_name_session = use_context::<Signal<String>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
-    let mut server_data = use_context::<Signal<ServerData>>;
+    let server_data = use_context::<Signal<ServerData>>;
     // Snapshot for this render
     let user_name = local_login_name_session();
 

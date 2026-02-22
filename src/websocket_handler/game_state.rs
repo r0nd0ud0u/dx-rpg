@@ -28,8 +28,14 @@ pub struct ServerData {
 }
 
 impl ServerData {
-    pub fn reset(game_phase: GamePhase)-> ServerData{
-        ServerData { app: Application { game_phase, ..Default::default() }, ..Default::default() }
+    pub fn reset(game_phase: GamePhase) -> ServerData {
+        ServerData {
+            app: Application {
+                game_phase,
+                ..Default::default()
+            },
+            ..Default::default()
+        }
     }
 }
 
@@ -110,5 +116,5 @@ pub enum GamePhase {
     Default,
     InitGame,
     Running,
-    Ended
+    Ended,
 }

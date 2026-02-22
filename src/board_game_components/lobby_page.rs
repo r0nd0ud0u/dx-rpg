@@ -102,7 +102,7 @@ pub fn LobbyPage() -> Element {
                 name: "No more game, back to home".to_string(),
             }
         } else if server_data_snap.app.game_phase == GamePhase::Default {
-            // nothing to display
+
         }
     }
 }
