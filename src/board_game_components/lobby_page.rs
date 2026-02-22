@@ -4,6 +4,7 @@ use dioxus::{
     prelude::*,
 };
 
+use crate::components::button::ButtonVariant;
 use crate::{
     board_game_components::{
         character_select::CharacterSelect, common_comp::ButtonLink,
@@ -53,6 +54,8 @@ pub fn LobbyPage() -> Element {
                 } else {
                     h1 { "Lobby page" }
                 }
+                // show character select page
+                CharacterSelect {}
                 // if the current client is the host, show start game button
                 if SERVER_NAME() == local_login_name_session() && all_players_have_character_name
                     && (server_data_snap.app.game_phase == GamePhase::InitGame
@@ -61,15 +64,13 @@ pub fn LobbyPage() -> Element {
                                 == server_data_snap.players_info.len() as i64)
                 {
                     Button {
+                        variant: ButtonVariant::Primary,
                         onclick: move |_| async move {
                             send_start_game(socket).await;
                         },
                         "Start Game"
                     }
                 }
-
-                // show character select page
-                CharacterSelect {}
             }
         } else if server_data_snap.app.game_phase == GamePhase::Running {
             // check if there is more characters in game than users

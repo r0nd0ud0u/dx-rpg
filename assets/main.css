@@ -249,7 +249,7 @@ body {
   display: flex;
   flex-direction: column; /* empile les éléments verticalement */
   align-items: center;    /* centre horizontalement */
-  gap: 10px; /* espace entre les éléments */
+  gap: 100px; /* espace entre les éléments */
 }
 
 .header-text {

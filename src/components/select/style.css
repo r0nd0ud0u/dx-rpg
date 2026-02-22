@@ -62,7 +62,7 @@
 .select-trigger:focus-visible {
   background: var(--light, var(--primary-color-4))
     var(--dark, var(--primary-color-5));
-  color: var(--secondary-color-1);
+  color: var(--secondary-color);
   outline: none;
 }
 
@@ -139,7 +139,7 @@
 .select-option:focus-visible {
   background: var(--light, var(--primary-color-4))
     var(--dark, var(--primary-color-7));
-  color: var(--secondary-color-1);
+  color: var(--secondary-color);
   outline: none;
 }
 

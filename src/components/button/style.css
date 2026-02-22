@@ -5,6 +5,7 @@
   cursor: pointer;
   font-size: 1rem;
   transition: background-color 0.2s ease, color 0.2s ease;
+  font-weight: bold;
 }
 
 .button:focus-visible {
@@ -13,7 +14,10 @@
 
 .button[data-style="primary"] {
   background-color: var(--secondary-color-2);
-  color: var(--primary-color);
+  color: var(--secondary-color);
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 5px 5px;
 }
 
 .button[data-style="primary"]:hover {
@@ -140,7 +144,7 @@
 
 .button[data-style="secondary"] {
   background-color: var(--primary-color-5);
-  color: var(--secondary-color-1);
+  color: var(--secondary-color);
 }
 
 .button[data-style="secondary"]:hover {
