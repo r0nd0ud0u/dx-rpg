@@ -7,10 +7,22 @@ use tokio::sync::OnceCell;
 static DB: OnceCell<Pool<Sqlite>> = OnceCell::const_new();
 
 #[cfg(feature = "server")]
+use std::env;
+
+#[cfg(feature = "server")]
+use dioxus::logger::tracing;
+
+#[cfg(feature = "server")]
 async fn db() -> Pool<Sqlite> {
-    let pool = sqlx::sqlite::SqlitePool::connect("sqlite://db.sqlite")
-        .await
-        .unwrap();
+    let db_url = match env::var("DATABASE_URL") {
+        Ok(val) => val,
+        Err(e) => {
+            tracing::error!("Error DATABASE_URL: {}", e);
+            String::new()
+        }
+    };
+
+    let pool = sqlx::sqlite::SqlitePool::connect(&db_url).await.unwrap();
 
     // Create the tables (sessions, users)
     pool.execute(r#"CREATE TABLE IF NOT EXISTS users ( "id" INTEGER PRIMARY KEY, "anonymous" BOOLEAN NOT NULL, "username" VARCHAR(256) NOT NULL, "password" VARCHAR(256), "is_connected" BOOLEAN NOT NULL)"#,)

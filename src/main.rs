@@ -4,6 +4,7 @@ use dioxus::{
     prelude::*,
 };
 use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
+use dotenv::dotenv;
 use dx_rpg::{
     common::{DX_COMP_CSS, Route, SERVER_NAME, disconnected_user},
     websocket_handler::{
@@ -16,6 +17,8 @@ const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 fn main() {
+    // Reads the .env file
+    dotenv().ok();
     // Init logger
     dioxus::logger::init(Level::INFO).expect("failed to init logger");
     tracing::info!("Rendering app!");
@@ -93,7 +96,9 @@ fn App() -> Element {
                         let login_name_session_local_sync = login_name_session_local_sync();
                         let login_id_session_local_sync = login_id_session_local_sync();
                         // re-send SetName to server
-                        if login_name_session_local_sync != disconnected_user() {
+                        if login_name_session_local_sync != disconnected_user()
+                            && login_id_session_local_sync != -1
+                        {
                             let _ = socket
                                 .clone()
                                 .send(ClientEvent::AddPlayer(

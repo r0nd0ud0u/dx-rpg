@@ -887,7 +887,6 @@ async fn process_replay_game(server_name: &str, client_id: u32) {
     )
     .await;
     start_new_game_by_player(server_name, true).await;
-   
 }
 
 #[cfg(feature = "server")]
