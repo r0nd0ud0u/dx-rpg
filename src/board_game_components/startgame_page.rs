@@ -5,6 +5,7 @@ use crate::common::{Route, SERVER_NAME};
 use crate::components::label::Label;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::websocket_handler::game_state::ServerData;
+use crate::widgets::tab::TabDemo;
 use crate::{
     board_game_components::gameboard::GameBoard,
     components::{
@@ -15,7 +16,9 @@ use crate::{
     },
 };
 use dioxus::fullstack::{CborEncoding, UseWebsocket};
+use dioxus::logger::tracing;
 use dioxus::prelude::*;
+use lib_rpg::character::Character;
 use lib_rpg::game_state::GameStatus;
 
 /// New game
@@ -98,13 +101,11 @@ fn SaveButton(is_saved: Signal<bool>) -> Element {
 pub fn Sheets() -> Element {
     let mut open = use_signal(|| false);
     let mut side = use_signal(|| SheetSide::Right);
-    let mut use_gm = use_signal(|| false);
 
     let open_sheet = move |s: SheetSide| {
         move |_| {
             side.set(s);
             open.set(true);
-            use_gm.set(true);
         }
     };
 
@@ -161,6 +162,26 @@ pub fn Sheets() -> Element {
 
 #[component]
 fn InventorySheet(s: SheetSide) -> Element {
+    // context
+    let server_data = use_context::<Signal<ServerData>>();
+    // get character name for the player
+    let local_login_name_session = use_context::<Signal<String>>();
+    let server_data_snap = server_data();
+    let character_name = server_data_snap
+        .players_info
+        .get(&local_login_name_session())
+        .and_then(|info| info.character_names.get(0))
+        .cloned()
+        .unwrap_or_else(|| "No character selected".to_string());
+    // get character by name
+    let character = match server_data_snap
+        .app
+        .game_manager
+        .pm.get_active_hero_character(&character_name) {
+            Some(c) => c.clone(),
+            None => Character::default(),
+        };
+
     rsx! {
         SheetContent { side: s,
             SheetHeader {
@@ -170,7 +191,6 @@ fn InventorySheet(s: SheetSide) -> Element {
 
             div {
                 display: "grid",
-                flex: "1 1 0%",
                 grid_auto_rows: "min-content",
                 gap: "1.5rem",
                 padding: "0 1rem",
@@ -182,6 +202,7 @@ fn InventorySheet(s: SheetSide) -> Element {
                     Label { html_for: "sheet-demo-username", "Username" }
                     Input { id: "sheet-demo-username", initial_value: "@dioxus" }
                 }
+                TabDemo { c: character.clone() }
             }
 
             SheetFooter {

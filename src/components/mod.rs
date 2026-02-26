@@ -9,3 +9,4 @@ pub mod select;
 pub mod separator;
 pub mod sheet;
 pub mod tooltip;
+pub mod tabs;
