@@ -177,10 +177,12 @@ fn InventorySheet(s: SheetSide) -> Element {
     let character = match server_data_snap
         .app
         .game_manager
-        .pm.get_active_hero_character(&character_name) {
-            Some(c) => c.clone(),
-            None => Character::default(),
-        };
+        .pm
+        .get_active_hero_character(&character_name)
+    {
+        Some(c) => c.clone(),
+        None => Character::default(),
+    };
 
     rsx! {
         SheetContent { side: s,
