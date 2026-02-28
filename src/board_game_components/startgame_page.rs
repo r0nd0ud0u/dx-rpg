@@ -16,7 +16,6 @@ use crate::{
     },
 };
 use dioxus::fullstack::{CborEncoding, UseWebsocket};
-use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use lib_rpg::character::Character;
 use lib_rpg::game_state::GameStatus;
@@ -170,7 +169,7 @@ fn InventorySheet(s: SheetSide) -> Element {
     let character_name = server_data_snap
         .players_info
         .get(&local_login_name_session())
-        .and_then(|info| info.character_names.get(0))
+        .and_then(|info| info.character_names.first())
         .cloned()
         .unwrap_or_else(|| "No character selected".to_string());
     // get character by name

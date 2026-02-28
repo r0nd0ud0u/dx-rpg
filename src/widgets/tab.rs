@@ -1,4 +1,3 @@
-use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use lib_rpg::character::Character;
 
