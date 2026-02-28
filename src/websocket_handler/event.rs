@@ -167,7 +167,6 @@ pub async fn on_rcv_client_event(
                             Ok(ClientEvent::AddCharacterOnServerData(server_name, player_name, character_name)) => {
                                 tracing::info!("{} is adding character {} to server data", player_name, character_name);
                                 add_character_on_server_data(&server_name, &player_name, &character_name);
-                                update_clients_server_data(&server_name);
                             }
                             Ok(ClientEvent::LaunchAttack(server_name, selected_atk)) => {
                                 tracing::info!("A new atk has been launched with atk {} for server {}", selected_atk, server_name);
@@ -599,34 +598,36 @@ fn send_end_of_serverdata(server_name: &str, client_id: u32, is_owner_disconnect
 #[cfg(feature = "server")]
 pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) {
     use lib_rpg::game_state::GameStatus;
-    let sm = SERVER_MANAGER.lock().unwrap();
-    let mut server_data = match sm.servers_data.get(server_name) {
-        Some(server_data) => server_data.clone(),
-        None => {
-            tracing::error!("No application found for server name: {}", server_name);
+    let mut sm: std::sync::MutexGuard<'_, GameStateManager> = SERVER_MANAGER.lock().unwrap();
+    if let Some(server_data) = sm.servers_data.get_mut(server_name) {
+        // launch attack
+        // case several ennemy-auto-atk in a row and one atk ended the game, the next atk should not reach.
+        // and the state of the game should not be updated anymore
+        if server_data.app.game_manager.game_state.status == GameStatus::EndOfGame {
+            tracing::info!(
+                "Game is already ended for server: {}, skipping atk processing",
+                server_name
+            );
             return;
         }
-    };
-    drop(sm);
-    // launch attack
-    // case several ennemy-auto-atk in a row and one atk ended the game, the next atk should not reach.
-    // and the state of the game should not be updated anymore
-    if server_data.app.game_manager.game_state.status == GameStatus::EndOfGame {
+        let _ = server_data
+            .app
+            .game_manager
+            .launch_attack(selected_atk_name);
         tracing::info!(
-            "Game is already ended for server: {}, skipping atk processing",
+            "Attack launched for server: {},  atk: {:?}",
+            server_name,
+            selected_atk_name
+        );
+    } else {
+        tracing::error!(
+            "update_app_after_atk: No server data found for server name: {}",
             server_name
         );
         return;
     }
-    let _ = server_data
-        .app
-        .game_manager
-        .launch_attack(selected_atk_name);
-    tracing::info!(
-        "Attack launched for server: {},  atk: {:?}",
-        server_name,
-        selected_atk_name
-    );
+
+    drop(sm);
     // update clients
     update_clients_server_data(server_name);
 }

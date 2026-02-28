@@ -8,4 +8,5 @@ pub mod scroll_area;
 pub mod select;
 pub mod separator;
 pub mod sheet;
+pub mod tabs;
 pub mod tooltip;

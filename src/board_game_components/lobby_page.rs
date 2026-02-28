@@ -46,7 +46,7 @@ pub fn LobbyPage() -> Element {
         if server_data_snap.app.game_phase == GamePhase::InitGame
             || server_data_snap.app.game_phase == GamePhase::Loading
         {
-            div { style: "display: flex;flex-direction: column; align-items: center; gap: 1rem;",
+            div { style: "display: flex;flex-direction: column; align-items: center; gap: 10px;",
                 if server_data_snap.app.game_phase == GamePhase::InitGame {
                     h1 { "Init game" }
                 } else if server_data_snap.app.game_phase == GamePhase::Loading {
@@ -54,9 +54,14 @@ pub fn LobbyPage() -> Element {
                 } else {
                     h1 { "Lobby page" }
                 }
+                // show the name of the server
+                h2 { "Server name: {SERVER_NAME()}" }
+                // show the number of players in the server
+                h3 {
+                    "Players: {server_data_snap.app.players_nb} / {server_data_snap.players_info.len()}"
+                }
             }
-            div { class: "server-page-container",
-
+            div { style: "display: flex;flex-direction: column; align-items: center; gap: 100px;",
                 // show character select page
                 CharacterSelect {}
                 // if the current client is the host, show start game button
