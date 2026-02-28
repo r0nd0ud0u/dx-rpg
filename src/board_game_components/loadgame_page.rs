@@ -72,10 +72,7 @@ pub fn LoadGame() -> Element {
                 variant: ButtonVariant::GreenType,
                 disabled: active_button() == -1,
                 onclick: move |_| {
-                    let cur_game = games_list()
-                        .get(active_button() as usize)
-                        .unwrap()
-                        .to_owned();
+                    let cur_game = games_list().get(active_button() as usize).unwrap().to_owned();
                     async move {
                         let _ = socket
                             .clone()
@@ -93,10 +90,7 @@ pub fn LoadGame() -> Element {
                 variant: ButtonVariant::Destructive,
                 disabled: active_button() == -1,
                 onclick: move |_| {
-                    let cur_game = games_list()
-                        .get(active_button() as usize)
-                        .unwrap()
-                        .to_owned();
+                    let cur_game = games_list().get(active_button() as usize).unwrap().to_owned();
                     async move {
                         match application::delete_game(cur_game.clone()).await {
                             Ok(_) => {
