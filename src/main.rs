@@ -18,7 +18,9 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 fn main() {
     // Reads the .env file
+    #[cfg(feature = "server")]
     dotenv().ok();
+
     // Init logger
     dioxus::logger::init(Level::INFO).expect("failed to init logger");
     tracing::info!("Rendering app!");
@@ -48,16 +50,7 @@ fn main() {
         let pool = get_db().await;
 
         // initialize data manager
-        use dx_rpg::common::DATA_MANAGER;
-        use lib_rpg::data_manager::DataManager;
-        let mut dm = DATA_MANAGER.lock().unwrap();
-        *dm = DataManager::try_new("./offlines").unwrap();
-        tracing::info!(
-            "Data manager initialized with {} equipments and {} heroes",
-            dm.equipment_table.len(),
-            dm.all_heroes.len()
-        );
-        drop(dm);
+        init_data_manager().await;
 
         // Create an axum router that dioxus will attach the app to
         Ok(dioxus::server::router(App)
@@ -73,6 +66,20 @@ fn main() {
                 .await?,
             )))
     });
+}
+
+#[cfg(feature = "server")]
+pub async fn init_data_manager() {
+    use dx_rpg::common::DATA_MANAGER;
+    use lib_rpg::data_manager::DataManager;
+    let mut dm = DATA_MANAGER.lock().unwrap();
+    *dm = DataManager::try_new("offlines").unwrap();
+    tracing::info!(
+        "Data manager initialized with {} equipments and {} heroes",
+        dm.equipment_table.len(),
+        dm.all_heroes.len()
+    );
+    drop(dm);
 }
 
 #[component]
