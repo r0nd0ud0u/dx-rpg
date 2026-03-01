@@ -1,6 +1,10 @@
 use std::path::PathBuf;
+#[cfg(feature = "server")]
+use std::sync::{Arc, Mutex};
 
 use dioxus::prelude::*;
+#[cfg(feature = "server")]
+use lib_rpg::data_manager::DataManager;
 
 use crate::board_game_components::admin_page::AdminPage;
 use crate::board_game_components::create_server_page::CreateServer;
@@ -15,6 +19,11 @@ use once_cell::sync::Lazy;
 
 // Global signals
 pub static SERVER_NAME: GlobalSignal<String> = Signal::global(String::new);
+
+/// server only: Data manager
+#[cfg(feature = "server")]
+pub static DATA_MANAGER: Lazy<Arc<Mutex<DataManager>>> =
+    Lazy::new(|| Arc::new(Mutex::new(DataManager::default())));
 
 // TODO could be lazy
 pub fn disconnected_user() -> String {
