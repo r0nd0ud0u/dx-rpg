@@ -90,6 +90,7 @@ pub fn ClassSelect(player_name: String) -> Element {
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let all_characters_names = use_context::<Signal<Vec<String>>>();
 
     // get character name for the player
     let character_name = server_data()
@@ -103,37 +104,29 @@ pub fn ClassSelect(player_name: String) -> Element {
         character_name
     );
 
-    let data = server_data();
-
-    let players_name: Vec<String> = data
-        .app
-        .game_manager
-        .pm
-        .all_heroes
-        .iter()
-        .map(|h| h.name.clone())
-        .collect();
-
-    let characters = players_name.into_iter().enumerate().map(|(i, c)| {
-        let c = c.as_str();
-        rsx! {
-            SelectOption::<String> { index: i, value: c.to_string(), text_value: "{c}",
-                {
-                    // TODO: use actual icons for each character
-                    format!(
-                        "{} {c}",
-                        match c {
-                            "Warrior" => "🗡️",
-                            "Mage" => "🪄",
-                            "Rogue" => "🗡️",
-                            _ => "",
-                        },
-                    )
+    let characters = all_characters_names()
+        .into_iter()
+        .enumerate()
+        .map(|(i, c)| {
+            let c = c.as_str();
+            rsx! {
+                SelectOption::<String> { index: i, value: c.to_string(), text_value: "{c}",
+                    {
+                        // TODO: use actual icons for each character
+                        format!(
+                            "{} {c}",
+                            match c {
+                                "Warrior" => "🗡️",
+                                "Mage" => "🪄",
+                                "Rogue" => "🗡️",
+                                _ => "",
+                            },
+                        )
+                    }
+                    SelectItemIndicator {}
                 }
-                SelectItemIndicator {}
             }
-        }
-    });
+        });
 
     // callback for when the selected character changes
     let on_value_change_selected_character = move |e: Option<String>| {

@@ -62,7 +62,7 @@ pub fn LoadGame() -> Element {
                             disabled: active_button() == index as i64,
                             onclick: move |_| async move { active_button.set(index as i64) },
                             "{game_name}"
-
+                        
                         }
                     }
                 }

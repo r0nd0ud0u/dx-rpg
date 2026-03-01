@@ -1,7 +1,7 @@
 #[cfg(feature = "server")]
 use crate::application::init_application;
 #[cfg(feature = "server")]
-use crate::common::{SAVED_APP, SAVED_APP_REPLAY};
+use crate::common::{DATA_MANAGER, SAVED_APP, SAVED_APP_REPLAY};
 use crate::websocket_handler::game_state::GamePhase;
 use crate::websocket_handler::game_state::OnGoingGame;
 use crate::websocket_handler::game_state::ServerData;
@@ -76,10 +76,10 @@ pub enum ClientEvent {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ServerEvent {
-    NewClientOnExistingPlayer(String, u32), // welcome message, player id
-    AssignPlayerId(u32),                    // player id
-    ReconnectAllSessions(String, i64),      // username, sql-id
-    UpdateServerData(Box<ServerData>),      // server data
+    AssignPlayerId(u32),                            // player id
+    NewClientOnExistingPlayer(String, u32),         // welcome message, player id
+    ReconnectAllSessions(String, i64, Vec<String>), // username, sql-id, characters list
+    UpdateServerData(Box<ServerData>),              // server data
     UpdateOngoingGames(Vec<OnGoingGame>),
     AnswerSavedGameList(Vec<PathBuf>), // list of saved games paths
     ResetClientFromServerData,         // server name
@@ -241,9 +241,23 @@ pub fn add_player(name: String, id: u32) {
 
 #[cfg(feature = "server")]
 pub fn login_all_sessions(username: String, sql_id: i64) {
+    // Data manager
+    let dm = {
+        let dm = DATA_MANAGER.lock().unwrap();
+        dm.clone()
+    };
+    let character_list = dm
+        .all_heroes
+        .iter()
+        .map(|h| h.name.clone())
+        .collect::<Vec<String>>();
     let clients = CLIENTS.lock().unwrap();
     for (&_other_id, sender) in clients.iter() {
-        let _ = sender.send(ServerEvent::ReconnectAllSessions(username.clone(), sql_id));
+        let _ = sender.send(ServerEvent::ReconnectAllSessions(
+            username.clone(),
+            sql_id,
+            character_list.clone(),
+        ));
     }
 }
 
@@ -474,41 +488,45 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
 #[cfg(feature = "server")]
 pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &str) {
     // add new ongoing game
-    match Application::try_new().await {
-        Ok(mut app) => {
-            tracing::info!("New application created for player: {}", server_name);
-            // init a new game
-            init_application(server_name, &mut app);
-            // update ongoing servers data list
-            let mut sm = SERVER_MANAGER.lock().unwrap();
-            // remove ongoing game if already exists for the server name
-            sm.ongoing_games
-                .retain(|ongoing_game| ongoing_game.server_name != server_name);
-            // add ongoing game
-            sm.ongoing_games.push(OnGoingGame {
-                path: app.game_manager.game_paths.current_game_dir.clone(),
-                server_name: server_name.to_string(),
-            });
-            drop(sm);
-            // add server data
-            app.game_phase = GamePhase::InitGame;
-            // add first player
-            app.players_nb = 0;
-            add_server_data_with_player(&app, server_name, id, player_name);
-            // update for the clients connected to that server
-            update_clients_server_data(server_name);
-            update_clients_ongoing_games();
-        }
-        Err(_) => tracing::error!("no app"),
-    }
+    let mut app = Application::new().await;
+    tracing::info!("New application created for player: {}", server_name);
+    // init a new game
+    init_application(server_name, &mut app);
+    // update ongoing servers data list
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    // remove ongoing game if already exists for the server name
+    sm.ongoing_games
+        .retain(|ongoing_game| ongoing_game.server_name != server_name);
+    // add ongoing game
+    sm.ongoing_games.push(OnGoingGame {
+        path: app.game_manager.game_paths.current_game_dir.clone(),
+        server_name: server_name.to_string(),
+    });
+    drop(sm);
+    // add server data
+    app.game_phase = GamePhase::InitGame;
+    // add first player
+    app.players_nb = 0;
+    add_server_data_with_player(&app, server_name, id, player_name);
+    // update for the clients connected to that server
+    update_clients_server_data(server_name);
+    update_clients_ongoing_games();
+}
+
+#[cfg(feature = "server")]
+fn get_current_game_path(player_name: &str, current_game_dir: &str) -> PathBuf {
+    use crate::common::SAVED_DATA;
+    let saved_dir: PathBuf = SAVED_DATA.join(PathBuf::from(player_name));
+
+    saved_dir.join(current_game_dir)
 }
 
 #[cfg(feature = "server")]
 async fn save_application(app: &Application, save_game_name: &str, player_name: &str) {
     // create dir
     use crate::common::SAVED_DATA;
-    let mut saved_dir: PathBuf = SAVED_DATA.join(PathBuf::from(player_name));
-    saved_dir = saved_dir.join(app.game_manager.game_paths.current_game_dir.clone());
+    let saved_dir: PathBuf = SAVED_DATA.join(PathBuf::from(player_name));
+    let saved_dir = saved_dir.join(app.game_manager.game_paths.current_game_dir.clone());
     match application::create_dir(saved_dir.clone()).await {
         Ok(()) => {}
         Err(e) => tracing::error!("Failed to create directory: {}", e),
@@ -707,6 +725,7 @@ fn update_lobby_page_after_joining_game(server_name: &str, player_name: &str, cl
 // Used when GamePhase::InitGame
 #[cfg(feature = "server")]
 fn add_character_on_server_data(server_name: &str, player_name: &str, character_name: &str) {
+    let dm = DATA_MANAGER.lock().unwrap();
     let mut sm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         // remove character from all players in server data
@@ -731,13 +750,8 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
                 .character_names
                 .iter()
                 .for_each(|character_name| {
-                    if let Some(character) = server_data
-                        .app
-                        .game_manager
-                        .pm
-                        .all_heroes
-                        .iter()
-                        .find(|h| h.name == *character_name)
+                    if let Some(character) =
+                        dm.all_heroes.iter().find(|h| h.name == *character_name)
                     {
                         server_data
                             .app
@@ -813,6 +827,9 @@ async fn load_game_by_player(
     server_name_opt: Option<String>,
 ) {
     let server_name = server_name_opt.unwrap_or_else(|| player_name.clone());
+
+    // TODO game path should be init at initialization of the game and not here, and it should not be based on player name but on server name, to avoid issues when several players with different names are playing on the same server
+    get_current_game_path(&player_name, game_path.to_str().unwrap_or_default());
 
     let mut app = match application::get_application_by_game_dir(game_path.clone(), is_replay).await
     {

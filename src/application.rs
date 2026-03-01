@@ -1,3 +1,7 @@
+#[cfg(feature = "server")]
+use crate::common::DATA_MANAGER;
+use crate::common::{SAVED_APP, SAVED_APP_REPLAY};
+use crate::websocket_handler::game_state::GamePhase;
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use dioxus::{prelude::ServerFnError, prelude::server};
@@ -8,9 +12,6 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-
-use crate::common::{SAVED_APP, SAVED_APP_REPLAY};
-use crate::websocket_handler::game_state::GamePhase;
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Application {
@@ -25,19 +26,19 @@ pub struct Application {
 }
 
 impl Application {
-    #[server]
-    pub async fn try_new() -> Result<Application, ServerFnError> {
-        match GameManager::try_new("offlines", false) {
-            Ok(gm) => Ok(Application {
-                game_manager: gm,
-                server_name: "Default".to_owned(),
-                game_phase: GamePhase::Default,
-                players_nb: 0,
-                heroes_chosen: HashMap::new(),
-            }),
-            Err(_) => Err(ServerFnError::new(
-                "Failed to create GameManager".to_string(),
-            )),
+    #[cfg(feature = "server")]
+    pub async fn new() -> Application {
+        let dm = DATA_MANAGER.lock().unwrap();
+        let mut gm = GameManager::new("offlines", dm.equipment_table.clone());
+        // set bosses
+        gm.pm.active_bosses = dm.all_bosses.clone();
+
+        Application {
+            game_manager: gm,
+            server_name: "Default".to_owned(),
+            game_phase: GamePhase::Default,
+            players_nb: 0,
+            heroes_chosen: HashMap::new(),
         }
     }
 }
