@@ -76,10 +76,10 @@ pub enum ClientEvent {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ServerEvent {
-    AssignPlayerId(u32),                            // player id
-    NewClientOnExistingPlayer(String, u32),         // welcome message, player id
-    ReconnectAllSessions(String, i64, Vec<String>), // username, sql-id, characters list
-    UpdateServerData(Box<ServerData>),              // server data
+    InitClient(u32, Vec<String>),           // player id, characters list
+    NewClientOnExistingPlayer(String, u32), // welcome message, player id
+    ReconnectAllSessions(String, i64),      // username, sql-id
+    UpdateServerData(Box<ServerData>),      // server data
     UpdateOngoingGames(Vec<OnGoingGame>),
     AnswerSavedGameList(Vec<PathBuf>), // list of saved games paths
     ResetClientFromServerData,         // server name
@@ -112,8 +112,18 @@ pub async fn on_rcv_client_event(
                 clients.insert(client_id as usize, tx);
                 tracing::info!("Client {} connected (total: {})", client_id, clients.len());
             }
+            // Data manager
+    let dm = {
+        let dm = DATA_MANAGER.lock().unwrap();
+        dm.clone()
+    };
+    let character_list = dm
+        .all_heroes
+        .iter()
+        .map(|h| h.name.clone())
+        .collect::<Vec<String>>();
 
-            let _ = socket.send(ServerEvent::AssignPlayerId(client_id)).await;
+            let _ = socket.send(ServerEvent::InitClient(client_id, character_list)).await;
             let _ = socket.send(ServerEvent::NewClientOnExistingPlayer(format!("Welcome! (id={})", client_id), client_id)).await;
 
             // Main loop: handle incoming socket messages and outgoing queued messages
@@ -234,30 +244,16 @@ pub async fn on_rcv_client_event(
 
 #[cfg(feature = "server")]
 pub fn add_player(name: String, id: u32) {
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm: std::sync::MutexGuard<'_, GameStateManager> = SERVER_MANAGER.lock().unwrap();
     sm.players.entry(name.clone()).or_default().push(id);
     tracing::info!("All connected players: {:?}", sm.players);
 }
 
 #[cfg(feature = "server")]
 pub fn login_all_sessions(username: String, sql_id: i64) {
-    // Data manager
-    let dm = {
-        let dm = DATA_MANAGER.lock().unwrap();
-        dm.clone()
-    };
-    let character_list = dm
-        .all_heroes
-        .iter()
-        .map(|h| h.name.clone())
-        .collect::<Vec<String>>();
     let clients = CLIENTS.lock().unwrap();
     for (&_other_id, sender) in clients.iter() {
-        let _ = sender.send(ServerEvent::ReconnectAllSessions(
-            username.clone(),
-            sql_id,
-            character_list.clone(),
-        ));
+        let _ = sender.send(ServerEvent::ReconnectAllSessions(username.clone(), sql_id));
     }
 }
 

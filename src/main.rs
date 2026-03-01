@@ -142,8 +142,16 @@ fn App() -> Element {
                                 .await;
                         }
                     }
-                    ServerEvent::AssignPlayerId(id) => {
+                    ServerEvent::InitClient(id, characters_list) => {
                         player_client_id.set(id);
+                        // set character list
+                        all_characters_names.set(characters_list);
+                        tracing::info!(
+                            "Client {} received characters list with {} characters: {:?}",
+                            id,
+                            all_characters_names().len(),
+                            all_characters_names()
+                        );
                     }
                     ServerEvent::UpdateServerData(server_data_update) => {
                         // update server info
@@ -153,7 +161,7 @@ fn App() -> Element {
                     ServerEvent::UpdateOngoingGames(ongoing_games_update) => {
                         ongoing_games.set(ongoing_games_update);
                     }
-                    ServerEvent::ReconnectAllSessions(username, sql_id, characters_list) => {
+                    ServerEvent::ReconnectAllSessions(username, sql_id) => {
                         let login_name_session_local_sync = login_name_session_local_sync();
                         let login_id_session_local_sync = login_id_session_local_sync();
                         if login_name_session_local_sync == username
@@ -169,14 +177,6 @@ fn App() -> Element {
                                     login_name_session_local_sync.clone(),
                                 ))
                                 .await;
-                            // set character list
-                            all_characters_names.set(characters_list);
-                            tracing::info!(
-                                "Client {} received characters list with {} characters: {:?}",
-                                sql_id,
-                                all_characters_names().len(),
-                                all_characters_names()
-                            );
                         } else {
                             tracing::info!(
                                 "Skipping ReconnectAllSessions for player {} (username: {}, sql_id: {})",
