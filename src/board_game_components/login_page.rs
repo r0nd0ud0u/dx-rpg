@@ -55,6 +55,7 @@ pub fn LoginPage() -> Element {
                     Button {
                         variant: ButtonVariant::Secondary,
                         onclick: move |_| async move {
+                            tracing::info!("Attempting to log in with username: {}", username());
                             match login(username(), "".to_owned(), false).await {
                                 Ok(()) => {
                                     logon_answer.set(format!("{} is logged", username()));

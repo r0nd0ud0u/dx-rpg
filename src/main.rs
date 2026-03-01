@@ -22,6 +22,7 @@ fn main() {
     // Init logger
     dioxus::logger::init(Level::INFO).expect("failed to init logger");
     tracing::info!("Rendering app!");
+
     // On the client, we simply launch the app as normal, taking over the main thread
     #[cfg(not(feature = "server"))]
     dioxus::launch(App);
@@ -41,9 +42,22 @@ fn main() {
             auth::AuthLayer, db::get_db, server_fn::update_all_connection_status,
         };
 
+        // on server start, set all users to disconnected in db to avoid stale connection status
         update_all_connection_status(false).await.unwrap();
-
+        // create db pool for session store
         let pool = get_db().await;
+
+        // initialize data manager
+        use dx_rpg::common::DATA_MANAGER;
+        use lib_rpg::data_manager::DataManager;
+        let mut dm = DATA_MANAGER.lock().unwrap();
+        *dm = DataManager::try_new("./offlines").unwrap();
+        tracing::info!(
+            "Data manager initialized with {} equipments and {} heroes",
+            dm.equipment_table.len(),
+            dm.all_heroes.len()
+        );
+        drop(dm);
 
         // Create an axum router that dioxus will attach the app to
         Ok(dioxus::server::router(App)
@@ -69,6 +83,7 @@ fn App() -> Element {
     let mut server_data = use_signal(ServerData::default);
     let mut ongoing_games = use_signal(Vec::new);
     let mut saved_game_list = use_signal(Vec::new);
+    let mut all_characters_names = use_signal(Vec::new);
 
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
@@ -127,8 +142,16 @@ fn App() -> Element {
                                 .await;
                         }
                     }
-                    ServerEvent::AssignPlayerId(id) => {
+                    ServerEvent::InitClient(id, characters_list) => {
                         player_client_id.set(id);
+                        // set character list
+                        all_characters_names.set(characters_list);
+                        tracing::info!(
+                            "Client {} received characters list with {} characters: {:?}",
+                            id,
+                            all_characters_names().len(),
+                            all_characters_names()
+                        );
                     }
                     ServerEvent::UpdateServerData(server_data_update) => {
                         // update server info
@@ -191,6 +214,7 @@ fn App() -> Element {
     use_context_provider(|| server_data);
     use_context_provider(|| ongoing_games);
     use_context_provider(|| saved_game_list);
+    use_context_provider(|| all_characters_names);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
