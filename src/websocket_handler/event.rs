@@ -12,6 +12,7 @@ use dioxus::logger::tracing;
 use dioxus::prelude::*;
 #[cfg(feature = "server")]
 use lib_rpg::common::paths_const::GAMES_DIR;
+use lib_rpg::game_manager::LogAtk;
 use serde::{Deserialize, Serialize};
 
 use std::path::PathBuf;
@@ -72,6 +73,7 @@ pub enum ClientEvent {
     RequestTargetedCharacter(String, String, String), // `String`: launcher name, `String`: server name, `String`: atk name
     RequestSetOneTarget(String, String, String, String), // `String`: launcher name, `String`: server name, `String`: atk name, `String`: target name
     SaveGame(String, String), // `String`: server name, `String`: player name
+    AddLog(String, Vec<LogAtk>), // `String`: server name, `Vec<LogAtk>`: log info to add (ex: ["Player1 used Fireball on Player2 for 30 damage", "Player2 is now burning and will take 5 damage for 3 turns"])
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -181,7 +183,6 @@ pub async fn on_rcv_client_event(
                             Ok(ClientEvent::LaunchAttack(server_name, selected_atk)) => {
                                 tracing::info!("A new atk has been launched with atk {} for server {}", selected_atk, server_name);
                                 update_app_after_atk(&server_name, Some(&selected_atk));
-                                update_clients_server_data(&server_name);
                                 // is ennemy turn ? 
                                 process_ennemy_atk(&server_name, tx_server.clone()).await;
                             }
@@ -221,6 +222,11 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("Client {} requested save game by {}", client_id, player_name);
                                 process_save_game(&server_name, &player_name).await;
                             }
+                                Ok(ClientEvent::AddLog(server_name, logs)) => {
+                                    tracing::info!("Client {} requested to add logs, len: {}", client_id, logs.len());
+                                    add_log_to_app(&server_name, logs);
+                                    update_clients_server_data(&server_name);
+                                }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
                                 tracing::info!("Client {} disconnected", client_id);
@@ -613,6 +619,7 @@ fn send_end_of_serverdata(server_name: &str, client_id: u32, is_owner_disconnect
 pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) {
     use lib_rpg::game_state::GameStatus;
     let mut sm: std::sync::MutexGuard<'_, GameStateManager> = SERVER_MANAGER.lock().unwrap();
+    let logs: Vec<LogAtk>;
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         // launch attack
         // case several ennemy-auto-atk in a row and one atk ended the game, the next atk should not reach.
@@ -628,10 +635,18 @@ pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) 
             .app
             .game_manager
             .launch_attack(selected_atk_name);
+        logs = server_data
+            .app
+            .game_manager
+            .game_state
+            .last_result_atk
+            .logs_atk
+            .clone();
         tracing::info!(
-            "Attack launched for server: {},  atk: {:?}",
+            "Attack launched for server: {},  atk: {:?}, logs.len: {}",
             server_name,
-            selected_atk_name
+            selected_atk_name,
+            logs.len()
         );
     } else {
         tracing::error!(
@@ -642,6 +657,8 @@ pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) 
     }
 
     drop(sm);
+    // logs
+    add_log_to_app(&server_name, logs);
     // update clients
     update_clients_server_data(server_name);
 }
@@ -825,9 +842,9 @@ async fn load_game_by_player(
     let server_name = server_name_opt.unwrap_or_else(|| player_name.clone());
 
     // TODO game path should be init at initialization of the game and not here, and it should not be based on player name but on server name, to avoid issues when several players with different names are playing on the same server
-    get_current_game_path(&player_name, game_path.to_str().unwrap_or_default());
+    let load_path = get_current_game_path(&player_name, game_path.to_str().unwrap_or_default());
 
-    let mut app = match application::get_application_by_game_dir(game_path.clone(), is_replay).await
+    let mut app = match application::get_application_by_game_dir(load_path.clone(), is_replay).await
     {
         Ok(get_app) => get_app,
         Err(e) => {
@@ -994,4 +1011,13 @@ async fn process_save_game(server_name: &str, player_name: &str) {
         }
     };
     save_application(&server_data.app, SAVED_APP, player_name).await;
+}
+
+#[cfg(feature = "server")]
+fn add_log_to_app(server_name: &str, logs: Vec<LogAtk>) {
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    if let Some(server_data) = sm.servers_data.get_mut(server_name) {
+        server_data.app.logs.extend(logs);
+    }
+    drop(sm);
 }

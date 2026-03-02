@@ -3,6 +3,7 @@ use crate::board_game_components::msg_from_client::{
 };
 use crate::common::{Route, SERVER_NAME};
 use crate::components::label::Label;
+use crate::components::scroll_area::ScrollArea;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::websocket_handler::game_state::ServerData;
 use crate::widgets::tab::TabDemo;
@@ -17,6 +18,7 @@ use crate::{
 };
 use dioxus::fullstack::{CborEncoding, UseWebsocket};
 use dioxus::prelude::*;
+use dioxus_primitives::scroll_area::ScrollDirection;
 use lib_rpg::character::Character;
 use lib_rpg::game_state::GameStatus;
 
@@ -100,6 +102,7 @@ fn SaveButton(is_saved: Signal<bool>) -> Element {
 pub fn Sheets() -> Element {
     let mut open = use_signal(|| false);
     let mut side = use_signal(|| SheetSide::Right);
+    let mut is_saved: Signal<bool> = use_signal(|| false);
 
     let open_sheet = move |s: SheetSide| {
         move |_| {
@@ -107,6 +110,9 @@ pub fn Sheets() -> Element {
             open.set(true);
         }
     };
+    if !open() {
+        is_saved.set(false);
+    }
 
     rsx! {
         div { display: "flex", gap: "0.5rem",
@@ -147,6 +153,7 @@ pub fn Sheets() -> Element {
                     MenuSheet(MenuSheetProps {
                         s: SheetSide::Top,
                         open_wnd: open,
+                        is_saved,
                     })
                 }
                 SheetSide::Bottom => {
@@ -161,18 +168,20 @@ pub fn Sheets() -> Element {
 
 #[component]
 fn InventorySheet(s: SheetSide) -> Element {
-    // context
+    // contexts
     let server_data = use_context::<Signal<ServerData>>();
-    // get character name for the player
     let local_login_name_session = use_context::<Signal<String>>();
+
+    // snap
     let server_data_snap = server_data();
+
+    // get character by name
     let character_name = server_data_snap
         .players_info
         .get(&local_login_name_session())
         .and_then(|info| info.character_names.first())
         .cloned()
         .unwrap_or_else(|| "No character selected".to_string());
-    // get character by name
     let character = match server_data_snap
         .app
         .game_manager
@@ -195,14 +204,6 @@ fn InventorySheet(s: SheetSide) -> Element {
                 grid_auto_rows: "min-content",
                 gap: "1.5rem",
                 padding: "0 1rem",
-                div { display: "grid", gap: "0.75rem",
-                    Label { html_for: "sheet-demo-name", "Name" }
-                    Input { id: "sheet-demo-name", initial_value: "Dioxus" }
-                }
-                div { display: "grid", gap: "0.75rem",
-                    Label { html_for: "sheet-demo-username", "Username" }
-                    Input { id: "sheet-demo-username", initial_value: "@dioxus" }
-                }
                 TabDemo { c: character.clone() }
             }
 
@@ -260,13 +261,7 @@ fn GameStatsSheet(s: SheetSide) -> Element {
 }
 
 #[component]
-fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>) -> Element {
-    let mut is_saved: Signal<bool> = use_signal(|| false);
-
-    if !open_wnd() {
-        is_saved.set(false);
-    }
-
+fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>, is_saved: Signal<bool>) -> Element {
     rsx! {
         SheetContent { side: s,
             SheetHeader {
@@ -282,6 +277,7 @@ fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>) -> Element {
                 padding: "0 1rem",
                 div { display: "grid", gap: "0.75rem",
                     Label { html_for: "sheet-demo-name",
+                        "test"
                         if is_saved() {
                             "Saved ✅"
                         } else {
@@ -313,10 +309,13 @@ fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>) -> Element {
 
 #[component]
 fn LogsSheet(s: SheetSide) -> Element {
+    // context
+    let server_data = use_context::<Signal<ServerData>>();
+
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "Sheet Title" }
+                SheetTitle { "Logs" }
                 SheetDescription { "Watch the last logs here." }
             }
 
@@ -326,14 +325,21 @@ fn LogsSheet(s: SheetSide) -> Element {
                 grid_auto_rows: "min-content",
                 gap: "1.5rem",
                 padding: "0 1rem",
-                div { display: "grid", gap: "0.75rem",
-                    Label { html_for: "sheet-demo-name", "Name" }
-                    Input { id: "sheet-demo-name", initial_value: "Dioxus" }
+                ScrollArea {
+                    width: "100%",
+                    height: "30em",
+                    border: "1px solid var(--primary-color-6)",
+                    border_radius: "0.5em",
+                    padding: "0 1em 1em 1em",
+                    direction: ScrollDirection::Vertical,
+                    tabindex: "0",
+                    div { class: "scroll-content",
+                        for log in server_data().app.logs.iter() {
+                            Label { color: "{log.color}", html_for: "sheet-log", "{log.log}" }
+                        }
+                    }
                 }
-                div { display: "grid", gap: "0.75rem",
-                    Label { html_for: "sheet-demo-username", "Username" }
-                    Input { id: "sheet-demo-username", initial_value: "@dioxus" }
-                }
+
             }
 
             SheetFooter {

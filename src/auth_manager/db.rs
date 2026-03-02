@@ -1,4 +1,8 @@
 #[cfg(feature = "server")]
+use dioxus::prelude::*;
+#[cfg(feature = "server")]
+use dioxus::server::ServerFnError;
+#[cfg(feature = "server")]
 use sqlx::{Executor, Pool, Sqlite};
 #[cfg(feature = "server")]
 use tokio::sync::OnceCell;
@@ -14,11 +18,11 @@ use dioxus::logger::tracing;
 
 #[cfg(feature = "server")]
 async fn db() -> Pool<Sqlite> {
-    let db_url = match env::var("DATABASE_URL") {
-        Ok(val) => val,
+    let db_url = match get_db_url().await {
+        Ok(url) => url,
         Err(e) => {
-            tracing::error!("Error DATABASE_URL: {}", e);
-            String::new()
+            tracing::error!("Failed to get database URL: {}", e);
+            panic!("Failed to get database URL");
         }
     };
 
@@ -51,4 +55,17 @@ async fn db() -> Pool<Sqlite> {
 #[cfg(feature = "server")]
 pub async fn get_db() -> &'static Pool<Sqlite> {
     DB.get_or_init(db).await
+}
+
+#[server]
+async fn get_db_url() -> Result<String, ServerFnError> {
+    match std::env::var("DATABASE_URL") {
+        Ok(url) => Ok(url),
+        Err(e) => {
+            tracing::error!("DATABASE_URL environment variable not set: {}", e);
+            Err(ServerFnError::new(
+                "DATABASE_URL environment variable not set".to_string(),
+            ))
+        }
+    }
 }
