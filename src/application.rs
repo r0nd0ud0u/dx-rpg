@@ -5,7 +5,7 @@ use crate::websocket_handler::game_state::GamePhase;
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use dioxus::{prelude::ServerFnError, prelude::server};
-use lib_rpg::game_manager::GameManager;
+use lib_rpg::game_manager::{GameManager, LogAtk};
 use lib_rpg::utils::{self, list_dirs_in_dir};
 use serde::Deserialize;
 use serde::Serialize;
@@ -23,6 +23,8 @@ pub struct Application {
     pub players_nb: i64,
     /// reload info: key: username, value: character-name
     pub heroes_chosen: HashMap<String, String>,
+    /// logs of the game, to display in the log sheet
+    pub logs: Vec<LogAtk>,
 }
 
 impl Application {
@@ -39,6 +41,7 @@ impl Application {
             game_phase: GamePhase::Default,
             players_nb: 0,
             heroes_chosen: HashMap::new(),
+            logs: Vec::new(),
         }
     }
 }
