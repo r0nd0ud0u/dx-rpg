@@ -3,6 +3,7 @@ use crate::board_game_components::msg_from_client::{
 };
 use crate::common::{Route, SERVER_NAME};
 use crate::components::label::Label;
+use crate::components::scroll_area::ScrollArea;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::websocket_handler::game_state::ServerData;
 use crate::widgets::tab::TabDemo;
@@ -17,6 +18,7 @@ use crate::{
 };
 use dioxus::fullstack::{CborEncoding, UseWebsocket};
 use dioxus::prelude::*;
+use dioxus_primitives::scroll_area::ScrollDirection;
 use lib_rpg::character::Character;
 use lib_rpg::game_state::GameStatus;
 
@@ -307,10 +309,13 @@ fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>, is_saved: Signal<bool>) -> El
 
 #[component]
 fn LogsSheet(s: SheetSide) -> Element {
+    // context
+    let server_data = use_context::<Signal<ServerData>>();
+
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "Sheet Title" }
+                SheetTitle { "Logs" }
                 SheetDescription { "Watch the last logs here." }
             }
 
@@ -320,14 +325,21 @@ fn LogsSheet(s: SheetSide) -> Element {
                 grid_auto_rows: "min-content",
                 gap: "1.5rem",
                 padding: "0 1rem",
-                div { display: "grid", gap: "0.75rem",
-                    Label { html_for: "sheet-demo-name", "Name" }
-                    Input { id: "sheet-demo-name", initial_value: "Dioxus" }
+                ScrollArea {
+                    width: "100%",
+                    height: "30em",
+                    border: "1px solid var(--primary-color-6)",
+                    border_radius: "0.5em",
+                    padding: "0 1em 1em 1em",
+                    direction: ScrollDirection::Vertical,
+                    tabindex: "0",
+                    div { class: "scroll-content",
+                        for log in server_data().app.logs.iter() {
+                            Label { color: "{log.color}", html_for: "sheet-log", "{log.log}" }
+                        }
+                    }
                 }
-                div { display: "grid", gap: "0.75rem",
-                    Label { html_for: "sheet-demo-username", "Username" }
-                    Input { id: "sheet-demo-username", initial_value: "@dioxus" }
-                }
+
             }
 
             SheetFooter {
