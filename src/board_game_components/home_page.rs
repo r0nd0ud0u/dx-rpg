@@ -28,9 +28,8 @@ pub fn Home() -> Element {
         }
     } else {
         rsx! {
-            div { class: "home-container",  
-                div {
-                    class: "rotate-scale-up",
+            div { class: "home-container",
+                div { class: "rotate-scale-up",
                     h1 { "Welcome to the RPG game!" }
                 }
                 ButtonLink {

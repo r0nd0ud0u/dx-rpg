@@ -50,7 +50,7 @@ web-sys = "0.3.85"
 dotenv = "0.15.0"
 
 [features]
-default = ["server"]
+default = ["server", "web"]
 server = [
     "dioxus/server",
     "dep:axum",
