@@ -22,7 +22,10 @@ fn main() {
     dotenv().ok();
 
     // Init logger
-    dioxus::logger::init(Level::INFO).expect("failed to init logger");
+    dioxus::logger::init(std::env::var("LOG_LEVEL")
+        .unwrap_or_else(|_| "2".to_string())
+        .parse::<Level>()
+        .unwrap_or(Level::INFO));
     tracing::info!("Rendering app!");
 
     // On the client, we simply launch the app as normal, taking over the main thread
