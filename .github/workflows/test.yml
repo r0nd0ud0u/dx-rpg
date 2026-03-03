@@ -36,3 +36,19 @@ jobs:
 
       - name: Run Clippy
         run: cargo clippy --all-targets --all-features
+      
+      - name: install dioxus
+        shell: bash
+        run: |
+          cargo install cargo-binstall
+          cargo binstall dioxus-cli@0.7.3 --force
+      
+      - name: check dioxus formatting
+        shell: bash
+        run: |
+          dx fmt --check
+      
+      - name: Check dioxus build
+        shell: bash
+        run: |
+          dx build --web
