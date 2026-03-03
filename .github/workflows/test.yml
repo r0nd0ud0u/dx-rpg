@@ -31,22 +31,23 @@ jobs:
       - name: Update rust
         run: rustup update stable
     
-      - name: Check formatting
-        run: cargo fmt --all --check
-
-      - name: Run Clippy
-        run: cargo clippy --all-targets --all-features
-      
       - name: install dioxus
         shell: bash
         run: |
           cargo install cargo-binstall
           cargo binstall dioxus-cli@0.7.3 --force
       
-      - name: check dioxus formatting
-        shell: bash
-        run: |
-          dx fmt --check
+      # https://github.com/DioxusLabs/dioxus/issues/3433
+      # - name: check dioxus formatting
+      #   shell: bash
+      #   run: |
+      #     dx fmt --check
+
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features
       
       - name: Check dioxus build
         shell: bash
