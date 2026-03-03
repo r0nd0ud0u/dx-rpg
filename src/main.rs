@@ -23,11 +23,11 @@ fn main() {
 
     // Init logger
     dioxus::logger::init(
-    std::env::var("LOG_LEVEL")
-        .unwrap_or_else(|_| "info".to_string())
-        .parse::<Level>()
-        .unwrap_or(Level::INFO),
-);
+        std::env::var("LOG_LEVEL")
+            .unwrap_or_else(|_| "info".to_string())
+            .parse::<Level>()
+            .unwrap_or(Level::INFO),
+    );
     tracing::info!("Rendering app!");
 
     // On the client, we simply launch the app as normal, taking over the main thread
