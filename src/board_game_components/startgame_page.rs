@@ -277,7 +277,6 @@ fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>, is_saved: Signal<bool>) -> El
                 padding: "0 1rem",
                 div { display: "grid", gap: "0.75rem",
                     Label { html_for: "sheet-demo-name",
-                        "test"
                         if is_saved() {
                             "Saved ✅"
                         } else {

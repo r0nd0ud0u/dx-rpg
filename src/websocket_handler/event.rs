@@ -842,7 +842,11 @@ async fn load_game_by_player(
     let server_name = server_name_opt.unwrap_or_else(|| player_name.clone());
 
     // TODO game path should be init at initialization of the game and not here, and it should not be based on player name but on server name, to avoid issues when several players with different names are playing on the same server
-    let load_path = get_current_game_path(&player_name, game_path.to_str().unwrap_or_default());
+    let load_path = if is_replay {
+        get_current_game_path(&player_name, game_path.to_str().unwrap_or_default())
+    } else {
+        game_path
+    };
 
     let mut app = match application::get_application_by_game_dir(load_path.clone(), is_replay).await
     {

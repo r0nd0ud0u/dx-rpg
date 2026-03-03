@@ -29,7 +29,9 @@ pub fn Home() -> Element {
     } else {
         rsx! {
             div { class: "home-container",
-                h1 { "Welcome to the RPG game!" }
+                div { class: "rotate-scale-up",
+                    h1 { "Welcome to the RPG game!" }
+                }
                 ButtonLink {
                     target: Route::CreateServer {}.into(),
                     name: "Create Server".to_string(),

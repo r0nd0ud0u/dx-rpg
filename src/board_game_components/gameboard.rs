@@ -73,7 +73,7 @@ pub fn GameBoard() -> Element {
                         "launch atk"
                     }
                 } else {
-                    div {
+                    div { class: "blink-1",
                         ResultAtkText { ra: server_data.read().app.game_manager.game_state.last_result_atk.clone() }
                     }
                     div {
