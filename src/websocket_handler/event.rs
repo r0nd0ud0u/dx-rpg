@@ -1,10 +1,12 @@
 #[cfg(feature = "server")]
-use crate::application::init_application;
+use crate::core_game_data::{init, save_core_game_data};
 #[cfg(feature = "server")]
-use crate::common::{DATA_MANAGER, SAVED_APP, SAVED_APP_REPLAY};
-use crate::websocket_handler::game_state::GamePhase;
-use crate::websocket_handler::game_state::OnGoingGame;
-use crate::websocket_handler::game_state::ServerData;
+use crate::common::{DATA_MANAGER, SAVED_CORE_GAME_DATA, SAVED_CORE_GAME_DATA_REPLAY};
+#[cfg(feature = "server")]
+use crate::utils::server_file_utils;
+use crate::websocket_handler::server_manager::GamePhase;
+use crate::websocket_handler::server_manager::OnGoingGame;
+use crate::websocket_handler::server_manager::ServerData;
 #[cfg(feature = "server")]
 use async_std::task::sleep;
 use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
@@ -31,9 +33,9 @@ use once_cell::sync::Lazy;
 #[cfg(feature = "server")]
 use tokio::sync::mpsc;
 
-use crate::application::{self, Application};
+use crate::core_game_data::{self, CoreGameData};
 #[cfg(feature = "server")]
-use crate::websocket_handler::game_state::GameStateManager;
+use crate::websocket_handler::server_manager::ServerManager;
 
 #[cfg(feature = "server")]
 static NEXT_CLIENT_ID: AtomicUsize = AtomicUsize::new(1);
@@ -52,8 +54,8 @@ static CLIENTS: Lazy<SharedClients> = Lazy::new(|| Arc::new(Mutex::new(HashMap::
 
 /// server only: shared game state
 #[cfg(feature = "server")]
-static SERVER_MANAGER: Lazy<Arc<Mutex<GameStateManager>>> =
-    Lazy::new(|| Arc::new(Mutex::new(GameStateManager::default())));
+static SERVER_MANAGER: Lazy<Arc<Mutex<ServerManager>>> =
+    Lazy::new(|| Arc::new(Mutex::new(ServerManager::default())));
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ClientEvent {
@@ -145,7 +147,7 @@ pub async fn on_rcv_client_event(
                         match maybe_server_msg {
                             Some(ServerOwnEvent::AutoAtkIsDone(server_name)) => {
                                 if get_app_by_server_name(&server_name).is_some(){
-                                    update_app_after_atk(&server_name, None);
+                                    update_core_game_data_after_atk(&server_name, None);
                                 }
                             }
                             None => {}
@@ -182,7 +184,7 @@ pub async fn on_rcv_client_event(
                             }
                             Ok(ClientEvent::LaunchAttack(server_name, selected_atk)) => {
                                 tracing::info!("A new atk has been launched with atk {} for server {}", selected_atk, server_name);
-                                update_app_after_atk(&server_name, Some(&selected_atk));
+                                update_core_game_data_after_atk(&server_name, Some(&selected_atk));
                                 // is ennemy turn ? 
                                 process_ennemy_atk(&server_name, tx_server.clone()).await;
                             }
@@ -250,7 +252,7 @@ pub async fn on_rcv_client_event(
 
 #[cfg(feature = "server")]
 pub fn add_player(name: String, id: u32) {
-    let mut sm: std::sync::MutexGuard<'_, GameStateManager> = SERVER_MANAGER.lock().unwrap();
+    let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
     sm.players.entry(name.clone()).or_default().push(id);
     tracing::info!("All connected players: {:?}", sm.players);
 }
@@ -266,12 +268,13 @@ pub fn login_all_sessions(username: String, sql_id: i64) {
 #[cfg(feature = "server")]
 pub fn send_logout_to_server(user_name: String, client_id: u32) {
     let mut sm = SERVER_MANAGER.lock().unwrap();
-    // remove player from GameStateManager
+    // remove player from ServerManager
     sm.players
         .retain(|player_name, _| player_name != &user_name);
     // remove from servers data
     if let Some(server_data) = sm.servers_data.get_mut(&user_name) {
         server_data
+            .players_data
             .players_info
             .retain(|player_name, _| player_name != &user_name);
     }
@@ -345,17 +348,21 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
             }
         };
 
-        server_data.players_info.retain(|player_name, pl| {
-            if player_name == &username {
-                pl.player_ids.retain(|&id| id != client_id);
-                !pl.player_ids.is_empty()
-            } else {
-                true
-            }
-        });
+        server_data
+            .players_data
+            .players_info
+            .retain(|player_name, pl| {
+                if player_name == &username {
+                    pl.player_ids.retain(|&id| id != client_id);
+                    !pl.player_ids.is_empty()
+                } else {
+                    true
+                }
+            });
 
         // Collect affected client IDs before unlocking
         let ids = server_data
+            .players_data
             .players_info
             .values()
             .flat_map(|p| p.player_ids.iter().copied())
@@ -392,7 +399,7 @@ pub async fn send_disconnection_to_server_data(
     let Some(is_owner_disconnecting) = sm
         .servers_data
         .get(server_name)
-        .map(|server_data| server_data.owner_player_name == player_name)
+        .map(|server_data| server_data.players_data.owner_player_name == player_name)
     else {
         tracing::info!(
             "Player {} with id {} is disconnecting from server data {}, but no server data found for that server",
@@ -417,7 +424,7 @@ pub async fn send_disconnection_to_server_data(
     // remove from servers data
     let mut sm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
-        if player_name == server_data.owner_player_name {
+        if player_name == server_data.players_data.owner_player_name {
             // if the owner player is disconnecting, we consider that the server data is not relevant anymore, and we remove it
             sm.servers_data.remove(server_name);
             tracing::info!(
@@ -426,16 +433,19 @@ pub async fn send_disconnection_to_server_data(
                 server_name
             );
         } else {
-            server_data.players_info.retain(|_player_name, pl| {
-                pl.player_ids.retain(|&id| id != client_id);
-                !pl.player_ids.is_empty()
-            });
+            server_data
+                .players_data
+                .players_info
+                .retain(|_player_name, pl| {
+                    pl.player_ids.retain(|&id| id != client_id);
+                    !pl.player_ids.is_empty()
+                });
             tracing::info!(
                 "Player {} with id {} is disconnecting from server data {}, remaining players in server data: {:?}",
                 player_name,
                 client_id,
                 server_name,
-                server_data.players_info
+                server_data.players_data.players_info
             );
         }
     } else {
@@ -454,7 +464,7 @@ pub async fn send_disconnection_to_server_data(
 
 #[cfg(feature = "server")]
 pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
-    let (app, server_owner) = {
+    let (core_game_data, server_owner) = {
         let mut sm = SERVER_MANAGER.lock().unwrap();
         let Some(server_data) = sm.servers_data.get_mut(server_name) else {
             tracing::error!(
@@ -467,22 +477,22 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
         // start_game only for initialized game the first time
         // not for replay
         // not for loaded
-        if !is_replay && server_data.app.game_phase == GamePhase::InitGame {
-            server_data.app.game_manager.start_game();
+        if !is_replay && server_data.core_game_data.game_phase == GamePhase::InitGame {
+            server_data.core_game_data.game_manager.start_game();
         }
 
-        server_data.app.game_phase = GamePhase::Running;
+        server_data.core_game_data.game_phase = GamePhase::Running;
         tracing::info!("Game started for server: {}", server_name);
 
         (
-            server_data.app.clone(),
-            server_data.owner_player_name.clone(),
+            server_data.core_game_data.clone(),
+            server_data.players_data.owner_player_name.clone(),
         )
     }; // sm is guaranteed dropped here
 
     // async work happens after the lock is gone
-    save_application(&app, SAVED_APP, &server_owner).await;
-    save_application(&app, SAVED_APP_REPLAY, &server_owner).await;
+    save_core_game_data(&core_game_data, SAVED_CORE_GAME_DATA, &server_owner).await;
+    save_core_game_data(&core_game_data, SAVED_CORE_GAME_DATA_REPLAY, &server_owner).await;
 
     update_clients_server_data(server_name);
 }
@@ -490,10 +500,10 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
 #[cfg(feature = "server")]
 pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &str) {
     // add new ongoing game
-    let mut app = Application::new().await;
-    tracing::info!("New application created for player: {}", server_name);
+    let mut core_game_data = CoreGameData::new().await;
+    tracing::info!("New core game data created for player: {}", server_name);
     // init a new game
-    init_application(server_name, &mut app);
+    init(server_name, &mut core_game_data);
     // update ongoing servers data list
     let mut sm = SERVER_MANAGER.lock().unwrap();
     // remove ongoing game if already exists for the server name
@@ -501,15 +511,15 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
         .retain(|ongoing_game| ongoing_game.server_name != server_name);
     // add ongoing game
     sm.ongoing_games.push(OnGoingGame {
-        path: app.game_manager.game_paths.current_game_dir.clone(),
+        path: core_game_data.game_manager.game_paths.current_game_dir.clone(),
         server_name: server_name.to_string(),
     });
     drop(sm);
     // add server data
-    app.game_phase = GamePhase::InitGame;
+    core_game_data.game_phase = GamePhase::InitGame;
     // add first player
-    app.players_nb = 0;
-    add_server_data_with_player(&app, server_name, id, player_name);
+    core_game_data.players_nb = 0;
+    add_server_data_with_player(&core_game_data, server_name, id, player_name);
     // update for the clients connected to that server
     update_clients_server_data(server_name);
     update_clients_ongoing_games();
@@ -524,35 +534,12 @@ fn get_current_game_path(player_name: &str, current_game_dir: &str) -> PathBuf {
 }
 
 #[cfg(feature = "server")]
-async fn save_application(app: &Application, save_game_name: &str, player_name: &str) {
-    // create dir
-    use crate::common::SAVED_DATA;
-    let saved_dir: PathBuf = SAVED_DATA.join(PathBuf::from(player_name));
-    let saved_dir = saved_dir.join(app.game_manager.game_paths.current_game_dir.clone());
-    match application::create_dir(saved_dir.clone()).await {
-        Ok(()) => {}
-        Err(e) => tracing::error!("Failed to create directory: {}", e),
-    }
-    // save game
-    let cur_game_path = saved_dir.join(save_game_name);
-    match application::save(
-        cur_game_path,
-        serde_json::to_string_pretty(&app.clone()).unwrap(),
-    )
-    .await
-    {
-        Ok(()) => tracing::info!("Application saved successfully {}", save_game_name),
-        Err(e) => tracing::error!("Failed to save Application: {}", e),
-    }
-}
-
-#[cfg(feature = "server")]
 fn update_clients_server_data(server_name: &str) {
     let server_data = match get_server_data_by_server_name(server_name) {
         Some(server_data) => {
             tracing::info!(
                 "Clients ids: {:?} for server: {}",
-                server_data.players_info.values(),
+                server_data.players_data.players_info.values(),
                 server_name
             );
             server_data
@@ -566,6 +553,7 @@ fn update_clients_server_data(server_name: &str) {
     let clients = CLIENTS.lock().unwrap();
     for (&other_id, sender) in clients.iter() {
         if server_data
+            .players_data
             .players_info
             .values()
             .any(|player_info| player_info.player_ids.contains(&(other_id as u32)))
@@ -606,6 +594,7 @@ fn send_end_of_serverdata(server_name: &str, client_id: u32, is_owner_disconnect
         if (!is_owner_disconnecting && client_id == other_id as u32)
             || (is_owner_disconnecting
                 && server_data
+                    .players_data
                     .players_info
                     .values()
                     .any(|player_info| player_info.player_ids.contains(&(other_id as u32))))
@@ -616,15 +605,15 @@ fn send_end_of_serverdata(server_name: &str, client_id: u32, is_owner_disconnect
 }
 
 #[cfg(feature = "server")]
-pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) {
+pub fn update_core_game_data_after_atk(server_name: &str, selected_atk_name: Option<&str>) {
     use lib_rpg::game_state::GameStatus;
-    let mut sm: std::sync::MutexGuard<'_, GameStateManager> = SERVER_MANAGER.lock().unwrap();
+    let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
     let logs: Vec<LogAtk>;
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         // launch attack
         // case several ennemy-auto-atk in a row and one atk ended the game, the next atk should not reach.
         // and the state of the game should not be updated anymore
-        if server_data.app.game_manager.game_state.status == GameStatus::EndOfGame {
+        if server_data.core_game_data.game_manager.game_state.status == GameStatus::EndOfGame {
             tracing::info!(
                 "Game is already ended for server: {}, skipping atk processing",
                 server_name
@@ -632,11 +621,11 @@ pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) 
             return;
         }
         let _ = server_data
-            .app
+            .core_game_data
             .game_manager
             .launch_attack(selected_atk_name);
         logs = server_data
-            .app
+            .core_game_data
             .game_manager
             .game_state
             .last_result_atk
@@ -650,7 +639,7 @@ pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) 
         );
     } else {
         tracing::error!(
-            "update_app_after_atk: No server data found for server name: {}",
+            "update_core_game_data_after_atk: No server data found for server name: {}",
             server_name
         );
         return;
@@ -683,11 +672,11 @@ pub async fn process_ennemy_atk(server_name: &str, tx: mpsc::UnboundedSender<Ser
 }
 
 #[cfg(feature = "server")]
-pub fn get_app_by_server_name(server_name: &str) -> Option<Application> {
+pub fn get_app_by_server_name(server_name: &str) -> Option<CoreGameData> {
     // get app by server name
     let sm = SERVER_MANAGER.lock().unwrap();
     let app = match sm.servers_data.get(server_name) {
-        Some(server_data) => server_data.app.clone(),
+        Some(server_data) => server_data.core_game_data.clone(),
         None => {
             tracing::error!("No application found for server name: {}", server_name);
             drop(sm);
@@ -715,7 +704,7 @@ pub fn get_server_data_by_server_name(server_name: &str) -> Option<ServerData> {
 
 #[cfg(feature = "server")]
 pub fn add_server_data_with_player(
-    app: &Application,
+    app: &CoreGameData,
     server_name: &str,
     id: u32,
     player_name: &str,
@@ -743,6 +732,7 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         // remove characters from one player in server data
         server_data
+            .players_data
             .players_info
             .entry(player_name.to_string())
             .or_default()
@@ -753,22 +743,23 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
             "{}_#{}",
             character_name,
             1 + server_data
-                .app
+                .core_game_data
                 .game_manager
                 .pm
                 .get_nb_of_active_heroes_by_name(character_name)
         );
         // update player info in server data
         server_data
+            .players_data
             .players_info
             .entry(player_name.to_string())
             .or_default()
             .character_names
             .push(new_id_name.clone());
         // find character in pm and set it as active for all players in server data
-        server_data.app.game_manager.pm.active_heroes.clear();
-        server_data.app.heroes_chosen.clear();
-        server_data.players_info.iter().for_each(|player_info| {
+        server_data.core_game_data.game_manager.pm.active_heroes.clear();
+        server_data.core_game_data.heroes_chosen.clear();
+        server_data.players_data.players_info.iter().for_each(|player_info| {
             player_info
                 .1
                 .character_names
@@ -793,13 +784,13 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
 
                         // update suffix id name
                         server_data
-                            .app
+                            .core_game_data
                             .game_manager
                             .pm
                             .active_heroes
                             .push(character.clone());
                         server_data
-                            .app
+                            .core_game_data
                             .heroes_chosen
                             .insert(player_info.0.clone(), character.id_name.clone());
                     } else {
@@ -841,7 +832,7 @@ async fn update_saved_game_list_display(player_name: &str) {
     use crate::common::SAVED_DATA;
 
     let saved_dir = SAVED_DATA.join(player_name).join(GAMES_DIR.to_path_buf());
-    let games_list = match application::get_game_list(saved_dir).await {
+    let games_list = match server_file_utils::get_game_list(saved_dir).await {
         Ok(games) => games,
         Err(e) => {
             tracing::error!("Error fetching game list: {}", e);
@@ -874,7 +865,7 @@ async fn load_game_by_player(
         game_path
     };
 
-    let mut app = match application::get_application_by_game_dir(load_path.clone(), is_replay).await
+    let mut app = match core_game_data::get_core_game_data_by_dir(load_path.clone(), is_replay).await
     {
         Ok(get_app) => get_app,
         Err(e) => {
@@ -894,8 +885,8 @@ async fn load_game_by_player(
     };
 
     // persist state (no locks involved)
-    save_application(&app, SAVED_APP, &player_name).await;
-    save_application(&app, SAVED_APP_REPLAY, &player_name).await;
+    save_core_game_data(&app, SAVED_CORE_GAME_DATA, &player_name).await;
+    save_core_game_data(&app, SAVED_CORE_GAME_DATA_REPLAY, &player_name).await;
 
     // ---- update ongoing games (lock scope #1) ----
     {
@@ -919,7 +910,7 @@ async fn load_game_by_player(
         let server_exists = {
             let mut sm = SERVER_MANAGER.lock().unwrap();
             if let Some(server_data) = sm.servers_data.get_mut(&server_name) {
-                server_data.app = app.clone();
+                server_data.core_game_data = app.clone();
                 true
             } else {
                 false
@@ -975,7 +966,7 @@ async fn process_replay_game(server_name: &str, client_id: u32) {
     // load game-manager from file
     load_game_by_player(
         cur_game_path,
-        server_data.owner_player_name.clone(),
+        server_data.players_data.owner_player_name.clone(),
         client_id,
         true,
         Some(server_name.to_string()),
@@ -989,7 +980,7 @@ fn request_set_targeted_characters(server_name: &str, launcher_name: &str, atk_n
     let mut sm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         server_data
-            .app
+            .core_game_data
             .game_manager
             .pm
             .set_targeted_characters(launcher_name, atk_name);
@@ -1013,7 +1004,7 @@ fn request_set_one_target(
     let mut sm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         server_data
-            .app
+            .core_game_data
             .game_manager
             .pm
             .set_one_target(launcher_name, atk_name, target_name);
@@ -1040,14 +1031,14 @@ async fn process_save_game(server_name: &str, player_name: &str) {
             return;
         }
     };
-    save_application(&server_data.app, SAVED_APP, player_name).await;
+    save_core_game_data(&server_data.core_game_data, SAVED_CORE_GAME_DATA, player_name).await;
 }
 
 #[cfg(feature = "server")]
 fn add_log_to_app(server_name: &str, logs: Vec<LogAtk>) {
     let mut sm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
-        server_data.app.logs.extend(logs);
+        server_data.core_game_data.logs.extend(logs);
     }
     drop(sm);
 }

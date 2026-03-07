@@ -9,7 +9,7 @@ use dx_rpg::{
     common::{DX_COMP_CSS, Route, SERVER_NAME, disconnected_user},
     websocket_handler::{
         event::{ClientEvent, ServerEvent, on_rcv_client_event},
-        game_state::{GamePhase, ServerData},
+        server_manager::{GamePhase, ServerData},
     },
 };
 
@@ -168,7 +168,7 @@ fn App() -> Element {
                     ServerEvent::UpdateServerData(server_data_update) => {
                         // update server info
                         server_data.set(*server_data_update.clone());
-                        *SERVER_NAME.write() = server_data_update.app.server_name.clone();
+                        *SERVER_NAME.write() = server_data_update.core_game_data.server_name.clone();
                     }
                     ServerEvent::UpdateOngoingGames(ongoing_games_update) => {
                         ongoing_games.set(ongoing_games_update);

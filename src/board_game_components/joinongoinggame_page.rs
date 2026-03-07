@@ -8,7 +8,7 @@ use crate::{
     common::Route,
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
-        game_state::OnGoingGame,
+        server_manager::OnGoingGame,
     },
 };
 

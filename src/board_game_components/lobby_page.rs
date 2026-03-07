@@ -14,7 +14,7 @@ use crate::{
     components::button::Button,
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
-        game_state::{GamePhase, ServerData},
+        server_manager::{GamePhase, ServerData},
     },
 };
 
@@ -28,10 +28,12 @@ pub fn LobbyPage() -> Element {
     // all players info have a character name
     let server_data_snap = server_data();
 
-    let all_players_have_character_name = if server_data_snap.players_info.is_empty() {
+    let all_players_have_character_name = if server_data_snap.players_data.players_info.is_empty()
+    {
         false
     } else {
         server_data_snap
+            .players_data
             .players_info
             .values()
             .all(|p| !p.character_names.is_empty())
@@ -43,13 +45,13 @@ pub fn LobbyPage() -> Element {
 
     rsx! {
         // if the game is not running, show the lobby page, otherwise show the start game page
-        if server_data_snap.app.game_phase == GamePhase::InitGame
-            || server_data_snap.app.game_phase == GamePhase::Loading
+        if server_data_snap.core_game_data.game_phase == GamePhase::InitGame
+            || server_data_snap.core_game_data.game_phase == GamePhase::Loading
         {
             div { style: "display: flex;flex-direction: column; align-items: center; gap: 10px;",
-                if server_data_snap.app.game_phase == GamePhase::InitGame {
+                if server_data_snap.core_game_data.game_phase == GamePhase::InitGame {
                     h1 { "Init game" }
-                } else if server_data_snap.app.game_phase == GamePhase::Loading {
+                } else if server_data_snap.core_game_data.game_phase == GamePhase::Loading {
                     h1 { "Loading" }
                 } else {
                     h1 { "Lobby page" }
@@ -58,7 +60,7 @@ pub fn LobbyPage() -> Element {
                 h2 { "Server name: {SERVER_NAME()}" }
                 // show the number of players in the server
                 h3 {
-                    "Players: {server_data_snap.app.players_nb} / {server_data_snap.players_info.len()}"
+                    "Players: {server_data_snap.core_game_data.players_nb} / {server_data_snap.players_data.players_info.len()}"
                 }
             }
             div { style: "display: flex;flex-direction: column; align-items: center; gap: 100px;",
@@ -66,10 +68,10 @@ pub fn LobbyPage() -> Element {
                 CharacterSelect {}
                 // if the current client is the host, show start game button
                 if SERVER_NAME() == local_login_name_session() && all_players_have_character_name
-                    && (server_data_snap.app.game_phase == GamePhase::InitGame
-                        || server_data_snap.app.game_phase == GamePhase::Loading
-                            && server_data_snap.app.players_nb
-                                == server_data_snap.players_info.len() as i64)
+                    && (server_data_snap.core_game_data.game_phase == GamePhase::InitGame
+                        || server_data_snap.core_game_data.game_phase == GamePhase::Loading
+                            && server_data_snap.core_game_data.players_nb
+                                == server_data_snap.players_data.players_info.len() as i64)
                 {
                     Button {
                         variant: ButtonVariant::Primary,
@@ -80,10 +82,10 @@ pub fn LobbyPage() -> Element {
                     }
                 }
             }
-        } else if server_data_snap.app.game_phase == GamePhase::Running {
+        } else if server_data_snap.core_game_data.game_phase == GamePhase::Running {
             // check if there is more characters in game than users
-            if server_data_snap.app.game_manager.pm.active_heroes.len()
-                <= server_data_snap.players_info.len()
+            if server_data_snap.core_game_data.game_manager.pm.active_heroes.len()
+                <= server_data_snap.players_data.players_info.len()
             {
                 StartGamePage {}
             } else {
@@ -105,12 +107,12 @@ pub fn LobbyPage() -> Element {
                     },
                 }
             }
-        } else if server_data_snap.app.game_phase == GamePhase::Ended {
+        } else if server_data_snap.core_game_data.game_phase == GamePhase::Ended {
             ButtonLink {
                 target: Route::Home {}.into(),
                 name: "No more game, back to home".to_string(),
             }
-        } else if server_data_snap.app.game_phase == GamePhase::Default {
+        } else if server_data_snap.core_game_data.game_phase == GamePhase::Default {
 
         }
     }

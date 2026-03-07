@@ -15,7 +15,7 @@ use crate::{
     },
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
-        game_state::{GamePhase, ServerData},
+        server_manager::{GamePhase, ServerData},
     },
 };
 
@@ -28,7 +28,7 @@ pub fn AlertDialogComp() -> Element {
     // local signal
     let mut open = use_signal(|| false);
     rsx! {
-        if server_data().app.game_phase == GamePhase::Running {
+        if server_data().core_game_data.game_phase == GamePhase::Running {
             Button { onclick: move |_| open.set(true), r#type: "button", "Quit game" }
         }
         AlertDialogRoot { open: open(), on_open_change: move |v| open.set(v),

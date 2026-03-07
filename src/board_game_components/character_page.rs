@@ -21,7 +21,7 @@ use crate::{
     components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
-        game_state::ServerData,
+        server_manager::ServerData,
     },
 };
 use dioxus::logger::tracing;
@@ -40,6 +40,7 @@ pub fn CharacterPanel(
 
     // get first player of the list
     let current_character = match server_data()
+        .players_data
         .players_info
         .get(&local_session_player_name())
         .and_then(|info| info.character_names.first().cloned())
@@ -254,7 +255,7 @@ pub fn AttackList(
     let server_data = use_context::<Signal<ServerData>>();
 
     if let Some(c) = server_data()
-        .app
+        .core_game_data
         .game_manager
         .pm
         .get_active_character(&id_name)

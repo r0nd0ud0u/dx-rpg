@@ -5,7 +5,7 @@ use crate::common::{Route, SERVER_NAME};
 use crate::components::label::Label;
 use crate::components::scroll_area::ScrollArea;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
-use crate::websocket_handler::game_state::ServerData;
+use crate::websocket_handler::server_manager::ServerData;
 use crate::widgets::tab::TabDemo;
 use crate::{
     board_game_components::gameboard::GameBoard,
@@ -31,9 +31,9 @@ pub fn StartGamePage() -> Element {
     let local_login_name_session = use_context::<Signal<String>>();
 
     rsx! {
-        if server_data().app.game_manager.game_state.status == GameStatus::EndOfGame {
+        if server_data().core_game_data.game_manager.game_state.status == GameStatus::EndOfGame {
             h1 { "Game Over" }
-            h2 { "Remaining players: {server_data().players_info.len()}" }
+            h2 { "Remaining players: {server_data().players_data.players_info.len()}" }
 
             Button {
                 variant: ButtonVariant::Primary,
@@ -48,7 +48,7 @@ pub fn StartGamePage() -> Element {
             }
             // TODO if nobody quits -> store the number of players at start? and compare with the number of remaining players to know
             // if we are in a "nobody quits" end of game scenario, and handle it differently (ex: show "nobody quits" message and "replay game" button)
-            if server_data().owner_player_name == local_login_name_session() {
+            if server_data().players_data.owner_player_name == local_login_name_session() {
                 Button {
                     variant: ButtonVariant::Primary,
                     onclick: move |_| async move {
@@ -66,7 +66,7 @@ pub fn StartGamePage() -> Element {
         div {
             div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
                 Sheets {}
-                h4 { "Turn: {server_data().app.game_manager.game_state.current_turn_nb}" }
+                h4 { "Turn: {server_data().core_game_data.game_manager.game_state.current_turn_nb}" }
             }
             Separator {
                 style: "margin: 10px 0; width: 50%;",
@@ -177,13 +177,14 @@ fn InventorySheet(s: SheetSide) -> Element {
 
     // get character by name
     let character_name = server_data_snap
+        .players_data
         .players_info
         .get(&local_login_name_session())
         .and_then(|info| info.character_names.first())
         .cloned()
         .unwrap_or_else(|| "No character selected".to_string());
     let character = match server_data_snap
-        .app
+        .core_game_data
         .game_manager
         .pm
         .get_active_hero_character(&character_name)
@@ -228,7 +229,7 @@ fn GameStatsSheet(s: SheetSide) -> Element {
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "Game Stats {server_data().app.game_manager.game_state.current_round}" }
+                SheetTitle { "Game Stats {server_data().core_game_data.game_manager.game_state.current_round}" }
                 SheetDescription { "Assess the evolution of the game here." }
             }
 
@@ -333,7 +334,7 @@ fn LogsSheet(s: SheetSide) -> Element {
                     direction: ScrollDirection::Vertical,
                     tabindex: "0",
                     div { class: "scroll-content",
-                        for log in server_data().app.logs.iter() {
+                        for log in server_data().core_game_data.logs.iter() {
                             Label { color: "{log.color}", html_for: "sheet-log", "{log.log}" }
                         }
                     }

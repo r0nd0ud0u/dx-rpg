@@ -3,9 +3,9 @@ use dioxus::prelude::*;
 use dioxus::{fullstack::UseWebsocket, logger::tracing};
 use dioxus_primitives::scroll_area::ScrollDirection;
 
+use crate::utils::server_file_utils;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::{
-    application,
     common::Route,
     components::{
         button::{Button, ButtonVariant},
@@ -92,7 +92,7 @@ pub fn LoadGame() -> Element {
                 onclick: move |_| {
                     let cur_game = games_list().get(active_button() as usize).unwrap().to_owned();
                     async move {
-                        match application::delete_game(cur_game.clone()).await {
+                        match server_file_utils::delete_game(cur_game.clone()).await {
                             Ok(_) => {
                                 let _ = socket
                                     .clone()

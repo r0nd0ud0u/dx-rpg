@@ -16,7 +16,7 @@ use crate::{
     },
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
-        game_state::{GamePhase, ServerData},
+        server_manager::{GamePhase, ServerData},
     },
 };
 
@@ -31,11 +31,12 @@ pub fn CharacterSelect() -> Element {
     let server_data_snap = server_data();
 
     // avoid unexpected behavior for the select display
-    if server_data_snap.players_info.is_empty() {
+    if server_data_snap.players_data.players_info.is_empty() {
         return rsx! {};
     }
     // filter hashmap
     let players_except_current_client: HashMap<String, String> = server_data_snap
+        .players_data
         .players_info
         .iter()
         .filter(|(k, _)| k.as_str() != local_name.as_str())
@@ -53,11 +54,15 @@ pub fn CharacterSelect() -> Element {
         .collect();
 
     let connected: HashMap<String, String> = server_data_snap
-        .app
+        .core_game_data
         .heroes_chosen
         .iter()
         .map(|(key, value)| {
-            let status = if server_data_snap.players_info.contains_key(key) {
+            let status = if server_data_snap
+                .players_data
+                .players_info
+                .contains_key(key)
+            {
                 "✅"
             } else {
                 "❌"
@@ -70,7 +75,7 @@ pub fn CharacterSelect() -> Element {
         div { style: "display: flex; flex-direction: column; height: 40px; gap: 10px;",
             h3 { "Players:" }
             div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
-                if server_data_snap.app.game_phase == GamePhase::InitGame {
+                if server_data_snap.core_game_data.game_phase == GamePhase::InitGame {
                     ClassSelect { player_name: local_login_name_session().clone() }
                 } else {
                     div { style: "display: flex; flex-direction: column; height: 40px; gap: 10px;",
@@ -80,7 +85,7 @@ pub fn CharacterSelect() -> Element {
                     }
                 }
             }
-            if server_data_snap.app.game_phase == GamePhase::InitGame {
+            if server_data_snap.core_game_data.game_phase == GamePhase::InitGame {
                 for player in players_except_current_client.clone() {
                     div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
                         Label { html_for: "sheet-demo-name", "{player.0}" }
@@ -133,7 +138,7 @@ pub fn ClassSelect(player_name: String) -> Element {
                     tracing::info!("Selected character: {}", value);
                     let _ = socket
                         .send(ClientEvent::AddCharacterOnServerData(
-                            server_data().app.server_name.clone(),
+                            server_data().core_game_data.server_name.clone(),
                             l_player_name.clone(),
                             value.clone(),
                         ))

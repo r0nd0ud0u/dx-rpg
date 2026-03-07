@@ -14,7 +14,7 @@ use crate::{
     components::button::{Button, ButtonVariant},
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
-        game_state::ServerData,
+        server_manager::ServerData,
     },
 };
 use dioxus::prelude::*;
@@ -39,10 +39,10 @@ pub fn GameBoard() -> Element {
         div { class: "grid-board",
             div {
                 // Heroes
-                for c in server_data.read().app.game_manager.pm.active_heroes.iter() {
+                for c in server_data.read().core_game_data.game_manager.pm.active_heroes.iter() {
                     CharacterPanel {
                         c: c.clone(),
-                        current_player_id_name: server_data.read().app.game_manager.pm.current_player.id_name.clone(),
+                        current_player_id_name: server_data.read().core_game_data.game_manager.pm.current_player.id_name.clone(),
                         selected_atk_name,
                         atk_menu_display,
                         is_auto_atk: false,
@@ -52,7 +52,7 @@ pub fn GameBoard() -> Element {
             div {
                 if atk_menu_display() {
                     AttackList {
-                        id_name: server_data.read().app.game_manager.pm.current_player.id_name.clone(),
+                        id_name: server_data.read().core_game_data.game_manager.pm.current_player.id_name.clone(),
                         display_atklist_sig: atk_menu_display,
                         selected_atk_name,
                     }
@@ -62,7 +62,7 @@ pub fn GameBoard() -> Element {
                         onclick: move |_| async move {
                             tracing::debug!(
                                 // reset atk
-                                "launcher  {} {}", server_data.read().app.game_manager.game_state
+                                "launcher  {} {}", server_data.read().core_game_data.game_manager.game_state
                                 .last_result_atk.launcher_name, selected_atk_name()
                             );
                             let _ = socket
@@ -74,12 +74,12 @@ pub fn GameBoard() -> Element {
                     }
                 } else {
                     div { class: "blink-1",
-                        ResultAtkText { ra: server_data.read().app.game_manager.game_state.last_result_atk.clone() }
+                        ResultAtkText { ra: server_data.read().core_game_data.game_manager.game_state.last_result_atk.clone() }
                     }
                     div {
                         if !server_data
                             .read()
-                            .app
+                            .core_game_data
                             .game_manager
                             .game_state
                             .last_result_atk
@@ -87,7 +87,7 @@ pub fn GameBoard() -> Element {
                             .is_empty()
                         {
                             "Starting round:\n"
-                            for log in server_data.read().app.game_manager.game_state.last_result_atk.logs_new_round.iter() {
+                            for log in server_data.read().core_game_data.game_manager.game_state.last_result_atk.logs_new_round.iter() {
                                 "{log}\n"
                             }
                         }
@@ -96,13 +96,13 @@ pub fn GameBoard() -> Element {
             }
             div {
                 // Bosses
-                for c in server_data.read().app.game_manager.pm.active_bosses.iter() {
+                for c in server_data.read().core_game_data.game_manager.pm.active_bosses.iter() {
                     CharacterPanel {
                         c: c.clone(),
-                        current_player_id_name: server_data.read().app.game_manager.pm.current_player.id_name.clone(),
+                        current_player_id_name: server_data.read().core_game_data.game_manager.pm.current_player.id_name.clone(),
                         selected_atk_name,
                         atk_menu_display,
-                        is_auto_atk: server_data.read().app.game_manager.pm.current_player.id_name == c.id_name,
+                        is_auto_atk: server_data.read().core_game_data.game_manager.pm.current_player.id_name == c.id_name,
                     }
                 }
             }

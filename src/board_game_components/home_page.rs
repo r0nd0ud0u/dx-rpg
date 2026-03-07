@@ -8,7 +8,7 @@ use crate::{
     common::{Route, disconnected_user},
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
-        game_state::{GamePhase, ServerData},
+        server_manager::{GamePhase, ServerData},
     },
 };
 
@@ -36,7 +36,7 @@ pub fn Home() -> Element {
                     target: Route::CreateServer {}.into(),
                     name: "Create Server".to_string(),
                     onclick: move |_| {
-                        server_data().write().app.game_phase = GamePhase::Default;
+                        server_data().write().core_game_data.game_phase = GamePhase::Default;
                     },
                 }
                 ButtonLink {
