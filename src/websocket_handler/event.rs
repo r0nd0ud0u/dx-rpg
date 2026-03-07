@@ -13,11 +13,11 @@ use lib_rpg::common::paths_const::GAMES_DIR;
 use lib_rpg::game_manager::LogAtk;
 use lib_rpg::server::core_game_data::CoreGameData;
 use lib_rpg::server::server_manager::OnGoingGame;
+use lib_rpg::server::server_manager::ServerData;
 #[cfg(feature = "server")]
 use lib_rpg::server::server_manager::{GamePhase, ServerManager};
 use lib_rpg::utils;
 use serde::{Deserialize, Serialize};
-use lib_rpg::server::server_manager::ServerData;
 
 use std::path::{Path, PathBuf};
 #[cfg(feature = "server")]
