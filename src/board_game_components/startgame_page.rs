@@ -10,7 +10,6 @@ use crate::{
     board_game_components::gameboard::GameBoard,
     components::{
         button::{Button, ButtonVariant},
-        input::Input,
         separator::Separator,
         sheet::*,
     },
@@ -226,9 +225,31 @@ fn GameStatsSheet(s: SheetSide) -> Element {
     // context
     let server_data = use_context::<Signal<ServerData>>();
 
-    let current_round = format!("Current round: {}", server_data().core_game_data.game_manager.game_state.current_round);
-    let current_turn_nb = format!("Current turn: {}", server_data().core_game_data.game_manager.game_state.current_turn_nb);
-    let total_order_to_play = format!("Total order to play: {}", server_data().core_game_data.game_manager.game_state.order_to_play.len());
+    let current_round = format!(
+        "Current round: {}",
+        server_data()
+            .core_game_data
+            .game_manager
+            .game_state
+            .current_round
+    );
+    let current_turn_nb = format!(
+        "Current turn: {}",
+        server_data()
+            .core_game_data
+            .game_manager
+            .game_state
+            .current_turn_nb
+    );
+    let total_order_to_play = format!(
+        "Total order to play: {}",
+        server_data()
+            .core_game_data
+            .game_manager
+            .game_state
+            .order_to_play
+            .len()
+    );
 
     rsx! {
         SheetContent { side: s,
