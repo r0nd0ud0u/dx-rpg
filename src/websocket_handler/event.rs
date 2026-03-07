@@ -10,7 +10,7 @@ use dioxus::prelude::*;
 use lib_rpg::common::core_game_data_const::{SAVED_CORE_GAME_DATA, SAVED_CORE_GAME_DATA_REPLAY};
 #[cfg(feature = "server")]
 use lib_rpg::common::paths_const::GAMES_DIR;
-use lib_rpg::game_manager::LogAtk;
+use lib_rpg::game_manager::LogData;
 use lib_rpg::server::core_game_data::CoreGameData;
 use lib_rpg::server::server_manager::OnGoingGame;
 use lib_rpg::server::server_manager::ServerData;
@@ -73,7 +73,7 @@ pub enum ClientEvent {
     RequestTargetedCharacter(String, String, String), // `String`: launcher name, `String`: server name, `String`: atk name
     RequestSetOneTarget(String, String, String, String), // `String`: launcher name, `String`: server name, `String`: atk name, `String`: target name
     SaveGame(String, String), // `String`: server name, `String`: player name
-    AddLog(String, Vec<LogAtk>), // `String`: server name, `Vec<LogAtk>`: log info to add (ex: ["Player1 used Fireball on Player2 for 30 damage", "Player2 is now burning and will take 5 damage for 3 turns"])
+    AddLog(String, Vec<LogData>), // `String`: server name, `Vec<LogData>`: log info to add (ex: ["Player1 used Fireball on Player2 for 30 damage", "Player2 is now burning and will take 5 damage for 3 turns"])
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -144,7 +144,7 @@ pub async fn on_rcv_client_event(
                         tracing::info!("Receiving message from other-thread server {}, message: {:?}", client_id, maybe_server_msg);
                         match maybe_server_msg {
                             Some(ServerOwnEvent::AutoAtkIsDone(server_name)) => {
-                                if get_app_by_server_name(&server_name).is_some(){
+                                if get_core_game_data_by_server_name(&server_name).is_some(){
                                     update_core_game_data_after_atk(&server_name, None);
                                 }
                             }
@@ -610,7 +610,7 @@ fn send_end_of_serverdata(server_name: &str, client_id: u32, is_owner_disconnect
 pub fn update_core_game_data_after_atk(server_name: &str, selected_atk_name: Option<&str>) {
     use lib_rpg::game_state::GameStatus;
     let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
-    let logs: Vec<LogAtk>;
+    let logs: Vec<LogData>;
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         // launch attack
         // case several ennemy-auto-atk in a row and one atk ended the game, the next atk should not reach.
@@ -634,7 +634,7 @@ pub fn update_core_game_data_after_atk(server_name: &str, selected_atk_name: Opt
             .logs_atk
             .clone();
         tracing::info!(
-            "Attack launched for server: {},  atk: {:?}, logs.len: {}",
+            "Attack has been launched for server: {},  atk: {:?}, logs.len: {}",
             server_name,
             selected_atk_name,
             logs.len()
@@ -648,15 +648,14 @@ pub fn update_core_game_data_after_atk(server_name: &str, selected_atk_name: Opt
     }
 
     drop(sm);
-    // logs
-    add_log_to_app(server_name, logs);
+
     // update clients
     update_clients_server_data(server_name);
 }
 
 #[cfg(feature = "server")]
 pub async fn process_ennemy_atk(server_name: &str, tx: mpsc::UnboundedSender<ServerOwnEvent>) {
-    if let Some(app) = get_app_by_server_name(server_name)
+    if let Some(app) = get_core_game_data_by_server_name(server_name)
         && app.game_manager.is_round_auto()
     {
         let nb_in_a_row = app.game_manager.process_nb_bosses_atk_in_a_row();
@@ -674,7 +673,7 @@ pub async fn process_ennemy_atk(server_name: &str, tx: mpsc::UnboundedSender<Ser
 }
 
 #[cfg(feature = "server")]
-pub fn get_app_by_server_name(server_name: &str) -> Option<CoreGameData> {
+pub fn get_core_game_data_by_server_name(server_name: &str) -> Option<CoreGameData> {
     // get app by server name
     let sm = SERVER_MANAGER.lock().unwrap();
     let app = match sm.servers_data.get(server_name) {
@@ -827,7 +826,7 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
     tracing::debug!(
         "active heroes for server {}: {:?}",
         server_name,
-        get_app_by_server_name(server_name).map(|app| app
+        get_core_game_data_by_server_name(server_name).map(|app| app
             .game_manager
             .pm
             .active_heroes
@@ -965,7 +964,7 @@ async fn process_replay_game(server_name: &str, client_id: u32) {
             return;
         }
     };
-    let cur_game_path = match get_app_by_server_name(server_name) {
+    let cur_game_path = match get_core_game_data_by_server_name(server_name) {
         Some(app) => app.game_manager.game_paths.current_game_dir.clone(),
         None => {
             tracing::error!("No application found for server name: {}", server_name);
@@ -1050,10 +1049,10 @@ async fn process_save_game(server_name: &str, player_name: &str) {
 }
 
 #[cfg(feature = "server")]
-fn add_log_to_app(server_name: &str, logs: Vec<LogAtk>) {
+fn add_log_to_app(server_name: &str, logs: Vec<LogData>) {
     let mut sm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
-        server_data.core_game_data.logs.extend(logs);
+        server_data.core_game_data.game_manager.logs.extend(logs);
     }
     drop(sm);
 }

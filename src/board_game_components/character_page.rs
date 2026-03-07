@@ -89,6 +89,14 @@ pub fn CharacterPanel(
                 }
             }
         }
+        div {
+            // name buttons
+            Button {
+                variant: ButtonVariant::CharacterName,
+                onclick: move |_| async move {},
+                "{c.db_full_name} | Lvl: {c.level}"
+            }
+        }
         // atk button
         if is_auto_atk() {
             Button {
@@ -108,14 +116,6 @@ pub fn CharacterPanel(
                 } else {
                     "playing..."
                 }
-            }
-        }
-        div { class: "character-name-grid-container",
-            // name buttons
-            Button {
-                variant: ButtonVariant::CharacterName,
-                onclick: move |_| async move {},
-                "{c.db_full_name} | Lvl: {c.level}"
             }
         }
         // target button

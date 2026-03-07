@@ -94,7 +94,7 @@ pub fn GameBoard() -> Element {
                                 .logs_new_round
                                 .iter()
                             {
-                                "{log}\n"
+                                "{log.log}\n"
                             }
                         }
                     }
