@@ -9,7 +9,6 @@ pub mod joinongoinggame_page;
 pub mod loadgame_page;
 pub mod lobby_page;
 pub mod login_page;
-pub mod msg_from_client;
 pub mod navbar;
 pub mod popover_comp;
 pub mod startgame_page;

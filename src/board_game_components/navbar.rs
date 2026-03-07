@@ -1,6 +1,6 @@
 use crate::{
-    board_game_components::msg_from_client::send_disconnect_from_server_data,
-    components::label::Label, widgets::alert_dialog::AlertDialogComp,
+    components::label::Label, websocket_handler::msg_from_client::send_disconnect_from_server_data,
+    widgets::alert_dialog::AlertDialogComp,
 };
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},

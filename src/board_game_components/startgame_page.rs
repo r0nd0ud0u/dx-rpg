@@ -1,10 +1,10 @@
-use crate::board_game_components::msg_from_client::{
-    request_save_game, send_disconnect_from_server_data,
-};
 use crate::common::{Route, SERVER_NAME};
 use crate::components::label::Label;
 use crate::components::scroll_area::ScrollArea;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
+use crate::websocket_handler::msg_from_client::{
+    request_save_game, send_disconnect_from_server_data,
+};
 use crate::widgets::tab::TabDemo;
 use crate::{
     board_game_components::gameboard::GameBoard,

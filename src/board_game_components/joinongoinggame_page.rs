@@ -5,9 +5,12 @@ use dioxus::{
 use lib_rpg::server::server_manager::OnGoingGame;
 
 use crate::{
-    board_game_components::{common_comp::ButtonLink, msg_from_client::send_join_server_data},
+    board_game_components::common_comp::ButtonLink,
     common::Route,
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    websocket_handler::{
+        event::{ClientEvent, ServerEvent},
+        msg_from_client::send_join_server_data,
+    },
 };
 
 #[component]

@@ -5,7 +5,6 @@ use dioxus::{
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
-    board_game_components::msg_from_client::send_disconnect_from_server_data,
     common::Route,
     components::{
         alert_dialog::{
@@ -14,7 +13,10 @@ use crate::{
         },
         button::Button,
     },
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    websocket_handler::{
+        event::{ClientEvent, ServerEvent},
+        msg_from_client::send_disconnect_from_server_data,
+    },
 };
 
 #[component]
