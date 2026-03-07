@@ -107,6 +107,7 @@
     },
     "Level": 2,
     "Name": "Thraïn",
+    "IdName": "Thraïn_#1",
     "Photo": "thrain",
     "Powers": {
         "is_crit_heal_after_crit": false,
