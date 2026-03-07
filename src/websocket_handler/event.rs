@@ -11,8 +11,6 @@ use lib_rpg::common::core_game_data_const::{SAVED_CORE_GAME_DATA, SAVED_CORE_GAM
 #[cfg(feature = "server")]
 use lib_rpg::common::paths_const::GAMES_DIR;
 use lib_rpg::game_manager::LogAtk;
-#[cfg(feature = "server")]
-use lib_rpg::server::core_game_data;
 use lib_rpg::server::core_game_data::CoreGameData;
 use lib_rpg::server::server_manager::OnGoingGame;
 #[cfg(feature = "server")]
@@ -499,13 +497,11 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
 
 #[cfg(feature = "server")]
 pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &str) {
-    // add new ongoing game
     let dm = DATA_MANAGER.lock().unwrap();
-    let mut core_game_data = CoreGameData::new(&dm);
+    // init a new game
+    let mut core_game_data = CoreGameData::new(&dm, server_name);
     drop(dm);
     tracing::info!("New core game data created for player: {}", server_name);
-    // init a new game
-    core_game_data::init(server_name, &mut core_game_data);
     // update ongoing servers data list
     let mut sm = SERVER_MANAGER.lock().unwrap();
     // remove ongoing game if already exists for the server name

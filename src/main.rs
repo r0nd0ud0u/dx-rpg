@@ -73,10 +73,10 @@ fn main() {
 
 #[cfg(feature = "server")]
 pub async fn init_data_manager() {
-    use dx_rpg::common::DATA_MANAGER;
+    use dx_rpg::common::{DATA_MANAGER, OFFLINE_PATH};
     use lib_rpg::data_manager::DataManager;
     let mut dm = DATA_MANAGER.lock().unwrap();
-    *dm = DataManager::try_new("offlines").unwrap();
+    *dm = DataManager::try_new(OFFLINE_PATH).unwrap();
     tracing::info!(
         "Data manager initialized with {} equipments and {} heroes",
         dm.equipment_table.len(),
