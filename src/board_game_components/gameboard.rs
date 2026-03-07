@@ -6,16 +6,14 @@ use lib_rpg::{
     common::{effect_const::EFFECT_NB_COOL_DOWN, stats_const::HP},
     effect::EffectOutcome,
     game_manager::ResultLaunchAttack,
+    server::server_manager::ServerData,
 };
 
 use crate::{
     board_game_components::character_page::{AttackList, CharacterPanel},
     common::SERVER_NAME,
     components::button::{Button, ButtonVariant},
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        server_manager::ServerData,
-    },
+    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 use dioxus::prelude::*;
 
@@ -87,7 +85,15 @@ pub fn GameBoard() -> Element {
                             .is_empty()
                         {
                             "Starting round:\n"
-                            for log in server_data.read().core_game_data.game_manager.game_state.last_result_atk.logs_new_round.iter() {
+                            for log in server_data
+                                .read()
+                                .core_game_data
+                                .game_manager
+                                .game_state
+                                .last_result_atk
+                                .logs_new_round
+                                .iter()
+                            {
                                 "{log}\n"
                             }
                         }
@@ -102,7 +108,8 @@ pub fn GameBoard() -> Element {
                         current_player_id_name: server_data.read().core_game_data.game_manager.pm.current_player.id_name.clone(),
                         selected_atk_name,
                         atk_menu_display,
-                        is_auto_atk: server_data.read().core_game_data.game_manager.pm.current_player.id_name == c.id_name,
+                        is_auto_atk: server_data.read().core_game_data.game_manager.pm.current_player.id_name
+                            == c.id_name,
                     }
                 }
             }

@@ -5,6 +5,7 @@ use dioxus::{
     logger::tracing,
     prelude::*,
 };
+use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
     components::{
@@ -14,10 +15,7 @@ use crate::{
             SelectTrigger, SelectValue,
         },
     },
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        server_manager::{GamePhase, ServerData},
-    },
+    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
 #[component]
@@ -58,11 +56,7 @@ pub fn CharacterSelect() -> Element {
         .heroes_chosen
         .iter()
         .map(|(key, value)| {
-            let status = if server_data_snap
-                .players_data
-                .players_info
-                .contains_key(key)
-            {
+            let status = if server_data_snap.players_data.players_info.contains_key(key) {
                 "✅"
             } else {
                 "❌"

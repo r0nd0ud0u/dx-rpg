@@ -2,6 +2,7 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
+use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
     board_game_components::msg_from_client::send_disconnect_from_server_data,
@@ -13,10 +14,7 @@ use crate::{
         },
         button::Button,
     },
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        server_manager::{GamePhase, ServerData},
-    },
+    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
 #[component]

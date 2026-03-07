@@ -3,6 +3,7 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
+use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::components::button::ButtonVariant;
 use crate::{
@@ -12,10 +13,7 @@ use crate::{
     },
     common::{Route, SERVER_NAME},
     components::button::Button,
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        server_manager::{GamePhase, ServerData},
-    },
+    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
 #[component]
@@ -28,8 +26,7 @@ pub fn LobbyPage() -> Element {
     // all players info have a character name
     let server_data_snap = server_data();
 
-    let all_players_have_character_name = if server_data_snap.players_data.players_info.is_empty()
-    {
+    let all_players_have_character_name = if server_data_snap.players_data.players_info.is_empty() {
         false
     } else {
         server_data_snap

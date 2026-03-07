@@ -2,14 +2,12 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
+use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
     board_game_components::{common_comp::ButtonLink, login_page::LoginPage},
     common::{Route, disconnected_user},
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        server_manager::{GamePhase, ServerData},
-    },
+    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
 /// Home page

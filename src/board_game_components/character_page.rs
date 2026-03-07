@@ -10,6 +10,7 @@ use lib_rpg::{
     character::{Character, CharacterType},
     character_mod::fight_information::{CharacterFightInfo, HotsBufs},
     common::stats_const::*,
+    server::server_manager::ServerData,
 };
 
 use crate::{
@@ -19,10 +20,7 @@ use crate::{
 use crate::{
     common::{ENERGY_GRAD, SERVER_NAME},
     components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        server_manager::ServerData,
-    },
+    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 use dioxus::logger::tracing;
 

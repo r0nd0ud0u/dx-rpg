@@ -5,7 +5,6 @@ use crate::common::{Route, SERVER_NAME};
 use crate::components::label::Label;
 use crate::components::scroll_area::ScrollArea;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
-use crate::websocket_handler::server_manager::ServerData;
 use crate::widgets::tab::TabDemo;
 use crate::{
     board_game_components::gameboard::GameBoard,
@@ -21,6 +20,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::scroll_area::ScrollDirection;
 use lib_rpg::character::Character;
 use lib_rpg::game_state::GameStatus;
+use lib_rpg::server::server_manager::ServerData;
 
 /// New game
 #[component]

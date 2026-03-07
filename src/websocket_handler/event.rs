@@ -1,23 +1,27 @@
 #[cfg(feature = "server")]
-use crate::core_game_data::{init, save_core_game_data};
-#[cfg(feature = "server")]
-use crate::common::{DATA_MANAGER, SAVED_CORE_GAME_DATA, SAVED_CORE_GAME_DATA_REPLAY};
+use crate::common::DATA_MANAGER;
 #[cfg(feature = "server")]
 use crate::utils::server_file_utils;
-use crate::websocket_handler::server_manager::GamePhase;
-use crate::websocket_handler::server_manager::OnGoingGame;
-use crate::websocket_handler::server_manager::ServerData;
 #[cfg(feature = "server")]
 use async_std::task::sleep;
 use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
+use lib_rpg::common::core_game_data_const::{SAVED_CORE_GAME_DATA, SAVED_CORE_GAME_DATA_REPLAY};
 #[cfg(feature = "server")]
 use lib_rpg::common::paths_const::GAMES_DIR;
 use lib_rpg::game_manager::LogAtk;
+#[cfg(feature = "server")]
+use lib_rpg::server::core_game_data;
+use lib_rpg::server::core_game_data::CoreGameData;
+use lib_rpg::server::server_manager::OnGoingGame;
+#[cfg(feature = "server")]
+use lib_rpg::server::server_manager::{GamePhase, ServerManager};
+use lib_rpg::utils;
 use serde::{Deserialize, Serialize};
+use lib_rpg::server::server_manager::ServerData;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 #[cfg(feature = "server")]
 use std::{
     collections::HashMap,
@@ -32,10 +36,6 @@ use once_cell::sync::Lazy;
 
 #[cfg(feature = "server")]
 use tokio::sync::mpsc;
-
-use crate::core_game_data::{self, CoreGameData};
-#[cfg(feature = "server")]
-use crate::websocket_handler::server_manager::ServerManager;
 
 #[cfg(feature = "server")]
 static NEXT_CLIENT_ID: AtomicUsize = AtomicUsize::new(1);
@@ -500,10 +500,12 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
 #[cfg(feature = "server")]
 pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &str) {
     // add new ongoing game
-    let mut core_game_data = CoreGameData::new().await;
+    let dm = DATA_MANAGER.lock().unwrap();
+    let mut core_game_data = CoreGameData::new(&dm);
+    drop(dm);
     tracing::info!("New core game data created for player: {}", server_name);
     // init a new game
-    init(server_name, &mut core_game_data);
+    core_game_data::init(server_name, &mut core_game_data);
     // update ongoing servers data list
     let mut sm = SERVER_MANAGER.lock().unwrap();
     // remove ongoing game if already exists for the server name
@@ -511,7 +513,11 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
         .retain(|ongoing_game| ongoing_game.server_name != server_name);
     // add ongoing game
     sm.ongoing_games.push(OnGoingGame {
-        path: core_game_data.game_manager.game_paths.current_game_dir.clone(),
+        path: core_game_data
+            .game_manager
+            .game_paths
+            .current_game_dir
+            .clone(),
         server_name: server_name.to_string(),
     });
     drop(sm);
@@ -757,51 +763,60 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
             .character_names
             .push(new_id_name.clone());
         // find character in pm and set it as active for all players in server data
-        server_data.core_game_data.game_manager.pm.active_heroes.clear();
+        server_data
+            .core_game_data
+            .game_manager
+            .pm
+            .active_heroes
+            .clear();
         server_data.core_game_data.heroes_chosen.clear();
-        server_data.players_data.players_info.iter().for_each(|player_info| {
-            player_info
-                .1
-                .character_names
-                .iter()
-                .for_each(|character_id_name| {
-                    let local_character_name = character_id_name
-                        .split("_#")
-                        .next()
-                        .unwrap_or(character_id_name);
-                    tracing::info!(
-                        "Finding character {} in pm for server {}",
-                        local_character_name,
-                        server_name
-                    );
-                    if let Some(character) = dm
-                        .all_heroes
-                        .iter()
-                        .find(|h| h.db_full_name == *local_character_name)
-                    {
-                        let mut character = character.clone();
-                        character.id_name = character_id_name.clone();
-
-                        // update suffix id name
-                        server_data
-                            .core_game_data
-                            .game_manager
-                            .pm
-                            .active_heroes
-                            .push(character.clone());
-                        server_data
-                            .core_game_data
-                            .heroes_chosen
-                            .insert(player_info.0.clone(), character.id_name.clone());
-                    } else {
-                        tracing::error!(
-                            "Character {} not found in pm for server {}",
-                            character_id_name,
+        server_data
+            .players_data
+            .players_info
+            .iter()
+            .for_each(|player_info| {
+                player_info
+                    .1
+                    .character_names
+                    .iter()
+                    .for_each(|character_id_name| {
+                        let local_character_name = character_id_name
+                            .split("_#")
+                            .next()
+                            .unwrap_or(character_id_name);
+                        tracing::info!(
+                            "Finding character {} in pm for server {}",
+                            local_character_name,
                             server_name
                         );
-                    }
-                });
-        });
+                        if let Some(character) = dm
+                            .all_heroes
+                            .iter()
+                            .find(|h| h.db_full_name == *local_character_name)
+                        {
+                            let mut character = character.clone();
+                            character.id_name = character_id_name.clone();
+
+                            // update suffix id name
+                            server_data
+                                .core_game_data
+                                .game_manager
+                                .pm
+                                .active_heroes
+                                .push(character.clone());
+                            server_data
+                                .core_game_data
+                                .heroes_chosen
+                                .insert(player_info.0.clone(), character.id_name.clone());
+                        } else {
+                            tracing::error!(
+                                "Character {} not found in pm for server {}",
+                                character_id_name,
+                                server_name
+                            );
+                        }
+                    });
+            });
         tracing::debug!(
             "Player {} added character {} to server data for server {}",
             player_name,
@@ -865,8 +880,7 @@ async fn load_game_by_player(
         game_path
     };
 
-    let mut app = match core_game_data::get_core_game_data_by_dir(load_path.clone(), is_replay).await
-    {
+    let mut app = match get_core_game_data_by_dir(load_path.clone(), is_replay).await {
         Ok(get_app) => get_app,
         Err(e) => {
             tracing::error!(
@@ -1003,11 +1017,11 @@ fn request_set_one_target(
 ) {
     let mut sm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
-        server_data
-            .core_game_data
-            .game_manager
-            .pm
-            .set_one_target(launcher_name, atk_name, target_name);
+        server_data.core_game_data.game_manager.pm.set_one_target(
+            launcher_name,
+            atk_name,
+            target_name,
+        );
     } else {
         tracing::error!(
             "request_set_one_target: No server data found for server name: {}",
@@ -1031,7 +1045,12 @@ async fn process_save_game(server_name: &str, player_name: &str) {
             return;
         }
     };
-    save_core_game_data(&server_data.core_game_data, SAVED_CORE_GAME_DATA, player_name).await;
+    save_core_game_data(
+        &server_data.core_game_data,
+        SAVED_CORE_GAME_DATA,
+        player_name,
+    )
+    .await;
 }
 
 #[cfg(feature = "server")]
@@ -1041,4 +1060,57 @@ fn add_log_to_app(server_name: &str, logs: Vec<LogAtk>) {
         server_data.core_game_data.logs.extend(logs);
     }
     drop(sm);
+}
+
+#[cfg(feature = "server")]
+pub async fn save_core_game_data(
+    core_game_data: &CoreGameData,
+    save_game_name: &str,
+    player_name: &str,
+) {
+    // create dir
+    use crate::common::SAVED_DATA;
+    let saved_dir: PathBuf = SAVED_DATA.join(PathBuf::from(player_name));
+    let saved_dir = saved_dir.join(
+        core_game_data
+            .game_manager
+            .game_paths
+            .current_game_dir
+            .clone(),
+    );
+    match server_file_utils::create_dir(saved_dir.clone()).await {
+        Ok(()) => {}
+        Err(e) => tracing::error!("Failed to create directory: {}", e),
+    }
+    // save game
+    let cur_game_path = saved_dir.join(save_game_name);
+    match server_file_utils::save(
+        cur_game_path,
+        serde_json::to_string_pretty(&core_game_data.clone()).unwrap(),
+    )
+    .await
+    {
+        Ok(()) => tracing::info!("Core game data saved successfully {}", save_game_name),
+        Err(e) => tracing::error!("Failed to save Core game data: {}", e),
+    }
+}
+
+#[server]
+pub async fn get_core_game_data_by_dir(
+    game_dir_path: PathBuf,
+    is_replay: bool,
+) -> Result<CoreGameData, ServerFnError> {
+    let core_game_data_file = if is_replay {
+        game_dir_path.join(Path::new(SAVED_CORE_GAME_DATA_REPLAY))
+    } else {
+        game_dir_path.join(Path::new(SAVED_CORE_GAME_DATA))
+    };
+    if let Ok(value) = utils::read_from_json::<_, CoreGameData>(&core_game_data_file) {
+        Ok(value)
+    } else {
+        Err(ServerFnError::new(format!(
+            "Failed to read game state {:?}",
+            game_dir_path
+        )))
+    }
 }
