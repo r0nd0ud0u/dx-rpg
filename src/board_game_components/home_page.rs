@@ -2,14 +2,12 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
+use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
     board_game_components::{common_comp::ButtonLink, login_page::LoginPage},
     common::{Route, disconnected_user},
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        game_state::{GamePhase, ServerData},
-    },
+    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
 /// Home page
@@ -36,7 +34,7 @@ pub fn Home() -> Element {
                     target: Route::CreateServer {}.into(),
                     name: "Create Server".to_string(),
                     onclick: move |_| {
-                        server_data().write().app.game_phase = GamePhase::Default;
+                        server_data().write().core_game_data.game_phase = GamePhase::Default;
                     },
                 }
                 ButtonLink {

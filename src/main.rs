@@ -7,11 +7,9 @@ use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use dotenv::dotenv;
 use dx_rpg::{
     common::{DX_COMP_CSS, Route, SERVER_NAME, disconnected_user},
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent, on_rcv_client_event},
-        game_state::{GamePhase, ServerData},
-    },
+    websocket_handler::event::{ClientEvent, ServerEvent, on_rcv_client_event},
 };
+use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -75,10 +73,10 @@ fn main() {
 
 #[cfg(feature = "server")]
 pub async fn init_data_manager() {
-    use dx_rpg::common::DATA_MANAGER;
+    use dx_rpg::common::{DATA_MANAGER, OFFLINE_PATH};
     use lib_rpg::data_manager::DataManager;
     let mut dm = DATA_MANAGER.lock().unwrap();
-    *dm = DataManager::try_new("offlines").unwrap();
+    *dm = DataManager::try_new(OFFLINE_PATH).unwrap();
     tracing::info!(
         "Data manager initialized with {} equipments and {} heroes",
         dm.equipment_table.len(),
@@ -168,7 +166,8 @@ fn App() -> Element {
                     ServerEvent::UpdateServerData(server_data_update) => {
                         // update server info
                         server_data.set(*server_data_update.clone());
-                        *SERVER_NAME.write() = server_data_update.app.server_name.clone();
+                        *SERVER_NAME.write() =
+                            server_data_update.core_game_data.server_name.clone();
                     }
                     ServerEvent::UpdateOngoingGames(ongoing_games_update) => {
                         ongoing_games.set(ongoing_games_update);

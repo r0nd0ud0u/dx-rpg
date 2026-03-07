@@ -10,6 +10,7 @@ use lib_rpg::{
     character::{Character, CharacterType},
     character_mod::fight_information::{CharacterFightInfo, HotsBufs},
     common::stats_const::*,
+    server::server_manager::ServerData,
 };
 
 use crate::{
@@ -19,10 +20,7 @@ use crate::{
 use crate::{
     common::{ENERGY_GRAD, SERVER_NAME},
     components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        game_state::ServerData,
-    },
+    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 use dioxus::logger::tracing;
 
@@ -40,6 +38,7 @@ pub fn CharacterPanel(
 
     // get first player of the list
     let current_character = match server_data()
+        .players_data
         .players_info
         .get(&local_session_player_name())
         .and_then(|info| info.character_names.first().cloned())
@@ -254,7 +253,7 @@ pub fn AttackList(
     let server_data = use_context::<Signal<ServerData>>();
 
     if let Some(c) = server_data()
-        .app
+        .core_game_data
         .game_manager
         .pm
         .get_active_character(&id_name)
