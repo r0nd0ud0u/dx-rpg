@@ -22,7 +22,7 @@ fn main() {
     dotenv().ok();
 
     // Init logger
-    dioxus::logger::init(
+    let _ = dioxus::logger::init(
         std::env::var("LOG_LEVEL")
             .unwrap_or_else(|_| "info".to_string())
             .parse::<Level>()

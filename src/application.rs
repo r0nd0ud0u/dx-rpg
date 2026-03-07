@@ -33,6 +33,17 @@ impl Application {
         let dm = DATA_MANAGER.lock().unwrap();
         let mut gm = GameManager::new("offlines", dm.equipment_table.clone());
         // set bosses
+        dm.all_bosses.iter().for_each(|boss| {
+            let mut boss_to_push = boss.clone();
+            boss_to_push.id_name = format!(
+                "{}_#{}",
+                boss_to_push.db_full_name,
+                1 + gm
+                    .pm
+                    .get_nb_of_active_bosses_by_name(&boss_to_push.db_full_name)
+            );
+            gm.pm.active_bosses.push(boss_to_push);
+        });
         gm.pm.active_bosses = dm.all_bosses.clone();
 
         Application {

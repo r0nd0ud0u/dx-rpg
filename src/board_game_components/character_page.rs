@@ -29,7 +29,7 @@ use dioxus::logger::tracing;
 #[component]
 pub fn CharacterPanel(
     c: Character,
-    current_player_name: String,
+    current_player_id_name: String,
     selected_atk_name: Signal<String>,
     atk_menu_display: Signal<bool>,
     is_auto_atk: ReadSignal<bool>,
@@ -97,14 +97,14 @@ pub fn CharacterPanel(
                 onclick: move |_| async move {},
                 "ATK On Going"
             }
-        } else if c.kind == CharacterType::Hero && current_player_name == c.name {
+        } else if c.kind == CharacterType::Hero && current_player_id_name == c.id_name {
             Button {
                 variant: ButtonVariant::AtkMenu,
-                disabled: current_character != c.name,
+                disabled: current_character != c.id_name,
                 onclick: move |_| async move {
                     atk_menu_display.set(!atk_menu_display());
                 },
-                if current_character == c.name {
+                if current_character == c.id_name {
                     "ATK"
                 } else {
                     "playing..."
@@ -116,13 +116,13 @@ pub fn CharacterPanel(
             Button {
                 variant: ButtonVariant::CharacterName,
                 onclick: move |_| async move {},
-                "{c.name} | Lvl: {c.level}"
+                "{c.db_full_name} | Lvl: {c.level}"
             }
         }
         // target button
         if !selected_atk_name().is_empty() {
             CharacterTargetButton {
-                launcher_name: current_player_name,
+                launcher_id_name: current_player_id_name,
                 c: c.clone(),
                 selected_atk_name,
             }
@@ -132,7 +132,7 @@ pub fn CharacterPanel(
 
 #[component]
 pub fn CharacterTargetButton(
-    launcher_name: String,
+    launcher_id_name: String,
     c: Character,
     selected_atk_name: Signal<String>,
 ) -> Element {
@@ -156,8 +156,8 @@ pub fn CharacterTargetButton(
                 variant: ButtonVariant::Primary,
                 class: format!("{}-target-button", kind_str),
                 onclick: move |_| {
-                    let async_target_name = c.name.clone();
-                    let async_launcher_name = launcher_name.clone();
+                    let async_target_name = c.id_name.clone();
+                    let async_launcher_name = launcher_id_name.clone();
                     async move {
                         tracing::info!(
                             "l:{} t:{}, a:{}", async_launcher_name.clone(), async_target_name
@@ -211,13 +211,13 @@ pub fn NewAtkButton(
     // local signals
     let can_be_launched = launcher.can_be_launched(&attack_type);
     let attack_name = attack_type.name.clone();
-    let launcher_name = launcher.name;
+    let launcher_id_name = launcher.id_name.clone();
     rsx! {
         Button {
             variant: if can_be_launched { ButtonVariant::AtkName } else { ButtonVariant::AtkNameBlocked },
             onclick: move |_| {
                 let async_atk_name = attack_name.clone();
-                let async_launcher_name = launcher_name.clone();
+                let async_launcher_name = launcher_id_name.clone();
                 async move {
                     selected_atk_name.set(async_atk_name.clone());
 
@@ -246,7 +246,7 @@ pub fn NewAtkButton(
 
 #[component]
 pub fn AttackList(
-    name: String,
+    id_name: String,
     display_atklist_sig: Signal<bool>,
     selected_atk_name: Signal<String>,
 ) -> Element {
@@ -257,7 +257,7 @@ pub fn AttackList(
         .app
         .game_manager
         .pm
-        .get_active_character(&name)
+        .get_active_character(&id_name)
     {
         rsx! {
             div { class: "attack-list",

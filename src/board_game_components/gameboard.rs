@@ -42,7 +42,7 @@ pub fn GameBoard() -> Element {
                 for c in server_data.read().app.game_manager.pm.active_heroes.iter() {
                     CharacterPanel {
                         c: c.clone(),
-                        current_player_name: server_data.read().app.game_manager.pm.current_player.name.clone(),
+                        current_player_id_name: server_data.read().app.game_manager.pm.current_player.id_name.clone(),
                         selected_atk_name,
                         atk_menu_display,
                         is_auto_atk: false,
@@ -52,7 +52,7 @@ pub fn GameBoard() -> Element {
             div {
                 if atk_menu_display() {
                     AttackList {
-                        name: server_data.read().app.game_manager.pm.current_player.name.clone(),
+                        id_name: server_data.read().app.game_manager.pm.current_player.id_name.clone(),
                         display_atklist_sig: atk_menu_display,
                         selected_atk_name,
                     }
@@ -99,10 +99,10 @@ pub fn GameBoard() -> Element {
                 for c in server_data.read().app.game_manager.pm.active_bosses.iter() {
                     CharacterPanel {
                         c: c.clone(),
-                        current_player_name: server_data.read().app.game_manager.pm.current_player.name.clone(),
+                        current_player_id_name: server_data.read().app.game_manager.pm.current_player.id_name.clone(),
                         selected_atk_name,
                         atk_menu_display,
-                        is_auto_atk: server_data.read().app.game_manager.pm.current_player.name == c.name,
+                        is_auto_atk: server_data.read().app.game_manager.pm.current_player.id_name == c.id_name,
                     }
                 }
             }
@@ -146,11 +146,11 @@ fn AmountText(eo: EffectOutcome) -> Element {
             div { color: colortext, "{eo.new_effect_param.effect_type}: {eo.new_effect_param.nb_turns}" }
         } else if eo.new_effect_param.stats_name == HP {
             div { color: colortext,
-                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_name}: {eo.real_hp_amount_tx}"
+                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_id_name}: {eo.real_hp_amount_tx}"
             }
         } else {
             div { color: colortext,
-                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_name}: {eo.full_atk_amount_tx}"
+                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_id_name}: {eo.full_atk_amount_tx}"
             }
         }
     }

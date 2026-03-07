@@ -122,7 +122,7 @@ pub async fn on_rcv_client_event(
     let character_list = dm
         .all_heroes
         .iter()
-        .map(|h| h.name.clone())
+        .map(|h| h.db_full_name.clone())
         .collect::<Vec<String>>();
 
             let _ = socket.send(ServerEvent::InitClient(client_id, character_list)).await;
@@ -658,7 +658,7 @@ pub fn update_app_after_atk(server_name: &str, selected_atk_name: Option<&str>) 
 
     drop(sm);
     // logs
-    add_log_to_app(&server_name, logs);
+    add_log_to_app(server_name, logs);
     // update clients
     update_clients_server_data(server_name);
 }
@@ -741,19 +741,30 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
     let dm = DATA_MANAGER.lock().unwrap();
     let mut sm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
-        // remove character from all players in server data
+        // remove characters from one player in server data
         server_data
             .players_info
             .entry(player_name.to_string())
             .or_default()
             .character_names
             .clear();
+        // set id_name based on character_name
+        let new_id_name = format!(
+            "{}_#{}",
+            character_name,
+            1 + server_data
+                .app
+                .game_manager
+                .pm
+                .get_nb_of_active_heroes_by_name(character_name)
+        );
+        // update player info in server data
         server_data
             .players_info
             .entry(player_name.to_string())
             .or_default()
             .character_names
-            .push(character_name.to_string());
+            .push(new_id_name.clone());
         // find character in pm and set it as active for all players in server data
         server_data.app.game_manager.pm.active_heroes.clear();
         server_data.app.heroes_chosen.clear();
@@ -762,10 +773,25 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
                 .1
                 .character_names
                 .iter()
-                .for_each(|character_name| {
-                    if let Some(character) =
-                        dm.all_heroes.iter().find(|h| h.name == *character_name)
+                .for_each(|character_id_name| {
+                    let local_character_name = character_id_name
+                        .split("_#")
+                        .next()
+                        .unwrap_or(character_id_name);
+                    tracing::info!(
+                        "Finding character {} in pm for server {}",
+                        local_character_name,
+                        server_name
+                    );
+                    if let Some(character) = dm
+                        .all_heroes
+                        .iter()
+                        .find(|h| h.db_full_name == *local_character_name)
                     {
+                        let mut character = character.clone();
+                        character.id_name = character_id_name.clone();
+
+                        // update suffix id name
                         server_data
                             .app
                             .game_manager
@@ -775,11 +801,11 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
                         server_data
                             .app
                             .heroes_chosen
-                            .insert(player_info.0.clone(), character.name.clone());
+                            .insert(player_info.0.clone(), character.id_name.clone());
                     } else {
                         tracing::error!(
                             "Character {} not found in pm for server {}",
-                            character_name,
+                            character_id_name,
                             server_name
                         );
                     }
@@ -804,7 +830,7 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
             .pm
             .active_heroes
             .iter()
-            .map(|h| h.name.clone())
+            .map(|h| h.id_name.clone())
             .collect::<Vec<String>>())
     );
     update_clients_server_data(server_name);

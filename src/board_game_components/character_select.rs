@@ -16,7 +16,7 @@ use crate::{
     },
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
-        game_state::{GamePhase, PlayerInfo, ServerData},
+        game_state::{GamePhase, ServerData},
     },
 };
 
@@ -35,11 +35,21 @@ pub fn CharacterSelect() -> Element {
         return rsx! {};
     }
     // filter hashmap
-    let players_except_current_client: HashMap<String, PlayerInfo> = server_data_snap
+    let players_except_current_client: HashMap<String, String> = server_data_snap
         .players_info
         .iter()
         .filter(|(k, _)| k.as_str() != local_name.as_str())
-        .map(|(k, v)| (k.clone(), v.clone()))
+        .map(|(k, v)| {
+            let name = v
+                .character_names
+                .first()
+                .unwrap_or(&"No character selected".to_string())
+                .split("_#")
+                .next()
+                .unwrap_or("No character selected")
+                .to_string();
+            (k.clone(), name)
+        })
         .collect();
 
     let connected: HashMap<String, String> = server_data_snap
@@ -74,9 +84,7 @@ pub fn CharacterSelect() -> Element {
                 for player in players_except_current_client.clone() {
                     div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
                         Label { html_for: "sheet-demo-name", "{player.0}" }
-                        Label { html_for: "sheet-demo-name",
-                            "{player.1.character_names.get(0).unwrap_or(&\"No character selected\".to_string())}"
-                        }
+                        Label { html_for: "sheet-demo-name", "{player.1}" }
                     }
                 }
             }
