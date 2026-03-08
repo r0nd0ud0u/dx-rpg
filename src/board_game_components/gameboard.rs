@@ -143,10 +143,10 @@ fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
 
 #[component]
 fn AmountText(eo: EffectOutcome) -> Element {
-    let mut colortext = "green";
+    let mut colortext = "var(--secondary-success-color)";
     if eo.new_effect_param.stats_name == HP && eo.real_hp_amount_tx < 0 || eo.full_atk_amount_tx < 0
     {
-        colortext = "red";
+        colortext = "var(--secondary-color-2)";
     }
     rsx! {
         if eo.new_effect_param.effect_type == EFFECT_NB_COOL_DOWN {

@@ -57,9 +57,9 @@ pub fn CharacterPanel(
         return rsx! {};
     }
     let bg = if c.kind == CharacterType::Hero {
-        "blue"
+        "var(--secondary-color-2)"
     } else {
-        "red"
+        "var(--secondary-error-color)"
     };
     let energy_list = IndexMap::from([
         (HP.to_owned(), HP.to_owned()),
@@ -322,32 +322,38 @@ fn CharacterTooltip(hots_bufs: HotsBufs) -> Element {
         div { class: "character-effects",
             Tooltip {
                 TooltipTrigger {
-                    button {
-                        height: "20px",
-                        width: "20px",
-                        background_color: "green",
-                        "{hots_bufs.hot_nb}"
-                    }
-                    button {
-                        height: "20px",
-                        width: "20px",
-                        background_color: "red",
-                        "{hots_bufs.dot_nb}"
-                    }
-                    button {
-                        height: "20px",
-                        width: "20px",
-                        background_color: "blue",
-                        "{hots_bufs.buf_nb}"
-                    }
-                    button {
-                        height: "20px",
-                        width: "20px",
-                        background_color: "orange",
-                        "{hots_bufs.debuf_nb}"
+                    div { style: "display: flex; flex-direction: row; gap: 0px;",
+                        button {
+                            height: "25px",
+                            width: "25px",
+                            background_color: "green",
+                            color: "var(--secondary-color)",
+                            "{hots_bufs.hot_nb}"
+                        }
+                        button {
+                            height: "25px",
+                            width: "25px",
+                            background_color: "var(--secondary-error-color)",
+                            color: "var(--secondary-color)",
+                            "{hots_bufs.dot_nb}"
+                        }
+                        button {
+                            height: "25px",
+                            width: "25px",
+                            background_color: "var(--secondary-color-2)",
+                            color: "var(--secondary-color)",
+                            "{hots_bufs.buf_nb}"
+                        }
+                        button {
+                            height: "25px",
+                            width: "25px",
+                            background_color: "orange",
+                            color: "var(--secondary-color)",
+                            "{hots_bufs.debuf_nb}"
+                        }
                     }
                 }
-                TooltipContent { side: ContentSide::Right, style: "width: 300px;",
+                TooltipContent { side: ContentSide::Right,
                     for txt in hots_bufs.hot_txt {
                         p { style: "margin: 0;", "hots: \n{txt}" }
                     }
