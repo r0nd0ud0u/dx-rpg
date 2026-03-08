@@ -61,7 +61,7 @@ pub fn GameBoard() -> Element {
                             tracing::debug!(
                                 // reset atk
                                 "launcher  {} {}", server_data.read().core_game_data.game_manager.game_state
-                                .last_result_atk.launcher_name, selected_atk_name()
+                                .last_result_atk.launcher_id_name, selected_atk_name()
                             );
                             let _ = socket
                                 .send(ClientEvent::LaunchAttack(SERVER_NAME(), selected_atk_name()))
@@ -81,7 +81,7 @@ pub fn GameBoard() -> Element {
                             .game_manager
                             .game_state
                             .last_result_atk
-                            .logs_new_round
+                            .logs_end_of_round
                             .is_empty()
                         {
                             "Starting round:\n"
@@ -91,7 +91,7 @@ pub fn GameBoard() -> Element {
                                 .game_manager
                                 .game_state
                                 .last_result_atk
-                                .logs_new_round
+                                .logs_end_of_round
                                 .iter()
                             {
                                 "{log.log}\n"
@@ -153,11 +153,11 @@ fn AmountText(eo: EffectOutcome) -> Element {
             div { color: colortext, "{eo.new_effect_param.effect_type}: {eo.new_effect_param.nb_turns}" }
         } else if eo.new_effect_param.stats_name == HP {
             div { color: colortext,
-                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_id_name}: {eo.real_hp_amount_tx}"
+                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_kind}: {eo.real_hp_amount_tx}"
             }
         } else {
             div { color: colortext,
-                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_id_name}: {eo.full_atk_amount_tx}"
+                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_kind}: {eo.full_atk_amount_tx}"
             }
         }
     }

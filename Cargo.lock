@@ -3566,7 +3566,7 @@ dependencies = [
 [[package]]
 name = "lib-rpg"
 version = "1.3.1"
-source = "git+https://github.com/r0nd0ud0u/lib-rpg.git?rev=e9dfb8271b77d640d3f58426d75aa715fb1718cc#e9dfb8271b77d640d3f58426d75aa715fb1718cc"
+source = "git+https://github.com/r0nd0ud0u/lib-rpg.git?rev=db86d1561b9a9081322698c3ec70da11b18d353b#db86d1561b9a9081322698c3ec70da11b18d353b"
 dependencies = [
  "anyhow",
  "chrono",
