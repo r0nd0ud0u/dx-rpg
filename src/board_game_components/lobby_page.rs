@@ -59,7 +59,7 @@ pub fn LobbyPage() -> Element {
                 h2 { "Server name: {SERVER_NAME()}" }
                 // show the number of players in the server
                 h3 {
-                    "Players: {server_data_snap.core_game_data.players_nb} / {server_data_snap.players_data.players_info.len()}"
+                    "Players: {server_data_snap.players_data.players_info.len()} / {server_data_snap.core_game_data.players_nb}"
                 }
             }
             div { style: "display: flex;flex-direction: column; align-items: center; gap: 100px;",

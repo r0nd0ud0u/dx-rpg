@@ -512,7 +512,7 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
         path: core_game_data
             .game_manager
             .game_paths
-            .current_game_dir
+            .output_current_game_dir
             .clone(),
         server_name: server_name.to_string(),
     });
@@ -904,7 +904,7 @@ async fn load_game_by_player(
         sm.ongoing_games.retain(|g| g.server_name != server_name);
 
         sm.ongoing_games.push(OnGoingGame {
-            path: app.game_manager.game_paths.current_game_dir.clone(),
+            path: app.game_manager.game_paths.output_current_game_dir.clone(),
             server_name: app.server_name.clone(),
         });
     } // lock released here
@@ -965,7 +965,7 @@ async fn process_replay_game(server_name: &str, client_id: u32) {
         }
     };
     let cur_game_path = match get_core_game_data_by_server_name(server_name) {
-        Some(app) => app.game_manager.game_paths.current_game_dir.clone(),
+        Some(app) => app.game_manager.game_paths.output_current_game_dir.clone(),
         None => {
             tracing::error!("No application found for server name: {}", server_name);
             return;
@@ -1070,7 +1070,7 @@ pub async fn save_core_game_data(
         core_game_data
             .game_manager
             .game_paths
-            .current_game_dir
+            .output_current_game_dir
             .clone(),
     );
     match server_file_utils::create_dir(saved_dir.clone()).await {
