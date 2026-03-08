@@ -361,7 +361,7 @@ fn LogsSheet(s: SheetSide) -> Element {
                         }
                     }
                 }
-            
+
             }
 
             SheetFooter {

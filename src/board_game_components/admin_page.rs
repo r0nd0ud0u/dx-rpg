@@ -52,7 +52,7 @@ pub fn AdminPage() -> Element {
                         "Delete user"
                     }
                     Label { html_for: "sheet-demo-name", "{delete_answer}" }
-                
+
                 }
             }
         }

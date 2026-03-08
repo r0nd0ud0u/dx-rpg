@@ -208,7 +208,10 @@ pub fn NewAtkButton(
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     // local signals
-    let can_be_launched = launcher.extended_character.launchable_atks.contains(&attack_type.name);
+    let can_be_launched = launcher
+        .extended_character
+        .launchable_atks
+        .contains(&attack_type.name);
     let attack_name = attack_type.name.clone();
     let launcher_id_name = launcher.id_name.clone();
     rsx! {
