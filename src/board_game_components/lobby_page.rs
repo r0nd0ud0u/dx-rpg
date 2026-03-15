@@ -8,12 +8,14 @@ use lib_rpg::server::server_manager::{GamePhase, ServerData};
 use crate::components::button::ButtonVariant;
 use crate::{
     board_game_components::{
-        character_select::CharacterSelect, common_comp::ButtonLink,
-        msg_from_client::send_start_game, startgame_page::StartGamePage,
+        character_select::CharacterSelect, common_comp::ButtonLink, startgame_page::StartGamePage,
     },
     common::{Route, SERVER_NAME},
     components::button::Button,
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    websocket_handler::{
+        event::{ClientEvent, ServerEvent},
+        msg_from_client::send_start_game,
+    },
 };
 
 #[component]
@@ -57,7 +59,7 @@ pub fn LobbyPage() -> Element {
                 h2 { "Server name: {SERVER_NAME()}" }
                 // show the number of players in the server
                 h3 {
-                    "Players: {server_data_snap.core_game_data.players_nb} / {server_data_snap.players_data.players_info.len()}"
+                    "Players: {server_data_snap.players_data.players_info.len()} / {server_data_snap.core_game_data.players_nb}"
                 }
             }
             div { style: "display: flex;flex-direction: column; align-items: center; gap: 100px;",

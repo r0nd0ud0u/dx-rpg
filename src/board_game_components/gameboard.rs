@@ -3,9 +3,9 @@ use dioxus::{
     logger::tracing,
 };
 use lib_rpg::{
-    common::{effect_const::EFFECT_NB_COOL_DOWN, stats_const::HP},
-    effect::EffectOutcome,
-    game_manager::ResultLaunchAttack,
+    character_mod::effect::EffectOutcome,
+    common::constants::{effect_const::EFFECT_NB_COOL_DOWN, stats_const::HP},
+    server::game_manager::ResultLaunchAttack,
     server::server_manager::ServerData,
 };
 
@@ -61,7 +61,7 @@ pub fn GameBoard() -> Element {
                             tracing::debug!(
                                 // reset atk
                                 "launcher  {} {}", server_data.read().core_game_data.game_manager.game_state
-                                .last_result_atk.launcher_name, selected_atk_name()
+                                .last_result_atk.launcher_id_name, selected_atk_name()
                             );
                             let _ = socket
                                 .send(ClientEvent::LaunchAttack(SERVER_NAME(), selected_atk_name()))
@@ -81,7 +81,7 @@ pub fn GameBoard() -> Element {
                             .game_manager
                             .game_state
                             .last_result_atk
-                            .logs_new_round
+                            .logs_end_of_round
                             .is_empty()
                         {
                             "Starting round:\n"
@@ -91,10 +91,10 @@ pub fn GameBoard() -> Element {
                                 .game_manager
                                 .game_state
                                 .last_result_atk
-                                .logs_new_round
+                                .logs_end_of_round
                                 .iter()
                             {
-                                "{log}\n"
+                                "{log.message}\n"
                             }
                         }
                     }
@@ -143,21 +143,24 @@ fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
 
 #[component]
 fn AmountText(eo: EffectOutcome) -> Element {
-    let mut colortext = "green";
-    if eo.new_effect_param.stats_name == HP && eo.real_hp_amount_tx < 0 || eo.full_atk_amount_tx < 0
+    let mut colortext = "var(--secondary-success-color)";
+    if eo.processed_effect_param.input_effect_param.stats_name == HP && eo.real_hp_amount_tx < 0
+        || eo.full_atk_amount_tx < 0
     {
-        colortext = "red";
+        colortext = "var(--secondary-color-2)";
     }
     rsx! {
-        if eo.new_effect_param.effect_type == EFFECT_NB_COOL_DOWN {
-            div { color: colortext, "{eo.new_effect_param.effect_type}: {eo.new_effect_param.nb_turns}" }
-        } else if eo.new_effect_param.stats_name == HP {
+        if eo.processed_effect_param.input_effect_param.effect_type == EFFECT_NB_COOL_DOWN {
             div { color: colortext,
-                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_id_name}: {eo.real_hp_amount_tx}"
+                "{eo.processed_effect_param.input_effect_param.effect_type}: {eo.processed_effect_param.input_effect_param.nb_turns}"
+            }
+        } else if eo.processed_effect_param.input_effect_param.stats_name == HP {
+            div { color: colortext,
+                "{eo.processed_effect_param.input_effect_param.effect_type}-{eo.processed_effect_param.input_effect_param.stats_name} {eo.target_kind}: {eo.real_hp_amount_tx}"
             }
         } else {
             div { color: colortext,
-                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_id_name}: {eo.full_atk_amount_tx}"
+                "{eo.processed_effect_param.input_effect_param.effect_type}-{eo.processed_effect_param.input_effect_param.stats_name} {eo.target_kind}: {eo.full_atk_amount_tx}"
             }
         }
     }

@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use dioxus::prelude::*;
 #[cfg(feature = "server")]
-use lib_rpg::data_manager::DataManager;
+use lib_rpg::server::data_manager::DataManager;
 
 use crate::board_game_components::admin_page::AdminPage;
 use crate::board_game_components::create_server_page::CreateServer;
@@ -25,13 +25,9 @@ pub static SERVER_NAME: GlobalSignal<String> = Signal::global(String::new);
 pub static DATA_MANAGER: Lazy<Arc<Mutex<DataManager>>> =
     Lazy::new(|| Arc::new(Mutex::new(DataManager::default())));
 
-// TODO could be lazy
-pub fn disconnected_user() -> String {
-    "not connected".to_owned()
-}
-
 // Lazy
 pub static ADMIN: Lazy<String> = Lazy::new(|| "Admin".to_string());
+pub static DISCONNECTED_USER: Lazy<String> = Lazy::new(|| "not connected".to_string());
 pub static SAVED_DATA: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("saved_data"));
 
 pub static ENERGY_GRAD: Lazy<LinearGradient> = Lazy::new(|| {

@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use lib_rpg::character::Character;
+use lib_rpg::character_mod::character::Character;
 
 use crate::components::tabs::{TabContent, TabList, TabTrigger, Tabs};
 

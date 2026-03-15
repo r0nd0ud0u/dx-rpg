@@ -6,10 +6,10 @@ use dioxus::{
 use dioxus_primitives::ContentSide;
 use indexmap::IndexMap;
 use lib_rpg::{
-    attack_type::AttackType,
-    character::{Character, CharacterType},
-    character_mod::fight_information::{CharacterFightInfo, HotsBufs},
-    common::stats_const::*,
+    character_mod::attack_type::AttackType,
+    character_mod::character::{Character, CharacterKind},
+    character_mod::rounds_information::{CharacterRoundsInfo, HotsBufs},
+    common::constants::stats_const::*,
     server::server_manager::ServerData,
 };
 
@@ -53,13 +53,13 @@ pub fn CharacterPanel(
         }
     };
     // if boss is dead, panel is hidden
-    if c.is_dead().is_some_and(|value| value) && c.kind == CharacterType::Boss {
+    if c.stats.is_dead().is_some_and(|value| value) && c.kind == CharacterKind::Boss {
         return rsx! {};
     }
-    let bg = if c.kind == CharacterType::Hero {
-        "blue"
+    let bg = if c.kind == CharacterKind::Hero {
+        "var(--secondary-color-2)"
     } else {
-        "red"
+        "var(--secondary-error-color)"
     };
     let energy_list = IndexMap::from([
         (HP.to_owned(), HP.to_owned()),
@@ -69,7 +69,7 @@ pub fn CharacterPanel(
     ]);
 
     rsx! {
-        CharacterTooltip { hots_bufs: CharacterFightInfo::get_hot_and_buf_nbs_txts(&c.all_effects) }
+        CharacterTooltip { hots_bufs: CharacterRoundsInfo::get_hot_and_buf_nbs_txts(&c.character_rounds_info.all_effects) }
         div { class: "character", background_color: bg,
             div {
                 img {
@@ -89,6 +89,14 @@ pub fn CharacterPanel(
                 }
             }
         }
+        div {
+            // name buttons
+            Button {
+                variant: ButtonVariant::CharacterName,
+                onclick: move |_| async move {},
+                "{c.db_full_name} | Lvl: {c.level}"
+            }
+        }
         // atk button
         if is_auto_atk() {
             Button {
@@ -96,7 +104,7 @@ pub fn CharacterPanel(
                 onclick: move |_| async move {},
                 "ATK On Going"
             }
-        } else if c.kind == CharacterType::Hero && current_player_id_name == c.id_name {
+        } else if c.kind == CharacterKind::Hero && current_player_id_name == c.id_name {
             Button {
                 variant: ButtonVariant::AtkMenu,
                 disabled: current_character != c.id_name,
@@ -108,14 +116,6 @@ pub fn CharacterPanel(
                 } else {
                     "playing..."
                 }
-            }
-        }
-        div { class: "character-name-grid-container",
-            // name buttons
-            Button {
-                variant: ButtonVariant::CharacterName,
-                onclick: move |_| async move {},
-                "{c.db_full_name} | Lvl: {c.level}"
             }
         }
         // target button
@@ -139,18 +139,18 @@ pub fn CharacterTargetButton(
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
 
     let mut kind_str = "hero";
-    if c.kind == CharacterType::Boss {
+    if c.kind == CharacterKind::Boss {
         kind_str = "boss";
     }
     rsx! {
-        if c.is_current_target {
+        if c.character_rounds_info.is_current_target {
             Button {
                 variant: ButtonVariant::Primary,
                 class: format!("{}-target-button-active", kind_str),
                 onclick: move |_| async move {},
                 ""
             }
-        } else if c.is_potential_target {
+        } else if c.character_rounds_info.is_potential_target {
             Button {
                 variant: ButtonVariant::Primary,
                 class: format!("{}-target-button", kind_str),
@@ -208,7 +208,11 @@ pub fn NewAtkButton(
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     // local signals
-    let can_be_launched = launcher.can_be_launched(&attack_type);
+    let can_be_launched = launcher
+        .character_rounds_info
+        .launchable_atks
+        .iter()
+        .any(|atk| atk.name == attack_type.name);
     let attack_name = attack_type.name.clone();
     let launcher_id_name = launcher.id_name.clone();
     rsx! {
@@ -318,32 +322,38 @@ fn CharacterTooltip(hots_bufs: HotsBufs) -> Element {
         div { class: "character-effects",
             Tooltip {
                 TooltipTrigger {
-                    button {
-                        height: "20px",
-                        width: "20px",
-                        background_color: "green",
-                        "{hots_bufs.hot_nb}"
-                    }
-                    button {
-                        height: "20px",
-                        width: "20px",
-                        background_color: "red",
-                        "{hots_bufs.dot_nb}"
-                    }
-                    button {
-                        height: "20px",
-                        width: "20px",
-                        background_color: "blue",
-                        "{hots_bufs.buf_nb}"
-                    }
-                    button {
-                        height: "20px",
-                        width: "20px",
-                        background_color: "orange",
-                        "{hots_bufs.debuf_nb}"
+                    div { style: "display: flex; flex-direction: row; gap: 0px;",
+                        button {
+                            height: "25px",
+                            width: "25px",
+                            background_color: "green",
+                            color: "var(--secondary-color)",
+                            "{hots_bufs.hot_nb}"
+                        }
+                        button {
+                            height: "25px",
+                            width: "25px",
+                            background_color: "var(--secondary-error-color)",
+                            color: "var(--secondary-color)",
+                            "{hots_bufs.dot_nb}"
+                        }
+                        button {
+                            height: "25px",
+                            width: "25px",
+                            background_color: "var(--secondary-color-2)",
+                            color: "var(--secondary-color)",
+                            "{hots_bufs.buf_nb}"
+                        }
+                        button {
+                            height: "25px",
+                            width: "25px",
+                            background_color: "orange",
+                            color: "var(--secondary-color)",
+                            "{hots_bufs.debuf_nb}"
+                        }
                     }
                 }
-                TooltipContent { side: ContentSide::Right, style: "width: 300px;",
+                TooltipContent { side: ContentSide::Right,
                     for txt in hots_bufs.hot_txt {
                         p { style: "margin: 0;", "hots: \n{txt}" }
                     }

@@ -49,10 +49,10 @@ html[data-theme="light"] {
   --orange-color-1: var(--dark, #d47c18) var(--light, #d48f18);
   --red-color-1: var(--dark, #cc1919) var(--light, #cc1919);
   --grey-color-1: var(--dark, #dcdcdc) var(--light, #2b2b2b);
-  --black-color-1: var(--dark, #fafafa) var(--light, #000);
+  --black-color-1: var(--dark, #dcdcdc) var(--light, #000);
 
   /* Secondary colors */
-  --secondary-color: var(--dark, #fff) var(--light, #000);
+  --secondary-color: var(--dark, #dcdcdc) var(--light, #000);
   --secondary-color-1: var(--dark, #1669c1) var(--light, #000);
   --secondary-color-2: var(--dark, #1a73e8) var(--light, #0d0d0d);
   --secondary-color-3: var(--dark, #dcdcdc) var(--light, #2b2b2b);
