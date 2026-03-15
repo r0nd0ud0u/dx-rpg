@@ -12,8 +12,8 @@ use lib_rpg::common::constants::core_game_data_const::{
 };
 #[cfg(feature = "server")]
 use lib_rpg::common::constants::paths_const::GAMES_DIR;
+use lib_rpg::common::log_data::LogData;
 use lib_rpg::server::core_game_data::CoreGameData;
-use lib_rpg::server::game_manager::LogData;
 use lib_rpg::server::server_manager::OnGoingGame;
 use lib_rpg::server::server_manager::ServerData;
 #[cfg(feature = "server")]
