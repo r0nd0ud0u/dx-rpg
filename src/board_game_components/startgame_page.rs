@@ -17,8 +17,8 @@ use crate::{
 use dioxus::fullstack::{CborEncoding, UseWebsocket};
 use dioxus::prelude::*;
 use dioxus_primitives::scroll_area::ScrollDirection;
-use lib_rpg::character::Character;
-use lib_rpg::game_state::GameStatus;
+use lib_rpg::character_mod::character::Character;
+use lib_rpg::server::game_state::GameStatus;
 use lib_rpg::server::server_manager::ServerData;
 
 /// New game
@@ -353,7 +353,7 @@ fn LogsSheet(s: SheetSide) -> Element {
                     tabindex: "0",
                     div { class: "scroll-content",
                         for log in server_data().core_game_data.game_manager.logs.iter() {
-                            Label { color: "{log.color}", html_for: "sheet-log", "{log.log}" }
+                            Label { color: "{log.color}", html_for: "sheet-log", "{log.message}" }
                         }
                     }
                 }

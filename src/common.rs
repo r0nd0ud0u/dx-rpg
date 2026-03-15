@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use dioxus::prelude::*;
 #[cfg(feature = "server")]
-use lib_rpg::data_manager::DataManager;
+use lib_rpg::server::data_manager::DataManager;
 
 use crate::board_game_components::admin_page::AdminPage;
 use crate::board_game_components::create_server_page::CreateServer;

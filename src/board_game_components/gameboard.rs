@@ -3,9 +3,9 @@ use dioxus::{
     logger::tracing,
 };
 use lib_rpg::{
-    common::{effect_const::EFFECT_NB_COOL_DOWN, stats_const::HP},
-    effect::EffectOutcome,
-    game_manager::ResultLaunchAttack,
+    character_mod::effect::EffectOutcome,
+    common::constants::{effect_const::EFFECT_NB_COOL_DOWN, stats_const::HP},
+    server::game_manager::ResultLaunchAttack,
     server::server_manager::ServerData,
 };
 
@@ -94,7 +94,7 @@ pub fn GameBoard() -> Element {
                                 .logs_end_of_round
                                 .iter()
                             {
-                                "{log.log}\n"
+                                "{log.message}\n"
                             }
                         }
                     }
@@ -144,20 +144,23 @@ fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
 #[component]
 fn AmountText(eo: EffectOutcome) -> Element {
     let mut colortext = "var(--secondary-success-color)";
-    if eo.new_effect_param.stats_name == HP && eo.real_hp_amount_tx < 0 || eo.full_atk_amount_tx < 0
+    if eo.processed_effect_param.input_effect_param.stats_name == HP && eo.real_hp_amount_tx < 0
+        || eo.full_atk_amount_tx < 0
     {
         colortext = "var(--secondary-color-2)";
     }
     rsx! {
-        if eo.new_effect_param.effect_type == EFFECT_NB_COOL_DOWN {
-            div { color: colortext, "{eo.new_effect_param.effect_type}: {eo.new_effect_param.nb_turns}" }
-        } else if eo.new_effect_param.stats_name == HP {
+        if eo.processed_effect_param.input_effect_param.effect_type == EFFECT_NB_COOL_DOWN {
             div { color: colortext,
-                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_kind}: {eo.real_hp_amount_tx}"
+                "{eo.processed_effect_param.input_effect_param.effect_type}: {eo.processed_effect_param.input_effect_param.nb_turns}"
+            }
+        } else if eo.processed_effect_param.input_effect_param.stats_name == HP {
+            div { color: colortext,
+                "{eo.processed_effect_param.input_effect_param.effect_type}-{eo.processed_effect_param.input_effect_param.stats_name} {eo.target_kind}: {eo.real_hp_amount_tx}"
             }
         } else {
             div { color: colortext,
-                "{eo.new_effect_param.effect_type}-{eo.new_effect_param.stats_name} {eo.target_kind}: {eo.full_atk_amount_tx}"
+                "{eo.processed_effect_param.input_effect_param.effect_type}-{eo.processed_effect_param.input_effect_param.stats_name} {eo.target_kind}: {eo.full_atk_amount_tx}"
             }
         }
     }

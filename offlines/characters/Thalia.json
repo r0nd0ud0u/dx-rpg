@@ -1,5 +1,12 @@
 {
-    "Buf-debuf": [
+    "Class": "Standard",
+    "Color": "green",
+    "Experience": 0,
+    "CharacterRoundsInfo": {
+        "is_first_round": false,
+        "is_heal_atk_blocked": false,
+        "is_random_target": false,
+        "Buf-debuf": [
         {
             "Buf-all-stats": [
             ],
@@ -96,14 +103,7 @@
             "Buf-type": 11,
             "Buf-value": 0
         }
-    ],
-    "Class": "Standard",
-    "Color": "green",
-    "Experience": 0,
-    "ExtendedCharacter": {
-        "is_first_round": false,
-        "is_heal_atk_blocked": false,
-        "is_random_target": false
+    ]
     },
     "Level": 2,
     "Name": "Thalia",

@@ -6,10 +6,10 @@ use dioxus::{
 use dioxus_primitives::ContentSide;
 use indexmap::IndexMap;
 use lib_rpg::{
-    attack_type::AttackType,
-    character::{Character, CharacterType},
-    character_mod::fight_information::{CharacterFightInfo, HotsBufs},
-    common::stats_const::*,
+    character_mod::attack_type::AttackType,
+    character_mod::character::{Character, CharacterKind},
+    character_mod::rounds_information::{CharacterRoundsInfo, HotsBufs},
+    common::constants::stats_const::*,
     server::server_manager::ServerData,
 };
 
@@ -53,10 +53,10 @@ pub fn CharacterPanel(
         }
     };
     // if boss is dead, panel is hidden
-    if c.is_dead().is_some_and(|value| value) && c.kind == CharacterType::Boss {
+    if c.stats.is_dead().is_some_and(|value| value) && c.kind == CharacterKind::Boss {
         return rsx! {};
     }
-    let bg = if c.kind == CharacterType::Hero {
+    let bg = if c.kind == CharacterKind::Hero {
         "var(--secondary-color-2)"
     } else {
         "var(--secondary-error-color)"
@@ -69,7 +69,7 @@ pub fn CharacterPanel(
     ]);
 
     rsx! {
-        CharacterTooltip { hots_bufs: CharacterFightInfo::get_hot_and_buf_nbs_txts(&c.all_effects) }
+        CharacterTooltip { hots_bufs: CharacterRoundsInfo::get_hot_and_buf_nbs_txts(&c.character_rounds_info.all_effects) }
         div { class: "character", background_color: bg,
             div {
                 img {
@@ -104,7 +104,7 @@ pub fn CharacterPanel(
                 onclick: move |_| async move {},
                 "ATK On Going"
             }
-        } else if c.kind == CharacterType::Hero && current_player_id_name == c.id_name {
+        } else if c.kind == CharacterKind::Hero && current_player_id_name == c.id_name {
             Button {
                 variant: ButtonVariant::AtkMenu,
                 disabled: current_character != c.id_name,
@@ -139,18 +139,18 @@ pub fn CharacterTargetButton(
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
 
     let mut kind_str = "hero";
-    if c.kind == CharacterType::Boss {
+    if c.kind == CharacterKind::Boss {
         kind_str = "boss";
     }
     rsx! {
-        if c.is_current_target {
+        if c.character_rounds_info.is_current_target {
             Button {
                 variant: ButtonVariant::Primary,
                 class: format!("{}-target-button-active", kind_str),
                 onclick: move |_| async move {},
                 ""
             }
-        } else if c.is_potential_target {
+        } else if c.character_rounds_info.is_potential_target {
             Button {
                 variant: ButtonVariant::Primary,
                 class: format!("{}-target-button", kind_str),
@@ -209,7 +209,7 @@ pub fn NewAtkButton(
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     // local signals
     let can_be_launched = launcher
-        .extended_character
+        .character_rounds_info
         .launchable_atks
         .iter()
         .any(|atk| atk.name == attack_type.name);

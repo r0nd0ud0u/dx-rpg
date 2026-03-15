@@ -7,11 +7,13 @@ use async_std::task::sleep;
 use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
-use lib_rpg::common::core_game_data_const::{SAVED_CORE_GAME_DATA, SAVED_CORE_GAME_DATA_REPLAY};
+use lib_rpg::common::constants::core_game_data_const::{
+    SAVED_CORE_GAME_DATA, SAVED_CORE_GAME_DATA_REPLAY,
+};
 #[cfg(feature = "server")]
-use lib_rpg::common::paths_const::GAMES_DIR;
-use lib_rpg::game_manager::LogData;
+use lib_rpg::common::constants::paths_const::GAMES_DIR;
 use lib_rpg::server::core_game_data::CoreGameData;
+use lib_rpg::server::game_manager::LogData;
 use lib_rpg::server::server_manager::OnGoingGame;
 use lib_rpg::server::server_manager::ServerData;
 #[cfg(feature = "server")]
@@ -608,7 +610,7 @@ fn send_end_of_serverdata(server_name: &str, client_id: u32, is_owner_disconnect
 
 #[cfg(feature = "server")]
 pub fn update_core_game_data_after_atk(server_name: &str, selected_atk_name: Option<&str>) {
-    use lib_rpg::game_state::GameStatus;
+    use lib_rpg::server::game_state::GameStatus;
     let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
     let logs: Vec<LogData>;
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {

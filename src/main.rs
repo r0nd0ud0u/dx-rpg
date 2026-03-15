@@ -74,7 +74,7 @@ fn main() {
 #[cfg(feature = "server")]
 pub async fn init_data_manager() {
     use dx_rpg::common::{DATA_MANAGER, OFFLINE_PATH};
-    use lib_rpg::data_manager::DataManager;
+    use lib_rpg::server::data_manager::DataManager;
     let mut dm = DATA_MANAGER.lock().unwrap();
     *dm = DataManager::try_new(OFFLINE_PATH).unwrap();
     tracing::info!(
