@@ -25,13 +25,9 @@ pub static SERVER_NAME: GlobalSignal<String> = Signal::global(String::new);
 pub static DATA_MANAGER: Lazy<Arc<Mutex<DataManager>>> =
     Lazy::new(|| Arc::new(Mutex::new(DataManager::default())));
 
-// TODO could be lazy
-pub fn disconnected_user() -> String {
-    "not connected".to_owned()
-}
-
 // Lazy
 pub static ADMIN: Lazy<String> = Lazy::new(|| "Admin".to_string());
+pub static DISCONNECTED_USER: Lazy<String> = Lazy::new(|| "not connected".to_string());
 pub static SAVED_DATA: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("saved_data"));
 
 pub static ENERGY_GRAD: Lazy<LinearGradient> = Lazy::new(|| {

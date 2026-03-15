@@ -45,8 +45,7 @@ pub fn StartGamePage() -> Element {
                 },
                 "Quit"
             }
-            // TODO if nobody quits -> store the number of players at start? and compare with the number of remaining players to know
-            // if we are in a "nobody quits" end of game scenario, and handle it differently (ex: show "nobody quits" message and "replay game" button)
+
             if server_data().players_data.owner_player_name == local_login_name_session() {
                 Button {
                     variant: ButtonVariant::Primary,

@@ -6,8 +6,11 @@ use dioxus::{
 use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use dotenv::dotenv;
 use dx_rpg::{
-    common::{DX_COMP_CSS, Route, SERVER_NAME, disconnected_user},
-    websocket_handler::event::{ClientEvent, ServerEvent, on_rcv_client_event},
+    common::{DISCONNECTED_USER, DX_COMP_CSS, Route, SERVER_NAME},
+    websocket_handler::{
+        NO_CLIENT_ID,
+        event::{ClientEvent, ServerEvent, on_rcv_client_event},
+    },
 };
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
@@ -43,8 +46,9 @@ fn main() {
         use axum_session::{SessionConfig, SessionLayer, SessionStore};
         use axum_session_auth::AuthConfig;
         use axum_session_sqlx::SessionSqlitePool;
-        use dx_rpg::auth_manager::{
-            auth::AuthLayer, db::get_db, server_fn::update_all_connection_status,
+        use dx_rpg::{
+            auth_manager::{auth::AuthLayer, db::get_db, server_fn::update_all_connection_status},
+            websocket_handler::STARTING_CLIENT_ID,
         };
 
         // on server start, set all users to disconnected in db to avoid stale connection status
@@ -57,10 +61,9 @@ fn main() {
 
         // Create an axum router that dioxus will attach the app to
         Ok(dioxus::server::router(App)
-            .layer(
-                AuthLayer::new(Some(pool.clone()))
-                    .with_config(AuthConfig::<i64>::default().with_anonymous_user_id(Some(1))), // TODO default anonymous user id, try -1 by default?
-            )
+            .layer(AuthLayer::new(Some(pool.clone())).with_config(
+                AuthConfig::<i64>::default().with_anonymous_user_id(Some(STARTING_CLIENT_ID)),
+            ))
             .layer(SessionLayer::new(
                 SessionStore::<SessionSqlitePool>::new(
                     Some(pool.clone().into()),
@@ -100,10 +103,10 @@ fn App() -> Element {
     // synced storage
     let mut login_name_session_local_sync =
         use_synced_storage::<LocalStorage, String>("synced_user_sql_name".to_string(), || {
-            disconnected_user()
+            DISCONNECTED_USER.clone()
         });
     let mut login_id_session_local_sync =
-        use_synced_storage::<LocalStorage, i64>("synced_user_sql_id".to_string(), || -1); // from db, integer primary key not null and from 1 upwards
+        use_synced_storage::<LocalStorage, i64>("synced_user_sql_id".to_string(), || NO_CLIENT_ID); // from db, integer primary key not null and from 1 upwards
 
     // Set the theme to dark on app load
     use_effect(|| {
@@ -125,8 +128,8 @@ fn App() -> Element {
                         let login_name_session_local_sync = login_name_session_local_sync();
                         let login_id_session_local_sync = login_id_session_local_sync();
                         // re-send SetName to server
-                        if login_name_session_local_sync != disconnected_user()
-                            && login_id_session_local_sync != -1
+                        if login_name_session_local_sync != *DISCONNECTED_USER
+                            && login_id_session_local_sync != NO_CLIENT_ID
                         {
                             let _ = socket
                                 .clone()
@@ -210,8 +213,8 @@ fn App() -> Element {
                         tracing::info!("Received LogOut event, resetting client data");
                         server_data.set(ServerData::default());
                         SERVER_NAME.write().clear();
-                        login_name_session_local_sync.set(disconnected_user());
-                        login_id_session_local_sync.set(-1);
+                        login_name_session_local_sync.set(DISCONNECTED_USER.clone());
+                        login_id_session_local_sync.set(NO_CLIENT_ID);
                     }
                 }
             }
