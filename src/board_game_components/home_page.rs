@@ -6,7 +6,7 @@ use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
     board_game_components::{common_comp::ButtonLink, login_page::LoginPage},
-    common::{Route, disconnected_user},
+    common::{DISCONNECTED_USER, Route},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
@@ -20,7 +20,7 @@ pub fn Home() -> Element {
     // Snapshot for this render
     let user_name = local_login_name_session();
 
-    if user_name == disconnected_user() {
+    if user_name == *DISCONNECTED_USER {
         rsx! {
             LoginPage {}
         }

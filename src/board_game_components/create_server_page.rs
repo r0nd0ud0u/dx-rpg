@@ -4,12 +4,12 @@ use dioxus::{
 };
 
 use crate::{
-    board_game_components::{
-        common_comp::ButtonLink,
+    board_game_components::common_comp::ButtonLink,
+    common::Route,
+    websocket_handler::{
+        event::{ClientEvent, ServerEvent},
         msg_from_client::{request_update_saved_game_list_display, send_initialize_game},
     },
-    common::Route,
-    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
 /// CreateServer page

@@ -1,6 +1,8 @@
 use crate::{
-    board_game_components::msg_from_client::send_disconnect_from_server_data,
-    components::label::Label, widgets::alert_dialog::AlertDialogComp,
+    common::DISCONNECTED_USER,
+    components::label::Label,
+    websocket_handler::{NO_CLIENT_ID, msg_from_client::send_disconnect_from_server_data},
+    widgets::alert_dialog::AlertDialogComp,
 };
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
@@ -10,7 +12,7 @@ use dioxus::{
 
 use crate::{
     auth_manager::server_fn::logout,
-    common::{ADMIN, Route, disconnected_user},
+    common::{ADMIN, Route},
     components::button::{Button, ButtonVariant},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
@@ -45,9 +47,9 @@ pub fn Navbar() -> Element {
             div { style: "display: flex; flex-direction: row; gap: 1rem;",
                 AlertDialogComp {}
                 Button {
-                    variant: if snap_local_login_name_session == disconnected_user() { ButtonVariant::Secondary } else { ButtonVariant::Destructive },
+                    variant: if snap_local_login_name_session == *DISCONNECTED_USER { ButtonVariant::Secondary } else { ButtonVariant::Destructive },
                     onclick: move |_| async move {
-                        if local_login_name_session() != disconnected_user() {
+                        if local_login_name_session() != *DISCONNECTED_USER {
                             match logout().await {
                                 Ok(_) => {
                                     tracing::info!("{} is logged out", local_login_name_session());
@@ -57,8 +59,8 @@ pub fn Navbar() -> Element {
                                         .send(ClientEvent::RequestLogOut(local_login_name_session()))
                                         .await;
                                     // local storage for login
-                                    *local_login_name_session.write() = disconnected_user();
-                                    *local_login_id_session.write() = -1;
+                                    *local_login_name_session.write() = (*DISCONNECTED_USER).to_string();
+                                    *local_login_id_session.write() = NO_CLIENT_ID;
                                 }
                                 Err(_) => {
                                     tracing::info!("Error on {} logout", local_login_name_session())
@@ -67,7 +69,7 @@ pub fn Navbar() -> Element {
                         }
                         navigator.push(Route::Home {});
                     },
-                    if snap_local_login_name_session == disconnected_user() {
+                    if snap_local_login_name_session == *DISCONNECTED_USER {
                         "Sign in"
                     } else {
                         "Sign out"

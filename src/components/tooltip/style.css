@@ -11,7 +11,8 @@
 .tooltip-content {
   position: absolute;
   z-index: 1000;
-  max-width: 100px;
+  width: 400px;
+  max-width: 400px;
   padding: 8px 12px;
   border-radius: 0.5rem;
   animation: tooltip-fade-in 0.2s ease-in-out;

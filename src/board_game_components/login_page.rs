@@ -4,6 +4,7 @@ use dioxus::{fullstack::UseWebsocket, logger::tracing};
 
 use crate::auth_manager::server_fn::get_user_id;
 use crate::components::label::Label;
+use crate::websocket_handler::NO_CLIENT_ID;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::{
     auth_manager::server_fn::{login, register},
@@ -105,9 +106,9 @@ pub fn LoginPage() -> Element {
                                         Ok(()) => {
                                             // local storage for login
                                             *local_login_name_session.write() = register_name();
-                                            *local_login_id_session.write() = (get_user_id().await) // TODO default value -1
+                                            *local_login_id_session.write() = (get_user_id().await)
                                                 // change page
-                                                .unwrap_or(-1);
+                                                .unwrap_or(NO_CLIENT_ID);
                                             navigator.push(Route::Home {});
                                         }
                                         Err(e) => {
