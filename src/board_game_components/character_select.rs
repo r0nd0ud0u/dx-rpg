@@ -101,12 +101,12 @@ pub fn ClassSelect(player_name: String) -> Element {
     let server_data = use_context::<Signal<ServerData>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let all_characters_names = use_context::<Signal<Vec<Character>>>();
-
+    let separator = "-";
     let characters = all_characters_names()
         .into_iter()
         .enumerate()
         .map(|(i, c)| {
-            let name = format!("{}-{}", c.class.to_emoji(), c.db_full_name);
+            let name = format!("{}{}{}", c.class.to_emoji(), separator, c.db_full_name);
             rsx! {
                 SelectOption::<String> { index: i, value: name.to_string(), text_value: "{name}",
                     {name}
@@ -123,7 +123,7 @@ pub fn ClassSelect(player_name: String) -> Element {
                 Some(value) => {
                     tracing::info!("Selected character: {}", value);
                     let db_full_name = value
-                        .split_once("-")
+                        .split_once(separator)
                         .map(|(_, db_full_name)| db_full_name.to_string())
                         .unwrap_or_else(|| value.clone());
                     let _ = socket

@@ -1,7 +1,12 @@
 use dioxus::prelude::*;
+use dioxus_primitives::scroll_area::ScrollDirection;
 use lib_rpg::character_mod::character::Character;
 
-use crate::components::tabs::{TabContent, TabList, TabTrigger, Tabs};
+use crate::components::{
+    label::Label,
+    scroll_area::ScrollArea,
+    tabs::{TabContent, TabList, TabTrigger, Tabs},
+};
 
 #[component]
 pub fn TabDemo(c: Character) -> Element {
@@ -31,7 +36,21 @@ pub fn TabDemo(c: Character) -> Element {
             }
             for (i , e) in c.equipment_on.iter().enumerate() {
                 TabContent { value: format!("tab{}", i + 1), index: i,
-                    "{map.get(&e.0).unwrap_or(&\"Empty\".to_string())}"
+                    ScrollArea {
+                        //width: "100%",
+                        height: "30em",
+                        border: "1px solid var(--primary-color-6)",
+                        border_radius: "0.5em",
+                        padding: "0 1em 1em 1em",
+                        direction: ScrollDirection::Vertical,
+                        tabindex: "0",
+                        div { class: "scroll-content",
+                            Label { html_for: "sheet-demo-name",
+                                "Equipped item: {map.get(&e.0).unwrap_or(&\"Empty\".to_string())}"
+                            }
+                        }
+                    }
+
                 }
             }
         }

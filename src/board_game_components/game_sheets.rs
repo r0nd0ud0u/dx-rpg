@@ -137,6 +137,27 @@ fn InventorySheet(s: SheetSide) -> Element {
         None => Character::default(),
     };
 
+    let segment_len = character.stats.all_stats.len() / 3 + 1;
+    let stats_1 = character
+        .stats
+        .all_stats
+        .iter()
+        .take(segment_len)
+        .map(|(k, v)| (k, v.clone()));
+    let stats_2 = character
+        .stats
+        .all_stats
+        .iter()
+        .skip(segment_len)
+        .take(segment_len)
+        .map(|(k, v)| (k, v.clone()));
+    let stats_3 = character
+        .stats
+        .all_stats
+        .iter()
+        .skip(2 * segment_len)
+        .take(segment_len)
+        .map(|(k, v)| (k, v.clone()));
     rsx! {
         SheetContent { side: s,
             SheetHeader {
@@ -149,6 +170,37 @@ fn InventorySheet(s: SheetSide) -> Element {
                 grid_auto_rows: "min-content",
                 gap: "1.5rem",
                 padding: "0 1rem",
+
+                div {
+                    display: "grid",
+                    grid_template_columns: "max-content max-content max-content",
+                    column_gap: "100px",
+                    div {
+                        display: "flex",
+                        flex_direction: "column",
+                        gap: "0.75rem",
+                        for (k , v) in stats_1 {
+                            Label { html_for: "sheet-demo-name", "{k}: {v.max}" }
+                        }
+                    }
+                    div {
+                        display: "flex",
+                        flex_direction: "column",
+                        gap: "0.75rem",
+                        for (k , v) in stats_2 {
+                            Label { html_for: "sheet-demo-name", "{k}: {v.max}" }
+                        }
+                    }
+                    div {
+                        display: "flex",
+                        flex_direction: "column",
+                        gap: "0.75rem",
+                        for (k , v) in stats_3 {
+                            Label { html_for: "sheet-demo-name", "{k}: {v.max}" }
+                        }
+                    }
+                }
+
                 TabDemo { c: character.clone() }
             }
 
