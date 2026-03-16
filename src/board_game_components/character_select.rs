@@ -106,7 +106,7 @@ pub fn ClassSelect(player_name: String) -> Element {
         .into_iter()
         .enumerate()
         .map(|(i, c)| {
-            let name = format!("{} {}", c.class.to_emoji(), c.db_full_name);
+            let name = format!("{}-{}", c.class.to_emoji(), c.db_full_name);
             rsx! {
                 SelectOption::<String> { index: i, value: name.to_string(), text_value: "{name}",
                     {name}
@@ -122,11 +122,15 @@ pub fn ClassSelect(player_name: String) -> Element {
             match e {
                 Some(value) => {
                     tracing::info!("Selected character: {}", value);
+                    let db_full_name = value
+                        .split_once("-")
+                        .map(|(_, db_full_name)| db_full_name.to_string())
+                        .unwrap_or_else(|| value.clone());
                     let _ = socket
                         .send(ClientEvent::AddCharacterOnServerData(
                             server_data().core_game_data.server_name.clone(),
                             l_player_name.clone(),
-                            value.clone(),
+                            db_full_name.clone(),
                         ))
                         .await;
                 }
