@@ -5,7 +5,10 @@ use dioxus::{
     logger::tracing,
     prelude::*,
 };
-use lib_rpg::server::server_manager::{GamePhase, ServerData};
+use lib_rpg::{
+    character_mod::character::Character,
+    server::server_manager::{GamePhase, ServerData},
+};
 
 use crate::{
     components::{
@@ -97,27 +100,16 @@ pub fn ClassSelect(player_name: String) -> Element {
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
-    let all_characters_names = use_context::<Signal<Vec<String>>>();
+    let all_characters_names = use_context::<Signal<Vec<Character>>>();
 
     let characters = all_characters_names()
         .into_iter()
         .enumerate()
         .map(|(i, c)| {
-            let c = c.as_str();
+            let name = format!("{} {}", c.class.to_emoji(), c.db_full_name);
             rsx! {
-                SelectOption::<String> { index: i, value: c.to_string(), text_value: "{c}",
-                    {
-                        // TODO: use actual icons for each character
-                        format!(
-                            "{} {c}",
-                            match c {
-                                "Warrior" => "🗡️",
-                                "Mage" => "🪄",
-                                "Rogue" => "🗡️",
-                                _ => "",
-                            },
-                        )
-                    }
+                SelectOption::<String> { index: i, value: name.to_string(), text_value: "{name}",
+                    {name}
                     SelectItemIndicator {}
                 }
             }

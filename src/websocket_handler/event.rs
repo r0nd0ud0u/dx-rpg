@@ -7,6 +7,7 @@ use async_std::task::sleep;
 use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
+use lib_rpg::character_mod::character::Character;
 use lib_rpg::common::constants::core_game_data_const::{
     SAVED_CORE_GAME_DATA, SAVED_CORE_GAME_DATA_REPLAY,
 };
@@ -80,7 +81,7 @@ pub enum ClientEvent {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ServerEvent {
-    InitClient(u32, Vec<String>),           // player id, characters list
+    InitClient(u32, Vec<Character>),        // player id, characters list
     NewClientOnExistingPlayer(String, u32), // welcome message, player id
     ReconnectAllSessions(String, i64),      // username, sql-id
     UpdateServerData(Box<ServerData>),      // server data
@@ -123,9 +124,7 @@ pub async fn on_rcv_client_event(
     };
     let character_list = dm
         .all_heroes
-        .iter()
-        .map(|h| h.db_full_name.clone())
-        .collect::<Vec<String>>();
+        .clone();
 
             let _ = socket.send(ServerEvent::InitClient(client_id, character_list)).await;
             let _ = socket.send(ServerEvent::NewClientOnExistingPlayer(format!("Welcome! (id={})", client_id), client_id)).await;
