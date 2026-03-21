@@ -8,106 +8,94 @@
         "is_random_target": true,
         "Buf-debuf": [
         {
-            "Buf-all-stats": [
-            ],
-            "Buf-is-percent": false,
+            "Buf-all-stats": ["hp","mana"],
+            "Buf-is-percent": true,
             "Buf-passive-enabled": false,
-            "Buf-type": 0,
-            "Buf-value": 0
+            "Buf-type": 3,
+            "Buf-value": 100
         },
         {
-            "Buf-all-stats": [
-            ],
+            "Buf-all-stats": [],
             "Buf-is-percent": false,
             "Buf-passive-enabled": false,
             "Buf-type": 1,
             "Buf-value": 0
         },
         {
-            "Buf-all-stats": [
-            ],
-            "Buf-is-percent": true,
+            "Buf-all-stats": [],
+            "Buf-is-percent": false,
             "Buf-passive-enabled": false,
             "Buf-type": 2,
             "Buf-value": 0
         },
         {
-            "Buf-all-stats": [
-            ],
+            "Buf-all-stats": [],
             "Buf-is-percent": false,
             "Buf-passive-enabled": false,
             "Buf-type": 3,
             "Buf-value": 0
         },
         {
-            "Buf-all-stats": [
-            ],
+            "Buf-all-stats": [],
             "Buf-is-percent": false,
             "Buf-passive-enabled": false,
             "Buf-type": 4,
             "Buf-value": 0
         },
         {
-            "Buf-all-stats": [
-            ],
-            "Buf-is-percent": true,
+            "Buf-all-stats": [],
+            "Buf-is-percent": false,
             "Buf-passive-enabled": false,
             "Buf-type": 5,
             "Buf-value": 0
         },
         {
-            "Buf-all-stats": [
-            ],
+            "Buf-all-stats": [],
             "Buf-is-percent": false,
             "Buf-passive-enabled": false,
             "Buf-type": 6,
             "Buf-value": 0
         },
         {
-            "Buf-all-stats": [
-            ],
+            "Buf-all-stats": [],
             "Buf-is-percent": false,
             "Buf-passive-enabled": false,
             "Buf-type": 7,
             "Buf-value": 0
         },
         {
-            "Buf-all-stats": [
-            ],
-            "Buf-is-percent": true,
+            "Buf-all-stats": [],
+            "Buf-is-percent": false,
             "Buf-passive-enabled": false,
             "Buf-type": 8,
             "Buf-value": 0
         },
         {
-            "Buf-all-stats": [
-            ],
-            "Buf-is-percent": true,
+            "Buf-all-stats": [],
+            "Buf-is-percent": false,
             "Buf-passive-enabled": false,
             "Buf-type": 9,
             "Buf-value": 0
         },
         {
-            "Buf-all-stats": [
-            ],
-            "Buf-is-percent": true,
+            "Buf-all-stats": [],
+            "Buf-is-percent": false,
             "Buf-passive-enabled": false,
             "Buf-type": 10,
             "Buf-value": 0
         },
         {
-            "Buf-all-stats": [
-            ],
-            "Buf-is-percent": true,
+            "Buf-all-stats": [],
+            "Buf-is-percent": false,
             "Buf-passive-enabled": false,
             "Buf-type": 11,
             "Buf-value": 0
         }
     ]
     },
-    "Level": 2,
+    "Level": 1,
     "Name": "Azrak Ombresang",
-    "IdName": "AzrakOmbresang_#1",
+    "IdName": "Azrak_Ombresang_#1",
     "Photo": "azrak-ombresang",
     "Powers": {
         "is_crit_heal_after_crit": false,
@@ -207,6 +195,82 @@
     "Type": "Hero",
     "is-blocking-atk": false,
     "max-actions-by-round": 1,
-    "nb-actions-in-round": 0
+    "nb-actions-in-round": 0,
+    "inventory": {
+        "equipments": {
+            "Amulet": [{
+                    "unique_name": "starting amulet",
+                    "is_equipped": true
+                }
+            ],
+            "Belt": [{
+                    "unique_name": "starting belt",
+                    "is_equipped": true
+                }
+            ],
+            "Cape": [{
+                    "unique_name": "starting cape",
+                    "is_equipped": true
+                }
+            ],
+            "Chest": [{
+                    "unique_name": "starting chest",
+                    "is_equipped": true
+                }
+            ],
+            "Gloves": [{
+                    "unique_name": "starting gloves",
+                    "is_equipped": true
+                }
+            ],
+            "Head": [{
+                    "unique_name": "starting head",
+                    "is_equipped": true
+                },
+                {
+                    "unique_name": "starting head2",
+                    "is_equipped": false
+                }
+            ],
+            "LeftRing": [{
+                    "unique_name": "starting left ring",
+                    "is_equipped": true
+                }
+            ],
+            "RightRing": [{
+                    "unique_name": "starting right ring",
+                    "is_equipped": true
+                }
+            ],
+            "Shoes": [{
+                    "unique_name": "starting shoes",
+                    "is_equipped": true
+                }
+            ],
+            "LeftWeapon": [{
+                    "unique_name": "starting left weapon",
+                    "is_equipped": true
+                }
+            ],
+            "RightWeapon": [{
+                    "unique_name": "starting right weapon",
+                    "is_equipped": true
+                }
+            ],
+            "Pants": [{
+                    "unique_name": "starting pants",
+                    "is_equipped": true
+                }
+            ],
+            "Tattoes": [{
+                    "unique_name": "starting tattoo",
+                    "is_equipped": true
+                }
+            ]
+
+        },
+        "consumables": [],
+        "money": 100
+    }
 }
 

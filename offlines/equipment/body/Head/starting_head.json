@@ -1,7 +1,7 @@
 {
-    "Categorie": "Tattoes",
-    "Nom": "tattoo",
-    "Nom unique": "tattoo_unique",
+    "Categorie": "Head",
+    "Nom": "starting head",
+    "Nom unique": "starting head",
     "Stats": {
         "Aggro": {
             "equip_percent": 0,
@@ -21,11 +21,11 @@
         },
         "Critical strike": {
             "equip_percent": 0,
-            "equip_value": 5
+            "equip_value": 0
         },
         "Dodge": {
             "equip_percent": 0,
-            "equip_value": 5
+            "equip_value": 0
         },
         "HP": {
             "equip_percent": 0,
@@ -53,7 +53,7 @@
         },
         "Physical armor": {
             "equip_percent": 0,
-            "equip_value": 100
+            "equip_value": 10
         },
         "Physical power": {
             "equip_percent": 0,

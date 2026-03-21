@@ -19,7 +19,7 @@ use crate::{
         event::{ClientEvent, ServerEvent},
         msg_from_client::request_save_game,
     },
-    widgets::tab::TabDemo,
+    widgets::tab::TabEquipment,
 };
 
 #[component]
@@ -201,7 +201,7 @@ fn InventorySheet(s: SheetSide) -> Element {
                     }
                 }
 
-                TabDemo { c: character.clone() }
+                TabEquipment { c: character.clone() }
             }
 
             SheetFooter {
