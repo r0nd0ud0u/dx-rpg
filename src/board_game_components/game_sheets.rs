@@ -1,9 +1,14 @@
+use std::collections::BTreeMap;
+
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
 use dioxus_primitives::scroll_area::ScrollDirection;
-use lib_rpg::{character_mod::character::Character, server::server_manager::ServerData};
+use lib_rpg::{
+    character_mod::{character::Character, stats::Attribute},
+    server::server_manager::ServerData,
+};
 
 use crate::{
     components::{
@@ -137,23 +142,20 @@ fn InventorySheet(s: SheetSide) -> Element {
         None => Character::default(),
     };
 
-    let segment_len = character.stats.all_stats.len() / 3 + 1;
-    let stats_1 = character
-        .stats
-        .all_stats
+    // BTreeMap
+    let ordered_stats: BTreeMap<String, Attribute> =
+        character.stats.all_stats.clone().into_iter().collect();
+    let segment_len = ordered_stats.len() / 3 + 1;
+    let stats_1 = ordered_stats
         .iter()
         .take(segment_len)
         .map(|(k, v)| (k, v.clone()));
-    let stats_2 = character
-        .stats
-        .all_stats
+    let stats_2 = ordered_stats
         .iter()
         .skip(segment_len)
         .take(segment_len)
         .map(|(k, v)| (k, v.clone()));
-    let stats_3 = character
-        .stats
-        .all_stats
+    let stats_3 = ordered_stats
         .iter()
         .skip(2 * segment_len)
         .take(segment_len)
@@ -180,7 +182,14 @@ fn InventorySheet(s: SheetSide) -> Element {
                         flex_direction: "column",
                         gap: "0.75rem",
                         for (k , v) in stats_1 {
-                            Label { html_for: "sheet-demo-name", "{k}: {v.max}" }
+                            div { style: "display: flex; direction: row; gap: 0.5rem;",
+                                Label {
+                                    html_for: "sheet-demo-name",
+                                    width: "150px",
+                                    "{k}:"
+                                }
+                                Label { html_for: "sheet-demo-name", "{v.max}" }
+                            }
                         }
                     }
                     div {
@@ -188,7 +197,14 @@ fn InventorySheet(s: SheetSide) -> Element {
                         flex_direction: "column",
                         gap: "0.75rem",
                         for (k , v) in stats_2 {
-                            Label { html_for: "sheet-demo-name", "{k}: {v.max}" }
+                            div { style: "display: flex; direction: row; gap: 0.5rem;",
+                                Label {
+                                    html_for: "sheet-demo-name",
+                                    width: "150px",
+                                    "{k}:"
+                                }
+                                Label { html_for: "sheet-demo-name", "{v.max}" }
+                            }
                         }
                     }
                     div {
@@ -196,7 +212,14 @@ fn InventorySheet(s: SheetSide) -> Element {
                         flex_direction: "column",
                         gap: "0.75rem",
                         for (k , v) in stats_3 {
-                            Label { html_for: "sheet-demo-name", "{k}: {v.max}" }
+                            div { style: "display: flex; direction: row; gap: 0.5rem;",
+                                Label {
+                                    html_for: "sheet-demo-name",
+                                    width: "150px",
+                                    "{k}:"
+                                }
+                                Label { html_for: "sheet-demo-name", "{v.max}" }
+                            }
                         }
                     }
                 }
