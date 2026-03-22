@@ -13,7 +13,7 @@ use crate::board_game_components::joinongoinggame_page::JoinOngoingGame;
 use crate::board_game_components::loadgame_page::LoadGame;
 use crate::board_game_components::lobby_page::LobbyPage;
 use crate::board_game_components::navbar::Navbar;
-use crate::board_game_components::startgame_page::StartGamePage;
+use crate::board_game_components::startgame_page::RunningGamePage;
 use colorgrad::{GradientBuilder, LinearGradient};
 use once_cell::sync::Lazy;
 
@@ -49,8 +49,8 @@ pub enum Route {
     CreateServer {},
     #[route("/lobby-page")]
     LobbyPage {},
-    #[route("/start-game")]
-    StartGamePage {},
+    #[route("/running-game")]
+    RunningGamePage {},
     #[route("/load-game")]
     LoadGame {},
     #[route("/current-game")]

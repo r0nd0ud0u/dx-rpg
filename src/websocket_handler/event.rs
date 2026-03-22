@@ -3,6 +3,8 @@ use crate::common::DATA_MANAGER;
 #[cfg(feature = "server")]
 use crate::utils::server_file_utils;
 #[cfg(feature = "server")]
+use crate::websocket_handler::common_event::SERVER_MANAGER;
+#[cfg(feature = "server")]
 use async_std::task::sleep;
 use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
 use dioxus::logger::tracing;
@@ -53,11 +55,6 @@ type SharedClients = Arc<Mutex<ClientsMap>>;
 #[cfg(feature = "server")]
 static CLIENTS: Lazy<SharedClients> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 
-/// server only: shared game state
-#[cfg(feature = "server")]
-static SERVER_MANAGER: Lazy<Arc<Mutex<ServerManager>>> =
-    Lazy::new(|| Arc::new(Mutex::new(ServerManager::default())));
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ClientEvent {
     LoginAllSessions(String, i64),  // `String`: username, `i64`: sql-id
@@ -77,6 +74,7 @@ pub enum ClientEvent {
     RequestSetOneTarget(String, String, String, String), // `String`: launcher name, `String`: server name, `String`: atk name, `String`: target name
     SaveGame(String, String), // `String`: server name, `String`: player name
     AddLog(String, Vec<LogData>), // `String`: server name, `Vec<LogData>`: log info to add (ex: ["Player1 used Fireball on Player2 for 30 damage", "Player2 is now burning and will take 5 damage for 3 turns"])
+    RequestToggleEquip(String, String, String), // `String`: equipment unique name, `String`: player name, `String`: server name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -131,6 +129,8 @@ pub async fn on_rcv_client_event(
 
             // Main loop: handle incoming socket messages and outgoing queued messages
             loop {
+                use crate::websocket_handler::event_inventory::request_toggle_equip;
+
                 tokio::select! {
                     // Outgoing messages destined for this client
                     maybe_msg = rx.recv() => {
@@ -223,11 +223,15 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("Client {} requested save game by {}", client_id, player_name);
                                 process_save_game(&server_name, &player_name).await;
                             }
-                                Ok(ClientEvent::AddLog(server_name, logs)) => {
-                                    tracing::info!("Client {} requested to add logs, len: {}", client_id, logs.len());
-                                    add_log_to_app(&server_name, logs);
-                                    update_clients_server_data(&server_name);
-                                }
+                            Ok(ClientEvent::AddLog(server_name, logs)) => {
+                                tracing::info!("Client {} requested to add logs, len: {}", client_id, logs.len());
+                                add_log_to_app(&server_name, logs);
+                                update_clients_server_data(&server_name);
+                            }
+                            Ok(ClientEvent::RequestToggleEquip(equipment_unique_name, player_name, server_name)) => {
+                                tracing::info!("Client {} requested to toggle equip for equipment {} by player {} on server {}", client_id, equipment_unique_name, player_name, server_name);
+                                request_toggle_equip(&equipment_unique_name, &player_name, &server_name).await;
+                            }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
                                 tracing::info!("Client {} disconnected", client_id);
@@ -537,7 +541,7 @@ fn get_current_game_path(player_name: &str, current_game_dir: &str) -> PathBuf {
 }
 
 #[cfg(feature = "server")]
-fn update_clients_server_data(server_name: &str) {
+pub fn update_clients_server_data(server_name: &str) {
     let server_data = match get_server_data_by_server_name(server_name) {
         Some(server_data) => {
             tracing::info!(
@@ -738,7 +742,7 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
             .players_info
             .entry(player_name.to_string())
             .or_default()
-            .character_names
+            .character_id_names
             .clear();
         // set id_name based on character_name
         let new_id_name = format!(
@@ -756,7 +760,7 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
             .players_info
             .entry(player_name.to_string())
             .or_default()
-            .character_names
+            .character_id_names
             .push(new_id_name.clone());
         // find character in pm and set it as active for all players in server data
         server_data
@@ -773,7 +777,7 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
             .for_each(|player_info| {
                 player_info
                     .1
-                    .character_names
+                    .character_id_names
                     .iter()
                     .for_each(|character_id_name| {
                         let local_character_name = character_id_name

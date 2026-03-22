@@ -8,7 +8,7 @@ use lib_rpg::server::server_manager::{GamePhase, ServerData};
 use crate::components::button::ButtonVariant;
 use crate::{
     board_game_components::{
-        character_select::CharacterSelect, common_comp::ButtonLink, startgame_page::StartGamePage,
+        character_select::CharacterSelect, common_comp::ButtonLink, startgame_page::RunningGamePage,
     },
     common::{Route, SERVER_NAME},
     components::button::Button,
@@ -35,7 +35,7 @@ pub fn LobbyPage() -> Element {
             .players_data
             .players_info
             .values()
-            .all(|p| !p.character_names.is_empty())
+            .all(|p| !p.character_id_names.is_empty())
     };
     tracing::trace!(
         "all_players_have_character_name: {}",
@@ -86,7 +86,7 @@ pub fn LobbyPage() -> Element {
             if server_data_snap.core_game_data.game_manager.pm.active_heroes.len()
                 <= server_data_snap.players_data.players_info.len()
             {
-                StartGamePage {}
+                RunningGamePage {}
             } else {
 
                 ButtonLink {

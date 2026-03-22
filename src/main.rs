@@ -160,10 +160,9 @@ fn App() -> Element {
                         // set character list
                         all_characters_names.set(characters_list);
                         tracing::info!(
-                            "Client {} received characters list with {} characters: {:?}",
+                            "Client {} received characters list with {} characters",
                             id,
                             all_characters_names().len(),
-                            all_characters_names()
                         );
                     }
                     ServerEvent::UpdateServerData(server_data_update) => {

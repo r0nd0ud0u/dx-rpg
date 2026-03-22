@@ -43,7 +43,7 @@ pub fn CharacterSelect() -> Element {
         .filter(|(k, _)| k.as_str() != local_name.as_str())
         .map(|(k, v)| {
             let name = v
-                .character_names
+                .character_id_names
                 .first()
                 .unwrap_or(&"No character selected".to_string())
                 .split("_#")
@@ -101,12 +101,12 @@ pub fn ClassSelect(player_name: String) -> Element {
     let server_data = use_context::<Signal<ServerData>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let all_characters_names = use_context::<Signal<Vec<Character>>>();
-
+    let separator = "-";
     let characters = all_characters_names()
         .into_iter()
         .enumerate()
         .map(|(i, c)| {
-            let name = format!("{} {}", c.class.to_emoji(), c.db_full_name);
+            let name = format!("{}{}{}", c.class.to_emoji(), separator, c.db_full_name);
             rsx! {
                 SelectOption::<String> { index: i, value: name.to_string(), text_value: "{name}",
                     {name}
@@ -122,11 +122,15 @@ pub fn ClassSelect(player_name: String) -> Element {
             match e {
                 Some(value) => {
                     tracing::info!("Selected character: {}", value);
+                    let db_full_name = value
+                        .split_once(separator)
+                        .map(|(_, db_full_name)| db_full_name.to_string())
+                        .unwrap_or_else(|| value.clone());
                     let _ = socket
                         .send(ClientEvent::AddCharacterOnServerData(
                             server_data().core_game_data.server_name.clone(),
                             l_player_name.clone(),
-                            value.clone(),
+                            db_full_name.clone(),
                         ))
                         .await;
                 }
