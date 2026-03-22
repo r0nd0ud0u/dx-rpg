@@ -3,7 +3,6 @@ use crate::{
     common::DATA_MANAGER,
     websocket_handler::{common_event::SERVER_MANAGER, event::update_clients_server_data},
 };
-use dioxus::prelude::*;
 use lib_rpg::server::server_manager::ServerManager;
 
 #[cfg(feature = "server")]
@@ -25,7 +24,7 @@ pub async fn request_toggle_equip(
             .pm
             .get_mut_active_hero_character(&character_id_name)
     {
-        character.toggle_equipment(equipment_unique_name, &all_equipments);
+        character.toggle_equipment(equipment_unique_name, all_equipments);
     }
     drop(sm);
     drop(dm);
