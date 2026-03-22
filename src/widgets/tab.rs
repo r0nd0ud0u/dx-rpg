@@ -1,10 +1,10 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    hash::Hash,
-};
+use std::collections::BTreeMap;
 
-use dioxus::prelude::*;
-use dioxus_primitives::{ContentSide, scroll_area::ScrollDirection};
+use dioxus::{
+    fullstack::{CborEncoding, UseWebsocket},
+    prelude::*,
+};
+use dioxus_primitives::ContentSide;
 use lib_rpg::{
     character_mod::{
         character::Character,
@@ -14,12 +14,14 @@ use lib_rpg::{
     server::server_manager::ServerData,
 };
 
-use crate::components::{
-    button::{Button, ButtonVariant},
-    label::Label,
-    scroll_area::ScrollArea,
-    tabs::{TabContent, TabList, TabTrigger, Tabs},
-    tooltip::{Tooltip, TooltipContent, TooltipTrigger},
+use crate::{
+    common::SERVER_NAME,
+    components::{
+        button::{Button, ButtonVariant},
+        tabs::{TabContent, TabList, TabTrigger, Tabs},
+        tooltip::{Tooltip, TooltipContent, TooltipTrigger},
+    },
+    websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
 #[component]
@@ -47,13 +49,13 @@ pub fn TabEquipment(c: Character) -> Element {
         .cloned()
         .collect::<Vec<Equipment>>();
 
-    let ordered_equipments: BTreeMap<String, Vec<EquipmentInventory>> =
+    let ordered_equipments: BTreeMap<EquipmentJsonKey, Vec<EquipmentInventory>> =
         c.inventory.equipments.clone().into_iter().collect();
     rsx! {
         Tabs {
             default_value: "tab1".to_string(),
             horizontal: true,
-            max_width: "16em",
+            max_width: "17em",
             TabList {
                 for (i , e) in ordered_equipments.iter().enumerate() {
                     TabTrigger { value: format!("tab{}", i + 1), index: i, "{e.0}" }
@@ -62,7 +64,7 @@ pub fn TabEquipment(c: Character) -> Element {
             for (i , e) in ordered_equipments.iter().enumerate() {
                 TabContent { value: format!("tab{}", i + 1), index: i, width: "17em",
                     div {
-                        for (j , item) in e.1.iter().enumerate() {
+                        for (_j , item) in e.1.iter().enumerate() {
                             EquipmentTooltip {
                                 e_inventory: item.clone(),
                                 all_inventory_equipments: flatten_inventory_equipments.clone(),
@@ -81,6 +83,12 @@ fn EquipmentTooltip(
     e_inventory: EquipmentInventory,
     all_inventory_equipments: Vec<Equipment>,
 ) -> Element {
+    // context
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let local_login_name_session = use_context::<Signal<String>>();
+
+    let e_inventory_name = e_inventory.unique_name.clone();
+
     let equipment = match all_inventory_equipments
         .iter()
         .find(|e| e.unique_name == e_inventory.unique_name)
@@ -111,8 +119,22 @@ fn EquipmentTooltip(
                     div {
                         Button {
                             variant: if e_inventory.is_equipped { ButtonVariant::Primary } else { ButtonVariant::Secondary },
-                            width: "16em",
-                            onclick: move |_| async move {} // update stats display,
+                            width: "17em",
+                            onclick: move |_| {
+                                let mv_e_inventory_name = e_inventory_name.clone();
+                                async move {
+                                    // send equip/unequip request
+                                    let _ = socket
+                                        .send(
+                                            ClientEvent::RequestToggleEquip(
+                                                mv_e_inventory_name,
+                                                local_login_name_session(),
+                                                SERVER_NAME(),
+                                            ),
+                                        )
+                                        .await;
+                                }
+                            },
                             "{e_inventory.unique_name}"
                         }
                     }

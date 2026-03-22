@@ -265,6 +265,15 @@
             "Tattoes": [{
                     "unique_name": "starting tattoo",
                     "is_equipped": true
+                },{
+                    "unique_name": "Elara-1",
+                    "is_equipped": false
+                },{
+                    "unique_name": "Elara-2",
+                    "is_equipped": false
+                },{
+                    "unique_name": "Elara-3",
+                    "is_equipped": false
                 }
             ]
 

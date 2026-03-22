@@ -29,6 +29,7 @@
     background: none;
     color: var(--secondary-color-5);
     cursor: pointer;
+    font-size: 1rem;
 }
 
 [data-variant="default"] .tabs-trigger[data-state="active"] {
@@ -55,7 +56,7 @@
 .tabs-content {
     width: 100%;
     box-sizing: border-box;
-    padding: 0.25rem;
+    padding: 0rem;
 }
 
 [data-variant="default"] .tabs-content-themed {

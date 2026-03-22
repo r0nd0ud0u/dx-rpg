@@ -43,7 +43,7 @@ pub fn CharacterSelect() -> Element {
         .filter(|(k, _)| k.as_str() != local_name.as_str())
         .map(|(k, v)| {
             let name = v
-                .character_names
+                .character_id_names
                 .first()
                 .unwrap_or(&"No character selected".to_string())
                 .split("_#")

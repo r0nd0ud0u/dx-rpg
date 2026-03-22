@@ -15,6 +15,7 @@ use crate::{
         button::{Button, ButtonVariant},
         label::Label,
         scroll_area::ScrollArea,
+        separator::Separator,
         sheet::{
             Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetSide,
             SheetTitle,
@@ -129,7 +130,7 @@ fn InventorySheet(s: SheetSide) -> Element {
         .players_data
         .players_info
         .get(&local_login_name_session())
-        .and_then(|info| info.character_names.first())
+        .and_then(|info| info.character_id_names.first())
         .cloned()
         .unwrap_or_else(|| "No character selected".to_string());
     let character = match server_data_snap
@@ -175,8 +176,8 @@ fn InventorySheet(s: SheetSide) -> Element {
 
                 div {
                     display: "grid",
-                    grid_template_columns: "max-content max-content max-content",
-                    column_gap: "100px",
+                    grid_template_columns: "max-content max-content max-content max-content max-content",
+                    column_gap: "80px",
                     div {
                         display: "flex",
                         flex_direction: "column",
@@ -190,8 +191,14 @@ fn InventorySheet(s: SheetSide) -> Element {
                                 }
                                 Label { html_for: "sheet-demo-name", "{v.max}" }
                             }
+                            Separator {
+                                style: "margin: 5px 0;",
+                                horizontal: true,
+                                decorative: true,
+                            }
                         }
                     }
+                    Separator { horizontal: false, decorative: true }
                     div {
                         display: "flex",
                         flex_direction: "column",
@@ -205,8 +212,14 @@ fn InventorySheet(s: SheetSide) -> Element {
                                 }
                                 Label { html_for: "sheet-demo-name", "{v.max}" }
                             }
+                            Separator {
+                                style: "margin: 5px 0;",
+                                horizontal: true,
+                                decorative: true,
+                            }
                         }
                     }
+                    Separator { horizontal: false, decorative: true }
                     div {
                         display: "flex",
                         flex_direction: "column",
@@ -219,6 +232,11 @@ fn InventorySheet(s: SheetSide) -> Element {
                                     "{k}:"
                                 }
                                 Label { html_for: "sheet-demo-name", "{v.max}" }
+                            }
+                            Separator {
+                                style: "margin: 5px 0;",
+                                horizontal: true,
+                                decorative: true,
                             }
                         }
                     }

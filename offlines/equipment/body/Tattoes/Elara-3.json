@@ -29,7 +29,7 @@
         },
         "HP": {
             "equip_percent": 0,
-            "equip_value": 0
+            "equip_value": 30
         },
         "HP regeneration": {
             "equip_percent": 0,
