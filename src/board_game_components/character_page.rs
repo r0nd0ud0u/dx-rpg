@@ -39,9 +39,7 @@ pub fn CharacterPanel(
     // get first player of the list
     let current_character = match server_data()
         .players_data
-        .players_info
-        .get(&local_session_player_name())
-        .and_then(|info| info.character_names.first().cloned())
+        .get_first_character_name(&local_session_player_name())
     {
         Some(player_name) => player_name,
         None => {
