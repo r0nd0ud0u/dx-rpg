@@ -66,62 +66,99 @@ pub fn CharacterPanel(
         (BERSERK.to_owned(), "BP".to_owned()),
     ]);
 
+    // eval class css for animation battle
+    let is_blinking = server_data()
+        .core_game_data
+        .game_manager
+        .game_state
+        .last_result_atk
+        .new_game_atk_effects
+        .iter()
+        .any(|effect| {
+            effect.effect_outcome.target_id_name == c.id_name
+                && effect.effect_outcome.full_atk_amount_tx < 0
+        });
+    let is_dodging = server_data()
+        .core_game_data
+        .game_manager
+        .game_state
+        .last_result_atk
+        .all_dodging
+        .iter()
+        .any(|dodge_info| dodge_info.name == c.id_name && dodge_info.is_dodging);
+    let is_blocking = server_data()
+        .core_game_data
+        .game_manager
+        .game_state
+        .last_result_atk
+        .all_dodging
+        .iter()
+        .any(|dodge_info| dodge_info.name == c.id_name && dodge_info.is_blocking);
+    let class_css = match (is_blinking, is_dodging, is_blocking) {
+        (true, _, false) => "blink-1",
+        (true, _, true) => "jello-horizontal",
+        (_, true, _) => "wobble-hor-bottom",
+        _ => "",
+    };
+
     rsx! {
-        CharacterTooltip { hots_bufs: CharacterRoundsInfo::get_hot_and_buf_nbs_txts(&c.character_rounds_info.all_effects) }
-        div { class: "character", background_color: bg,
-            div {
-                img {
-                    src: format!("{}/{}.png", PATH_IMG, c.photo_name),
-                    class: "image-small",
+        div { class: class_css,
+            CharacterTooltip { hots_bufs: CharacterRoundsInfo::get_hot_and_buf_nbs_txts(&c.character_rounds_info.all_effects) }
+            div { class: "character", background_color: bg,
+                div {
+                    img {
+                        src: format!("{}/{}.png", PATH_IMG, c.photo_name),
+                        class: "image-small",
+                    }
                 }
-            }
-            div { class: "character-energy-effects-box",
-                for (stat , display_stat) in energy_list.iter() {
-                    if c.stats.all_stats[stat].max > 0 {
-                        BarComponent {
-                            max: c.stats.all_stats[stat].max,
-                            current: c.stats.all_stats[stat].current,
-                            name: display_stat,
+                div { class: "character-energy-effects-box",
+                    for (stat , display_stat) in energy_list.iter() {
+                        if c.stats.all_stats[stat].max > 0 {
+                            BarComponent {
+                                max: c.stats.all_stats[stat].max,
+                                current: c.stats.all_stats[stat].current,
+                                name: display_stat,
+                            }
                         }
                     }
                 }
             }
-        }
-        div {
-            // name buttons
-            Button {
-                variant: ButtonVariant::CharacterName,
-                onclick: move |_| async move {},
-                "{c.db_full_name} | Lvl: {c.level}"
-            }
-        }
-        // atk button
-        if is_auto_atk() {
-            Button {
-                variant: ButtonVariant::AtkAutoMenu,
-                onclick: move |_| async move {},
-                "ATK On Going"
-            }
-        } else if c.kind == CharacterKind::Hero && current_player_id_name == c.id_name {
-            Button {
-                variant: ButtonVariant::AtkMenu,
-                disabled: current_character != c.id_name,
-                onclick: move |_| async move {
-                    atk_menu_display.set(!atk_menu_display());
-                },
-                if current_character == c.id_name {
-                    "ATK"
-                } else {
-                    "playing..."
+            div {
+                // name buttons
+                Button {
+                    variant: ButtonVariant::CharacterName,
+                    onclick: move |_| async move {},
+                    "{c.db_full_name} | Lvl: {c.level}"
                 }
             }
-        }
-        // target button
-        if !selected_atk_name().is_empty() {
-            CharacterTargetButton {
-                launcher_id_name: current_player_id_name,
-                c: c.clone(),
-                selected_atk_name,
+            // atk button
+            if is_auto_atk() {
+                Button {
+                    variant: ButtonVariant::AtkAutoMenu,
+                    onclick: move |_| async move {},
+                    "ATK On Going"
+                }
+            } else if c.kind == CharacterKind::Hero && current_player_id_name == c.id_name {
+                Button {
+                    variant: ButtonVariant::AtkMenu,
+                    disabled: current_character != c.id_name,
+                    onclick: move |_| async move {
+                        atk_menu_display.set(!atk_menu_display());
+                    },
+                    if current_character == c.id_name {
+                        "ATK"
+                    } else {
+                        "playing..."
+                    }
+                }
+            }
+            // target button
+            if !selected_atk_name().is_empty() {
+                CharacterTargetButton {
+                    launcher_id_name: current_player_id_name,
+                    c: c.clone(),
+                    selected_atk_name,
+                }
             }
         }
     }
