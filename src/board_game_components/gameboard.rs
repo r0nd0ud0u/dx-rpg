@@ -3,10 +3,11 @@ use dioxus::{
     logger::tracing,
 };
 use lib_rpg::{
-    character_mod::effect::EffectOutcome,
     common::constants::{effect_const::EFFECT_NB_COOL_DOWN, stats_const::HP},
-    server::game_manager::ResultLaunchAttack,
-    server::server_manager::ServerData,
+    server::{
+        game_manager::ResultLaunchAttack, players_manager::GameAtkEffect,
+        server_manager::ServerData,
+    },
 };
 
 use crate::{
@@ -120,7 +121,7 @@ pub fn GameBoard() -> Element {
 #[component]
 fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
     rsx! {
-        if !ra.outcomes.is_empty() {
+        if !ra.new_game_atk_effects.is_empty() {
             "Last attack:\n"
             if ra.is_crit {
                 "Critical Strike !"
@@ -132,8 +133,8 @@ fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
                     "{d.name} is blocking\n"
                 }
             }
-            for o in ra.outcomes {
-                AmountText { eo: o }
+            for gae in ra.new_game_atk_effects {
+                AmountText { gae: gae.clone() }
             }
         } else {
             ""
@@ -142,25 +143,26 @@ fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
 }
 
 #[component]
-fn AmountText(eo: EffectOutcome) -> Element {
+fn AmountText(gae: GameAtkEffect) -> Element {
     let mut colortext = "var(--secondary-success-color)";
-    if eo.processed_effect_param.input_effect_param.stats_name == HP && eo.real_hp_amount_tx < 0
-        || eo.full_atk_amount_tx < 0
+    if gae.processed_effect_param.input_effect_param.stats_name == HP
+        && gae.effect_outcome.real_hp_amount_tx < 0
+        || gae.effect_outcome.full_atk_amount_tx < 0
     {
         colortext = "var(--secondary-color-2)";
     }
     rsx! {
-        if eo.processed_effect_param.input_effect_param.effect_type == EFFECT_NB_COOL_DOWN {
+        if gae.processed_effect_param.input_effect_param.effect_type == EFFECT_NB_COOL_DOWN {
             div { color: colortext,
-                "{eo.processed_effect_param.input_effect_param.effect_type}: {eo.processed_effect_param.input_effect_param.nb_turns}"
+                "{gae.processed_effect_param.input_effect_param.effect_type}: {gae.processed_effect_param.input_effect_param.nb_turns}"
             }
-        } else if eo.processed_effect_param.input_effect_param.stats_name == HP {
+        } else if gae.processed_effect_param.input_effect_param.stats_name == HP {
             div { color: colortext,
-                "{eo.processed_effect_param.input_effect_param.effect_type}-{eo.processed_effect_param.input_effect_param.stats_name} {eo.target_kind}: {eo.real_hp_amount_tx}"
+                "{gae.processed_effect_param.input_effect_param.effect_type}-{gae.processed_effect_param.input_effect_param.stats_name} {gae.effect_outcome.target_id_name}: {gae.effect_outcome.real_hp_amount_tx}"
             }
         } else {
             div { color: colortext,
-                "{eo.processed_effect_param.input_effect_param.effect_type}-{eo.processed_effect_param.input_effect_param.stats_name} {eo.target_kind}: {eo.full_atk_amount_tx}"
+                "{gae.processed_effect_param.input_effect_param.effect_type}-{gae.processed_effect_param.input_effect_param.stats_name} {gae.effect_outcome.target_id_name}: {gae.effect_outcome.full_atk_amount_tx}"
             }
         }
     }
