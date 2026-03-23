@@ -6,11 +6,13 @@ use dioxus::{
 use dioxus_primitives::ContentSide;
 use indexmap::IndexMap;
 use lib_rpg::{
-    character_mod::attack_type::AttackType,
-    character_mod::character::{Character, CharacterKind},
-    character_mod::rounds_information::{CharacterRoundsInfo, HotsBufs},
+    character_mod::{
+        attack_type::AttackType,
+        character::{Character, CharacterKind},
+        rounds_information::{CharacterRoundsInfo, HotsBufs},
+    },
     common::constants::stats_const::*,
-    server::server_manager::ServerData,
+    server::{game_manager::ResultLaunchAttack, server_manager::ServerData},
 };
 
 use crate::{
@@ -24,6 +26,29 @@ use crate::{
 };
 use dioxus::logger::tracing;
 
+/// Process the css class for the attack animation based on the last attack result and the character id_name
+fn process_css_class_on_atk(last_atk: &ResultLaunchAttack, id_name: &str) -> &'static str {
+    // eval class css for animation
+    let is_blinking = last_atk.new_game_atk_effects.iter().any(|effect| {
+        effect.effect_outcome.target_id_name == id_name
+            && effect.effect_outcome.full_atk_amount_tx < 0
+    });
+    let is_dodging = last_atk
+        .all_dodging
+        .iter()
+        .any(|dodge_info| dodge_info.name == id_name && dodge_info.is_dodging);
+    let is_blocking = last_atk
+        .all_dodging
+        .iter()
+        .any(|dodge_info| dodge_info.name == id_name && dodge_info.is_blocking);
+    match (is_blinking, is_dodging, is_blocking) {
+        (true, _, false) => "blink-1",
+        (true, _, true) => "jello-horizontal",
+        (_, true, _) => "wobble-hor-bottom",
+        _ => "",
+    }
+}
+
 #[component]
 pub fn CharacterPanel(
     c: Character,
@@ -35,7 +60,7 @@ pub fn CharacterPanel(
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
     let local_session_player_name = use_context::<Signal<String>>();
-
+    let toggle_atk_animation = use_context::<Signal<bool>>();
     // get first player of the list
     let current_character = match server_data()
         .players_data
@@ -66,40 +91,18 @@ pub fn CharacterPanel(
         (BERSERK.to_owned(), "BP".to_owned()),
     ]);
 
-    // eval class css for animation battle
-    let is_blinking = server_data()
-        .core_game_data
-        .game_manager
-        .game_state
-        .last_result_atk
-        .new_game_atk_effects
-        .iter()
-        .any(|effect| {
-            effect.effect_outcome.target_id_name == c.id_name
-                && effect.effect_outcome.full_atk_amount_tx < 0
-        });
-    let is_dodging = server_data()
-        .core_game_data
-        .game_manager
-        .game_state
-        .last_result_atk
-        .all_dodging
-        .iter()
-        .any(|dodge_info| dodge_info.name == c.id_name && dodge_info.is_dodging);
-    let is_blocking = server_data()
-        .core_game_data
-        .game_manager
-        .game_state
-        .last_result_atk
-        .all_dodging
-        .iter()
-        .any(|dodge_info| dodge_info.name == c.id_name && dodge_info.is_blocking);
-    let class_css = match (is_blinking, is_dodging, is_blocking) {
-        (true, _, false) => "blink-1",
-        (true, _, true) => "jello-horizontal",
-        (_, true, _) => "wobble-hor-bottom",
-        _ => "",
-    };
+    // eval class css for animation
+    let mut class_css = process_css_class_on_atk(
+        &server_data()
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_result_atk,
+        &c.id_name,
+    );
+    if toggle_atk_animation() {
+        class_css = "";
+    }
 
     rsx! {
         div { class: class_css,
@@ -136,7 +139,7 @@ pub fn CharacterPanel(
                 Button {
                     variant: ButtonVariant::AtkAutoMenu,
                     onclick: move |_| async move {},
-                    "ATK On Going"
+                    "⚔️🤖"
                 }
             } else if c.kind == CharacterKind::Hero && current_player_id_name == c.id_name {
                 Button {
@@ -146,9 +149,9 @@ pub fn CharacterPanel(
                         atk_menu_display.set(!atk_menu_display());
                     },
                     if current_character == c.id_name {
-                        "ATK"
+                        "⚔️"
                     } else {
-                        "playing..."
+                        "🎮⚔️"
                     }
                 }
             }

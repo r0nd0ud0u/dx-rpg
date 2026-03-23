@@ -61,7 +61,7 @@ pub fn GameBoard() -> Element {
                         onclick: move |_| async move {
                             tracing::debug!(
                                 // reset atk
-                                "launcher  {} {}", server_data.read().core_game_data.game_manager.game_state
+                                "launcher {} {}", server_data.read().core_game_data.game_manager.game_state
                                 .last_result_atk.launcher_id_name, selected_atk_name()
                             );
                             let _ = socket
