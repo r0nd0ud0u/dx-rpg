@@ -138,7 +138,7 @@ pub fn CharacterPanel(
                 Button {
                     variant: ButtonVariant::AtkAutoMenu,
                     onclick: move |_| async move {},
-                    "⚔️🤖"
+                    "⏳🤖"
                 }
             } else if c.kind == CharacterKind::Hero && current_player_id_name == c.id_name {
                 Button {
@@ -150,7 +150,7 @@ pub fn CharacterPanel(
                     if current_character == c.id_name {
                         "⚔️"
                     } else {
-                        "🎮⚔️"
+                        "⏳🎮"
                     }
                 }
             }
