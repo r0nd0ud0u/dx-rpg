@@ -25,7 +25,7 @@ use crate::{
         event::{ClientEvent, ServerEvent},
         msg_from_client::request_save_game,
     },
-    widgets::tab::TabEquipment,
+    widgets::{charts::TabStats, tab_equipment::TabEquipment},
 };
 
 #[component]
@@ -126,13 +126,12 @@ fn InventorySheet(s: SheetSide) -> Element {
     let server_data_snap = server_data();
 
     // get character by name
-    let character_name = server_data_snap
+    let Some(character_name) = server_data_snap
         .players_data
-        .players_info
-        .get(&local_login_name_session())
-        .and_then(|info| info.character_id_names.first())
-        .cloned()
-        .unwrap_or_else(|| "No character selected".to_string());
+        .get_first_character_name(&local_login_name_session())
+    else {
+        return rsx! {};
+    };
     let character = match server_data_snap
         .core_game_data
         .game_manager
@@ -264,12 +263,18 @@ fn GameStatsSheet(s: SheetSide) -> Element {
     let server_data = use_context::<Signal<ServerData>>();
 
     let current_round = format!(
-        "Current round: {}",
+        "Current round: {}/{}",
         server_data()
             .core_game_data
             .game_manager
             .game_state
-            .current_round
+            .current_round,
+        server_data()
+            .core_game_data
+            .game_manager
+            .game_state
+            .order_to_play
+            .len()
     );
     let current_turn_nb = format!(
         "Current turn: {}",
@@ -278,15 +283,6 @@ fn GameStatsSheet(s: SheetSide) -> Element {
             .game_manager
             .game_state
             .current_turn_nb
-    );
-    let total_order_to_play = format!(
-        "Total order to play: {}",
-        server_data()
-            .core_game_data
-            .game_manager
-            .game_state
-            .order_to_play
-            .len()
     );
 
     rsx! {
@@ -302,10 +298,29 @@ fn GameStatsSheet(s: SheetSide) -> Element {
                 grid_auto_rows: "min-content",
                 gap: "1.5rem",
                 padding: "0 1rem",
+                width: "100%",
                 div { display: "grid", gap: "0.75rem",
+                    Separator {
+                        style: "margin: 5px 0;",
+                        width: "80%",
+                        horizontal: true,
+                        decorative: true,
+                    }
                     Label { html_for: "sheet-demo-name", "{current_turn_nb}" }
+                    Separator {
+                        style: "margin: 5px 0;",
+                        width: "80%",
+                        horizontal: true,
+                        decorative: true,
+                    }
                     Label { html_for: "sheet-demo-name", "{current_round}" }
-                    Label { html_for: "sheet-demo-name", "{total_order_to_play}" }
+                    Separator {
+                        style: "margin: 5px 0;",
+                        width: "80%",
+                        horizontal: true,
+                        decorative: true,
+                    }
+                    TabStats {}
                 }
             }
 
