@@ -30,8 +30,7 @@ use dioxus::logger::tracing;
 fn process_css_class_on_atk(last_atk: &ResultLaunchAttack, id_name: &str) -> &'static str {
     // eval class css for animation
     let is_blinking = last_atk.new_game_atk_effects.iter().any(|effect| {
-        effect.effect_outcome.target_id_name == id_name
-            && effect.effect_outcome.full_atk_amount_tx < 0
+        effect.effect_outcome.target_id_name == id_name && effect.effect_outcome.full_amount_tx < 0
     });
     let is_dodging = last_atk
         .all_dodging

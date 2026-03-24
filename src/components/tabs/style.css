@@ -40,7 +40,7 @@
 }
 
 .tabs-trigger[data-state="active"] {
-    color: var(--secondary-color-1);
+    color: var(--secondary-color-6);
 }
 
 .tabs-trigger[data-disabled="true"] {
@@ -60,7 +60,7 @@
 }
 
 [data-variant="default"] .tabs-content-themed {
-    border: 1px solid var(--light, var(--primary-color-6))
+    border: 0px solid var(--light, var(--primary-color-6))
         var(--dark, var(--primary-color-7));
     border-radius: 0.5rem;
     background: var(--light, var(--primary-color))

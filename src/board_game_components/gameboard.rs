@@ -145,10 +145,7 @@ fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
 #[component]
 fn AmountText(gae: GameAtkEffect) -> Element {
     let mut colortext = "var(--secondary-success-color)";
-    if gae.processed_effect_param.input_effect_param.stats_name == HP
-        && gae.effect_outcome.real_hp_amount_tx < 0
-        || gae.effect_outcome.full_atk_amount_tx < 0
-    {
+    if gae.effect_outcome.real_amount_tx < 0 {
         colortext = "var(--secondary-color-2)";
     }
     rsx! {
@@ -158,11 +155,11 @@ fn AmountText(gae: GameAtkEffect) -> Element {
             }
         } else if gae.processed_effect_param.input_effect_param.stats_name == HP {
             div { color: colortext,
-                "{gae.processed_effect_param.input_effect_param.effect_type}-{gae.processed_effect_param.input_effect_param.stats_name} {gae.effect_outcome.target_id_name}: {gae.effect_outcome.real_hp_amount_tx}"
+                "{gae.processed_effect_param.input_effect_param.effect_type}-{gae.processed_effect_param.input_effect_param.stats_name} {gae.effect_outcome.target_id_name}: {gae.effect_outcome.real_amount_tx}"
             }
         } else {
             div { color: colortext,
-                "{gae.processed_effect_param.input_effect_param.effect_type}-{gae.processed_effect_param.input_effect_param.stats_name} {gae.effect_outcome.target_id_name}: {gae.effect_outcome.full_atk_amount_tx}"
+                "{gae.processed_effect_param.input_effect_param.effect_type}-{gae.processed_effect_param.input_effect_param.stats_name} {gae.effect_outcome.target_id_name}: {gae.effect_outcome.real_amount_tx}"
             }
         }
     }
