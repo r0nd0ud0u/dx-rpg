@@ -6,11 +6,13 @@ use dioxus::{
 use dioxus_primitives::ContentSide;
 use indexmap::IndexMap;
 use lib_rpg::{
-    character_mod::attack_type::AttackType,
-    character_mod::character::{Character, CharacterKind},
-    character_mod::rounds_information::{CharacterRoundsInfo, HotsBufs},
+    character_mod::{
+        attack_type::AttackType,
+        character::{Character, CharacterKind},
+        rounds_information::{CharacterRoundsInfo, HotsBufs},
+    },
     common::constants::stats_const::*,
-    server::server_manager::ServerData,
+    server::{game_manager::ResultLaunchAttack, server_manager::ServerData},
 };
 
 use crate::{
@@ -24,6 +26,29 @@ use crate::{
 };
 use dioxus::logger::tracing;
 
+/// Process the css class for the attack animation based on the last attack result and the character id_name
+fn process_css_class_on_atk(last_atk: &ResultLaunchAttack, id_name: &str) -> &'static str {
+    // eval class css for animation
+    let is_blinking = last_atk.new_game_atk_effects.iter().any(|effect| {
+        effect.effect_outcome.target_id_name == id_name
+            && effect.effect_outcome.full_atk_amount_tx < 0
+    });
+    let is_dodging = last_atk
+        .all_dodging
+        .iter()
+        .any(|dodge_info| dodge_info.name == id_name && dodge_info.is_dodging);
+    let is_blocking = last_atk
+        .all_dodging
+        .iter()
+        .any(|dodge_info| dodge_info.name == id_name && dodge_info.is_blocking);
+    match (is_blinking, is_dodging, is_blocking) {
+        (true, _, false) => "blink-1",
+        (true, _, true) => "jello-horizontal",
+        (_, true, _) => "wobble-hor-bottom",
+        _ => "",
+    }
+}
+
 #[component]
 pub fn CharacterPanel(
     c: Character,
@@ -35,7 +60,7 @@ pub fn CharacterPanel(
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
     let local_session_player_name = use_context::<Signal<String>>();
-
+    let toggle_atk_animation = use_context::<Signal<bool>>();
     // get first player of the list
     let current_character = match server_data()
         .players_data
@@ -66,62 +91,77 @@ pub fn CharacterPanel(
         (BERSERK.to_owned(), "BP".to_owned()),
     ]);
 
+    // eval class css for animation
+    let mut class_css = process_css_class_on_atk(
+        &server_data()
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_result_atk,
+        &c.id_name,
+    );
+    if toggle_atk_animation() {
+        class_css = "";
+    }
+
     rsx! {
-        CharacterTooltip { hots_bufs: CharacterRoundsInfo::get_hot_and_buf_nbs_txts(&c.character_rounds_info.all_effects) }
-        div { class: "character", background_color: bg,
-            div {
-                img {
-                    src: format!("{}/{}.png", PATH_IMG, c.photo_name),
-                    class: "image-small",
+        div { class: class_css,
+            CharacterTooltip { hots_bufs: CharacterRoundsInfo::get_hot_and_buf_nbs_txts(&c.character_rounds_info.all_effects) }
+            div { class: "character", background_color: bg,
+                div {
+                    img {
+                        src: format!("{}/{}.png", PATH_IMG, c.photo_name),
+                        class: "image-small",
+                    }
                 }
-            }
-            div { class: "character-energy-effects-box",
-                for (stat , display_stat) in energy_list.iter() {
-                    if c.stats.all_stats[stat].max > 0 {
-                        BarComponent {
-                            max: c.stats.all_stats[stat].max,
-                            current: c.stats.all_stats[stat].current,
-                            name: display_stat,
+                div { class: "character-energy-effects-box",
+                    for (stat , display_stat) in energy_list.iter() {
+                        if c.stats.all_stats[stat].max > 0 {
+                            BarComponent {
+                                max: c.stats.all_stats[stat].max,
+                                current: c.stats.all_stats[stat].current,
+                                name: display_stat,
+                            }
                         }
                     }
                 }
             }
-        }
-        div {
-            // name buttons
-            Button {
-                variant: ButtonVariant::CharacterName,
-                onclick: move |_| async move {},
-                "{c.db_full_name} | Lvl: {c.level}"
-            }
-        }
-        // atk button
-        if is_auto_atk() {
-            Button {
-                variant: ButtonVariant::AtkAutoMenu,
-                onclick: move |_| async move {},
-                "ATK On Going"
-            }
-        } else if c.kind == CharacterKind::Hero && current_player_id_name == c.id_name {
-            Button {
-                variant: ButtonVariant::AtkMenu,
-                disabled: current_character != c.id_name,
-                onclick: move |_| async move {
-                    atk_menu_display.set(!atk_menu_display());
-                },
-                if current_character == c.id_name {
-                    "ATK"
-                } else {
-                    "playing..."
+            div {
+                // name buttons
+                Button {
+                    variant: ButtonVariant::CharacterName,
+                    onclick: move |_| async move {},
+                    "{c.db_full_name} | Lvl: {c.level}"
                 }
             }
-        }
-        // target button
-        if !selected_atk_name().is_empty() {
-            CharacterTargetButton {
-                launcher_id_name: current_player_id_name,
-                c: c.clone(),
-                selected_atk_name,
+            // atk button
+            if is_auto_atk() {
+                Button {
+                    variant: ButtonVariant::AtkAutoMenu,
+                    onclick: move |_| async move {},
+                    "⚔️🤖"
+                }
+            } else if c.kind == CharacterKind::Hero && current_player_id_name == c.id_name {
+                Button {
+                    variant: ButtonVariant::AtkMenu,
+                    disabled: current_character != c.id_name,
+                    onclick: move |_| async move {
+                        atk_menu_display.set(!atk_menu_display());
+                    },
+                    if current_character == c.id_name {
+                        "⚔️"
+                    } else {
+                        "🎮⚔️"
+                    }
+                }
+            }
+            // target button
+            if !selected_atk_name().is_empty() {
+                CharacterTargetButton {
+                    launcher_id_name: current_player_id_name,
+                    c: c.clone(),
+                    selected_atk_name,
+                }
             }
         }
     }

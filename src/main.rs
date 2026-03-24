@@ -97,6 +97,7 @@ fn App() -> Element {
     let mut ongoing_games = use_signal(Vec::new);
     let mut saved_game_list = use_signal(Vec::new);
     let mut all_characters_names = use_signal(Vec::new);
+    let mut toggle_atk_animation = use_signal(|| false);
 
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
@@ -215,6 +216,10 @@ fn App() -> Element {
                         login_name_session_local_sync.set(DISCONNECTED_USER.clone());
                         login_id_session_local_sync.set(NO_CLIENT_ID);
                     }
+                    ServerEvent::SetAtkAnimation(is_animated) => {
+                        tracing::debug!("Received SetAtkAnimation event");
+                        toggle_atk_animation.set(is_animated);
+                    }
                 }
             }
         }
@@ -228,6 +233,7 @@ fn App() -> Element {
     use_context_provider(|| ongoing_games);
     use_context_provider(|| saved_game_list);
     use_context_provider(|| all_characters_names);
+    use_context_provider(|| toggle_atk_animation);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

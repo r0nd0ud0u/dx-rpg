@@ -16,7 +16,6 @@ pub async fn send_initialize_game(
         tracing::info!("User name is empty, cannot create new game");
         return;
     }
-    // TODO set server name based on user name + random string
     *SERVER_NAME.write() = user_name.to_string();
     tracing::info!("Sending InitializeGame with server name: {}", SERVER_NAME());
     let _ = socket
