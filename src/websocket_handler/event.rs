@@ -87,11 +87,13 @@ pub enum ServerEvent {
     AnswerSavedGameList(Vec<PathBuf>), // list of saved games paths
     ResetClientFromServerData,         // server name
     LogOut,
+    SetAtkAnimation(bool), // true to set atk animation, false to reset it
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ServerOwnEvent {
-    AutoAtkIsDone(String), // servername
+    AutoAtkIsDone(String),    // servername
+    StopAtkAnimation(String), // servername
 }
 
 #[get("/api/new-event")]
@@ -146,8 +148,11 @@ pub async fn on_rcv_client_event(
                         match maybe_server_msg {
                             Some(ServerOwnEvent::AutoAtkIsDone(server_name)) => {
                                 if get_core_game_data_by_server_name(&server_name).is_some(){
-                                    update_core_game_data_after_atk(&server_name, None);
+                                    update_core_game_data_after_atk(&server_name, None, tx_server.clone()).await;
                                 }
+                            }
+                            Some(ServerOwnEvent::StopAtkAnimation(server_name)) => {
+                                update_clients_end_of_atk_animation(&server_name, false);
                             }
                             None => {}
                         }
@@ -183,7 +188,7 @@ pub async fn on_rcv_client_event(
                             }
                             Ok(ClientEvent::LaunchAttack(server_name, selected_atk)) => {
                                 tracing::info!("A new atk has been launched with atk {} for server {}", selected_atk, server_name);
-                                update_core_game_data_after_atk(&server_name, Some(&selected_atk));
+                                update_core_game_data_after_atk(&server_name, Some(&selected_atk), tx_server.clone()).await;
                                 // is ennemy turn ? 
                                 process_ennemy_atk(&server_name, tx_server.clone()).await;
                             }
@@ -542,21 +547,33 @@ fn get_current_game_path(player_name: &str, current_game_dir: &str) -> PathBuf {
 
 #[cfg(feature = "server")]
 pub fn update_clients_server_data(server_name: &str) {
-    let server_data = match get_server_data_by_server_name(server_name) {
-        Some(server_data) => {
-            tracing::info!(
-                "Clients ids: {:?} for server: {}",
-                server_data.players_data.players_info.values(),
-                server_name
-            );
-            server_data
-        }
-        None => {
-            tracing::info!("no server data for server: {}", server_name);
-            return;
-        }
+    let Some(server_data) = get_server_data_by_server_name(server_name) else {
+        tracing::error!(
+            "update_clients_server_data: No server data found for server name: {}",
+            server_name
+        );
+        return;
     };
+    send_server_event_to_clients(
+        server_name,
+        &ServerEvent::UpdateServerData(Box::new(server_data.clone())),
+    );
+}
 
+#[cfg(feature = "server")]
+pub fn update_clients_end_of_atk_animation(server_name: &str, is_animated: bool) {
+    send_server_event_to_clients(server_name, &ServerEvent::SetAtkAnimation(is_animated));
+}
+
+#[cfg(feature = "server")]
+fn send_server_event_to_clients(server_name: &str, server_event: &ServerEvent) {
+    let Some(server_data) = get_server_data_by_server_name(server_name) else {
+        tracing::error!(
+            "update_clients_server_data: No server data found for server name: {}",
+            server_name
+        );
+        return;
+    };
     let clients = CLIENTS.lock().unwrap();
     for (&other_id, sender) in clients.iter() {
         if server_data
@@ -565,7 +582,7 @@ pub fn update_clients_server_data(server_name: &str) {
             .values()
             .any(|player_info| player_info.player_ids.contains(&(other_id as u32)))
         {
-            let _ = sender.send(ServerEvent::UpdateServerData(Box::new(server_data.clone())));
+            let _ = sender.send(server_event.clone());
         }
     }
 }
@@ -612,7 +629,11 @@ fn send_end_of_serverdata(server_name: &str, client_id: u32, is_owner_disconnect
 }
 
 #[cfg(feature = "server")]
-pub fn update_core_game_data_after_atk(server_name: &str, selected_atk_name: Option<&str>) {
+pub async fn update_core_game_data_after_atk(
+    server_name: &str,
+    selected_atk_name: Option<&str>,
+    tx: mpsc::UnboundedSender<ServerOwnEvent>,
+) {
     use lib_rpg::server::game_state::GameStatus;
     let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
     let logs: Vec<LogData>;
@@ -655,7 +676,13 @@ pub fn update_core_game_data_after_atk(server_name: &str, selected_atk_name: Opt
     drop(sm);
 
     // update clients
+    update_clients_end_of_atk_animation(&server_name, true);
     update_clients_server_data(server_name);
+    // spawn
+    let server_name = server_name.to_owned(); // if it was &str
+    tokio::spawn(async move {
+        let _ = tx.send(ServerOwnEvent::StopAtkAnimation(server_name.to_owned()));
+    });
 }
 
 #[cfg(feature = "server")]
