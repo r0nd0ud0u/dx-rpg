@@ -30,12 +30,11 @@ pub fn GameBoard() -> Element {
         return rsx! {};
     }
 
-    let mut output_text_css_class = "";
-    if toggle_atk_animation() {
-        output_text_css_class = "";
+    let output_text_css_class = if toggle_atk_animation() {
+        ""
     } else {
-        output_text_css_class = "blink-1";
-    }
+        "blink-1"
+    };
 
     // local signals
     let atk_menu_display = use_signal(|| false);
