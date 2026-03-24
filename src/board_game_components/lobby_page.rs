@@ -61,10 +61,6 @@ pub fn LobbyPage() -> Element {
                 h3 {
                     "Players: {server_data_snap.players_data.players_info.len()} / {server_data_snap.core_game_data.players_nb}"
                 }
-            }
-            div { style: "display: flex;flex-direction: column; align-items: center; gap: 100px;",
-                // show character select page
-                CharacterSelect {}
                 // if the current client is the host, show start game button
                 if SERVER_NAME() == local_login_name_session() && all_players_have_character_name
                     && (server_data_snap.core_game_data.game_phase == GamePhase::InitGame
@@ -80,6 +76,10 @@ pub fn LobbyPage() -> Element {
                         "Start Game"
                     }
                 }
+            }
+            div { style: "display: flex;flex-direction: column; align-items: center; gap: 100px;",
+                // show character select page
+                CharacterSelect {}
             }
         } else if server_data_snap.core_game_data.game_phase == GamePhase::Running {
             // check if there is more characters in game than users

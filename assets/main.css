@@ -517,3 +517,10 @@ body {
 	-webkit-animation: wobble-hor-bottom 0.8s both;
 	        animation: wobble-hor-bottom 0.8s both;
 }
+
+.bar-label {
+    fill: gray;
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px black; /* Add a shadow for better visibility */
+}

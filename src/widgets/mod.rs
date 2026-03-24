@@ -1,2 +1,3 @@
 pub mod alert_dialog;
-pub mod tab;
+pub mod charts;
+pub mod tab_equipment;
