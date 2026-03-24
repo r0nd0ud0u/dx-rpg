@@ -226,10 +226,6 @@
             "Head": [{
                     "unique_name": "starting head",
                     "is_equipped": true
-                },
-                {
-                    "unique_name": "starting head2",
-                    "is_equipped": false
                 }
             ],
             "LeftRing": [{
@@ -263,23 +259,22 @@
                 }
             ],
             "Tattoes": [{
-                    "unique_name": "Sebor-1",
+                    "unique_name": "starting tattoo",
                     "is_equipped": true
-                },{
-                    "unique_name": "Elara-1",
-                    "is_equipped": false
-                },{
-                    "unique_name": "Elara-2",
-                    "is_equipped": false
-                },{
-                    "unique_name": "Elara-3",
-                    "is_equipped": false
                 }
             ]
 
         },
         "consumables": [],
         "money": 100
-    }
+    },
+    "energies": [
+        {
+            "kind": "Mana"
+        },
+        {
+            "kind": "Vigor"
+        }
+    ]
 }
 

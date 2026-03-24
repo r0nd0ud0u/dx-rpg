@@ -259,7 +259,7 @@
                 }
             ],
             "Tattoes": [{
-                    "unique_name": "Marc-1",
+                    "unique_name": "starting tattoo",
                     "is_equipped": true
                 }
             ]
@@ -267,6 +267,11 @@
         },
         "consumables": [],
         "money": 100
-    }
+    },
+    "energies": [
+        {
+            "kind": "Berseck"
+        }
+    ]
 }
 
