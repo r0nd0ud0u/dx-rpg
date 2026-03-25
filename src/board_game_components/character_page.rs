@@ -9,6 +9,7 @@ use lib_rpg::{
     character_mod::{
         attack_type::AttackType,
         character::{Character, CharacterKind},
+        energy::EnergyKind,
         rounds_information::{CharacterRoundsInfo, HotsBufs},
     },
     common::constants::stats_const::*,
@@ -84,10 +85,9 @@ pub fn CharacterPanel(
         "var(--secondary-error-color)"
     };
     let energy_list = IndexMap::from([
-        (HP.to_owned(), HP.to_owned()),
-        (MANA.to_owned(), "MP".to_owned()),
-        (VIGOR.to_owned(), "VP".to_owned()),
-        (BERSERK.to_owned(), "BP".to_owned()),
+        (MANA.to_owned(), ("MP".to_owned(), EnergyKind::Mana)),
+        (VIGOR.to_owned(), ("VP".to_owned(), EnergyKind::Vigor)),
+        (BERSERK.to_owned(), ("BP".to_owned(), EnergyKind::Berserk)),
     ]);
 
     // eval class css for animation
@@ -114,12 +114,17 @@ pub fn CharacterPanel(
                     }
                 }
                 div { class: "character-energy-effects-box",
-                    for (stat , display_stat) in energy_list.iter() {
-                        if c.stats.all_stats[stat].max > 0 {
+                    BarComponent {
+                        max: c.stats.all_stats[HP].max,
+                        current: c.stats.all_stats[HP].current,
+                        name: HP.to_owned(),
+                    }
+                    for (stat , energy) in energy_list.iter() {
+                        if c.stats.all_stats[stat].max > 0 && c.has_energy_kind(&energy.1) {
                             BarComponent {
                                 max: c.stats.all_stats[stat].max,
                                 current: c.stats.all_stats[stat].current,
-                                name: display_stat,
+                                name: energy.0.clone(),
                             }
                         }
                     }
@@ -138,7 +143,7 @@ pub fn CharacterPanel(
                 Button {
                     variant: ButtonVariant::AtkAutoMenu,
                     onclick: move |_| async move {},
-                    "⚔️🤖"
+                    "⏳🤖"
                 }
             } else if c.kind == CharacterKind::Hero && current_player_id_name == c.id_name {
                 Button {
@@ -150,7 +155,7 @@ pub fn CharacterPanel(
                     if current_character == c.id_name {
                         "⚔️"
                     } else {
-                        "🎮⚔️"
+                        "⏳🎮"
                     }
                 }
             }
