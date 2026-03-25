@@ -676,7 +676,7 @@ pub async fn update_core_game_data_after_atk(
     drop(sm);
 
     // update clients
-    update_clients_end_of_atk_animation(&server_name, true);
+    update_clients_end_of_atk_animation(server_name, true);
     update_clients_server_data(server_name);
     // spawn
     let server_name = server_name.to_owned(); // if it was &str

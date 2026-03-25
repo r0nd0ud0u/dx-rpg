@@ -23,11 +23,18 @@ pub fn GameBoard() -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
+    let toggle_atk_animation = use_context::<Signal<bool>>();
 
     // eval server_data
     if server_data() == ServerData::default() {
         return rsx! {};
     }
+
+    let output_text_css_class = if toggle_atk_animation() {
+        ""
+    } else {
+        "blink-1"
+    };
 
     // local signals
     let atk_menu_display = use_signal(|| false);
@@ -72,7 +79,7 @@ pub fn GameBoard() -> Element {
                         "launch atk"
                     }
                 } else {
-                    div { class: "blink-1",
+                    div { class: "{output_text_css_class}",
                         ResultAtkText { ra: server_data.read().core_game_data.game_manager.game_state.last_result_atk.clone() }
                     }
                     div {

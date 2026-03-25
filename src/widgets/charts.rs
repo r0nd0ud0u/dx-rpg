@@ -3,7 +3,6 @@ use dioxus_charts::BarChart;
 use lib_rpg::{
     character_mod::{
         attack_type::AtksInfo,
-        character::Character,
         stats_in_game::{StatsInGame, StatsInfoKind},
     },
     server::server_manager::ServerData,
@@ -46,7 +45,7 @@ pub fn ChartsAtkUsedCount(atks_info: Vec<AtksInfo>) -> Element {
                     series: vec![
                         atks_info
                             .iter()
-                            .map(|atk_info| (atk_info.nb_use as f32 / nb_atk_used_acc as f32) * 100.0)
+                            .map(|atk_info| (atk_info.nb_use as f32 / nb_atk_used_acc) * 100.0)
                             .collect(),
                     ],
                     labels: label_vector,
@@ -62,11 +61,6 @@ pub fn ChartsAtkUsedCount(atks_info: Vec<AtksInfo>) -> Element {
 
 #[component]
 pub fn TotalAtksAmount(atks_info: Vec<AtksInfo>) -> Element {
-    let label_vector: Vec<String> = atks_info
-        .iter()
-        .map(|atk_info| atk_info.atk_name.clone())
-        .collect();
-
     let total_real_heal = atks_info
         .iter()
         .map(|atk_info| {
@@ -119,7 +113,6 @@ pub fn TotalAtksAmount(atks_info: Vec<AtksInfo>) -> Element {
 pub fn TabStats() -> Element {
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
-    let local_login_name_session = use_context::<Signal<String>>();
 
     // snap
     let server_data_snap = server_data();

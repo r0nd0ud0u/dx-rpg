@@ -113,11 +113,11 @@
             "Current": 1,
             "Max": 1
         },
-        "Berseck": {
+        "Berserk": {
             "Current": 0,
             "Max": 0
         },
-        "Berseck rate": {
+        "Berserk rate": {
             "Current": 0,
             "Max": 0
         },
@@ -259,7 +259,7 @@
                 }
             ],
             "Tattoes": [{
-                    "unique_name": "Kikor-1",
+                    "unique_name": "starting tattoo",
                     "is_equipped": true
                 }
             ]
@@ -267,6 +267,11 @@
         },
         "consumables": [],
         "money": 100
-    }
+    },
+    "energies": [
+        {
+            "kind": "Mana"
+        }
+    ]
 }
 
