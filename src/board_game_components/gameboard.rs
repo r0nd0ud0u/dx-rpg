@@ -3,10 +3,12 @@ use dioxus::{
     logger::tracing,
 };
 use lib_rpg::{
-    character_mod::buffers::BufKinds, common::constants::stats_const::HP, server::{
+    character_mod::buffers::BufKinds,
+    common::constants::stats_const::HP,
+    server::{
         game_manager::ResultLaunchAttack, players_manager::GameAtkEffect,
         server_manager::ServerData,
-    }
+    },
 };
 
 use crate::{
@@ -155,7 +157,9 @@ fn AmountText(gae: GameAtkEffect) -> Element {
         colortext = "var(--secondary-color-2)";
     }
     rsx! {
-        if gae.processed_effect_param.input_effect_param.buffer.kind == BufKinds::CooldownTurnsNumber {
+        if gae.processed_effect_param.input_effect_param.buffer.kind
+            == BufKinds::CooldownTurnsNumber
+        {
             div { color: colortext,
                 "{gae.processed_effect_param.input_effect_param.buffer.kind}: {gae.processed_effect_param.input_effect_param.buffer.value}"
             }

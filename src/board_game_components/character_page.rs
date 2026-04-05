@@ -119,7 +119,7 @@ pub fn CharacterPanel(
                         current: c.stats.all_stats[HP].current,
                         name: HP.to_owned(),
                     }
-                    for (stat , energy) in energy_list.iter() {
+                    for (stat, energy) in energy_list.iter() {
                         if c.stats.all_stats[stat].max > 0 && c.has_energy_kind(&energy.1) {
                             BarComponent {
                                 max: c.stats.all_stats[stat].max,
@@ -306,7 +306,7 @@ pub fn AttackList(
     {
         rsx! {
             div { class: "attack-list",
-                for (_key , value) in c.attacks_list.iter() {
+                for (_key, value) in c.attacks_list.iter() {
                     if c.level >= value.level {
                         div { class: "attack-list-line",
                             Button {
