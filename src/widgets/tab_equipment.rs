@@ -57,14 +57,14 @@ pub fn TabEquipment(c: Character) -> Element {
             horizontal: true,
             max_width: "17em",
             TabList {
-                for (i , e) in ordered_equipments.iter().enumerate() {
+                for (i, e) in ordered_equipments.iter().enumerate() {
                     TabTrigger { value: format!("tab{}", i + 1), index: i, "{e.0}" }
                 }
             }
-            for (i , e) in ordered_equipments.iter().enumerate() {
+            for (i, e) in ordered_equipments.iter().enumerate() {
                 TabContent { value: format!("tab{}", i + 1), index: i, width: "17em",
                     div {
-                        for (_j , item) in e.1.iter().enumerate() {
+                        for (_j, item) in e.1.iter().enumerate() {
                             EquipmentTooltip {
                                 e_inventory: item.clone(),
                                 all_inventory_equipments: flatten_inventory_equipments.clone(),

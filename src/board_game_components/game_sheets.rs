@@ -181,7 +181,7 @@ fn InventorySheet(s: SheetSide) -> Element {
                         display: "flex",
                         flex_direction: "column",
                         gap: "0.75rem",
-                        for (k , v) in stats_1 {
+                        for (k, v) in stats_1 {
                             div { style: "display: flex; direction: row; gap: 0.5rem;",
                                 Label {
                                     html_for: "sheet-demo-name",
@@ -202,7 +202,7 @@ fn InventorySheet(s: SheetSide) -> Element {
                         display: "flex",
                         flex_direction: "column",
                         gap: "0.75rem",
-                        for (k , v) in stats_2 {
+                        for (k, v) in stats_2 {
                             div { style: "display: flex; direction: row; gap: 0.5rem;",
                                 Label {
                                     html_for: "sheet-demo-name",
@@ -223,7 +223,7 @@ fn InventorySheet(s: SheetSide) -> Element {
                         display: "flex",
                         flex_direction: "column",
                         gap: "0.75rem",
-                        for (k , v) in stats_3 {
+                        for (k, v) in stats_3 {
                             div { style: "display: flex; direction: row; gap: 0.5rem;",
                                 Label {
                                     html_for: "sheet-demo-name",

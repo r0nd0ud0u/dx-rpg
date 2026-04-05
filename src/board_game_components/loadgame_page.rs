@@ -56,7 +56,7 @@ pub fn LoadGame() -> Element {
                 direction: ScrollDirection::Vertical,
                 tabindex: "0",
                 div { class: "scroll-content",
-                    for (index , game_name) in games_list_split.iter().enumerate() {
+                    for (index, game_name) in games_list_split.iter().enumerate() {
                         Button {
                             variant: if active_button() as usize == index { ButtonVariant::Primary } else { ButtonVariant::Outline },
                             disabled: active_button() == index as i64,

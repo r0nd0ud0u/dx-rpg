@@ -124,7 +124,7 @@ pub fn TabStats() -> Element {
             horizontal: true,
             max_width: "40em",
             TabList {
-                for (i , c) in server_data_snap
+                for (i, c) in server_data_snap
                     .core_game_data
                     .game_manager
                     .pm
@@ -136,7 +136,7 @@ pub fn TabStats() -> Element {
                     TabTrigger { value: format!("tab{}", i + 1), index: i, "{c.id_name}" }
                 }
             }
-            for (i , c) in server_data_snap
+            for (i, c) in server_data_snap
                 .core_game_data
                 .game_manager
                 .pm
@@ -153,7 +153,7 @@ pub fn TabStats() -> Element {
                             horizontal: true,
                             max_width: "40em",
                             TabList {
-                                for (j , s) in StatsInfoKind::iter().enumerate() {
+                                for (j, s) in StatsInfoKind::iter().enumerate() {
                                     TabTrigger {
                                         value: format!("tab{}", j + 1),
                                         index: j,
@@ -161,7 +161,7 @@ pub fn TabStats() -> Element {
                                     }
                                 }
                             }
-                            for (j , s) in StatsInfoKind::iter().enumerate() {
+                            for (j, s) in StatsInfoKind::iter().enumerate() {
                                 TabContent {
                                     value: format!("tab{}", j + 1),
                                     index: j,
