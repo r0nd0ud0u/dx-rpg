@@ -3,11 +3,10 @@ use dioxus::{
     logger::tracing,
 };
 use lib_rpg::{
-    common::constants::{effect_const::EFFECT_NB_COOL_DOWN, stats_const::HP},
-    server::{
+    character_mod::buffers::BufKinds, common::constants::stats_const::HP, server::{
         game_manager::ResultLaunchAttack, players_manager::GameAtkEffect,
         server_manager::ServerData,
-    },
+    }
 };
 
 use crate::{
@@ -156,17 +155,17 @@ fn AmountText(gae: GameAtkEffect) -> Element {
         colortext = "var(--secondary-color-2)";
     }
     rsx! {
-        if gae.processed_effect_param.input_effect_param.effect_type == EFFECT_NB_COOL_DOWN {
+        if gae.processed_effect_param.input_effect_param.buffer.kind == BufKinds::CooldownTurnsNumber {
             div { color: colortext,
-                "{gae.processed_effect_param.input_effect_param.effect_type}: {gae.processed_effect_param.input_effect_param.nb_turns}"
+                "{gae.processed_effect_param.input_effect_param.buffer.kind}: {gae.processed_effect_param.input_effect_param.buffer.value}"
             }
-        } else if gae.processed_effect_param.input_effect_param.stats_name == HP {
+        } else if gae.processed_effect_param.input_effect_param.buffer.stats_name == HP {
             div { color: colortext,
-                "{gae.processed_effect_param.input_effect_param.effect_type}-{gae.processed_effect_param.input_effect_param.stats_name} {gae.effect_outcome.target_id_name}: {gae.effect_outcome.real_amount_tx}"
+                "{gae.processed_effect_param.input_effect_param.buffer.kind}-{gae.processed_effect_param.input_effect_param.buffer.stats_name} {gae.effect_outcome.target_id_name}: {gae.effect_outcome.real_amount_tx}"
             }
         } else {
             div { color: colortext,
-                "{gae.processed_effect_param.input_effect_param.effect_type}-{gae.processed_effect_param.input_effect_param.stats_name} {gae.effect_outcome.target_id_name}: {gae.effect_outcome.real_amount_tx}"
+                "{gae.processed_effect_param.input_effect_param.buffer.kind}-{gae.processed_effect_param.input_effect_param.buffer.stats_name} {gae.effect_outcome.target_id_name}: {gae.effect_outcome.real_amount_tx}"
             }
         }
     }
