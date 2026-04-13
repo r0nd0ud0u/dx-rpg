@@ -28,6 +28,6 @@ jobs:
           ./scripts/bundle_app.sh
           zip -r bundle.zip bundle 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: bundle.zip
