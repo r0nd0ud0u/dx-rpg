@@ -1712,9 +1712,9 @@ dependencies = [
 
 [[package]]
 name = "dioxus-html"
-version = "0.7.4"
+version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0715e38cc6537aef5b79d0ddc1f4d7a56c2f4debe46b127eee24d8aa5dafd2d"
+checksum = "6edc3f7b6cc88092fdf0181ee372ed0f8d0ea507c648a6d44abae341b79b1dee"
 dependencies = [
  "async-trait",
  "bytes",
