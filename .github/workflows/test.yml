@@ -40,7 +40,7 @@ jobs:
         shell: bash
         run: |
           cargo install cargo-binstall
-          cargo binstall dioxus-cli@0.7.4 --force
+          cargo binstall dioxus-cli@0.7.5 --force
       
       # https://github.com/DioxusLabs/dioxus/issues/3433
       # - name: check dioxus formatting
