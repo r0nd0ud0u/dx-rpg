@@ -20,7 +20,7 @@ use crate::{
 };
 
 #[component]
-pub fn AlertDialogComp() -> Element {
+pub fn AlertDialogQuitGame() -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let local_login_name_session = use_context::<Signal<String>>();

@@ -1,7 +1,7 @@
 {
-    "Categorie": "Tattoes",
-    "Nom": "Elara-3",
-    "Nom unique": "Elara-3",
+    "Categorie": "LeftRing",
+    "Nom": "medium left ring",
+    "Nom unique": "medium left ring",
     "Stats": {
         "Aggro": {
             "equip_percent": 0,
@@ -13,7 +13,7 @@
         },
         "Berserk": {
             "equip_percent": 0,
-            "equip_value": 0
+            "equip_value": 20
         },
         "Berserk rate": {
             "equip_percent": 0,

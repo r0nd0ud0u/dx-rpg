@@ -1,10 +1,10 @@
 {
-    "name": "Stage 2",
+    "name": "Stage 3",
     "description": "Le premier affrontement contre les forces du Mordor. Angmar10PV défend les portes obscures.",
     "boss_patterns": {
         "Angmar10PV": [0]
     },
-    "level": 2,
+    "level": 3,
     "loots": [
         {
             "name": "medium belt",
