@@ -1,7 +1,7 @@
 {
-    "Categorie": "Tattoes",
-    "Nom": "Elara-3",
-    "Nom unique": "Elara-3",
+    "Categorie": "RightWeapon",
+    "Nom": "medium right weapon",
+    "Nom unique": "medium right weapon",
     "Stats": {
         "Aggro": {
             "equip_percent": 0,
@@ -57,7 +57,7 @@
         },
         "Physical power": {
             "equip_percent": 0,
-            "equip_value": 0
+            "equip_value": 20
         },
         "Speed": {
             "equip_percent": 0,

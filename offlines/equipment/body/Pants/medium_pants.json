@@ -1,7 +1,7 @@
 {
-    "Categorie": "Tattoes",
-    "Nom": "Elara-3",
-    "Nom unique": "Elara-3",
+    "Categorie": "Pants",
+    "Nom": "medium pants",
+    "Nom unique": "medium pants",
     "Stats": {
         "Aggro": {
             "equip_percent": 0,
@@ -53,7 +53,7 @@
         },
         "Physical armor": {
             "equip_percent": 0,
-            "equip_value": 0
+            "equip_value": 20
         },
         "Physical power": {
             "equip_percent": 0,

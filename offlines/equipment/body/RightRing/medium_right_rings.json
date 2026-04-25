@@ -1,7 +1,7 @@
 {
-    "Categorie": "Tattoes",
-    "Nom": "Elara-3",
-    "Nom unique": "Elara-3",
+    "Categorie": "RightRing",
+    "Nom": "medium right ring",
+    "Nom unique": "medium right ring",
     "Stats": {
         "Aggro": {
             "equip_percent": 0,
@@ -69,7 +69,7 @@
         },
         "Vigor": {
             "equip_percent": 0,
-            "equip_value": 0
+            "equip_value": 20
         },
         "Vigor regeneration": {
             "equip_percent": 0,

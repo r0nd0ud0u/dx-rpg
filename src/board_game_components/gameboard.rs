@@ -93,7 +93,6 @@ pub fn GameBoard() -> Element {
                             .logs_end_of_round
                             .is_empty()
                         {
-                            "Starting round:\n"
                             for log in server_data
                                 .read()
                                 .core_game_data
