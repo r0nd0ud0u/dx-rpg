@@ -5,6 +5,8 @@ use crate::utils::server_file_utils;
 #[cfg(feature = "server")]
 use crate::websocket_handler::common_event::SERVER_MANAGER;
 #[cfg(feature = "server")]
+use anyhow::Result;
+#[cfg(feature = "server")]
 use async_std::task::sleep;
 use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
 use dioxus::logger::tracing;
@@ -75,6 +77,7 @@ pub enum ClientEvent {
     SaveGame(String, String), // `String`: server name, `String`: player name
     AddLog(String, Vec<LogData>), // `String`: server name, `Vec<LogData>`: log info to add (ex: ["Player1 used Fireball on Player2 for 30 damage", "Player2 is now burning and will take 5 damage for 3 turns"])
     RequestToggleEquip(String, String, String), // `String`: equipment unique name, `String`: player name, `String`: server name
+    LoadNextScenario(String),                   // `String`: server name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -180,7 +183,10 @@ pub async fn on_rcv_client_event(
                             }
                             Ok(ClientEvent::InitializeGame(server_name, player_name)) => {
                                 tracing::info!("{} is initializing a new game", server_name);
-                                init_new_game_by_player(&server_name, client_id, &player_name).await;
+                                let Ok(_) = init_new_game_by_player(&server_name, client_id, &player_name).await else {
+                                    tracing::error!("Failed to initialize game for server {}, player {}", server_name, player_name);
+                                    return;
+                                };
                             }
                             Ok(ClientEvent::AddCharacterOnServerData(server_name, player_name, character_name)) => {
                                 tracing::info!("{} is adding character {} to server data", player_name, character_name);
@@ -236,6 +242,10 @@ pub async fn on_rcv_client_event(
                             Ok(ClientEvent::RequestToggleEquip(equipment_unique_name, player_name, server_name)) => {
                                 tracing::info!("Client {} requested to toggle equip for equipment {} by player {} on server {}", client_id, equipment_unique_name, player_name, server_name);
                                 request_toggle_equip(&equipment_unique_name, &player_name, &server_name).await;
+                            }
+                            Ok(ClientEvent::LoadNextScenario(server_name)) => {
+                                tracing::info!("Client {} requested to load next scenario for server {}", client_id, server_name);
+                                let _ = process_load_next_scenario(&server_name).await;
                             }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
@@ -506,10 +516,10 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
 }
 
 #[cfg(feature = "server")]
-pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &str) {
+pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &str) -> Result<()> {
     let dm = DATA_MANAGER.lock().unwrap();
     // init a new game
-    let mut core_game_data = CoreGameData::new(&dm, server_name);
+    let mut core_game_data = CoreGameData::new(&dm, server_name)?;
     drop(dm);
     tracing::info!("New core game data created for player: {}", server_name);
     // update ongoing servers data list
@@ -535,6 +545,7 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
     // update for the clients connected to that server
     update_clients_server_data(server_name);
     update_clients_ongoing_games();
+    Ok(())
 }
 
 #[cfg(feature = "server")]
@@ -1122,11 +1133,11 @@ pub async fn save_core_game_data(
     }
 }
 
-#[server]
+#[cfg(feature = "server")]
 pub async fn get_core_game_data_by_dir(
     game_dir_path: PathBuf,
     is_replay: bool,
-) -> Result<CoreGameData, ServerFnError> {
+) -> Result<CoreGameData> {
     let core_game_data_file = if is_replay {
         game_dir_path.join(Path::new(SAVED_CORE_GAME_DATA_REPLAY))
     } else {
@@ -1135,9 +1146,25 @@ pub async fn get_core_game_data_by_dir(
     if let Ok(value) = utils::read_from_json::<_, CoreGameData>(&core_game_data_file) {
         Ok(value)
     } else {
-        Err(ServerFnError::new(format!(
+        Err(anyhow::anyhow!(
             "Failed to read game state {:?}",
             game_dir_path
-        )))
+        ))
     }
+}
+
+#[cfg(feature = "server")]
+pub async fn process_load_next_scenario(server_name: &str) -> Result<()> {
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    if let Some(server_data) = sm.servers_data.get_mut(server_name) {
+        server_data.core_game_data.load_next_scenario()?;
+    } else {
+        tracing::error!(
+            "process_load_next_scenario: No server data found for server name: {}",
+            server_name
+        );
+    }
+    drop(sm);
+    update_clients_server_data(server_name);
+    Ok(())
 }
