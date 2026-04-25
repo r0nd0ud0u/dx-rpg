@@ -24,10 +24,13 @@ jobs:
         run: |
           cargo install cargo-binstall
           cargo binstall dioxus-cli@0.7.6 --force
-          chmod +x ./scripts/bundle_app.sh
-          ./scripts/bundle_app.sh
-          zip -r bundle.zip bundle 
+          chmod +x ./scripts/bundle_app_linux.sh
+          chmod +x ./scripts/bundle_app_windows.sh
+          ./scripts/bundle_app_linux.sh
+          zip -r dx-rpg_linux.zip dx-rpg_linux
+          ./scripts/bundle_app_windows.sh
+          zip -r dx-rpg_windows.zip dx-rpg_windows
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: bundle.zip
+          files: dx-rpg_linux.zip,dx-rpg_windows.zip
