@@ -1,7 +1,7 @@
 {
-    "Categorie": "RightWeapon",
-    "Nom": "starting right weapon",
-    "Nom unique": "starting right weapon",
+    "Categorie": "LeftWeapon",
+    "Nom": "medium weapon",
+    "Nom unique": "medium weapon",
     "Stats": {
         "Aggro": {
             "equip_percent": 0,
@@ -57,7 +57,7 @@
         },
         "Physical power": {
             "equip_percent": 0,
-            "equip_value": 10
+            "equip_value": 20
         },
         "Speed": {
             "equip_percent": 0,

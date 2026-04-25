@@ -2,7 +2,7 @@ use crate::{
     common::DISCONNECTED_USER,
     components::label::Label,
     websocket_handler::{NO_CLIENT_ID, msg_from_client::send_disconnect_from_server_data},
-    widgets::alert_dialog::AlertDialogComp,
+    widgets::alert_dialog::AlertDialogQuitGame,
 };
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
@@ -45,7 +45,7 @@ pub fn Navbar() -> Element {
                 }
             }
             div { style: "display: flex; flex-direction: row; gap: 1rem;",
-                AlertDialogComp {}
+                AlertDialogQuitGame {}
                 Button {
                     variant: if snap_local_login_name_session == *DISCONNECTED_USER { ButtonVariant::Secondary } else { ButtonVariant::Destructive },
                     onclick: move |_| async move {

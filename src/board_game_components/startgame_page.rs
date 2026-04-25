@@ -43,6 +43,8 @@ pub fn RunningGamePage() -> Element {
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
 
+    let snap_server_data = server_data();
+
     rsx! {
         if server_data().core_game_data.game_manager.game_state.status == GameStatus::EndOfGame {
             h1 { "Game Over" }
@@ -80,20 +82,38 @@ pub fn RunningGamePage() -> Element {
                 }
                 QuitGameButton {}
             }
-        }
-        Separator { style: "margin: 10px 0;", horizontal: true, decorative: true }
-        div {
-            div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
-                GameSheets {}
-                {}
-                h4 { "Turn: {server_data().core_game_data.game_manager.game_state.current_turn_nb}" }
+            h3 { "Loots:" }
+            // display loots by character and their class
+            for l in snap_server_data.core_game_data.game_manager.current_scenario.loots.iter() {
+                div { style: "display: flex; flex-direction: row; gap: 10px;",
+                    h4 { "{l.format_loot()}" }
+                }
             }
+            // display level upgrades
+            h3 { "Level upgrades :" }
+            div { style: "display: flex; flex-direction: row; gap: 10px;",
+                h4 { dangerous_inner_html: "{snap_server_data.core_game_data.game_manager.end_of_scenario.to_formatted_string(true)}" }
+            }
+        } else {
             Separator {
                 style: "margin: 10px 0;",
                 horizontal: true,
                 decorative: true,
             }
-            GameBoard {}
+            div {
+                div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
+                    GameSheets {}
+                    {}
+                    h4 { "Turn: {server_data().core_game_data.game_manager.game_state.current_turn_nb}" }
+                }
+                Separator {
+                    style: "margin: 10px 0;",
+                    horizontal: true,
+                    decorative: true,
+                }
+                GameBoard {}
+            }
         }
+
     }
 }
