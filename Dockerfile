@@ -19,6 +19,8 @@ COPY Cargo.toml .
 COPY Cargo.lock .
 COPY assets assets
 COPY offlines/ offlines/
+COPY .env .env
+COPY db.sqlite db.sqlite
 COPY Dioxus.toml .
 
 # Install `dx`
@@ -33,6 +35,8 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y libssl3 pkg-config
 COPY --from=builder /app/target/dx/dx-rpg/release/web/ /usr/local/app
 COPY ./offlines/ /usr/local/app/offlines/
+COPY ./.env/ /usr/local/app/.env
+COPY ./db.sqlite/ /usr/local/app/db.sqlite
 
 # set our port and make sure to listen for all connections
 ENV PORT=8080
