@@ -37,6 +37,11 @@ jobs:
         run: ./scripts/bundle_app.sh
         shell: bash
 
+      - name: Rename bundle directory
+        run: |
+          mv bundle dx-rpg_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+        shell: bash
+
       - name: Zip bundle
         run: |
           zip -r bundle_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}.zip dx-rpg_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
