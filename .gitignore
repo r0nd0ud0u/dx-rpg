@@ -17,6 +17,6 @@ saved_data/*
 
 /offlines/games/*
 
-#db.sqlite
+db.sqlite
 
 .env
