@@ -42,16 +42,31 @@ jobs:
           mv bundle dx-rpg_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
         shell: bash
 
-      - name: Zip bundle
+      - name: Zip bundle (Linux)
+        if: runner.os == 'Linux'
         run: |
-          zip -r bundle_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}.zip dx-rpg_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+          zip -r bundle_linux.zip dx-rpg_linux
         shell: bash
 
-      - name: Upload artifact
+      - name: Zip bundle (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          Compress-Archive -Path dx-rpg_windows -DestinationPath bundle_windows.zip
+        shell: pwsh
+
+      - name: Upload artifact (Linux)
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
-          name: bundle_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}.zip
-          path: bundle_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}.zip
+          name: bundle_linux.zip
+          path: bundle_linux.zip
+
+      - name: Upload artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle_windows.zip
+          path: bundle_windows.zip
 
   release:
     name: Create GitHub Release
