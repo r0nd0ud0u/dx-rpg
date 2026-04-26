@@ -1,8 +1,7 @@
 on:
   push:
-    # Sequence of patterns matched against refs/tags
     tags:
-    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+      - 'v*'
   workflow_dispatch:
 
 name: Upload Release Asset
@@ -12,22 +11,77 @@ permissions:
 
 jobs:
   build:
-    name: Upload Release Asset
-    runs-on: ubuntu-latest
+    name: Upload Release Asset (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+
       - name: Update rust
         run: rustup update stable
-      - name: Build project # This would actually build your project, using zip for an example artifact
-        shell: bash
+
+      - name: Install dioxus-cli
         run: |
           cargo install cargo-binstall
           cargo binstall dioxus-cli@0.7.6 --force
-          chmod +x ./scripts/bundle_app.sh
-          ./scripts/bundle_app.sh
-          zip -r bundle.zip bundle 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        shell: bash
+
+      - name: Make bundle script executable (Linux only)
+        if: runner.os == 'Linux'
+        run: chmod +x ./scripts/bundle_app.sh
+
+      - name: Build project
+        run: ./scripts/bundle_app.sh
+        shell: bash
+
+      - name: Rename bundle directory
+        run: |
+          mv bundle dx-rpg_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+        shell: bash
+
+      - name: Zip bundle (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          zip -r bundle_linux.zip dx-rpg_linux
+        shell: bash
+
+      - name: Zip bundle (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          Compress-Archive -Path dx-rpg_windows -DestinationPath bundle_windows.zip
+        shell: pwsh
+
+      - name: Upload artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v7
         with:
-          files: bundle.zip
+          name: bundle_linux.zip
+          path: bundle_linux.zip
+
+      - name: Upload artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle_windows.zip
+          path: bundle_windows.zip
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: ls -R artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: artifacts/**/*.zip

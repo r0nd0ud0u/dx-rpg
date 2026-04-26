@@ -21,12 +21,16 @@ async fn db() -> Pool<Sqlite> {
     let db_url = match get_db_url().await {
         Ok(url) => url,
         Err(e) => {
-            tracing::error!("Failed to get database URL: {}", e);
-            panic!("Failed to get database URL");
+            panic!("Failed to get database URL: {}", e);
         }
     };
 
-    let pool = sqlx::sqlite::SqlitePool::connect(&db_url).await.unwrap();
+    let pool = match sqlx::sqlite::SqlitePool::connect(&db_url).await {
+        Ok(pool) => pool,
+        Err(e) => {
+            panic!("Failed to connect to database: {}", e);
+        }
+    };
 
     // Create the tables (sessions, users)
     pool.execute(r#"CREATE TABLE IF NOT EXISTS users ( "id" INTEGER PRIMARY KEY, "anonymous" BOOLEAN NOT NULL, "username" VARCHAR(256) NOT NULL, "password" VARCHAR(256), "is_connected" BOOLEAN NOT NULL)"#,)
