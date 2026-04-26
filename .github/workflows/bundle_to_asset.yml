@@ -1,8 +1,7 @@
 on:
   push:
-    # Sequence of patterns matched against refs/tags
     tags:
-    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+      - 'v*'
   workflow_dispatch:
 
 name: Upload Release Asset
@@ -12,25 +11,57 @@ permissions:
 
 jobs:
   build:
-    name: Upload Release Asset
-    runs-on: ubuntu-latest
+    name: Upload Release Asset (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
       - name: Update rust
         run: rustup update stable
-      - name: Build project # This would actually build your project, using zip for an example artifact
-        shell: bash
+
+      - name: Install dioxus-cli
         run: |
           cargo install cargo-binstall
           cargo binstall dioxus-cli@0.7.6 --force
-          chmod +x ./scripts/bundle_app_linux.sh
-          chmod +x ./scripts/bundle_app_windows.sh
-          ./scripts/bundle_app_linux.sh
-          zip -r dx-rpg_linux.zip dx-rpg_linux
-          ./scripts/bundle_app_windows.sh
-          zip -r dx-rpg_windows.zip dx-rpg_windows
+        shell: bash
+
+      - name: Make bundle script executable (Linux only)
+        if: runner.os == 'Linux'
+        run: chmod +x ./scripts/bundle_app.sh
+
+      - name: Build project
+        run: ./scripts/bundle_app.sh
+        shell: bash
+
+      - name: Zip bundle
+        run: |
+          zip -r bundle_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}.zip dx-rpg_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}.zip
+          path: bundle_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}.zip
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: ls -R artifacts
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dx-rpg_linux.zip,dx-rpg_windows.zip
+          files: artifacts/**/*.zip
