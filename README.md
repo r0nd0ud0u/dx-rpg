@@ -57,6 +57,11 @@ dx serve --platform web
 Use scripts in `scripts` dir to build and run the app.
 Use docker desktop under Windows.
 
+`docker run -p 8080:8080 ghcr.io/r0nd0ud0u/dx-rpg:latest`
+
+Update `YOUR_PORT` if necessary
+`-p 8080:8080` -> `-p {YOUR_PORT}:{DOCKER_EXPOSED_PORT}`
+
 ## Introduction
 
 ### Home page
