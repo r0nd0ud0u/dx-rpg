@@ -38,6 +38,9 @@ COPY ./offlines/ /usr/local/app/offlines/
 COPY ./.env/ /usr/local/app/.env
 COPY ./db.sqlite/ /usr/local/app/db.sqlite
 
+# Set correct permissions for db.sqlite and the app directory
+RUN chmod 666 /usr/local/app/db.sqlite
+
 # set our port and make sure to listen for all connections
 ENV PORT=8080
 ENV IP=0.0.0.0
