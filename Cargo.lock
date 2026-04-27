@@ -1537,7 +1537,7 @@ dependencies = [
 [[package]]
 name = "dioxus-attributes"
 version = "0.1.0"
-source = "git+https://github.com/DioxusLabs/components#ffbc750181ea2195e20736ae3ad0c24ad9684c41"
+source = "git+https://github.com/DioxusLabs/components#4dea69eebb70c1e172f54ee4c54f7818b74796ac"
 dependencies = [
  "dioxus-rsx",
  "proc-macro2",
@@ -1963,7 +1963,7 @@ dependencies = [
 [[package]]
 name = "dioxus-primitives"
 version = "0.0.1"
-source = "git+https://github.com/DioxusLabs/components#ffbc750181ea2195e20736ae3ad0c24ad9684c41"
+source = "git+https://github.com/DioxusLabs/components#4dea69eebb70c1e172f54ee4c54f7818b74796ac"
 dependencies = [
  "dioxus",
  "dioxus-attributes",
@@ -7897,7 +7897,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
