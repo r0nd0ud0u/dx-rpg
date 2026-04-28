@@ -4,7 +4,6 @@ use dioxus::{
 };
 
 use crate::{
-    board_game_components::common_comp::ButtonLink,
     common::Route,
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
@@ -19,29 +18,40 @@ pub fn CreateServer() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let local_login_name_session = use_context::<Signal<String>>();
     rsx! {
-        div { style: "display: flex;flex-direction: column; align-items: center; gap: 1rem;",
-            h1 { "Create a server" }
-        }
         div { class: "home-container",
-            ButtonLink {
-                target: Route::LobbyPage {}.into(),
-                name: "New Game",
-                onclick: move |_| {
-                    let user_name = local_login_name_session();
-                    async move {
-                        send_initialize_game(&user_name, socket).await;
+            h1 { class: "rpg-title", "🏰 Server" }
+            p { class: "rpg-subtitle", "Choose your adventure" }
+            div { class: "action-grid",
+                div { class: "action-card",
+                    span { class: "action-icon", "🆕" }
+                    Link {
+                        class: "header-text",
+                        to: Route::LobbyPage {},
+                        onclick: move |_| {
+                            let user_name = local_login_name_session();
+                            async move {
+                                send_initialize_game(&user_name, socket).await;
+                            }
+                        },
+                        "New Game"
                     }
-                },
-            }
-            ButtonLink {
-                target: Route::LoadGame {}.into(),
-                name: "Load Game",
-                onclick: move |_| {
-                    let user_name = local_login_name_session();
-                    async move {
-                        request_update_saved_game_list_display(socket, &user_name).await;
+                    p { class: "action-desc", "Start a fresh campaign" }
+                }
+                div { class: "action-card",
+                    span { class: "action-icon", "💾" }
+                    Link {
+                        class: "header-text",
+                        to: Route::LoadGame {},
+                        onclick: move |_| {
+                            let user_name = local_login_name_session();
+                            async move {
+                                request_update_saved_game_list_display(socket, &user_name).await;
+                            }
+                        },
+                        "Load Game"
                     }
-                },
+                    p { class: "action-desc", "Continue a saved adventure" }
+                }
             }
         }
     }

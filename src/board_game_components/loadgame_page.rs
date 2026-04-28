@@ -1,16 +1,12 @@
 use dioxus::fullstack::CborEncoding;
 use dioxus::prelude::*;
 use dioxus::{fullstack::UseWebsocket, logger::tracing};
-use dioxus_primitives::scroll_area::ScrollDirection;
 
 use crate::utils::server_file_utils;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::{
     common::Route,
-    components::{
-        button::{Button, ButtonVariant},
-        scroll_area::ScrollArea,
-    },
+    components::button::{Button, ButtonVariant},
 };
 
 #[component]
@@ -44,74 +40,82 @@ pub fn LoadGame() -> Element {
         })
         .collect::<Vec<String>>();
 
+    let save_count = games_list_split.len();
+    let plural = if save_count != 1 { "s" } else { "" };
+
     rsx! {
         div { class: "home-container",
-            h4 { "Load game (games saved: {games_list_split.len()})" }
-            ScrollArea {
-                width: "17em",
-                height: "30em",
-                border: "1px solid var(--primary-color-6)",
-                border_radius: "0.5em",
-                padding: "0 1em 1em 1em",
-                direction: ScrollDirection::Vertical,
-                tabindex: "0",
-                div { class: "scroll-content",
-                    for (index, game_name) in games_list_split.iter().enumerate() {
-                        Button {
-                            variant: if active_button() as usize == index { ButtonVariant::Primary } else { ButtonVariant::Outline },
-                            disabled: active_button() == index as i64,
-                            onclick: move |_| async move { active_button.set(index as i64) },
-                            "{game_name}"
+            h2 { class: "rpg-title", "💾 Load Game" }
+            p { class: "rpg-subtitle", "{save_count} saved adventure{plural}" }
 
+            div { class: "load-game-card",
+                if games_list_split.is_empty() {
+                    div { class: "load-empty",
+                        span { "📂" }
+                        p { "No saved games found" }
+                    }
+                } else {
+                    div { class: "game-list",
+                        for (index, game_name) in games_list_split.iter().enumerate() {
+                            button {
+                                class: if active_button() as usize == index { "game-item selected" } else { "game-item" },
+                                onclick: move |_| async move { active_button.set(index as i64) },
+                                span { class: "game-item-icon", "🎮" }
+                                span { class: "game-item-name", "{game_name}" }
+                                if active_button() as usize == index {
+                                    span { class: "game-item-check", "✓" }
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            Button {
-                variant: ButtonVariant::GreenType,
-                disabled: active_button() == -1,
-                onclick: move |_| {
-                    let cur_game = games_list().get(active_button() as usize).unwrap().to_owned();
-                    async move {
-                        let _ = socket
-                            .clone()
-                            .send(
-                                ClientEvent::LoadGame(cur_game.clone(), local_login_name_session()),
-                            )
-                            .await;
-                        navigator.push(Route::LobbyPage {});
-                    }
-                },
-                "Valid"
-            }
-
-            Button {
-                variant: ButtonVariant::Destructive,
-                disabled: active_button() == -1,
-                onclick: move |_| {
-                    let cur_game = games_list().get(active_button() as usize).unwrap().to_owned();
-                    async move {
-                        match server_file_utils::delete_game(cur_game.clone()).await {
-                            Ok(_) => {
-                                let _ = socket
-                                    .clone()
-                                    .send(
-                                        ClientEvent::RequestSavedGameList(
-                                            local_login_name_session().clone(),
-                                        ),
-                                    )
-                                    .await;
-                            }
-                            Err(e) => {
-                                tracing::error!("Error deleting game: {}", e);
-                                return;
-                            }
-                        };
-                        active_button.set(-1);
-                    }
-                },
-                "Delete Game"
+            div { class: "load-actions",
+                Button {
+                    variant: ButtonVariant::GreenType,
+                    disabled: active_button() == -1,
+                    onclick: move |_| {
+                        let cur_game = games_list().get(active_button() as usize).unwrap().to_owned();
+                        async move {
+                            let _ = socket
+                                .clone()
+                                .send(
+                                    ClientEvent::LoadGame(cur_game.clone(), local_login_name_session()),
+                                )
+                                .await;
+                            navigator.push(Route::LobbyPage {});
+                        }
+                    },
+                    "▶ Load Game"
+                }
+                Button {
+                    variant: ButtonVariant::Destructive,
+                    disabled: active_button() == -1,
+                    onclick: move |_| {
+                        let cur_game = games_list().get(active_button() as usize).unwrap().to_owned();
+                        async move {
+                            match server_file_utils::delete_game(cur_game.clone()).await {
+                                Ok(_) => {
+                                    let _ = socket
+                                        .clone()
+                                        .send(
+                                            ClientEvent::RequestSavedGameList(
+                                                local_login_name_session().clone(),
+                                            ),
+                                        )
+                                        .await;
+                                }
+                                Err(e) => {
+                                    tracing::error!("Error deleting game: {}", e);
+                                    return;
+                                }
+                            };
+                            active_button.set(-1);
+                        }
+                    },
+                    "🗑 Delete"
+                }
             }
         }
     }

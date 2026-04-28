@@ -21,38 +21,40 @@ pub fn AdminPage() -> Element {
 
     rsx! {
         div { class: "home-container",
-            h1 { "Welcome to the RPG game!" }
-            div {
-                display: "grid",
-                flex: "1 1 0%",
-                grid_auto_rows: "min-content",
-                gap: "1.5rem",
-                padding: "0 1rem",
-                div { display: "grid", gap: "0.75rem",
-                    Label { html_for: "sheet-demo-name", "Delete user" }
-                    Input {
-                        placeholder: "Delete user",
-                        r#type: "text",
-                        value: "{delete_name}",
-                        oninput: set_delete,
-                    }
-                    Button {
-                        variant: ButtonVariant::Secondary,
-                        onclick: move |_| async move {
-                            match delete_user(delete_name(), "".to_owned(), false).await {
-                                Ok(()) => {
-                                    delete_answer.set("User deleted.".to_owned());
-                                }
-                                Err(e) => {
-                                    tracing::info!("{}", e.to_owned());
-                                    delete_answer.set("This name cannot be deleted.".to_owned());
-                                }
+            h2 { class: "rpg-title", "🛡️ Admin Panel" }
+            div { class: "admin-card",
+                p { class: "admin-section-title", "🗑️ Delete User" }
+                Label {
+                    html_for: "admin-delete",
+                    color: "var(--rpg-text-muted)",
+                    font_size: "0.82rem",
+                    "Username to delete"
+                }
+                Input {
+                    placeholder: "Enter username…",
+                    r#type: "text",
+                    value: "{delete_name}",
+                    oninput: set_delete,
+                }
+                Button {
+                    variant: ButtonVariant::Destructive,
+                    onclick: move |_| async move {
+                        match delete_user(delete_name(), "".to_owned(), false).await {
+                            Ok(()) => {
+                                delete_answer.set("✅ User deleted.".to_owned());
                             }
-                        },
-                        "Delete user"
+                            Err(e) => {
+                                tracing::info!("{}", e.to_owned());
+                                delete_answer.set("❌ This name cannot be deleted.".to_owned());
+                            }
+                        }
+                    },
+                    "Delete User"
+                }
+                if !delete_answer().is_empty() {
+                    p { class: if delete_answer().starts_with('✅') { "admin-answer" } else { "admin-answer-error" },
+                        "{delete_answer}"
                     }
-                    Label { html_for: "sheet-demo-name", "{delete_answer}" }
-
                 }
             }
         }
