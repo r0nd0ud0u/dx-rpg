@@ -22,7 +22,7 @@ pub fn QuitGameButton() -> Element {
 
     rsx! {
         Button {
-            variant: ButtonVariant::Primary,
+            variant: ButtonVariant::Destructive,
             onclick: move |_| {
                 async move {
                     send_disconnect_from_server_data(socket, &local_login_name_session()).await;
@@ -30,7 +30,7 @@ pub fn QuitGameButton() -> Element {
                     navigator.push(Route::Home {});
                 }
             },
-            "Quit"
+            "🚪 Quit"
         }
     }
 }
@@ -47,52 +47,55 @@ pub fn RunningGamePage() -> Element {
 
     rsx! {
         if server_data().core_game_data.game_manager.game_state.status == GameStatus::EndOfGame {
-            h1 { "Game Over" }
-            h2 { "Remaining players: {server_data().players_data.players_info.len()}" }
-
-            QuitGameButton {}
-
-            if server_data().players_data.owner_player_name == local_login_name_session() {
-                Button {
-                    variant: ButtonVariant::Primary,
-                    onclick: move |_| async move {
-                        let _ = socket.send(ClientEvent::ReplayGame(SERVER_NAME())).await;
-                    },
-                    "Replay game"
+            div { class: "gameover-page",
+                h1 { class: "gameover-title", "💀 Game Over" }
+                p { class: "gameover-sub",
+                    "Remaining players: {server_data().players_data.players_info.len()}"
+                }
+                div { class: "scenario-actions",
+                    QuitGameButton {}
+                    if server_data().players_data.owner_player_name == local_login_name_session() {
+                        Button {
+                            variant: ButtonVariant::GreenType,
+                            onclick: move |_| async move {
+                                let _ = socket.send(ClientEvent::ReplayGame(SERVER_NAME())).await;
+                            },
+                            "🔄 Replay Game"
+                        }
+                    }
                 }
             }
         }
         if server_data().core_game_data.game_manager.game_state.status
             == GameStatus::EndOfScenario
         {
-
-            div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
-
-                Button {
-                    variant: ButtonVariant::Primary,
-                    onclick: move |_| async move {
-                        let _ = socket.send(ClientEvent::LoadNextScenario(SERVER_NAME())).await;
-                    },
-                    "Load next scenario"
+            div { class: "scenario-end-page",
+                h2 { class: "scenario-end-title", "🏆 Scenario Complete!" }
+                div { class: "scenario-actions",
+                    Button {
+                        variant: ButtonVariant::GreenType,
+                        onclick: move |_| async move {
+                            let _ = socket.send(ClientEvent::LoadNextScenario(SERVER_NAME())).await;
+                        },
+                        "⚡ Load Next Scenario"
+                    }
+                    QuitGameButton {}
                 }
-                Separator {
-                    style: "margin: 10px 0;",
-                    horizontal: false,
-                    decorative: true,
+                div { class: "scenario-section",
+                    h3 { class: "scenario-section-title", "🎁 Loots" }
+                    div { class: "loot-grid",
+                        for l in snap_server_data.core_game_data.game_manager.current_scenario.loots.iter() {
+                            div { class: "loot-item", "{l.format_loot()}" }
+                        }
+                    }
                 }
-                QuitGameButton {}
-            }
-            h3 { "Loots:" }
-            // display loots by character and their class
-            for l in snap_server_data.core_game_data.game_manager.current_scenario.loots.iter() {
-                div { style: "display: flex; flex-direction: row; gap: 10px;",
-                    h4 { "{l.format_loot()}" }
+                div { class: "scenario-section",
+                    h3 { class: "scenario-section-title", "⬆️ Level Upgrades" }
+                    div {
+                        class: "level-up-box",
+                        dangerous_inner_html: "{snap_server_data.core_game_data.game_manager.end_of_scenario.to_formatted_string(true)}",
+                    }
                 }
-            }
-            // display level upgrades
-            h3 { "Level upgrades :" }
-            div { style: "display: flex; flex-direction: row; gap: 10px;",
-                h4 { dangerous_inner_html: "{snap_server_data.core_game_data.game_manager.end_of_scenario.to_formatted_string(true)}" }
             }
         } else {
             Separator {
@@ -101,10 +104,11 @@ pub fn RunningGamePage() -> Element {
                 decorative: true,
             }
             div {
-                div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
+                div { class: "game-toolbar",
                     GameSheets {}
-                    {}
-                    h4 { "Turn: {server_data().core_game_data.game_manager.game_state.current_turn_nb}" }
+                    div { class: "turn-badge",
+                        "⚔️ Turn {server_data().core_game_data.game_manager.game_state.current_turn_nb}"
+                    }
                 }
                 Separator {
                     style: "margin: 10px 0;",

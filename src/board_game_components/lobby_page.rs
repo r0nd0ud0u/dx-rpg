@@ -47,19 +47,25 @@ pub fn LobbyPage() -> Element {
         if server_data_snap.core_game_data.game_phase == GamePhase::InitGame
             || server_data_snap.core_game_data.game_phase == GamePhase::Loading
         {
-            div { style: "display: flex;flex-direction: column; align-items: center; gap: 10px;",
-                if server_data_snap.core_game_data.game_phase == GamePhase::InitGame {
-                    h1 { "Init game" }
-                } else if server_data_snap.core_game_data.game_phase == GamePhase::Loading {
-                    h1 { "Loading" }
-                } else {
-                    h1 { "Lobby page" }
+            div { class: "lobby-page",
+                h2 { class: "rpg-title",
+                    if server_data_snap.core_game_data.game_phase == GamePhase::InitGame {
+                        "⚔️ Lobby"
+                    } else {
+                        "⏳ Loading…"
+                    }
                 }
-                // show the name of the server
-                h2 { "Server name: {SERVER_NAME()}" }
-                // show the number of players in the server
-                h3 {
-                    "Players: {server_data_snap.players_data.players_info.len()} / {server_data_snap.core_game_data.players_nb}"
+                div { class: "lobby-info-bar",
+                    div { class: "lobby-info-item",
+                        span { class: "lobby-info-label", "Server" }
+                        span { class: "lobby-info-value", "{SERVER_NAME()}" }
+                    }
+                    div { class: "lobby-info-item",
+                        span { class: "lobby-info-label", "Players" }
+                        span { class: "lobby-info-value",
+                            "{server_data_snap.players_data.players_info.len()} / {server_data_snap.core_game_data.players_nb}"
+                        }
+                    }
                 }
                 // if the current client is the host, show start game button
                 if SERVER_NAME() == local_login_name_session() && all_players_have_character_name
@@ -73,12 +79,9 @@ pub fn LobbyPage() -> Element {
                         onclick: move |_| async move {
                             send_start_game(socket).await;
                         },
-                        "Start Game"
+                        "▶ Start Game"
                     }
                 }
-            }
-            div { style: "display: flex;flex-direction: column; align-items: center; gap: 100px;",
-                // show character select page
                 CharacterSelect {}
             }
         } else if server_data_snap.core_game_data.game_phase == GamePhase::Running {

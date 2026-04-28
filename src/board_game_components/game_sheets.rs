@@ -142,118 +142,65 @@ fn InventorySheet(s: SheetSide) -> Element {
         None => Character::default(),
     };
 
-    // BTreeMap
+    // BTreeMap — all stats sorted
     let ordered_stats: BTreeMap<String, Attribute> =
         character.stats.all_stats.clone().into_iter().collect();
-    let segment_len = ordered_stats.len() / 3 + 1;
-    let stats_1 = ordered_stats
-        .iter()
-        .take(segment_len)
-        .map(|(k, v)| (k, v.clone()));
-    let stats_2 = ordered_stats
-        .iter()
-        .skip(segment_len)
-        .take(segment_len)
-        .map(|(k, v)| (k, v.clone()));
-    let stats_3 = ordered_stats
-        .iter()
-        .skip(2 * segment_len)
-        .take(segment_len)
-        .map(|(k, v)| (k, v.clone()));
+
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "Inventory" }
-                SheetDescription { "Update your equipment here." }
+                SheetTitle { "📦 Inventory — {character.db_full_name}" }
+                SheetDescription { "Level {character.level} · Stats & Equipment" }
             }
 
             div {
-                display: "grid",
-                grid_auto_rows: "min-content",
-                gap: "1.5rem",
+                display: "flex",
+                flex_direction: "column",
+                gap: "1rem",
                 padding: "0 1rem",
 
+                // Stats grid — 2 columns
                 div {
                     display: "grid",
-                    grid_template_columns: "max-content max-content max-content max-content max-content",
-                    column_gap: "80px",
-                    div {
-                        display: "flex",
-                        flex_direction: "column",
-                        gap: "0.75rem",
-                        for (k, v) in stats_1 {
-                            div { style: "display: flex; direction: row; gap: 0.5rem;",
-                                Label {
-                                    html_for: "sheet-demo-name",
-                                    width: "150px",
-                                    "{k}:"
-                                }
-                                Label { html_for: "sheet-demo-name", "{v.max}" }
+                    grid_template_columns: "1fr 1fr",
+                    gap: "0.25rem 1.5rem",
+                    for (k, v) in ordered_stats.iter() {
+                        div {
+                            display: "flex",
+                            justify_content: "space-between",
+                            align_items: "center",
+                            padding: "3px 0",
+                            border_bottom: "1px solid var(--rpg-border)",
+                            Label {
+                                html_for: "stat",
+                                font_size: "0.78rem",
+                                color: "var(--rpg-text-muted)",
+                                "{k}"
                             }
-                            Separator {
-                                style: "margin: 5px 0;",
-                                horizontal: true,
-                                decorative: true,
-                            }
-                        }
-                    }
-                    Separator { horizontal: false, decorative: true }
-                    div {
-                        display: "flex",
-                        flex_direction: "column",
-                        gap: "0.75rem",
-                        for (k, v) in stats_2 {
-                            div { style: "display: flex; direction: row; gap: 0.5rem;",
-                                Label {
-                                    html_for: "sheet-demo-name",
-                                    width: "150px",
-                                    "{k}:"
-                                }
-                                Label { html_for: "sheet-demo-name", "{v.max}" }
-                            }
-                            Separator {
-                                style: "margin: 5px 0;",
-                                horizontal: true,
-                                decorative: true,
-                            }
-                        }
-                    }
-                    Separator { horizontal: false, decorative: true }
-                    div {
-                        display: "flex",
-                        flex_direction: "column",
-                        gap: "0.75rem",
-                        for (k, v) in stats_3 {
-                            div { style: "display: flex; direction: row; gap: 0.5rem;",
-                                Label {
-                                    html_for: "sheet-demo-name",
-                                    width: "150px",
-                                    "{k}:"
-                                }
-                                Label { html_for: "sheet-demo-name", "{v.max}" }
-                            }
-                            Separator {
-                                style: "margin: 5px 0;",
-                                horizontal: true,
-                                decorative: true,
+                            Label {
+                                html_for: "stat-val",
+                                font_size: "0.78rem",
+                                font_weight: "600",
+                                "{v.current}/{v.max}"
                             }
                         }
                     }
                 }
 
+                Separator { horizontal: true, decorative: true }
+
+                // Equipment tabs
                 TabEquipment { c: character.clone() }
             }
 
             SheetFooter {
-                Button { "Save changes" }
                 SheetClose {
                     r#as: |attributes| rsx! {
-                        Button { variant: ButtonVariant::Outline, attributes, "Cancel" }
+                        Button { variant: ButtonVariant::Outline, attributes, "Close" }
                     },
                 }
             }
         }
-
     }
 }
 
@@ -262,102 +209,170 @@ fn GameStatsSheet(s: SheetSide) -> Element {
     // context
     let server_data = use_context::<Signal<ServerData>>();
 
-    let current_round = format!(
-        "Current round: {}/{}",
-        server_data()
-            .core_game_data
-            .game_manager
-            .game_state
-            .current_round,
-        server_data()
-            .core_game_data
-            .game_manager
-            .game_state
-            .order_to_play
-            .len()
-    );
-    let current_turn_nb = format!(
-        "Current turn: {}",
-        server_data()
-            .core_game_data
-            .game_manager
-            .game_state
-            .current_turn_nb
-    );
+    let snap = server_data();
+    let game_state = &snap.core_game_data.game_manager.game_state;
+    let current_player = snap
+        .core_game_data
+        .game_manager
+        .pm
+        .current_player
+        .id_name
+        .clone();
+    let current_round = game_state.current_round;
+    let total_in_round = game_state.order_to_play.len();
+    let current_turn = game_state.current_turn_nb;
 
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "Game Stats" }
-                SheetDescription { "Assess the evolution of the game here." }
+                SheetTitle { "📊 Game Stats" }
+                SheetDescription { "Evolution of the current game." }
             }
 
             div {
-                display: "grid",
-                flex: "1 1 0%",
-                grid_auto_rows: "min-content",
-                gap: "1.5rem",
+                display: "flex",
+                flex_direction: "column",
+                gap: "1rem",
                 padding: "0 1rem",
-                width: "100%",
-                div { display: "grid", gap: "0.75rem",
-                    Separator {
-                        style: "margin: 5px 0;",
-                        width: "80%",
-                        horizontal: true,
-                        decorative: true,
+
+                // Turn / Round info block
+                div {
+                    display: "grid",
+                    grid_template_columns: "1fr 1fr",
+                    gap: "0.5rem",
+                    // Turn
+                    div { style: "background:var(--rpg-bg-card); border:1px solid var(--rpg-border-light); border-radius:8px; padding:8px 12px; text-align:center;",
+                        Label {
+                            html_for: "stat",
+                            font_size: "0.7rem",
+                            color: "var(--rpg-text-muted)",
+                            "TURN"
+                        }
+                        div { style: "font-size:1.4rem; font-weight:700; color:var(--rpg-gold);",
+                            "{current_turn}"
+                        }
                     }
-                    Label { html_for: "sheet-demo-name", "{current_turn_nb}" }
-                    Separator {
-                        style: "margin: 5px 0;",
-                        width: "80%",
-                        horizontal: true,
-                        decorative: true,
+                    // Round
+                    div { style: "background:var(--rpg-bg-card); border:1px solid var(--rpg-border-light); border-radius:8px; padding:8px 12px; text-align:center;",
+                        Label {
+                            html_for: "stat",
+                            font_size: "0.7rem",
+                            color: "var(--rpg-text-muted)",
+                            "ROUND"
+                        }
+                        div { style: "font-size:1.4rem; font-weight:700; color:var(--rpg-gold);",
+                            "{current_round}/{total_in_round}"
+                        }
                     }
-                    Label { html_for: "sheet-demo-name", "{current_round}" }
-                    Separator {
-                        style: "margin: 5px 0;",
-                        width: "80%",
-                        horizontal: true,
-                        decorative: true,
-                    }
-                    TabStats {}
                 }
+
+                // Current player
+                div { style: "background:var(--rpg-bg-card); border:1px solid var(--rpg-teal); border-radius:8px; padding:8px 12px;",
+                    Label {
+                        html_for: "stat",
+                        font_size: "0.7rem",
+                        color: "var(--rpg-text-muted)",
+                        "⚔️ ACTIVE PLAYER"
+                    }
+                    div { style: "font-size:0.95rem; font-weight:600; color:var(--rpg-teal);",
+                        "{current_player}"
+                    }
+                }
+
+                Separator { horizontal: true, decorative: true }
+
+                // Stats charts
+                TabStats {}
             }
 
             SheetFooter {
                 SheetClose {
                     r#as: |attributes| rsx! {
-                        Button { variant: ButtonVariant::Outline, attributes, "Cancel" }
+                        Button { variant: ButtonVariant::Outline, attributes, "Close" }
                     },
                 }
             }
         }
-
     }
 }
 
 #[component]
 fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>, is_saved: Signal<bool>) -> Element {
+    let _open_wnd = open_wnd; // kept for API compatibility
+    let server_data = use_context::<Signal<ServerData>>();
+    let server_name = crate::common::SERVER_NAME();
+    let snap = server_data();
+    let current_turn = snap.core_game_data.game_manager.game_state.current_turn_nb;
+    let current_player = snap
+        .core_game_data
+        .game_manager
+        .pm
+        .current_player
+        .id_name
+        .clone();
+    let players_count = snap.players_data.players_info.len();
+
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "Menu" }
-                SheetDescription { "Modify the parameters or save your game here." }
+                SheetTitle { "☰ Menu" }
+                SheetDescription { "Save your game or return to the adventure." }
             }
 
             div {
-                display: "grid",
-                flex: "1 1 0%",
-                grid_auto_rows: "min-content",
-                gap: "1.5rem",
+                display: "flex",
+                flex_direction: "column",
+                gap: "1rem",
                 padding: "0 1rem",
-                div { display: "grid", gap: "0.75rem",
-                    Label { html_for: "sheet-demo-name",
-                        if is_saved() {
-                            "Saved ✅"
-                        } else {
-                            ""
+
+                // Server info
+                div { style: "background:var(--rpg-bg-card); border:1px solid var(--rpg-border-light); border-radius:8px; padding:10px 14px; display:grid; grid-template-columns:1fr 1fr; gap:8px;",
+                    div {
+                        Label {
+                            html_for: "menu-srv",
+                            font_size: "0.7rem",
+                            color: "var(--rpg-text-muted)",
+                            "SERVER"
                         }
+                        div { style: "font-size:0.9rem; font-weight:600; color:var(--rpg-gold);",
+                            "{server_name}"
+                        }
+                    }
+                    div {
+                        Label {
+                            html_for: "menu-turn",
+                            font_size: "0.7rem",
+                            color: "var(--rpg-text-muted)",
+                            "TURN"
+                        }
+                        div { style: "font-size:0.9rem; font-weight:600;", "{current_turn}" }
+                    }
+                    div {
+                        Label {
+                            html_for: "menu-player",
+                            font_size: "0.7rem",
+                            color: "var(--rpg-text-muted)",
+                            "ACTIVE PLAYER"
+                        }
+                        div { style: "font-size:0.85rem; font-weight:500; color:var(--rpg-teal);",
+                            "{current_player}"
+                        }
+                    }
+                    div {
+                        Label {
+                            html_for: "menu-players",
+                            font_size: "0.7rem",
+                            color: "var(--rpg-text-muted)",
+                            "PLAYERS"
+                        }
+                        div { style: "font-size:0.85rem; font-weight:500;", "{players_count}" }
+                    }
+                }
+
+                // Save status indicator
+                if is_saved() {
+                    div { style: "background:#14532d; border:1px solid #22c55e; border-radius:8px; padding:8px 14px; display:flex; align-items:center; gap:8px;",
+                        div { style: "font-size:0.9rem; color:#86efac;", "✅ Game saved successfully" }
                     }
                 }
             }
@@ -372,7 +387,7 @@ fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>, is_saved: Signal<bool>) -> El
                                 is_saved.set(false);
                             },
                             attributes,
-                            "Cancel"
+                            "Close"
                         }
                     },
                 }
@@ -395,33 +410,38 @@ fn LogsSheet(s: SheetSide) -> Element {
             }
 
             div {
-                display: "grid",
-                flex: "1 1 0%",
-                grid_auto_rows: "min-content",
-                gap: "1.5rem",
+                display: "flex",
+                flex_direction: "column",
+                gap: "0.5rem",
                 padding: "0 1rem",
+                flex: "1",
                 ScrollArea {
                     width: "100%",
-                    height: "30em",
-                    border: "1px solid var(--primary-color-6)",
-                    border_radius: "0.5em",
-                    padding: "0 1em 1em 1em",
+                    height: "calc(100% - 2rem)",
+                    border: "1px solid var(--rpg-border-light)",
+                    border_radius: "8px",
+                    padding: "0.5em 1em",
                     direction: ScrollDirection::Vertical,
                     tabindex: "0",
                     div { class: "scroll-content",
                         for log in server_data().core_game_data.game_manager.logs.iter() {
-                            Label { color: "{log.color}", html_for: "sheet-log", "{log.message}" }
+                            div { style: "padding: 2px 0; border-bottom: 1px solid var(--rpg-border);",
+                                Label {
+                                    color: "{log.color}",
+                                    html_for: "sheet-log",
+                                    font_size: "0.82rem",
+                                    "{log.message}"
+                                }
+                            }
                         }
                     }
                 }
-
             }
 
             SheetFooter {
-                Button { "Save changes" }
                 SheetClose {
                     r#as: |attributes| rsx! {
-                        Button { variant: ButtonVariant::Outline, attributes, "Cancel" }
+                        Button { variant: ButtonVariant::Outline, attributes, "Close" }
                     },
                 }
             }

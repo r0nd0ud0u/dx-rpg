@@ -5,7 +5,7 @@ use dioxus::{
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
-    board_game_components::{common_comp::ButtonLink, login_page::LoginPage},
+    board_game_components::login_page::LoginPage,
     common::{DISCONNECTED_USER, Route},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
@@ -28,23 +28,36 @@ pub fn Home() -> Element {
         rsx! {
             div { class: "home-container",
                 div { class: "rotate-scale-up",
-                    h1 { "Welcome to the RPG game!" }
+                    h1 { class: "rpg-title", "⚔️ RPG Adventure" }
                 }
-                ButtonLink {
-                    target: Route::CreateServer {}.into(),
-                    name: "Create Server".to_string(),
-                    onclick: move |_| {
-                        server_data().write().core_game_data.game_phase = GamePhase::Default;
-                    },
-                }
-                ButtonLink {
-                    target: Route::JoinOngoingGame {}.into(),
-                    name: "Join game".to_string(),
-                    onclick: move |_| {
-                        async move {
-                            let _ = socket.send(ClientEvent::RequestOnGoingGamesList).await;
+                p { class: "rpg-subtitle", "Welcome, {user_name}!" }
+                div { class: "action-grid",
+                    div { class: "action-card",
+                        span { class: "action-icon", "🏰" }
+                        Link {
+                            class: "header-text",
+                            to: Route::CreateServer {},
+                            onclick: move |_| {
+                                server_data().write().core_game_data.game_phase = GamePhase::Default;
+                            },
+                            "Create Server"
                         }
-                    },
+                        p { class: "action-desc", "Start a new adventure as host" }
+                    }
+                    div { class: "action-card",
+                        span { class: "action-icon", "🗺️" }
+                        Link {
+                            class: "header-text",
+                            to: Route::JoinOngoingGame {},
+                            onclick: move |_| {
+                                async move {
+                                    let _ = socket.send(ClientEvent::RequestOnGoingGamesList).await;
+                                }
+                            },
+                            "Join Game"
+                        }
+                        p { class: "action-desc", "Join an ongoing adventure" }
+                    }
                 }
             }
         }

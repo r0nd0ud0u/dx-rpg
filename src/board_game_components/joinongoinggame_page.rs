@@ -24,12 +24,17 @@ pub fn JoinOngoingGame() -> Element {
 
     rsx! {
         div { class: "ongoing-games-container",
-            h4 { "Ongoing Games" }
-            for game in snap_ongoing_games.iter() {
-                GamePanel {
-                    server_name: game.server_name.clone(),
-                    player_name: local_login_name_session().clone(),
-
+            h2 { class: "rpg-title", "🗺️ Ongoing Adventures" }
+            if snap_ongoing_games.is_empty() {
+                p { class: "rpg-subtitle", "No games running yet. Create one!" }
+            } else {
+                div { class: "games-grid",
+                    for game in snap_ongoing_games.iter() {
+                        GamePanel {
+                            server_name: game.server_name.clone(),
+                            player_name: local_login_name_session().clone(),
+                        }
+                    }
                 }
             }
         }
