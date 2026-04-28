@@ -3,7 +3,6 @@ use dioxus::prelude::*;
 use dioxus::{fullstack::UseWebsocket, logger::tracing};
 
 use crate::auth_manager::server_fn::get_user_id;
-use crate::components::label::Label;
 use crate::websocket_handler::NO_CLIENT_ID;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::{
@@ -38,37 +37,31 @@ pub fn LoginPage() -> Element {
 
     rsx! {
         div { class: "home-container",
-            h1 { "Welcome to the RPG game!" }
-            div {
-                display: "grid",
-                flex: "1 1 0%",
-                grid_auto_rows: "min-content",
-                gap: "1.5rem",
-                padding: "0 1rem",
-                div { display: "grid", gap: "0.75rem",
-                    Label { html_for: "sheet-demo-name", "Sign in" }
+            div { class: "rotate-scale-up",
+                h1 { class: "rpg-title", "⚔️ RPG Adventure" }
+            }
+            div { class: "auth-grid",
+                // --- Sign in card ---
+                div { class: "rpg-card auth-card",
+                    p { class: "auth-section-title", "Sign In" }
                     Input {
-                        placeholder: "Type your username",
+                        placeholder: "Your username",
                         r#type: "text",
                         value: "{username}",
                         oninput: set_username,
                     }
                     Button {
-                        variant: ButtonVariant::Secondary,
+                        variant: ButtonVariant::Primary,
                         onclick: move |_| async move {
                             tracing::info!("Attempting to log in with username: {}", username());
                             match login(username(), "".to_owned(), false).await {
                                 Ok(()) => {
-                                    logon_answer.set(format!("{} is logged", username()));
-                                    // set local storage for login
+                                    logon_answer.set(format!("{} logged in", username()));
                                     match get_user_id().await {
                                         Ok(sql_id) => {
-                                            // set local storage
                                             *local_login_id_session.write() = sql_id;
                                             *local_login_name_session.write() = username();
-                                            // notify server via websocket
                                             let _ = socket
-                                                // change page
                                                 .clone()
                                                 .send(ClientEvent::LoginAllSessions(username(), sql_id))
                                                 .await;
@@ -87,12 +80,17 @@ pub fn LoginPage() -> Element {
                                 }
                             }
                         },
-                        "Connexion"
+                        "Sign In →"
                     }
-                    Label { html_for: "sheet-demo-name", "{logon_answer}" }
-                    Label { html_for: "sheet-demo-name", "Sign up" }
+                    if !logon_answer().is_empty() {
+                        p { class: "rpg-answer", "{logon_answer}" }
+                    }
+                }
+                // --- Sign up card ---
+                div { class: "rpg-card auth-card",
+                    p { class: "auth-section-title", "Create Account" }
                     Input {
-                        placeholder: "Choose your username",
+                        placeholder: "Choose a username",
                         r#type: "text",
                         value: "{register_name}",
                         oninput: set_register,
@@ -104,10 +102,8 @@ pub fn LoginPage() -> Element {
                                 Ok(()) => {
                                     match login(register_name(), "".to_owned(), false).await {
                                         Ok(()) => {
-                                            // local storage for login
                                             *local_login_name_session.write() = register_name();
                                             *local_login_id_session.write() = (get_user_id().await)
-                                                // change page
                                                 .unwrap_or(NO_CLIENT_ID);
                                             navigator.push(Route::Home {});
                                         }
@@ -119,13 +115,15 @@ pub fn LoginPage() -> Element {
                                 }
                                 Err(e) => {
                                     tracing::info!("{}", e.to_owned());
-                                    register_answer.set("This name is already used.".to_owned());
+                                    register_answer.set("This name is already taken.".to_owned());
                                 }
                             }
                         },
-                        "Sign up"
+                        "Sign Up →"
                     }
-                    Label { html_for: "sheet-demo-name", "{register_answer}" }
+                    if !register_answer().is_empty() {
+                        p { class: "rpg-answer-error", "{register_answer}" }
+                    }
                 }
             }
         }

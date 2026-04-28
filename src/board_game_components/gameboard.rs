@@ -56,7 +56,7 @@ pub fn GameBoard() -> Element {
                     }
                 }
             }
-            div {
+            div { class: "combat-log",
                 if atk_menu_display() {
                     AttackList {
                         id_name: server_data.read().core_game_data.game_manager.pm.current_player.id_name.clone(),
@@ -68,7 +68,6 @@ pub fn GameBoard() -> Element {
                         variant: ButtonVariant::Destructive,
                         onclick: move |_| async move {
                             tracing::debug!(
-                                // reset atk
                                 "launcher {} {}", server_data.read().core_game_data.game_manager.game_state
                                 .last_result_atk.launcher_id_name, selected_atk_name()
                             );
@@ -77,7 +76,7 @@ pub fn GameBoard() -> Element {
                                 .await;
                             selected_atk_name.set("".to_string());
                         },
-                        "launch atk"
+                        "⚔️ Launch Attack"
                     }
                 } else {
                     div { class: "{output_text_css_class}",

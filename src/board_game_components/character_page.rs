@@ -104,62 +104,59 @@ pub fn CharacterPanel(
     }
 
     rsx! {
-        div { class: class_css,
+        div { class: class_css, position: "relative",
             CharacterTooltip { hots_bufs: CharacterRoundsInfo::get_hot_and_buf_nbs_txts(&c.character_rounds_info.all_effects) }
             div { class: "character", background_color: bg,
-                div {
+                // Header: name + level + attack button
+                div { class: "char-header",
+                    span { class: "char-name-text", "{c.db_full_name}" }
+                    span { class: "char-level", "Lvl {c.level}" }
+                    if is_auto_atk() {
+                        Button {
+                            variant: ButtonVariant::AtkAutoMenu,
+                            onclick: move |_| async move {},
+                            "⏳🤖"
+                        }
+                    } else if c.kind == CharacterKind::Hero && current_player_id_name == c.id_name {
+                        Button {
+                            variant: ButtonVariant::AtkMenu,
+                            disabled: current_character != c.id_name,
+                            onclick: move |_| async move {
+                                atk_menu_display.set(!atk_menu_display());
+                            },
+                            if current_character == c.id_name {
+                                "⚔️"
+                            } else {
+                                "⏳"
+                            }
+                        }
+                    }
+                }
+                // Body: image + bars
+                div { class: "char-body",
                     img {
                         src: format!("{}/{}.png", PATH_IMG, c.photo_name),
                         class: "image-small",
                     }
-                }
-                div { class: "character-energy-effects-box",
-                    BarComponent {
-                        max: c.stats.all_stats[HP].max,
-                        current: c.stats.all_stats[HP].current,
-                        name: HP.to_owned(),
-                    }
-                    for (stat, energy) in energy_list.iter() {
-                        if c.stats.all_stats[stat].max > 0 && c.has_energy_kind(&energy.1) {
-                            BarComponent {
-                                max: c.stats.all_stats[stat].max,
-                                current: c.stats.all_stats[stat].current,
-                                name: energy.0.clone(),
+                    div { class: "character-energy-effects-box",
+                        BarComponent {
+                            max: c.stats.all_stats[HP].max,
+                            current: c.stats.all_stats[HP].current,
+                            name: HP.to_owned(),
+                        }
+                        for (stat, energy) in energy_list.iter() {
+                            if c.stats.all_stats[stat].max > 0 && c.has_energy_kind(&energy.1) {
+                                BarComponent {
+                                    max: c.stats.all_stats[stat].max,
+                                    current: c.stats.all_stats[stat].current,
+                                    name: energy.0.clone(),
+                                }
                             }
                         }
                     }
                 }
             }
-            div {
-                // name buttons
-                Button {
-                    variant: ButtonVariant::CharacterName,
-                    onclick: move |_| async move {},
-                    "{c.db_full_name} | Lvl: {c.level}"
-                }
-            }
-            // atk button
-            if is_auto_atk() {
-                Button {
-                    variant: ButtonVariant::AtkAutoMenu,
-                    onclick: move |_| async move {},
-                    "⏳🤖"
-                }
-            } else if c.kind == CharacterKind::Hero && current_player_id_name == c.id_name {
-                Button {
-                    variant: ButtonVariant::AtkMenu,
-                    disabled: current_character != c.id_name,
-                    onclick: move |_| async move {
-                        atk_menu_display.set(!atk_menu_display());
-                    },
-                    if current_character == c.id_name {
-                        "⚔️"
-                    } else {
-                        "⏳🎮"
-                    }
-                }
-            }
-            // target button
+            // Target button (absolute positioned, stays outside card)
             if !selected_atk_name().is_empty() {
                 CharacterTargetButton {
                     launcher_id_name: current_player_id_name,
@@ -224,10 +221,13 @@ pub fn CharacterTargetButton(
 
 #[component]
 pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
-    let width_display = current * 100 / max;
+    let width_display = if max == 0 { 0 } else { current * 100 / max };
     rsx! {
-        div { class: "grid-container",
-            div { class: "text-bar", {name} }
+        div { class: "bar-row",
+            div { class: "bar-header",
+                span { class: "bar-name", "{name}" }
+                span { class: "bar-value", "{current}/{max}" }
+            }
             div { class: "container-bar",
                 div {
                     class: "life-bar",
@@ -235,7 +235,6 @@ pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
                     background_color: get_color(width_display as i32),
                 }
             }
-            div { class: "text-bar", "{current} / {max}" }
         }
     }
 }
@@ -360,57 +359,47 @@ fn get_cost(atk: &AttackType) -> String {
 
 #[component]
 fn CharacterTooltip(hots_bufs: HotsBufs) -> Element {
+    let has_effects = hots_bufs.hot_nb > 0
+        || hots_bufs.dot_nb > 0
+        || hots_bufs.buf_nb > 0
+        || hots_bufs.debuf_nb > 0;
+    if !has_effects {
+        return rsx! {};
+    }
     rsx! {
         div { class: "character-effects",
             Tooltip {
                 TooltipTrigger {
-                    div { style: "display: flex; flex-direction: row; gap: 0px;",
-                        button {
-                            height: "25px",
-                            width: "25px",
-                            background_color: "green",
-                            color: "var(--secondary-color)",
-                            "{hots_bufs.hot_nb}"
+                    div { style: "display:flex; flex-direction:row; gap:3px;",
+                        if hots_bufs.hot_nb > 0 {
+                            span { class: "effect-badge effect-hot", "🌿 {hots_bufs.hot_nb}" }
                         }
-                        button {
-                            height: "25px",
-                            width: "25px",
-                            background_color: "var(--secondary-error-color)",
-                            color: "var(--secondary-color)",
-                            "{hots_bufs.dot_nb}"
+                        if hots_bufs.dot_nb > 0 {
+                            span { class: "effect-badge effect-dot", "🔥 {hots_bufs.dot_nb}" }
                         }
-                        button {
-                            height: "25px",
-                            width: "25px",
-                            background_color: "var(--secondary-color-2)",
-                            color: "var(--secondary-color)",
-                            "{hots_bufs.buf_nb}"
+                        if hots_bufs.buf_nb > 0 {
+                            span { class: "effect-badge effect-buf", "⬆ {hots_bufs.buf_nb}" }
                         }
-                        button {
-                            height: "25px",
-                            width: "25px",
-                            background_color: "orange",
-                            color: "var(--secondary-color)",
-                            "{hots_bufs.debuf_nb}"
+                        if hots_bufs.debuf_nb > 0 {
+                            span { class: "effect-badge effect-debuf", "⬇ {hots_bufs.debuf_nb}" }
                         }
                     }
                 }
                 TooltipContent { side: ContentSide::Right,
                     for txt in hots_bufs.hot_txt {
-                        p { style: "margin: 0;", "hots: \n{txt}" }
+                        p { style: "margin: 0;", "🌿 {txt}" }
                     }
                     for txt in hots_bufs.dot_txt {
-                        p { style: "margin: 0;", "dots: \n{txt}" }
+                        p { style: "margin: 0;", "🔥 {txt}" }
                     }
                     for txt in hots_bufs.buf_txt {
-                        p { style: "margin: 0;", "bufs: \n{txt}" }
+                        p { style: "margin: 0;", "⬆ {txt}" }
                     }
                     for txt in hots_bufs.debuf_txt {
-                        p { style: "margin: 0;", "debufs: \n{txt}" }
+                        p { style: "margin: 0;", "⬇ {txt}" }
                     }
                 }
             }
         }
-
     }
 }
