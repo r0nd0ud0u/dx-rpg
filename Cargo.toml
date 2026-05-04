@@ -11,7 +11,7 @@ dioxus = { version = "0.7.6", features = ["router", "fullstack"] }
 lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", tag = "v1.4.1" }
 serde = "1.0.228"
 dioxus-desktop = { version = "0.7.6", optional = true }
-dioxus-html = "0.7.6"
+dioxus-html = "0.7.7"
 indexmap = "2.14.0"
 tokio = { version = "1.52.1", features = ["full"], optional = true }
 colorgrad = "0.8.0"
