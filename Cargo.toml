@@ -13,7 +13,7 @@ serde = "1.0.228"
 dioxus-desktop = { version = "0.7.6", optional = true }
 dioxus-html = "0.7.6"
 indexmap = "2.14.0"
-tokio = { version = "1.52.1", features = ["full"], optional = true }
+tokio = { version = "1.52.2", features = ["full"], optional = true }
 colorgrad = "0.8.0"
 once_cell = "1.21.3"
 serde_json = "1.0.149"
