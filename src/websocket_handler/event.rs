@@ -78,6 +78,7 @@ pub enum ClientEvent {
     AddLog(String, Vec<LogData>), // `String`: server name, `Vec<LogData>`: log info to add (ex: ["Player1 used Fireball on Player2 for 30 damage", "Player2 is now burning and will take 5 damage for 3 turns"])
     RequestToggleEquip(String, String, String), // `String`: equipment unique name, `String`: player name, `String`: server name
     LoadNextScenario(String),                   // `String`: server name
+    UsePotion(String, String, String), // `String`: server name, `String`: player name, `String`: potion name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -247,6 +248,10 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("Client {} requested to load next scenario for server {}", client_id, server_name);
                                 let _ = process_load_next_scenario(&server_name).await;
                             }
+                            Ok(ClientEvent::UsePotion(server_name, player_name, potion_name)) => {
+                                tracing::info!("Player {} using potion {} on server {}", player_name, potion_name, server_name);
+                                use_potion_handler(&server_name, &player_name, &potion_name);
+                            }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
                                 tracing::info!("Client {} disconnected", client_id);
@@ -285,26 +290,50 @@ pub fn login_all_sessions(username: String, sql_id: i64) {
 
 #[cfg(feature = "server")]
 pub fn send_logout_to_server(user_name: String, client_id: u32) {
-    let mut sm = SERVER_MANAGER.lock().unwrap();
-    // remove player from ServerManager
-    sm.players
-        .retain(|player_name, _| player_name != &user_name);
-    // remove from servers data
-    if let Some(server_data) = sm.servers_data.get_mut(&user_name) {
-        server_data
-            .players_data
-            .players_info
+    // Collect affected server names BEFORE dropping the lock, then broadcast after
+    let affected_servers: Vec<String> = {
+        let mut sm = SERVER_MANAGER.lock().unwrap();
+        // remove player from ServerManager
+        sm.players
             .retain(|player_name, _| player_name != &user_name);
-    }
-    tracing::info!("All connected players after logout: {:?}", sm.players);
+        // remove from ALL servers data where this player appears
+        let affected: Vec<String> = sm
+            .servers_data
+            .iter_mut()
+            .filter_map(|(server_name, server_data)| {
+                let was_present = server_data
+                    .players_data
+                    .players_info
+                    .contains_key(&user_name);
+                server_data
+                    .players_data
+                    .players_info
+                    .retain(|player_name, _| player_name != &user_name);
+                if was_present {
+                    Some(server_name.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        tracing::info!("All connected players after logout: {:?}", sm.players);
+        affected
+    }; // SERVER_MANAGER lock dropped here
 
     // update logged out client
-    let clients = CLIENTS.lock().unwrap();
-    for (&other_id, sender) in clients.iter() {
-        if other_id as u32 == client_id {
-            let _ = sender.send(ServerEvent::LogOut);
-            break;
+    {
+        let clients = CLIENTS.lock().unwrap();
+        for (&other_id, sender) in clients.iter() {
+            if other_id as u32 == client_id {
+                let _ = sender.send(ServerEvent::LogOut);
+                break;
+            }
         }
+    }
+
+    // broadcast updated player count to remaining clients in affected lobbies
+    for server_name in affected_servers {
+        update_clients_server_data(&server_name);
     }
 }
 
@@ -554,6 +583,48 @@ fn get_current_game_path(player_name: &str, current_game_dir: &str) -> PathBuf {
     let saved_dir: PathBuf = SAVED_DATA.join(PathBuf::from(player_name));
 
     saved_dir.join(current_game_dir)
+}
+
+#[cfg(feature = "server")]
+pub fn use_potion_handler(server_name: &str, player_name: &str, potion_name: &str) {
+    use lib_rpg::character_mod::inventory::Consumable;
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    if let Some(server_data) = sm.servers_data.get_mut(server_name) {
+        if let Some(character_id_name) = server_data
+            .players_data
+            .get_first_character_name(player_name)
+        {
+            let game_state = server_data.core_game_data.game_manager.game_state.clone();
+            if let Some(character) = server_data
+                .core_game_data
+                .game_manager
+                .pm
+                .get_mut_active_hero_character(&character_id_name)
+            {
+                let launcher_stats = character.stats.clone();
+                let consumable: Option<Consumable> = character
+                    .inventory
+                    .consumables
+                    .iter()
+                    .find(|c| c.name == potion_name)
+                    .cloned();
+                if let Some(c) = consumable {
+                    match character.use_consumable(c, &game_state, &launcher_stats) {
+                        Ok(_) => tracing::info!(
+                            "Player {} used potion {} successfully",
+                            player_name,
+                            potion_name
+                        ),
+                        Err(e) => {
+                            tracing::error!("Failed to use potion {}: {}", potion_name, e)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    drop(sm);
+    update_clients_server_data(server_name);
 }
 
 #[cfg(feature = "server")]

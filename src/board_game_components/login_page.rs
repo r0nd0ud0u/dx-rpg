@@ -6,7 +6,7 @@ use crate::auth_manager::server_fn::get_user_id;
 use crate::websocket_handler::NO_CLIENT_ID;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::{
-    auth_manager::server_fn::{login, register},
+    auth_manager::server_fn::{get_use_password, login, register},
     common::Route,
     components::{
         button::{Button, ButtonVariant},
@@ -24,16 +24,20 @@ pub fn LoginPage() -> Element {
     let navigator = use_navigator();
     // logon
     let mut username = use_signal(String::new);
+    let mut password = use_signal(String::new);
     let mut logon_answer = use_signal(String::new);
-    let set_username = move |e: FormEvent| {
-        username.set(e.value());
-    };
+    let set_username = move |e: FormEvent| username.set(e.value());
+    let set_password = move |e: FormEvent| password.set(e.value());
     // register
     let mut register_name = use_signal(String::new);
+    let mut register_password = use_signal(String::new);
     let mut register_answer = use_signal(String::new);
-    let set_register = move |e: FormEvent| {
-        register_name.set(e.value());
-    };
+    let set_register = move |e: FormEvent| register_name.set(e.value());
+    let set_register_pw = move |e: FormEvent| register_password.set(e.value());
+
+    // fetch USE_PASSWORD flag from server
+    let use_pw_res = use_resource(|| async { get_use_password().await.unwrap_or(false) });
+    let use_pw = use_pw_res().unwrap_or(false);
 
     rsx! {
         div { class: "home-container",
@@ -50,11 +54,19 @@ pub fn LoginPage() -> Element {
                         value: "{username}",
                         oninput: set_username,
                     }
+                    if use_pw {
+                        Input {
+                            placeholder: "Password",
+                            r#type: "password",
+                            value: "{password}",
+                            oninput: set_password,
+                        }
+                    }
                     Button {
                         variant: ButtonVariant::Primary,
                         onclick: move |_| async move {
                             tracing::info!("Attempting to log in with username: {}", username());
-                            match login(username(), "".to_owned(), false).await {
+                            match login(username(), password(), use_pw).await {
                                 Ok(()) => {
                                     logon_answer.set(format!("{} logged in", username()));
                                     match get_user_id().await {
@@ -95,12 +107,20 @@ pub fn LoginPage() -> Element {
                         value: "{register_name}",
                         oninput: set_register,
                     }
+                    if use_pw {
+                        Input {
+                            placeholder: "Choose a password",
+                            r#type: "password",
+                            value: "{register_password}",
+                            oninput: set_register_pw,
+                        }
+                    }
                     Button {
                         variant: ButtonVariant::Secondary,
                         onclick: move |_| async move {
-                            match register(register_name(), "".to_owned(), false).await {
+                            match register(register_name(), register_password(), use_pw).await {
                                 Ok(()) => {
-                                    match login(register_name(), "".to_owned(), false).await {
+                                    match login(register_name(), register_password(), use_pw).await {
                                         Ok(()) => {
                                             *local_login_name_session.write() = register_name();
                                             *local_login_id_session.write() = (get_user_id().await)

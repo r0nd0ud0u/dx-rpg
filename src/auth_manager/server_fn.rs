@@ -3,6 +3,16 @@ use crate::auth_manager::{auth::Session, auth::User, db::get_db, model::SqlUser}
 use dioxus::{logger::tracing, prelude::*};
 use std::collections::HashSet;
 
+/// Returns whether password authentication is required, driven by the `USE_PASSWORD` env var.
+#[server]
+pub async fn get_use_password() -> Result<bool, ServerFnError> {
+    Ok(std::env::var("USE_PASSWORD")
+        .unwrap_or_else(|_| "false".to_string())
+        .trim()
+        .to_lowercase()
+        == "true")
+}
+
 #[post("/api/user/login", auth: Session)]
 pub async fn login(
     username: String,

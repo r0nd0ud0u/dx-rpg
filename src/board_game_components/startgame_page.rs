@@ -1,3 +1,4 @@
+use crate::board_game_components::character_page::{BarComponent, CharacterPanel};
 use crate::board_game_components::game_sheets::GameSheets;
 use crate::common::{Route, SERVER_NAME};
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
@@ -11,8 +12,64 @@ use crate::{
 };
 use dioxus::fullstack::{CborEncoding, UseWebsocket};
 use dioxus::prelude::*;
-use lib_rpg::server::game_state::GameStatus;
-use lib_rpg::server::server_manager::ServerData;
+use lib_rpg::{
+    character_mod::character::CharacterKind,
+    common::constants::stats_const::HP,
+    server::{game_state::GameStatus, server_manager::ServerData},
+};
+
+/// Read-only character panels shown at end of scenario / game.
+#[component]
+fn EndStatePanels() -> Element {
+    let server_data = use_context::<Signal<ServerData>>();
+    let atk_menu = use_signal(|| false);
+    let potion_menu = use_signal(|| false);
+    let selected_atk = use_signal(|| "".to_string());
+
+    rsx! {
+        div { class: "grid-board",
+            div {
+                for c in server_data().core_game_data.game_manager.pm.active_heroes.iter() {
+                    CharacterPanel {
+                        c: c.clone(),
+                        current_player_id_name: "".to_string(),
+                        selected_atk_name: selected_atk,
+                        atk_menu_display: atk_menu,
+                        potion_menu_display: potion_menu,
+                        is_auto_atk: false,
+                    }
+                }
+            }
+            div {}
+            div {
+                for c in server_data()
+                    .core_game_data
+                    .game_manager
+                    .pm
+                    .active_bosses
+                    .iter()
+                    .filter(|c| c.kind == CharacterKind::Boss)
+                {
+                    div {
+                        class: "character",
+                        background_color: "var(--secondary-error-color)",
+                        div { class: "char-header",
+                            span { class: "char-name-text", "{c.db_full_name}" }
+                            span { class: "char-level", "Lvl {c.level}" }
+                        }
+                        div { class: "char-body",
+                            BarComponent {
+                                max: c.stats.all_stats[HP].max,
+                                current: c.stats.all_stats[HP].current,
+                                name: HP.to_owned(),
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 #[component]
 pub fn QuitGameButton() -> Element {
@@ -52,6 +109,7 @@ pub fn RunningGamePage() -> Element {
                 p { class: "gameover-sub",
                     "Remaining players: {server_data().players_data.players_info.len()}"
                 }
+                EndStatePanels {}
                 div { class: "scenario-actions",
                     QuitGameButton {}
                     if server_data().players_data.owner_player_name == local_login_name_session() {
@@ -71,13 +129,16 @@ pub fn RunningGamePage() -> Element {
         {
             div { class: "scenario-end-page",
                 h2 { class: "scenario-end-title", "🏆 Scenario Complete!" }
+                EndStatePanels {}
                 div { class: "scenario-actions",
-                    Button {
-                        variant: ButtonVariant::GreenType,
-                        onclick: move |_| async move {
-                            let _ = socket.send(ClientEvent::LoadNextScenario(SERVER_NAME())).await;
-                        },
-                        "⚡ Load Next Scenario"
+                    if server_data().players_data.owner_player_name == local_login_name_session() {
+                        Button {
+                            variant: ButtonVariant::GreenType,
+                            onclick: move |_| async move {
+                                let _ = socket.send(ClientEvent::LoadNextScenario(SERVER_NAME())).await;
+                            },
+                            "⚡ Load Next Scenario"
+                        }
                     }
                     QuitGameButton {}
                 }
