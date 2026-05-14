@@ -43,9 +43,6 @@ pub fn GameBoard() -> Element {
     let mut selected_atk_name = use_signal(|| "".to_string());
 
     // spectator: player has no character in active heroes
-    let _current_character_name = server_data()
-        .players_data
-        .get_first_character_name(&server_data().players_data.owner_player_name.clone());
     let local_session_player_name = use_context::<Signal<String>>();
     let my_character = server_data()
         .players_data
