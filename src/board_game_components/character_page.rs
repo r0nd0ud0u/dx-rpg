@@ -10,6 +10,7 @@ use lib_rpg::{
         attack_type::AttackType,
         character::{Character, CharacterKind},
         energy::EnergyKind,
+        inventory::ConsumableKind,
         rounds_information::{CharacterRoundsInfo, HotsBufs},
     },
     common::constants::stats_const::*,
@@ -55,6 +56,7 @@ pub fn CharacterPanel(
     current_player_id_name: String,
     selected_atk_name: Signal<String>,
     atk_menu_display: Signal<bool>,
+    potion_menu_display: Signal<bool>,
     is_auto_atk: ReadSignal<bool>,
 ) -> Element {
     // contexts
@@ -123,11 +125,22 @@ pub fn CharacterPanel(
                             disabled: current_character != c.id_name,
                             onclick: move |_| async move {
                                 atk_menu_display.set(!atk_menu_display());
+                                potion_menu_display.set(false);
                             },
                             if current_character == c.id_name {
                                 "⚔️"
                             } else {
                                 "⏳"
+                            }
+                        }
+                        if current_character == c.id_name && !c.inventory.consumables.is_empty() {
+                            Button {
+                                variant: ButtonVariant::AtkMenu,
+                                onclick: move |_| async move {
+                                    potion_menu_display.set(!potion_menu_display());
+                                    atk_menu_display.set(false);
+                                },
+                                "💊"
                             }
                         }
                     }
@@ -331,6 +344,65 @@ pub fn AttackList(
 
 fn get_color(value: i32) -> String {
     ENERGY_GRAD.at(value as f32 / 100.0).to_css_hex()
+}
+
+#[component]
+pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Element {
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let server_data = use_context::<Signal<ServerData>>();
+    let local_session_player_name = use_context::<Signal<String>>();
+
+    let potions: Vec<String> = server_data()
+        .core_game_data
+        .game_manager
+        .pm
+        .get_active_character(&id_name)
+        .map(|c| {
+            c.inventory
+                .consumables
+                .iter()
+                .filter(|c| c.consumable_kind == ConsumableKind::Potion)
+                .map(|c| c.name.clone())
+                .collect()
+        })
+        .unwrap_or_default();
+
+    if potions.is_empty() {
+        return rsx! {
+            div { class: "attack-list",
+                span { style: "color: var(--rpg-text-muted); font-size: 0.85rem;",
+                    "No potions available"
+                }
+            }
+        };
+    }
+
+    rsx! {
+        div { class: "attack-list",
+            for potion_name in potions {
+                Button {
+                    variant: ButtonVariant::AtkName,
+                    onclick: {
+                        let pname = potion_name.clone();
+                        let player = local_session_player_name();
+                        move |_| {
+                            let async_potion = pname.clone();
+                            let async_player = player.clone();
+                            async move {
+                                let _ = socket
+                                    .send(
+                                        ClientEvent::UsePotion(SERVER_NAME(), async_player, async_potion),
+                                    )
+                                    .await;
+                                display_potionlist_sig.set(false);
+                            }
+                        }
+                    },
+                    "💊 {potion_name}"
+                }
+            }
+        }
+    }
 }
 
 fn get_variant_atk_type(atk: &AttackType) -> ButtonVariant {

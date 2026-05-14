@@ -117,35 +117,95 @@ pub fn TabStats() -> Element {
     // snap
     let server_data_snap = server_data();
     let game_state = &server_data_snap.core_game_data.game_manager.game_state;
+    let heroes = server_data_snap
+        .core_game_data
+        .game_manager
+        .pm
+        .active_heroes
+        .clone();
+
+    // merged stats for "All" tab: accumulate atk_info from every hero
+    let all_atk_info: Vec<AtksInfo> = {
+        let mut merged: Vec<AtksInfo> = Vec::new();
+        for hero in &heroes {
+            let hero_info = game_state
+                .stats_in_game
+                .get(&hero.id_name)
+                .cloned()
+                .unwrap_or_default();
+            for atk_info in hero_info.all_atk_info {
+                if let Some(existing) = merged.iter_mut().find(|a| a.atk_name == atk_info.atk_name)
+                {
+                    existing.nb_use += atk_info.nb_use;
+                    for (target, totals) in &atk_info.totals_by_target {
+                        let entry = existing.totals_by_target.entry(target.clone()).or_default();
+                        entry.total_full_heal += totals.total_full_heal;
+                        entry.total_real_heal += totals.total_real_heal;
+                        entry.total_full_dmg += totals.total_full_dmg;
+                        entry.total_real_dmg += totals.total_real_dmg;
+                    }
+                } else {
+                    merged.push(atk_info);
+                }
+            }
+        }
+        merged
+    };
+
+    // tab 0 = "All", then one tab per hero
 
     rsx! {
         Tabs {
-            default_value: "tab1".to_string(),
+            default_value: "tab0".to_string(),
             horizontal: true,
             max_width: "40em",
             TabList {
-                for (i, c) in server_data_snap
-                    .core_game_data
-                    .game_manager
-                    .pm
-                    .active_heroes
-                    .clone()
-                    .into_iter()
-                    .enumerate()
-                {
-                    TabTrigger { value: format!("tab{}", i + 1), index: i, "{c.id_name}" }
+                TabTrigger { value: "tab0".to_string(), index: 0_usize, "All" }
+                for (i, c) in heroes.clone().into_iter().enumerate() {
+                    TabTrigger { value: format!("tab{}", i + 1), index: i + 1, "{c.id_name}" }
                 }
             }
-            for (i, c) in server_data_snap
-                .core_game_data
-                .game_manager
-                .pm
-                .active_heroes
-                .clone()
-                .into_iter()
-                .enumerate()
-            {
-                TabContent { value: format!("tab{}", i + 1), index: i, width: "40em",
+
+            // "All" tab content
+            TabContent { value: "tab0".to_string(), index: 0_usize, width: "40em",
+                div {
+                    Tabs {
+                        variant: TabsVariant::Default,
+                        default_value: "tab1".to_string(),
+                        horizontal: true,
+                        max_width: "40em",
+                        TabList {
+                            for (j, s) in StatsInfoKind::iter().enumerate() {
+                                TabTrigger { value: format!("tab{}", j + 1), index: j, "{s}" }
+                            }
+                        }
+                        for (j, s) in StatsInfoKind::iter().enumerate() {
+                            TabContent {
+                                value: format!("tab{}", j + 1),
+                                index: j,
+                                width: "40em",
+                                div {
+                                    match s {
+                                        StatsInfoKind::AtksCount => rsx! {
+                                            ChartsAtkUsedCount { atks_info: all_atk_info.clone() }
+                                        },
+                                        StatsInfoKind::AtksAmount => rsx! {
+                                            TotalAtksAmount { atks_info: all_atk_info.clone() }
+                                        },
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Per-hero tabs
+            for (i, c) in heroes.into_iter().enumerate() {
+                TabContent {
+                    value: format!("tab{}", i + 1),
+                    index: i + 1,
+                    width: "40em",
                     div {
                         Tabs {
                             variant: TabsVariant::Default,
@@ -190,12 +250,10 @@ pub fn TabStats() -> Element {
                                             },
                                         }
                                     }
-
                                 }
                             }
                         }
                     }
-
                 }
             }
         }
