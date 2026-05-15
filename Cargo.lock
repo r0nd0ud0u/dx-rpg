@@ -2339,7 +2339,7 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 
 [[package]]
 name = "dx-rpg"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "anyhow",
  "async-std",
@@ -3998,7 +3998,7 @@ checksum = "7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8"
 [[package]]
 name = "lib-rpg"
 version = "1.4.1"
-source = "git+https://github.com/r0nd0ud0u/lib-rpg.git?tag=v1.4.1#06759eb7446f03f188eb8a18e20fca6ca865913e"
+source = "git+https://github.com/r0nd0ud0u/lib-rpg.git?rev=33dbde8fb70524ef31760534a80df58cc5a09e88#33dbde8fb70524ef31760534a80df58cc5a09e88"
 dependencies = [
  "anyhow",
  "chrono",

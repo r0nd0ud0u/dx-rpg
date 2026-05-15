@@ -1,0 +1,51 @@
+services:
+  dx-rpg:
+    image: ghcr.io/r0nd0ud0u/dx-rpg:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      IP: "0.0.0.0"
+      DATABASE_URL: "sqlite:///data/db.sqlite"
+      # Override LOG_LEVEL if needed (default: info)
+      # LOG_LEVEL: "debug"
+    # Pass additional runtime secrets (e.g. session secret keys) via a .env file
+    # placed next to docker-compose.yml on the server. This file must NOT be committed.
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      # Persistent SQLite database — survives container stop/start/update
+      - db_data:/data
+      # Persistent saved game data per user — survives container stop/start/update
+      - saved_data:/usr/local/app/saved_data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # Lightweight SQLite web UI — accessible on port 8082 for DB inspection.
+  # ⚠️  Do NOT expose port 8082 publicly via nginx; use SSH tunnelling for remote access:
+  #      ssh -L 8082:localhost:8082 user@your-server
+  sqlite-web:
+    image: coleifer/sqlite-web:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8082:8080"   # Bind to loopback only — not reachable from outside
+    volumes:
+      - db_data:/data:ro          # Read-only mount to avoid accidental corruption
+    command: ["-H", "0.0.0.0", "-r", "/data/db.sqlite"]
+    depends_on:
+      - dx-rpg
+
+volumes:
+  # Named volume for the SQLite database file (/data/db.sqlite inside the container).
+  # Docker persists this across stop/start. To reset: docker volume rm dx-rpg_db_data
+  db_data:
+
+  # Named volume for per-user game save files (/usr/local/app/saved_data/ inside the container).
+  # To reset: docker volume rm dx-rpg_saved_data
+  saved_data:
