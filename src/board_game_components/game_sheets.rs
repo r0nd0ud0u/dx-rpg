@@ -8,8 +8,8 @@ use dioxus_primitives::scroll_area::ScrollDirection;
 use lib_rpg::{
     character_mod::{character::Character, stats::Attribute},
     common::log_data::{
-        const_colors::{DARK_RED, LIGHT_BLUE, LIGHT_GREEN},
         LogData,
+        const_colors::{DARK_RED, LIGHT_BLUE, LIGHT_GREEN},
     },
     server::server_manager::ServerData,
 };
@@ -422,9 +422,7 @@ fn LogsSheet(s: SheetSide) -> Element {
                 flex: "1",
                 overflow: "hidden",
 
-                Tabs {
-                    default_value: "all".to_string(),
-                    horizontal: true,
+                Tabs { default_value: "all".to_string(), horizontal: true,
 
                     TabList {
                         TabTrigger { value: "all".to_string(), index: 0_usize, "All" }
@@ -496,14 +494,12 @@ fn LogsList(logs: Vec<LogData>, filter: String) -> Element {
             tabindex: "0",
             div { class: "scroll-content",
                 if filtered.is_empty() {
-                    div {
-                        style: "color: var(--rpg-text-muted); text-align: center; padding: 2rem; font-size: 0.85rem;",
+                    div { style: "color: var(--rpg-text-muted); text-align: center; padding: 2rem; font-size: 0.85rem;",
                         "No logs yet."
                     }
                 }
                 for log in filtered {
-                    div {
-                        style: "padding: 4px 8px; margin: 2px 0; border-left: 3px solid {log.color}; border-radius: 0 4px 4px 0; font-size: 0.82rem; color: {log.color}; word-break: break-word;",
+                    div { style: "padding: 4px 8px; margin: 2px 0; border-left: 3px solid {log.color}; border-radius: 0 4px 4px 0; font-size: 0.82rem; color: {log.color}; word-break: break-word;",
                         "{log.message}"
                     }
                 }

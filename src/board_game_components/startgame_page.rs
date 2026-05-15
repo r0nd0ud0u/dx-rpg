@@ -50,7 +50,9 @@ fn EndStatePanels() -> Element {
                     .iter()
                     .filter(|c| c.kind == CharacterKind::Boss)
                 {
-                    div { class: "character", background_color: "var(--secondary-error-color)",
+                    div {
+                        class: "character",
+                        background_color: "var(--secondary-error-color)",
                         div { class: "char-header",
                             span { class: "char-name-text", "{c.db_full_name}" }
                             span { class: "char-level", "Lvl {c.level}" }

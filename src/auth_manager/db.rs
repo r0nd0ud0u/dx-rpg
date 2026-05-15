@@ -3,9 +3,9 @@ use dioxus::prelude::*;
 #[cfg(feature = "server")]
 use dioxus::server::ServerFnError;
 #[cfg(feature = "server")]
-use sqlx::{Executor, Pool, Sqlite};
-#[cfg(feature = "server")]
 use sqlx::sqlite::SqliteConnectOptions;
+#[cfg(feature = "server")]
+use sqlx::{Executor, Pool, Sqlite};
 #[cfg(feature = "server")]
 use std::str::FromStr;
 #[cfg(feature = "server")]
