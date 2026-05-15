@@ -1,6 +1,6 @@
 use crate::board_game_components::character_page::{BarComponent, CharacterPanel};
 use crate::board_game_components::game_sheets::GameSheets;
-use crate::common::{Route, SERVER_NAME};
+use crate::common::{PATH_IMG, Route, SERVER_NAME};
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::websocket_handler::msg_from_client::send_disconnect_from_server_data;
 use crate::{
@@ -50,18 +50,27 @@ fn EndStatePanels() -> Element {
                     .iter()
                     .filter(|c| c.kind == CharacterKind::Boss)
                 {
-                    div {
-                        class: "character",
-                        background_color: "var(--secondary-error-color)",
+                    div { class: "character", background_color: "var(--secondary-error-color)",
                         div { class: "char-header",
                             span { class: "char-name-text", "{c.db_full_name}" }
                             span { class: "char-level", "Lvl {c.level}" }
+                            if c.stats.is_dead().is_some_and(|v| v) {
+                                span { style: "font-size:0.8rem; color:var(--rpg-text-muted);",
+                                    "💀 Defeated"
+                                }
+                            }
                         }
                         div { class: "char-body",
-                            BarComponent {
-                                max: c.stats.all_stats[HP].max,
-                                current: c.stats.all_stats[HP].current,
-                                name: HP.to_owned(),
+                            img {
+                                src: format!("{}/{}.png", PATH_IMG, c.photo_name),
+                                class: "image-small",
+                            }
+                            div { class: "character-energy-effects-box",
+                                BarComponent {
+                                    max: c.stats.all_stats[HP].max,
+                                    current: c.stats.all_stats[HP].current,
+                                    name: HP.to_owned(),
+                                }
                             }
                         }
                     }

@@ -5,6 +5,10 @@ use dioxus::server::ServerFnError;
 #[cfg(feature = "server")]
 use sqlx::{Executor, Pool, Sqlite};
 #[cfg(feature = "server")]
+use sqlx::sqlite::SqliteConnectOptions;
+#[cfg(feature = "server")]
+use std::str::FromStr;
+#[cfg(feature = "server")]
 use tokio::sync::OnceCell;
 
 #[cfg(feature = "server")]
@@ -25,7 +29,25 @@ async fn db() -> Pool<Sqlite> {
         }
     };
 
-    let pool = match sqlx::sqlite::SqlitePool::connect(&db_url).await {
+    // Ensure the parent directory and the file exist before connecting.
+    // SQLite cannot create missing parent directories on its own.
+    if let Some(path_str) = db_url.strip_prefix("sqlite://") {
+        let path = std::path::Path::new(path_str);
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                if let Err(e) = std::fs::create_dir_all(parent) {
+                    tracing::warn!("Could not create database directory {:?}: {}", parent, e);
+                }
+            }
+        }
+    }
+
+    let connect_opts = match SqliteConnectOptions::from_str(&db_url) {
+        Ok(opts) => opts.create_if_missing(true),
+        Err(e) => panic!("Invalid DATABASE_URL: {}", e),
+    };
+
+    let pool = match sqlx::sqlite::SqlitePool::connect_with(connect_opts).await {
         Ok(pool) => pool,
         Err(e) => {
             panic!("Failed to connect to database: {}", e);

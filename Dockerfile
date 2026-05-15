@@ -50,4 +50,9 @@ ENV DATABASE_URL=sqlite:///data/db.sqlite
 EXPOSE 8080
 
 WORKDIR /usr/local/app
-ENTRYPOINT [ "/usr/local/app/server" ]
+
+# Entrypoint script: ensure /data/db.sqlite exists before starting the app
+RUN printf '#!/bin/sh\nmkdir -p /data\ntouch /data/db.sqlite\nexec /usr/local/app/server "$@"\n' > /entrypoint.sh \
+    && chmod +x /entrypoint.sh
+
+ENTRYPOINT [ "/entrypoint.sh" ]

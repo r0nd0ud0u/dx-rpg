@@ -7,6 +7,10 @@ use dioxus::{
 use dioxus_primitives::scroll_area::ScrollDirection;
 use lib_rpg::{
     character_mod::{character::Character, stats::Attribute},
+    common::log_data::{
+        const_colors::{DARK_RED, LIGHT_BLUE, LIGHT_GREEN},
+        LogData,
+    },
     server::server_manager::ServerData,
 };
 
@@ -20,6 +24,7 @@ use crate::{
             Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetSide,
             SheetTitle,
         },
+        tabs::{TabContent, TabList, TabTrigger, Tabs},
     },
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
@@ -406,7 +411,7 @@ fn LogsSheet(s: SheetSide) -> Element {
         SheetContent { side: s,
             SheetHeader {
                 SheetTitle { "Logs" }
-                SheetDescription { "Watch the last logs here." }
+                SheetDescription { "History of all game events." }
             }
 
             div {
@@ -415,24 +420,41 @@ fn LogsSheet(s: SheetSide) -> Element {
                 gap: "0.5rem",
                 padding: "0 1rem",
                 flex: "1",
-                ScrollArea {
-                    width: "100%",
-                    height: "calc(100% - 2rem)",
-                    border: "1px solid var(--rpg-border-light)",
-                    border_radius: "8px",
-                    padding: "0.5em 1em",
-                    direction: ScrollDirection::Vertical,
-                    tabindex: "0",
-                    div { class: "scroll-content",
-                        for log in server_data().core_game_data.game_manager.logs.iter() {
-                            div { style: "padding: 2px 0; border-bottom: 1px solid var(--rpg-border);",
-                                Label {
-                                    color: "{log.color}",
-                                    html_for: "sheet-log",
-                                    font_size: "0.82rem",
-                                    "{log.message}"
-                                }
-                            }
+                overflow: "hidden",
+
+                Tabs {
+                    default_value: "all".to_string(),
+                    horizontal: true,
+
+                    TabList {
+                        TabTrigger { value: "all".to_string(), index: 0_usize, "All" }
+                        TabTrigger { value: "combat".to_string(), index: 1_usize, "⚔ Combat" }
+                        TabTrigger { value: "heal".to_string(), index: 2_usize, "💚 Healing" }
+                        TabTrigger { value: "event".to_string(), index: 3_usize, "ℹ Events" }
+                    }
+
+                    TabContent { value: "all".to_string(), index: 0_usize,
+                        LogsList {
+                            logs: server_data().core_game_data.game_manager.logs.clone(),
+                            filter: "all".to_string(),
+                        }
+                    }
+                    TabContent { value: "combat".to_string(), index: 1_usize,
+                        LogsList {
+                            logs: server_data().core_game_data.game_manager.logs.clone(),
+                            filter: "combat".to_string(),
+                        }
+                    }
+                    TabContent { value: "heal".to_string(), index: 2_usize,
+                        LogsList {
+                            logs: server_data().core_game_data.game_manager.logs.clone(),
+                            filter: "heal".to_string(),
+                        }
+                    }
+                    TabContent { value: "event".to_string(), index: 3_usize,
+                        LogsList {
+                            logs: server_data().core_game_data.game_manager.logs.clone(),
+                            filter: "event".to_string(),
                         }
                     }
                 }
@@ -446,6 +468,46 @@ fn LogsSheet(s: SheetSide) -> Element {
                 }
             }
         }
+    }
+}
 
+/// Filtered, colored list of log entries — newest first.
+#[component]
+fn LogsList(logs: Vec<LogData>, filter: String) -> Element {
+    let filtered: Vec<&LogData> = logs
+        .iter()
+        .rev()
+        .filter(|log| match filter.as_str() {
+            "combat" => log.color == DARK_RED,
+            "heal" => log.color == LIGHT_GREEN,
+            "event" => log.color == LIGHT_BLUE,
+            _ => true,
+        })
+        .collect();
+
+    rsx! {
+        ScrollArea {
+            width: "100%",
+            height: "calc(100vh - 18rem)",
+            border: "1px solid var(--rpg-border-light)",
+            border_radius: "8px",
+            padding: "0.5em",
+            direction: ScrollDirection::Vertical,
+            tabindex: "0",
+            div { class: "scroll-content",
+                if filtered.is_empty() {
+                    div {
+                        style: "color: var(--rpg-text-muted); text-align: center; padding: 2rem; font-size: 0.85rem;",
+                        "No logs yet."
+                    }
+                }
+                for log in filtered {
+                    div {
+                        style: "padding: 4px 8px; margin: 2px 0; border-left: 3px solid {log.color}; border-radius: 0 4px 4px 0; font-size: 0.82rem; color: {log.color}; word-break: break-word;",
+                        "{log.message}"
+                    }
+                }
+            }
+        }
     }
 }

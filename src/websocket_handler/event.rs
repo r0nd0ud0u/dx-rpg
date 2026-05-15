@@ -380,7 +380,7 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
     // ----------------------------------------
     //  Modify server data
     // ----------------------------------------
-    let other_clients: Vec<u32> = {
+    let (other_clients, affected_server_name, is_owner) = {
         let mut sm = SERVER_MANAGER.lock().unwrap();
 
         let mut server_data = match sm.get_server_data_by_player_id(client_id) {
@@ -394,6 +394,9 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
                 return;
             }
         };
+
+        let server_name = server_data.players_data.owner_player_name.clone();
+        let is_owner = server_data.players_data.owner_player_name == username;
 
         server_data
             .players_data
@@ -417,21 +420,24 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
 
         sm.ongoing_games.retain(|g| g.server_name != username);
 
-        ids
+        (ids, server_name, is_owner)
     }; // LOCK DROPPED HERE
 
     // ----------------------------------------
     //  Notify clients (separate lock)
     // ----------------------------------------
-    {
+    if is_owner {
+        // Owner left → kick everyone else out
         let clients = CLIENTS.lock().unwrap();
-
         for other_id in other_clients {
             if let Some(sender) = clients.get(&(other_id as usize)) {
                 let _ = sender.send(ServerEvent::ResetClientFromServerData);
             }
         }
-    } // LOCK DROPPED
+    } else {
+        // Non-owner left → just refresh player list for remaining clients
+        update_clients_server_data(&affected_server_name);
+    }
 
     update_clients_ongoing_games();
 }
