@@ -28,11 +28,14 @@ services:
       retries: 10
       start_period: 5s
 
-  # Lightweight SQLite web UI — not exposed to host directly.
-  # Proxied via sqlite-proxy (nginx) on port 8082 to avoid Rancher Desktop host-switch bug.
+  # Lightweight SQLite web UI — exposed directly on port 8082.
+  # On VPS: block port 8082 in firewall and access via SSH tunnel:
+  #   ssh -L 8082:localhost:8082 user@your-server
   sqlite-web:
     image: coleifer/sqlite-web:latest
     restart: unless-stopped
+    ports:
+      - "8082:5000"
     environment:
       SQLITE_DATABASE: /data/db.sqlite
     command: ["sqlite_web", "-H", "0.0.0.0", "-p", "5000", "-x", "/data/db.sqlite"]
@@ -42,24 +45,8 @@ services:
       dx-rpg:
         condition: service_healthy
 
-  # nginx proxy for sqlite-web — uses port 80 internally (not 8080) to avoid
-  # Rancher Desktop host-switch routing bug when multiple containers expose port 8080.
-  # On VPS: block port 8082 in firewall, access via: ssh -L 8082:localhost:8082 user@server
-  sqlite-proxy:
-    image: nginx:alpine
-    restart: unless-stopped
-    ports:
-      - "8082:80"
-    volumes:
-      - ./deploy/nginx-sqlite.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - sqlite-web
-
 volumes:
-  # Named volume for the SQLite database file (/data/db.sqlite inside the container).
-  # Docker persists this across stop/start. To reset: docker volume rm dx-rpg_db_data
+  # SQLite database — persistent across restarts. Reset: docker volume rm dx-rpg_db_data
   db_data:
-
-  # Named volume for per-user game save files (/usr/local/app/saved_data/ inside the container).
-  # To reset: docker volume rm dx-rpg_saved_data
+  # Per-user game saves — persistent. Reset: docker volume rm dx-rpg_saved_data
   saved_data:

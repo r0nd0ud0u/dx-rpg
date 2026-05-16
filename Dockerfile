@@ -30,7 +30,7 @@ ENV PATH="/.cargo/bin:$PATH"
 RUN --mount=type=ssh dx bundle --platform web --release
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y libssl3 pkg-config && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libssl3 pkg-config curl && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/dx/dx-rpg/release/web/ /usr/local/app
 COPY ./offlines/ /usr/local/app/offlines/
 
