@@ -64,17 +64,23 @@ pub fn CharacterPanel(
     let local_session_player_name = use_context::<Signal<String>>();
     let toggle_atk_animation = use_context::<Signal<bool>>();
     // get first player of the list
-    let current_character = match server_data()
-        .players_data
-        .get_first_character_name(&local_session_player_name())
-    {
-        Some(player_name) => player_name,
-        None => {
-            tracing::error!(
-                "No player found for session player name: {}",
-                local_session_player_name()
-            );
-            String::new()
+    let current_character = {
+        let sd = server_data();
+        let is_single = sd.core_game_data.is_single_player;
+        if is_single {
+            // In single-player, the active player IS the current character
+            sd.core_game_data.game_manager.pm.current_player.id_name.clone()
+        } else {
+            match sd.players_data.get_first_character_name(&local_session_player_name()) {
+                Some(player_name) => player_name,
+                None => {
+                    tracing::error!(
+                        "No player found for session player name: {}",
+                        local_session_player_name()
+                    );
+                    String::new()
+                }
+            }
         }
     };
     // if boss is dead, panel is hidden
@@ -261,6 +267,7 @@ pub fn NewAtkButton(
 ) -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let show_tooltips = use_context::<Signal<bool>>();
     // local signals
     let can_be_launched = launcher
         .character_rounds_info
@@ -272,7 +279,7 @@ pub fn NewAtkButton(
     let description = attack_type.description.clone();
     let has_description = !description.is_empty();
     rsx! {
-        Tooltip { disabled: !has_description,
+        Tooltip { disabled: !has_description || !show_tooltips(),
             TooltipTrigger {
                 Button {
                     variant: if can_be_launched {

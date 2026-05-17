@@ -47,15 +47,20 @@ pub fn GameBoard() -> Element {
     let my_character = server_data()
         .players_data
         .get_first_character_name(&local_session_player_name());
-    let is_spectator = my_character.as_ref().map_or(true, |char_name| {
-        !server_data()
-            .core_game_data
-            .game_manager
-            .pm
-            .active_heroes
-            .iter()
-            .any(|h| &h.id_name == char_name)
-    });
+    // In single-player mode, the one real player controls all heroes — never spectator
+    let is_spectator = if server_data().core_game_data.is_single_player {
+        false
+    } else {
+        my_character.as_ref().map_or(true, |char_name| {
+            !server_data()
+                .core_game_data
+                .game_manager
+                .pm
+                .active_heroes
+                .iter()
+                .any(|h| &h.id_name == char_name)
+        })
+    };
 
     // Display the game board with characters and attacks
     rsx! {

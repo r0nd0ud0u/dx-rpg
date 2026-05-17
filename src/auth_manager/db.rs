@@ -59,6 +59,8 @@ async fn db() -> Pool<Sqlite> {
             .await.unwrap();
     pool.execute(r#"CREATE TABLE IF NOT EXISTS user_permissions ( "user_id" INTEGER NOT NULL, "token" VARCHAR(256) NOT NULL)"#,)
             .await.unwrap();
+    pool.execute(r#"CREATE TABLE IF NOT EXISTS user_settings ( "username" VARCHAR(256) NOT NULL, "key" VARCHAR(64) NOT NULL, "value" VARCHAR(256) NOT NULL, PRIMARY KEY("username","key"))"#,)
+            .await.unwrap();
 
     // Insert in some test data for two users (one anonymous, one normal)
     pool.execute(r#"INSERT INTO users (id, anonymous, username, password, is_connected) SELECT 1, true, 'Admin', '', false ON CONFLICT(id) DO UPDATE SET anonymous = EXCLUDED.anonymous, username = EXCLUDED.username, password = EXCLUDED.password, is_connected = EXCLUDED.is_connected"#,)

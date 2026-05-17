@@ -3,10 +3,11 @@ use dioxus::{
     logger::tracing,
     prelude::*,
 };
+use lib_rpg::{character_mod::character::Character, common::constants::stats_const::HP};
 
 use crate::{
     auth_manager::server_fn::get_available_universes,
-    common::Route,
+    common::{PATH_IMG, Route},
     components::button::{Button, ButtonVariant},
     utils::server_file_utils::{SaveSlotInfo, delete_game, get_save_slots},
     websocket_handler::{
@@ -15,24 +16,21 @@ use crate::{
     },
 };
 
-/// New game: the player picks a save slot (empty or occupied) to create / overwrite a game.
 #[component]
 pub fn CreateServer() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let local_login_name_session = use_context::<Signal<String>>();
+    let all_characters = use_context::<Signal<Vec<Character>>>();
     let navigator = use_navigator();
 
-    // Save-slot state
     let mut slots: Signal<Vec<SaveSlotInfo>> = use_signal(Vec::new);
     let mut selected_slot: Signal<Option<usize>> = use_signal(|| None);
-    let mut confirm_overwrite: Signal<bool> = use_signal(|| false);
     let mut error_msg: Signal<String> = use_signal(String::new);
 
-    // Universe selection state
     let mut universes: Signal<Vec<String>> = use_signal(Vec::new);
     let mut selected_universe: Signal<String> = use_signal(String::new);
+    let mut is_single_player: Signal<bool> = use_signal(|| false);
 
-    // Load slots and universes once on mount
     let player = local_login_name_session();
     use_effect(move || {
         let player_name = player.clone();
@@ -43,7 +41,6 @@ pub fn CreateServer() -> Element {
             }
             match get_available_universes().await {
                 Ok(u) => {
-                    // Auto-select the first universe if only one exists
                     if u.len() == 1 {
                         selected_universe.set(u[0].clone());
                     }
@@ -58,31 +55,60 @@ pub fn CreateServer() -> Element {
         let slot = slots().get(idx).cloned();
         let user_name = local_login_name_session();
         let universe = selected_universe();
+        let single = is_single_player();
         async move {
-            // If the slot is occupied, delete the old data first
             if let Some(s) = slot {
                 if !s.path.as_os_str().is_empty() {
                     let _ = delete_game(s.path).await;
                 }
             }
-            send_initialize_game(&user_name, &universe, socket).await;
+            send_initialize_game(&user_name, &universe, single, socket).await;
             navigator.push(Route::LobbyPage {});
         }
     };
 
+    // Hero characters for preview
+    let hero_chars: Vec<Character> = all_characters()
+        .into_iter()
+        .filter(|c| c.kind == lib_rpg::character_mod::character::CharacterKind::Hero)
+        .collect();
+
     rsx! {
         div { class: "home-container",
-            h1 { class: "rpg-title", "🏰 Choose a Save Slot" }
-            p { class: "rpg-subtitle", "Select an empty slot or overwrite an existing save" }
+            h1 { class: "rpg-title", "🏰 Create a Game" }
 
             if !error_msg().is_empty() {
                 p { class: "admin-answer-error", "{error_msg}" }
             }
 
-            // Universe selector — only shown when there are multiple universes
+            // ── Step 1: Game Mode ────────────────────────────────────────────
+            div { class: "create-server-section",
+                p { class: "create-server-section-title", "1️⃣ Game Mode" }
+                div { class: "mode-toggle",
+                    button {
+                        class: if !is_single_player() { "mode-btn mode-btn-active" } else { "mode-btn" },
+                        onclick: move |_| is_single_player.set(false),
+                        "👥 Multiplayer"
+                    }
+                    button {
+                        class: if is_single_player() { "mode-btn mode-btn-active" } else { "mode-btn" },
+                        onclick: move |_| is_single_player.set(true),
+                        "🎮 Single Player"
+                    }
+                }
+                p { class: "create-server-mode-hint",
+                    if is_single_player() {
+                        "One player controls all heroes."
+                    } else {
+                        "Each connected player picks one hero."
+                    }
+                }
+            }
+
+            // ── Step 2: Universe ─────────────────────────────────────────────
             if universes().len() > 1 {
-                div { class: "universe-selector",
-                    p { class: "rpg-subtitle", "🌍 Choose a Universe" }
+                div { class: "create-server-section",
+                    p { class: "create-server-section-title", "2️⃣ Choose a Universe" }
                     div { class: "universe-grid",
                         for uni in universes() {
                             div {
@@ -103,65 +129,103 @@ pub fn CreateServer() -> Element {
                 }
             }
 
-            div { class: "save-slot-grid",
-                for (idx , slot) in slots().iter().enumerate() {
-                    if slot.name.is_empty() {
-                        // Empty slot
-                        div {
-                            class: "save-slot-card save-slot-empty",
-                            onclick: move |_| async move { start_game_in_slot(idx).await },
-                            span { class: "save-slot-icon", "➕" }
-                            span { class: "save-slot-label", "Empty Slot {idx + 1}" }
-                        }
-                    } else {
-                        // Occupied slot
-                        div {
-                            class: if selected_slot() == Some(idx) {
-                                "save-slot-card save-slot-occupied selected"
-                            } else {
-                                "save-slot-card save-slot-occupied"
-                            },
-                            onclick: move |_| {
-                                if selected_slot() == Some(idx) {
-                                    selected_slot.set(None);
-                                    confirm_overwrite.set(false);
-                                } else {
-                                    selected_slot.set(Some(idx));
-                                    confirm_overwrite.set(false);
+            // ── Step 3: Character Preview ────────────────────────────────────
+            div { class: "create-server-section",
+                p { class: "create-server-section-title",
+                    if is_single_player() { "3️⃣ Characters Available" } else { "3️⃣ Choose Your Character (in Lobby)" }
+                }
+                if is_single_player() {
+                    p { class: "create-server-mode-hint",
+                        "You will pick your heroes in the Lobby after creating the game."
+                    }
+                }
+                div { class: "char-preview-grid",
+                    for c in hero_chars {
+                        div { class: "char-preview-card",
+                            img {
+                                class: "char-preview-portrait",
+                                src: format!("{}/{}.png", PATH_IMG, c.photo_name),
+                                alt: "{c.db_full_name}",
+                            }
+                            div { class: "char-preview-info",
+                                span { class: "char-preview-name", "{c.db_full_name}" }
+                                span { class: "char-preview-class",
+                                    "{c.class.to_emoji()} {c.class.to_str()} · Lv {c.level}"
                                 }
-                            },
-                            span { class: "save-slot-icon", "💾" }
-                            div { class: "save-slot-info",
-                                span { class: "save-slot-name", "{slot.name}" }
-                                if !slot.current_scenario.is_empty() {
-                                    span { class: "save-slot-scenario",
-                                        "📜 {slot.current_scenario} (Lvl {slot.scenario_level})"
+                                {
+                                    let max_hp = c.stats.all_stats.get(HP).map(|a| a.max).unwrap_or(0);
+                                    rsx! {
+                                        span { class: "char-preview-hp", "❤️ {max_hp}" }
                                     }
                                 }
-                                span { class: "save-slot-date", "🕐 {slot.last_saved}" }
+                                if !c.description.is_empty() {
+                                    p { class: "char-preview-desc", "{c.description}" }
+                                }
                             }
-                            if selected_slot() == Some(idx) {
-                                div { class: "save-slot-actions",
-                                    Button {
-                                        variant: ButtonVariant::GreenType,
-                                        onclick: {
-                                            let path = slot.path.clone();
-                                            let user = local_login_name_session();
-                                            move |_| {
-                                                let _ = socket.clone();
-                                                let p = path.clone();
-                                                let u = user.clone();
-                                                let uni = selected_universe();
-                                                async move {
-                                                    if !p.as_os_str().is_empty() {
-                                                        let _ = delete_game(p).await;
+                        }
+                    }
+                }
+            }
+
+            // ── Step 4: Save Slot ────────────────────────────────────────────
+            div { class: "create-server-section",
+                p { class: "create-server-section-title", "4️⃣ Choose a Save Slot" }
+                div { class: "save-slot-grid",
+                    for (idx, slot) in slots().iter().enumerate() {
+                        if slot.name.is_empty() {
+                            div {
+                                class: "save-slot-card save-slot-empty",
+                                onclick: move |_| async move { start_game_in_slot(idx).await },
+                                span { class: "save-slot-icon", "➕" }
+                                span { class: "save-slot-label", "Empty Slot {idx + 1}" }
+                            }
+                        } else {
+                            div {
+                                class: if selected_slot() == Some(idx) {
+                                    "save-slot-card save-slot-occupied selected"
+                                } else {
+                                    "save-slot-card save-slot-occupied"
+                                },
+                                onclick: move |_| {
+                                    if selected_slot() == Some(idx) {
+                                        selected_slot.set(None);
+                                    } else {
+                                        selected_slot.set(Some(idx));
+                                    }
+                                },
+                                span { class: "save-slot-icon", "💾" }
+                                div { class: "save-slot-info",
+                                    span { class: "save-slot-name", "{slot.name}" }
+                                    if !slot.current_scenario.is_empty() {
+                                        span { class: "save-slot-scenario",
+                                            "📜 {slot.current_scenario} (Lvl {slot.scenario_level})"
+                                        }
+                                    }
+                                    span { class: "save-slot-date", "🕐 {slot.last_saved}" }
+                                }
+                                if selected_slot() == Some(idx) {
+                                    div { class: "save-slot-actions",
+                                        Button {
+                                            variant: ButtonVariant::GreenType,
+                                            onclick: {
+                                                let path = slot.path.clone();
+                                                let user = local_login_name_session();
+                                                move |_| {
+                                                    let p = path.clone();
+                                                    let u = user.clone();
+                                                    let uni = selected_universe();
+                                                    let single = is_single_player();
+                                                    async move {
+                                                        if !p.as_os_str().is_empty() {
+                                                            let _ = delete_game(p).await;
+                                                        }
+                                                        send_initialize_game(&u, &uni, single, socket).await;
+                                                        navigator.push(Route::LobbyPage {});
                                                     }
-                                                    send_initialize_game(&u, &uni, socket).await;
-                                                    navigator.push(Route::LobbyPage {});
                                                 }
-                                            }
-                                        },
-                                        "▶ Overwrite & Play"
+                                            },
+                                            "▶ Overwrite & Play"
+                                        }
                                     }
                                 }
                             }

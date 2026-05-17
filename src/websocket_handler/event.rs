@@ -61,7 +61,7 @@ static CLIENTS: Lazy<SharedClients> = Lazy::new(|| Arc::new(Mutex::new(HashMap::
 pub enum ClientEvent {
     LoginAllSessions(String, i64),  // `String`: username, `i64`: sql-id
     RequestLogOut(String),          // `String`: username
-    InitializeGame(String, String, String), // `String`: server_name, `String`: player_name, `String`: universe
+    InitializeGame(String, String, String, bool), // server_name, player_name, universe, is_single_player
     AddCharacterOnServerData(String, String, String), // `String`: server_name, `String`: player_name, `String`: character_name
     StartGame(String),                                // `String`: server_name
     LaunchAttack(String, String),                     // `String`: server_name, `String`: atk name
@@ -182,9 +182,9 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("{} is starting a new game", server_name);
                                 start_new_game_by_player(&server_name, false).await;
                             }
-                            Ok(ClientEvent::InitializeGame(server_name, player_name, universe)) => {
-                                tracing::info!("{} is initializing a new game (universe: {})", server_name, universe);
-                                let Ok(_) = init_new_game_by_player(&server_name, client_id, &player_name, &universe).await else {
+                            Ok(ClientEvent::InitializeGame(server_name, player_name, universe, is_single_player)) => {
+                                tracing::info!("{} is initializing a new game (universe: {}, single: {})", server_name, universe, is_single_player);
+                                let Ok(_) = init_new_game_by_player(&server_name, client_id, &player_name, &universe, is_single_player).await else {
                                     tracing::error!("Failed to initialize game for server {}, player {}", server_name, player_name);
                                     return;
                                 };
@@ -554,7 +554,7 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
 }
 
 #[cfg(feature = "server")]
-pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &str, universe: &str) -> Result<()> {
+pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &str, universe: &str, is_single_player: bool) -> Result<()> {
     let dm = DATA_MANAGER.lock().unwrap();
     // Filter scenarios by chosen universe (empty = all)
     let scenarios = if universe.is_empty() {
@@ -587,6 +587,7 @@ pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &s
     drop(sm);
     // add server data
     core_game_data.game_phase = GamePhase::InitGame;
+    core_game_data.is_single_player = is_single_player;
     // add first player
     core_game_data.players_nb = 0;
     add_server_data_with_player(&core_game_data, server_name, id, player_name);

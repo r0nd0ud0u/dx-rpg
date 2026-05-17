@@ -355,3 +355,74 @@ pub async fn get_available_universes() -> Result<Vec<String>, ServerFnError> {
     let dm = DATA_MANAGER.lock().map_err(|e| ServerFnError::new(format!("{e}")))?;
     Ok(dm.list_universes())
 }
+
+/// Summary of one hero character for the admin panel.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct AdminCharacterInfo {
+    pub db_full_name: String,
+    pub photo_name: String,
+    pub class: String,
+    pub level: u64,
+    pub description: String,
+    pub stats: std::collections::HashMap<String, (u64, u64)>, // name -> (current, max)
+}
+
+/// Returns the list of hero characters for the admin panel.
+#[server]
+pub async fn admin_list_characters() -> Result<Vec<AdminCharacterInfo>, ServerFnError> {
+    use crate::common::DATA_MANAGER;
+    use lib_rpg::character_mod::character::CharacterKind;
+    let dm = DATA_MANAGER.lock().map_err(|e| ServerFnError::new(format!("{e}")))?;
+    let infos = dm
+        .all_heroes
+        .iter()
+        .filter(|c| c.kind == CharacterKind::Hero)
+        .map(|c| AdminCharacterInfo {
+            db_full_name: c.db_full_name.clone(),
+            photo_name: c.photo_name.clone(),
+            class: format!("{} {}", c.class.to_emoji(), c.class.to_str()),
+            level: c.level,
+            description: c.description.clone(),
+            stats: c
+                .stats
+                .all_stats
+                .iter()
+                .map(|(k, v)| (k.clone(), (v.current, v.max)))
+                .collect(),
+        })
+        .collect();
+    Ok(infos)
+}
+
+/// Get a user setting value (returns default_val if not set).
+#[server]
+pub async fn get_user_setting(key: String, default_val: String) -> Result<String, ServerFnError> {
+    let username = get_user_name().await.map_err(|e| ServerFnError::new(format!("{e}")))? ;
+    let pool = get_db().await;
+    let row: Option<(String,)> =
+        sqlx::query_as("SELECT value FROM user_settings WHERE username = ?1 AND key = ?2")
+            .bind(&username)
+            .bind(&key)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| ServerFnError::new(format!("{e}")))?;
+    Ok(row.map(|(v,)| v).unwrap_or(default_val))
+}
+
+/// Save a user setting key/value pair.
+#[server]
+pub async fn save_user_setting(key: String, value: String) -> Result<(), ServerFnError> {
+    let username = get_user_name().await.map_err(|e| ServerFnError::new(format!("{e}")))? ;
+    let pool = get_db().await;
+    sqlx::query(
+        "INSERT INTO user_settings (username, key, value) VALUES (?1, ?2, ?3)
+         ON CONFLICT(username, key) DO UPDATE SET value = EXCLUDED.value",
+    )
+    .bind(&username)
+    .bind(&key)
+    .bind(&value)
+    .execute(pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("{e}")))?;
+    Ok(())
+}

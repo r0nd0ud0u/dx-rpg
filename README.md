@@ -84,6 +84,33 @@ ADMIN_ENABLED=true
 Navigate to `/admin` to access:
 - **Users tab**: list all users with connection status and save count; delete users
 - **Scenarios tab**: list all loaded scenarios with level, boss count, and description
+- **Characters tab**: list all hero characters with portrait, class, level, description, and full stats table
+
+### Game Mode: Single-player vs Multiplayer
+
+When creating a server, choose between:
+- **Multiplayer** (default): each connected player picks exactly one character; other characters appear as locked (🔒) on the selection screen
+- **Single-player**: one player can pick multiple heroes; each extra hero is added with an `__sp{N}` key; the player controls all heroes in battle
+
+### Settings Panel (⚙️)
+
+In the game toolbar, a new **Settings** sheet lets each user:
+- Toggle **Attack Tooltips** — show/hide attack description on hover (persisted per-user in the DB)
+
+Settings are stored in the `user_settings` table: `(username, key, value)`.
+
+### Game Stats Sheet (improved)
+
+The 📊 Stats sheet now shows:
+- KPI grid: Turn, Round, Kill count
+- Active player indicator
+- Scenario progress bar (scenarios completed / total)
+- Current scenario name, level, universe
+- HP bars for all active heroes
+
+### Load Game page
+
+The Load Game page now shows save-slot style cards identical to the Create Server page, with load and delete actions inline.
 
 ---
 
