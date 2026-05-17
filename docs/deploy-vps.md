@@ -262,31 +262,23 @@ curl -I https://yourdomain.com
 ```
 
 ```
-# Redirection HTTP → HTTPS pour le domaine et l'IP
+# Redirect HTTP to HTTPS
 server {
     listen 80;
-    server_name YOUR-DOMAIN www.YOUR-DOMAIN YOUR-IP;
+    server_name your-domain www.your-domain;
     return 301 https://$host$request_uri;
 }
 
-# HTTPS pour le nom de domaine (Let's Encrypt)
 server {
     listen 443 ssl;
-    server_name YOUR-DOMAIN www.YOUR-DOMAIN;
+    server_name your-domain www.your-domain;
 
-    ssl_certificate     /etc/letsencrypt/live/YOUR-DOMAIN/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/YOUR-DOMAIN/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/your-domain/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain/privkey.pem;
     include             /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
 
-    location / {
-        proxy_pass http://localhost:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
+    # Main app
     location /api/ {
         proxy_pass http://localhost:8080/api/;
         proxy_set_header Host $host;
@@ -299,26 +291,37 @@ server {
         proxy_read_timeout 86400;
     }
 
-    location /db/ {
-        proxy_pass http://127.0.0.1:8082/;
+    # sqlite-web under /db/
+    location ^~ /db/ {
+        auth_basic "Restricted";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+
+        proxy_pass http://127.0.0.1:8082/;  # Trailing slash is important!
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_redirect off;
+        proxy_set_header Accept-Encoding "";  # Required for sub_filter
+        sub_filter_types text/html;
+        sub_filter 'href="/' 'href="/db/';
+        sub_filter 'src="/' 'src="/db/';
+        sub_filter_once off;
     }
-}
 
-# HTTPS pour l'adresse IP (auto-signé)
-server {
-    listen 443 ssl;
-    server_name YOUR-IP;
+    # Optional: static assets for sqlite-web
+    location ^~ /db/static/ {
+        proxy_pass http://127.0.0.1:8082/static/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        expires 7d;
+        add_header Cache-Control "public, no-transform";
+    }
 
-    ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
-    ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers on;
-    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
-
+    # Main app catch-all (should be last)
     location / {
         proxy_pass http://localhost:8080;
         proxy_set_header Host $host;
@@ -326,27 +329,8 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-
-    location /api/ {
-        proxy_pass http://localhost:8080/api/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_read_timeout 86400;
-    }
-
-    location /db/ {
-        proxy_pass http://127.0.0.1:8082/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
 }
+
 ```
 
 ### Certificate auto-renewal
@@ -369,7 +353,7 @@ sudo apt-get install -y ca-certificates curl gnupg
 sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 echo \
-  "deb [arch=\"$(dpkg --print-architecture)\" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  "deb [arch=\"$(dpkg --print-architecture)\" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/slinux/ubuntu \
   $(lsb_release -cs) stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
@@ -427,3 +411,11 @@ Port 8080 and 8082 are **not** exposed to the internet. Docker Compose handles i
 - [ ] Firewall allows only 22, 80, 443
 - [ ] `certbot renew --dry-run` succeeds
 - [ ] `https://yourdomain.com` opens without any security warning
+
+
+## login db
+
+sudo apt-get update
+sudo apt-get install apache2-utils  # si ce n'est pas déjà fait
+htpasswd -c ./deploy/.htpasswd admin
+# (remplace "admin" par le login souhaité, entre le mot de passe quand demandé)
