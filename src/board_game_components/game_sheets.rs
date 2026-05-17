@@ -422,37 +422,37 @@ fn LogsSheet(s: SheetSide) -> Element {
                 flex: "1",
                 overflow: "hidden",
 
-                Tabs { default_value: "all".to_string(), horizontal: true,
+                Tabs { default_value: "all".to_owned(), horizontal: true,
 
                     TabList {
-                        TabTrigger { value: "all".to_string(), index: 0_usize, "All" }
-                        TabTrigger { value: "combat".to_string(), index: 1_usize, "⚔ Combat" }
-                        TabTrigger { value: "heal".to_string(), index: 2_usize, "💚 Healing" }
-                        TabTrigger { value: "event".to_string(), index: 3_usize, "ℹ Events" }
+                        TabTrigger { value: "all".to_owned(), index: 0_usize, "All" }
+                        TabTrigger { value: "combat".to_owned(), index: 1_usize, "⚔ Combat" }
+                        TabTrigger { value: "heal".to_owned(), index: 2_usize, "💚 Healing" }
+                        TabTrigger { value: "event".to_owned(), index: 3_usize, "ℹ Events" }
                     }
 
-                    TabContent { value: "all".to_string(), index: 0_usize,
+                    TabContent { value: "all".to_owned(), index: 0_usize,
                         LogsList {
                             logs: server_data().core_game_data.game_manager.logs.clone(),
-                            filter: "all".to_string(),
+                            filter: "all".to_owned(),
                         }
                     }
-                    TabContent { value: "combat".to_string(), index: 1_usize,
+                    TabContent { value: "combat".to_owned(), index: 1_usize,
                         LogsList {
                             logs: server_data().core_game_data.game_manager.logs.clone(),
-                            filter: "combat".to_string(),
+                            filter: "combat".to_owned(),
                         }
                     }
-                    TabContent { value: "heal".to_string(), index: 2_usize,
+                    TabContent { value: "heal".to_owned(), index: 2_usize,
                         LogsList {
                             logs: server_data().core_game_data.game_manager.logs.clone(),
-                            filter: "heal".to_string(),
+                            filter: "heal".to_owned(),
                         }
                     }
-                    TabContent { value: "event".to_string(), index: 3_usize,
+                    TabContent { value: "event".to_owned(), index: 3_usize,
                         LogsList {
                             logs: server_data().core_game_data.game_manager.logs.clone(),
-                            filter: "event".to_string(),
+                            filter: "event".to_owned(),
                         }
                     }
                 }
