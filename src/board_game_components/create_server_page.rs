@@ -41,7 +41,7 @@ pub fn CreateServer() -> Element {
             }
             match get_available_universes().await {
                 Ok(u) => {
-                    if u.len() == 1 {
+                    if !u.is_empty() {
                         selected_universe.set(u[0].clone());
                     }
                     universes.set(u);

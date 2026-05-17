@@ -63,6 +63,7 @@ pub enum ClientEvent {
     RequestLogOut(String),          // `String`: username
     InitializeGame(String, String, String, bool), // server_name, player_name, universe, is_single_player
     AddCharacterOnServerData(String, String, String), // `String`: server_name, `String`: player_name, `String`: character_name
+    RemoveCharacterOnServerData(String, String),       // `String`: server_name, `String`: player_key
     StartGame(String),                                // `String`: server_name
     LaunchAttack(String, String),                     // `String`: server_name, `String`: atk name
     AddPlayer(String),                                // `String`: username
@@ -192,6 +193,10 @@ pub async fn on_rcv_client_event(
                             Ok(ClientEvent::AddCharacterOnServerData(server_name, player_name, character_name)) => {
                                 tracing::info!("{} is adding character {} to server data", player_name, character_name);
                                 add_character_on_server_data(&server_name, &player_name, &character_name);
+                            }
+                            Ok(ClientEvent::RemoveCharacterOnServerData(server_name, player_key)) => {
+                                tracing::info!("Removing character for key {} on server {}", player_key, server_name);
+                                remove_character_on_server_data(&server_name, &player_key);
                             }
                             Ok(ClientEvent::LaunchAttack(server_name, selected_atk)) => {
                                 tracing::info!("A new atk has been launched with atk {} for server {}", selected_atk, server_name);
@@ -967,6 +972,56 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
             .map(|h| h.id_name.clone())
             .collect::<Vec<String>>())
     );
+    update_clients_server_data(server_name);
+}
+
+/// Remove the character assigned to `player_key` and rebuild active_heroes / heroes_chosen.
+/// In single-player, pass `"{player}__sp{N}"` to remove a specific extra hero.
+#[cfg(feature = "server")]
+fn remove_character_on_server_data(server_name: &str, player_key: &str) {
+    let dm = DATA_MANAGER.lock().unwrap();
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    if let Some(server_data) = sm.servers_data.get_mut(server_name) {
+        // Remove the entry for this player key
+        server_data
+            .players_data
+            .players_info
+            .remove(player_key);
+        // If it was the primary player, also remove all __sp{N} keys
+        if !player_key.contains("__sp") {
+            let sp_keys: Vec<String> = server_data
+                .players_data
+                .players_info
+                .keys()
+                .filter(|k| k.starts_with(&format!("{}__sp", player_key)))
+                .cloned()
+                .collect();
+            for k in sp_keys {
+                server_data.players_data.players_info.remove(&k);
+            }
+        }
+        // Rebuild active_heroes and heroes_chosen from remaining entries
+        server_data.core_game_data.game_manager.pm.active_heroes.clear();
+        server_data.core_game_data.heroes_chosen.clear();
+        let players_snapshot: Vec<(String, Vec<String>)> = server_data
+            .players_data
+            .players_info
+            .iter()
+            .map(|(k, v)| (k.clone(), v.character_id_names.clone()))
+            .collect();
+        for (key, char_id_names) in &players_snapshot {
+            for character_id_name in char_id_names {
+                let local_name = character_id_name.split("_#").next().unwrap_or(character_id_name);
+                if let Some(character) = dm.all_heroes.iter().find(|h| h.db_full_name == *local_name) {
+                    let mut c = character.clone();
+                    c.id_name = character_id_name.clone();
+                    server_data.core_game_data.game_manager.pm.active_heroes.push(c.clone());
+                    server_data.core_game_data.heroes_chosen.insert(key.clone(), c.id_name.clone());
+                }
+            }
+        }
+    }
+    drop(sm);
     update_clients_server_data(server_name);
 }
 

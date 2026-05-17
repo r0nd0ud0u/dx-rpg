@@ -22,24 +22,42 @@ A browser-based multiplayer RPG built with [Dioxus](https://dioxuslabs.com/) (Ru
 
 ## Features
 
-### 10-Stage Scenario Progression
+### Universes & Scenario Progression
 
-The game ships with 10 progressive stages designed to level up players gradually:
+The game ships with two universes, each with 10 progressive stages:
 
-| Stage | Name | Enemy | Recommended Level |
-|-------|------|-------|-------------------|
-| 1 | Patrouille Gobeline | Gobelin Eclaireur | 1 |
-| 2 | Embuscade Gobeline | Gobelin Eclaireur + Angmar10PV | 2 |
-| 3 | Le Pillard Orc | Orc Pillard | 3 |
-| 4 | Patrouille Mixte | Orc Pillard + Gobelin Eclaireur | 4 |
-| 5 | Le Champion des Orcs | Champion Orc | 5 |
-| 6 | Colère du Champion | Champion Orc + Gobelin Eclaireur | 6 |
-| 7 | L'Ombre du Mordor | Nécromancien du Mordor | 7 |
-| 8 | Rituel des Ténèbres | Nécromancien + Gobelin Eclaireur | 8 |
-| 9 | Le Cavalier Sans Visage | Nazgul | 9 |
-| 10 | L'Oeil de Sauron | Sauron l'Oeil Flamboyant (Boss) | 10 |
+#### LOTR Universe (`offlines/scenarios/lotr/`)
 
-Each scenario is defined as a JSON file under `offlines/scenarios/`. Enemies are defined in `offlines/characters/` and their attacks in `offlines/attack/<enemy-name>/`.
+| Stage | Name | Enemies |
+|-------|------|---------|
+| 1 | Patrouille Gobeline | Gobelin Eclaireur |
+| 2 | Embuscade Gobeline | Gobelin Eclaireur + Angmar10PV |
+| 3-10 | … | … |
+
+#### Pokémon Universe (`offlines/scenarios/pokemon/`)
+
+| Stage | Name | Enemies |
+|-------|------|---------|
+| 1 | Patrouille Rattata | Rattata |
+| 2 | Double Attaque | Rattata + Pidgey |
+| 3 | Colère de Mankey | Mankey |
+| 4 | Embuscade en Montagne | Mankey + Pidgey |
+| 5 | Machoke le Colosse | Machoke |
+| 6 | L'Ombre de Gengar | Gengar |
+| 7 | Fantômes de la Tour | Haunter + Gengar |
+| 8 | Dragonite Déchaîné | Dragonite |
+| 9 | Mewtwo Éveillé | Mewtwo |
+| 10 | Mewtwo Armure Ultime | Mewtwo Armure |
+
+**Pokémon Heroes** (selectable characters):
+
+| Character | Class | Energy | Signature Moves |
+|-----------|-------|--------|-----------------|
+| Bulbasaur | Mage | Mana | Vine Whip, Leech Seed, Razor Leaf, Solar Beam |
+| Charmander | Berserker | Berserk | Ember, Fire Spin, Flamethrower, Fire Blast |
+| Squirtle | Paladin | Vigor | Water Gun, Withdraw, Surf, Ice Beam |
+
+Each scenario is defined as a JSON file under `offlines/scenarios/`. Characters live in `offlines/characters/` and attacks in `offlines/attack/<character-name>/`.
 
 ### Save Slot System
 
@@ -90,12 +108,14 @@ Navigate to `/admin` to access:
 
 When creating a server, choose between:
 - **Multiplayer** (default): each connected player picks exactly one character; other characters appear as locked (🔒) on the selection screen
-- **Single-player**: one player can pick multiple heroes; each extra hero is added with an `__sp{N}` key; the player controls all heroes in battle
+- **Single-player**: one player can pick multiple heroes; each extra hero is added with an `__sp{N}` key; the player controls all heroes in battle. Clicking a **selected** hero card in single-player mode deselects and removes that hero from the current game session.
 
 ### Settings Panel (⚙️)
 
-In the game toolbar, a new **Settings** sheet lets each user:
+In the game toolbar, a **Settings** sheet lets each user:
 - Toggle **Attack Tooltips** — show/hide attack description on hover (persisted per-user in the DB)
+
+The Settings sheet uses a dedicated Dioxus component scope, avoiding hook-count mismatch panics that could occur when switching between game sheets.
 
 Settings are stored in the `user_settings` table: `(username, key, value)`.
 

@@ -118,38 +118,24 @@ pub fn GameSheets() -> Element {
         }
         Sheet { open: open(), on_open_change: move |v| open.set(v),
             match sheet_kind() {
-                SheetKind::Inventory => {
-                    InventorySheet(InventorySheetProps {
-                        s: SheetSide::Right,
-                    })
-                }
-                SheetKind::Stats => {
-                    GameStatsSheet(GameStatsSheetProps {
-                        s: SheetSide::Left,
-                    })
-                }
-                SheetKind::Menu => {
-                    MenuSheet(MenuSheetProps {
-                        s: SheetSide::Top,
-                        open_wnd: open,
-                        is_saved,
-                    })
-                }
-                SheetKind::Logs => {
-                    LogsSheet(LogsSheetProps {
-                        s: SheetSide::Bottom,
-                    })
-                }
-                SheetKind::Scenarios => {
-                    ScenariosSheet(ScenariosSheetProps {
-                        s: SheetSide::Right,
-                    })
-                }
-                SheetKind::Settings => {
-                    SettingsSheet(SettingsSheetProps {
-                        s: SheetSide::Left,
-                    })
-                }
+                SheetKind::Inventory => rsx! {
+                    InventorySheet { s: SheetSide::Right }
+                },
+                SheetKind::Stats => rsx! {
+                    GameStatsSheet { s: SheetSide::Left }
+                },
+                SheetKind::Menu => rsx! {
+                    MenuSheet { s: SheetSide::Top, open_wnd: open, is_saved }
+                },
+                SheetKind::Logs => rsx! {
+                    LogsSheet { s: SheetSide::Bottom }
+                },
+                SheetKind::Scenarios => rsx! {
+                    ScenariosSheet { s: SheetSide::Right }
+                },
+                SheetKind::Settings => rsx! {
+                    SettingsSheet { s: SheetSide::Left }
+                },
             }
         }
     }
@@ -680,14 +666,14 @@ const SETTING_TOOLTIPS: &str = "show_atk_tooltips";
 
 #[component]
 fn SettingsSheet(s: SheetSide) -> Element {
-    let mut show_tooltips = use_context::<Signal<bool>>();
+    let mut show_atk_tooltips = use_context::<Signal<bool>>();
     let mut save_msg: Signal<String> = use_signal(String::new);
 
     // Load saved setting on mount
     use_effect(move || {
         spawn(async move {
             if let Ok(val) = get_user_setting(SETTING_TOOLTIPS.to_string(), "true".to_string()).await {
-                show_tooltips.set(val == "true");
+                show_atk_tooltips.set(val == "true");
             }
         });
     });
@@ -716,12 +702,12 @@ fn SettingsSheet(s: SheetSide) -> Element {
                     label { class: "toggle-switch",
                         input {
                             r#type: "checkbox",
-                            checked: show_tooltips(),
+                            checked: show_atk_tooltips(),
                             onchange: move |e| {
-                                let v = e.value() == "true" || show_tooltips();
+                                let v = e.value() == "true" || show_atk_tooltips();
                                 // toggle manually since checkbox `checked` doesn't invert
-                                let new_val = !show_tooltips();
-                                show_tooltips.set(new_val);
+                                let new_val = !show_atk_tooltips();
+                                show_atk_tooltips.set(new_val);
                                 save_msg.set("Saving…".to_string());
                                 spawn(async move {
                                     let _ = save_user_setting(

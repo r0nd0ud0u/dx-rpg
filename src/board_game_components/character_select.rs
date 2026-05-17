@@ -159,6 +159,7 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool) -> Element
                     let desc = c.description.clone();
                     let is_sp = is_single_player;
                     let sel_names_snap = selected_names.clone();
+                    let sd_signal = server_data; // Signal<ServerData> is Copy
                     rsx! {
                         div {
                             class: if is_taken {
@@ -176,7 +177,22 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool) -> Element
                                 let sel = sel_names_snap.clone();
                                 spawn(async move {
                                     if is_sp {
-                                        if sel.contains(&cn) { return; }
+                                        if sel.contains(&cn) {
+                                            // Find the key that holds this character and remove it
+                                            let remove_key = sd_signal
+                                                .peek()
+                                                .core_game_data
+                                                .heroes_chosen
+                                                .iter()
+                                                .find(|(_, v)| strip_id_suffix(v) == cn.as_str())
+                                                .map(|(k, _)| k.clone());
+                                            if let Some(key) = remove_key {
+                                                let _ = socket
+                                                    .send(ClientEvent::RemoveCharacterOnServerData(sn, key))
+                                                    .await;
+                                            }
+                                            return;
+                                        }
                                         let key = if sel.is_empty() {
                                             pn.clone()
                                         } else {
@@ -229,5 +245,28 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool) -> Element
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::strip_id_suffix;
+
+    #[test]
+    fn strip_id_suffix_removes_hash_part() {
+        assert_eq!(strip_id_suffix("Bulbasaur_#1"), "Bulbasaur");
+        assert_eq!(strip_id_suffix("Mewtwo Armure_#1"), "Mewtwo Armure");
+        assert_eq!(strip_id_suffix("Thraïn_#2"), "Thraïn");
+    }
+
+    #[test]
+    fn strip_id_suffix_no_suffix_unchanged() {
+        assert_eq!(strip_id_suffix("Charmander"), "Charmander");
+        assert_eq!(strip_id_suffix(""), "");
+    }
+
+    #[test]
+    fn strip_id_suffix_multiple_hashes_keeps_first_segment() {
+        assert_eq!(strip_id_suffix("Hero_#1_#2"), "Hero");
     }
 }
