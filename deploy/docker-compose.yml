@@ -1,0 +1,53 @@
+name: dx-rpg
+
+services:
+  dx-rpg:
+    image: ghcr.io/r0nd0ud0u/dx-rpg:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      IP: "0.0.0.0"
+      DATABASE_URL: "sqlite:///data/db.sqlite"
+      # LOG_LEVEL: "debug"
+    # Optional: place a .env file next to docker-compose.yml for extra runtime vars
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      # Persistent SQLite database — survives container stop/start/update
+      - db_data:/data
+      # Persistent saved game data per user — survives container stop/start/update
+      - saved_data:/usr/local/app/saved_data
+    healthcheck:
+      # Check TCP port AND that the SQLite DB is fully initialized (not just a touch'd empty file)
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8080' 2>/dev/null && [ $(stat -c%s //data/db.sqlite 2>/dev/null || echo 0) -gt 4096 ]"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # Lightweight SQLite web UI — not exposed to host directly.
+  # Proxied via sqlite-proxy (nginx) on port 8082 to avoid Rancher Desktop host-switch bug.
+  sqlite-web:
+    image: coleifer/sqlite-web:latest
+    restart: unless-stopped
+    ports:
+      - "8082:5000"
+    environment:
+      SQLITE_DATABASE: /data/db.sqlite
+    command: ["sqlite_web", "-H", "0.0.0.0", "-p", "5000", "-x", "/data/db.sqlite"]
+    volumes:
+      - db_data:/data
+    depends_on:
+      dx-rpg:
+        condition: service_healthy
+volumes:
+  # Named volume for the SQLite database file (/data/db.sqlite inside the container).
+  # Docker persists this across stop/start. To reset: docker volume rm dx-rpg_db_data
+  db_data:
+
+  # Named volume for per-user game save files (/usr/local/app/saved_data/ inside the container).
+  # To reset: docker volume rm dx-rpg_saved_data
+  saved_data:
