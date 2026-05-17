@@ -87,9 +87,7 @@ pub async fn get_save_slots(player_name: String) -> Result<Vec<SaveSlotInfo>, Se
         .and_then(|v| v.parse::<usize>().ok())
         .unwrap_or(3);
 
-    let saved_dir = SAVED_DATA
-        .join(&player_name)
-        .join(GAMES_DIR.to_path_buf());
+    let saved_dir = SAVED_DATA.join(&player_name).join(GAMES_DIR.to_path_buf());
 
     let dirs = list_dirs_in_dir(&saved_dir).unwrap_or_default();
 

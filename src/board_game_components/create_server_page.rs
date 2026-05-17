@@ -112,11 +112,7 @@ pub fn CreateServer() -> Element {
                     div { class: "universe-grid",
                         for uni in universes() {
                             div {
-                                class: if selected_universe() == uni {
-                                    "universe-card universe-card-selected"
-                                } else {
-                                    "universe-card"
-                                },
+                                class: if selected_universe() == uni { "universe-card universe-card-selected" } else { "universe-card" },
                                 onclick: {
                                     let uni = uni.clone();
                                     move |_| selected_universe.set(uni.clone())
@@ -132,7 +128,11 @@ pub fn CreateServer() -> Element {
             // ── Step 3: Character Preview ────────────────────────────────────
             div { class: "create-server-section",
                 p { class: "create-server-section-title",
-                    if is_single_player() { "3️⃣ Characters Available" } else { "3️⃣ Choose Your Character (in Lobby)" }
+                    if is_single_player() {
+                        "3️⃣ Characters Available"
+                    } else {
+                        "3️⃣ Choose Your Character (in Lobby)"
+                    }
                 }
                 if is_single_player() {
                     p { class: "create-server-mode-hint",
@@ -181,11 +181,7 @@ pub fn CreateServer() -> Element {
                             }
                         } else {
                             div {
-                                class: if selected_slot() == Some(idx) {
-                                    "save-slot-card save-slot-occupied selected"
-                                } else {
-                                    "save-slot-card save-slot-occupied"
-                                },
+                                class: if selected_slot() == Some(idx) { "save-slot-card save-slot-occupied selected" } else { "save-slot-card save-slot-occupied" },
                                 onclick: move |_| {
                                     if selected_slot() == Some(idx) {
                                         selected_slot.set(None);

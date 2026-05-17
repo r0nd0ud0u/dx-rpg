@@ -69,9 +69,17 @@ pub fn CharacterPanel(
         let is_single = sd.core_game_data.is_single_player;
         if is_single {
             // In single-player, the active player IS the current character
-            sd.core_game_data.game_manager.pm.current_player.id_name.clone()
+            sd.core_game_data
+                .game_manager
+                .pm
+                .current_player
+                .id_name
+                .clone()
         } else {
-            match sd.players_data.get_first_character_name(&local_session_player_name()) {
+            match sd
+                .players_data
+                .get_first_character_name(&local_session_player_name())
+            {
                 Some(player_name) => player_name,
                 None => {
                     tracing::error!(
@@ -282,11 +290,7 @@ pub fn NewAtkButton(
         Tooltip { disabled: !has_description || !show_tooltips(),
             TooltipTrigger {
                 Button {
-                    variant: if can_be_launched {
-                        ButtonVariant::AtkName
-                    } else {
-                        ButtonVariant::AtkNameBlocked
-                    },
+                    variant: if can_be_launched { ButtonVariant::AtkName } else { ButtonVariant::AtkNameBlocked },
                     onclick: move |_| {
                         let async_atk_name = attack_name.clone();
                         let async_launcher_name = launcher_id_name.clone();
@@ -303,8 +307,7 @@ pub fn NewAtkButton(
                                 )
                                 .await;
                             tracing::info!(
-                                "set_targeted_characters {} for atk {}",
-                                async_launcher_name.clone(),
+                                "set_targeted_characters {} for atk {}", async_launcher_name.clone(),
                                 async_atk_name.clone()
                             );
                         }

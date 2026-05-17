@@ -296,9 +296,7 @@ pub async fn admin_list_users() -> Result<Vec<AdminUserInfo>, ServerFnError> {
     let users = rows
         .into_iter()
         .map(|row| {
-            let save_dir = SAVED_DATA
-                .join(&row.username)
-                .join(GAMES_DIR.to_path_buf());
+            let save_dir = SAVED_DATA.join(&row.username).join(GAMES_DIR.to_path_buf());
             let nb_saves = list_dirs_in_dir(&save_dir).map(|v| v.len()).unwrap_or(0);
             AdminUserInfo {
                 username: row.username,
@@ -325,7 +323,9 @@ pub struct AdminScenarioInfo {
 #[server]
 pub async fn admin_list_scenarios() -> Result<Vec<AdminScenarioInfo>, ServerFnError> {
     use crate::common::DATA_MANAGER;
-    let dm = DATA_MANAGER.lock().map_err(|e| ServerFnError::new(format!("{e}")))?;
+    let dm = DATA_MANAGER
+        .lock()
+        .map_err(|e| ServerFnError::new(format!("{e}")))?;
     let infos = dm
         .all_scenarios
         .iter()
@@ -352,7 +352,9 @@ pub async fn admin_list_scenarios() -> Result<Vec<AdminScenarioInfo>, ServerFnEr
 #[server]
 pub async fn get_available_universes() -> Result<Vec<String>, ServerFnError> {
     use crate::common::DATA_MANAGER;
-    let dm = DATA_MANAGER.lock().map_err(|e| ServerFnError::new(format!("{e}")))?;
+    let dm = DATA_MANAGER
+        .lock()
+        .map_err(|e| ServerFnError::new(format!("{e}")))?;
     Ok(dm.list_universes())
 }
 
@@ -372,7 +374,9 @@ pub struct AdminCharacterInfo {
 pub async fn admin_list_characters() -> Result<Vec<AdminCharacterInfo>, ServerFnError> {
     use crate::common::DATA_MANAGER;
     use lib_rpg::character_mod::character::CharacterKind;
-    let dm = DATA_MANAGER.lock().map_err(|e| ServerFnError::new(format!("{e}")))?;
+    let dm = DATA_MANAGER
+        .lock()
+        .map_err(|e| ServerFnError::new(format!("{e}")))?;
     let infos = dm
         .all_heroes
         .iter()
@@ -397,7 +401,9 @@ pub async fn admin_list_characters() -> Result<Vec<AdminCharacterInfo>, ServerFn
 /// Get a user setting value (returns default_val if not set).
 #[server]
 pub async fn get_user_setting(key: String, default_val: String) -> Result<String, ServerFnError> {
-    let username = get_user_name().await.map_err(|e| ServerFnError::new(format!("{e}")))? ;
+    let username = get_user_name()
+        .await
+        .map_err(|e| ServerFnError::new(format!("{e}")))?;
     let pool = get_db().await;
     let row: Option<(String,)> =
         sqlx::query_as("SELECT value FROM user_settings WHERE username = ?1 AND key = ?2")
@@ -412,7 +418,9 @@ pub async fn get_user_setting(key: String, default_val: String) -> Result<String
 /// Save a user setting key/value pair.
 #[server]
 pub async fn save_user_setting(key: String, value: String) -> Result<(), ServerFnError> {
-    let username = get_user_name().await.map_err(|e| ServerFnError::new(format!("{e}")))? ;
+    let username = get_user_name()
+        .await
+        .map_err(|e| ServerFnError::new(format!("{e}")))?;
     let pool = get_db().await;
     sqlx::query(
         "INSERT INTO user_settings (username, key, value) VALUES (?1, ?2, ?3)

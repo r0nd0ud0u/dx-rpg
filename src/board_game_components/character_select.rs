@@ -114,8 +114,7 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool) -> Element
         .heroes_chosen
         .iter()
         .filter(|(k, _)| {
-            k.as_str() == player_name.as_str()
-                || k.starts_with(&format!("{}__sp", player_name))
+            k.as_str() == player_name.as_str() || k.starts_with(&format!("{}__sp", player_name))
         })
         .map(|(_, v)| strip_id_suffix(v).to_string())
         .collect();

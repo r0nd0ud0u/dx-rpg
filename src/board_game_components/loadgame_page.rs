@@ -50,11 +50,7 @@ pub fn LoadGame() -> Element {
                             let is_selected = selected() == Some(index);
                             rsx! {
                                 div {
-                                    class: if is_selected {
-                                        "save-slot-card save-slot-occupied selected"
-                                    } else {
-                                        "save-slot-card save-slot-occupied"
-                                    },
+                                    class: if is_selected { "save-slot-card save-slot-occupied selected" } else { "save-slot-card save-slot-occupied" },
                                     onclick: move |_| {
                                         if selected() == Some(index) {
                                             selected.set(None);
@@ -96,11 +92,7 @@ pub fn LoadGame() -> Element {
                                                         .unwrap()
                                                         .to_owned();
                                                     async move {
-                                                        match server_file_utils::delete_game(
-                                                            cur_game,
-                                                        )
-                                                        .await
-                                                        {
+                                                        match server_file_utils::delete_game(cur_game).await {
                                                             Ok(_) => {
                                                                 let _ = socket
                                                                     .send(
@@ -112,10 +104,7 @@ pub fn LoadGame() -> Element {
                                                                     .await;
                                                             }
                                                             Err(e) => {
-                                                                tracing::error!(
-                                                                    "Error deleting game: {}",
-                                                                    e
-                                                                );
+                                                                tracing::error!("Error deleting game: {}", e);
                                                             }
                                                         }
                                                         selected.set(None);

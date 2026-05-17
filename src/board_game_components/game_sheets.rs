@@ -299,7 +299,9 @@ fn GameStatsSheet(s: SheetSide) -> Element {
                         }
                         div { class: "stats-kpi",
                             span { class: "stats-kpi-label", "KILLS" }
-                            span { class: "stats-kpi-value stats-kpi-danger", "{kills}/{total_bosses_ever}" }
+                            span { class: "stats-kpi-value stats-kpi-danger",
+                                "{kills}/{total_bosses_ever}"
+                            }
                         }
                     }
 
@@ -321,11 +323,7 @@ fn GameStatsSheet(s: SheetSide) -> Element {
                                     class: "stats-progress-inner",
                                     style: format!(
                                         "width: {}%",
-                                        if total_scenarios > 0 {
-                                            (completed * 100) / total_scenarios
-                                        } else {
-                                            0
-                                        },
+                                        if total_scenarios > 0 { (completed * 100) / total_scenarios } else { 0 },
                                     ),
                                 }
                             }
@@ -354,7 +352,11 @@ fn GameStatsSheet(s: SheetSide) -> Element {
                                 rsx! {
                                     div { class: "stats-hero-row",
                                         div { class: "stats-hero-name",
-                                            if is_dead { "💀 " } else { "🟢 " }
+                                            if is_dead {
+                                                "💀 "
+                                            } else {
+                                                "🟢 "
+                                            }
                                             "{hero.id_name}"
                                         }
                                         div { class: "stats-hero-bar-wrap",
@@ -630,11 +632,32 @@ fn ScenariosSheet(s: SheetSide) -> Element {
                     div { class: "scenario-history",
                         for scenario in sorted_scenarios.iter() {
                             {
-                                let state = states.get(&scenario.name).cloned().unwrap_or(ScenarioState::NotStarted);
+                                let state = states
+                                    .get(&scenario.name)
+                                    .cloned()
+                                    .unwrap_or(ScenarioState::NotStarted);
                                 let (status_text, chip_class, item_class) = match state {
-                                    ScenarioState::Completed => ("✅ Completed", "scenario-chip completed", "scenario-history-item completed"),
-                                    ScenarioState::InProgress => ("⚔️ In Progress", "scenario-chip in-progress", "scenario-history-item"),
-                                    ScenarioState::NotStarted => ("🔒 Not Started", "scenario-chip", "scenario-history-item not-started"),
+                                    ScenarioState::Completed => {
+                                        (
+                                            "✅ Completed",
+                                            "scenario-chip completed",
+                                            "scenario-history-item completed",
+                                        )
+                                    }
+                                    ScenarioState::InProgress => {
+                                        (
+                                            "⚔️ In Progress",
+                                            "scenario-chip in-progress",
+                                            "scenario-history-item",
+                                        )
+                                    }
+                                    ScenarioState::NotStarted => {
+                                        (
+                                            "🔒 Not Started",
+                                            "scenario-chip",
+                                            "scenario-history-item not-started",
+                                        )
+                                    }
                                 };
                                 rsx! {
                                     div { class: item_class,
@@ -672,7 +695,9 @@ fn SettingsSheet(s: SheetSide) -> Element {
     // Load saved setting on mount
     use_effect(move || {
         spawn(async move {
-            if let Ok(val) = get_user_setting(SETTING_TOOLTIPS.to_string(), "true".to_string()).await {
+            if let Ok(val) =
+                get_user_setting(SETTING_TOOLTIPS.to_string(), "true".to_string()).await
+            {
                 show_atk_tooltips.set(val == "true");
             }
         });
@@ -711,10 +736,10 @@ fn SettingsSheet(s: SheetSide) -> Element {
                                 save_msg.set("Saving…".to_string());
                                 spawn(async move {
                                     let _ = save_user_setting(
-                                        SETTING_TOOLTIPS.to_string(),
-                                        if new_val { "true" } else { "false" }.to_string(),
-                                    )
-                                    .await;
+                                            SETTING_TOOLTIPS.to_string(),
+                                            if new_val { "true" } else { "false" }.to_string(),
+                                        )
+                                        .await;
                                     save_msg.set("✅ Saved".to_string());
                                     let _ = v; // suppress warning
                                 });

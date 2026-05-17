@@ -67,9 +67,15 @@ pub fn AdminPage() -> Element {
             }
 
             match tab() {
-                AdminTab::Users => rsx! { AdminUsersTab {} },
-                AdminTab::Scenarios => rsx! { AdminScenariosTab {} },
-                AdminTab::Characters => rsx! { AdminCharactersTab {} },
+                AdminTab::Users => rsx! {
+                    AdminUsersTab {}
+                },
+                AdminTab::Scenarios => rsx! {
+                    AdminScenariosTab {}
+                },
+                AdminTab::Characters => rsx! {
+                    AdminCharactersTab {}
+                },
             }
         }
     }
@@ -118,9 +124,13 @@ fn AdminUsersTab() -> Element {
                                 td { "{user.username}" }
                                 td {
                                     if user.is_connected {
-                                        span { style: "color:var(--rpg-success-light);", "🟢" }
+                                        span { style: "color:var(--rpg-success-light);",
+                                            "🟢"
+                                        }
                                     } else {
-                                        span { style: "color:var(--rpg-text-muted);", "⚫" }
+                                        span { style: "color:var(--rpg-text-muted);",
+                                            "⚫"
+                                        }
                                     }
                                 }
                                 td { "{user.nb_saves}" }
@@ -164,12 +174,7 @@ fn AdminUsersTab() -> Element {
                 "Delete User"
             }
             if !delete_answer().is_empty() {
-                p {
-                    class: if delete_answer().starts_with('✅') {
-                        "admin-answer"
-                    } else {
-                        "admin-answer-error"
-                    },
+                p { class: if delete_answer().starts_with('✅') { "admin-answer" } else { "admin-answer-error" },
                     "{delete_answer}"
                 }
             }
@@ -223,7 +228,11 @@ fn AdminScenariosTab() -> Element {
                                     span { class: "scenario-chip", "{scenario.level}" }
                                 }
                                 td { class: "col-universe", "{scenario.universe}" }
-                                td { class: "col-name", style: "font-weight:600;", "{scenario.name}" }
+                                td {
+                                    class: "col-name",
+                                    style: "font-weight:600;",
+                                    "{scenario.name}"
+                                }
                                 td { class: "col-bosses", "{scenario.nb_bosses}" }
                                 td { class: "col-description", "{scenario.description}" }
                                 td { class: "col-file", "{scenario.file_name}" }
@@ -232,8 +241,7 @@ fn AdminScenariosTab() -> Element {
                     }
                 }
             }
-            p {
-                style: "color:var(--rpg-text-muted); font-size:.78rem; margin-top:12px;",
+            p { style: "color:var(--rpg-text-muted); font-size:.78rem; margin-top:12px;",
                 "ℹ️ To add, edit or delete scenarios, modify the JSON files in offlines/scenarios/ and restart the server."
             }
         }
@@ -299,9 +307,7 @@ fn AdminCharactersTab() -> Element {
                                         for (stat_name, (cur, max)) in sorted_stats {
                                             div { class: "admin-char-stat-row",
                                                 span { class: "admin-char-stat-name", "{stat_name}" }
-                                                span { class: "admin-char-stat-val",
-                                                    "{cur} / {max}"
-                                                }
+                                                span { class: "admin-char-stat-val", "{cur} / {max}" }
                                             }
                                         }
                                     }
