@@ -200,9 +200,9 @@ fn AdminScenariosTab() -> Element {
                 table { class: "admin-table",
                     thead {
                         tr {
-                            th { class: "col-level", "Level" }
+                            th { class: "col-level", "Lvl" }
                             th { class: "col-universe", "Universe" }
-                            th { "Name" }
+                            th { class: "col-name", "Name" }
                             th { class: "col-bosses", "Bosses" }
                             th { class: "col-description", "Description" }
                             th { class: "col-file", "File" }
@@ -215,7 +215,7 @@ fn AdminScenariosTab() -> Element {
                                     span { class: "scenario-chip", "{scenario.level}" }
                                 }
                                 td { class: "col-universe", "{scenario.universe}" }
-                                td { style: "font-weight:600;", "{scenario.name}" }
+                                td { class: "col-name", style: "font-weight:600;", "{scenario.name}" }
                                 td { class: "col-bosses", "{scenario.nb_bosses}" }
                                 td { class: "col-description", "{scenario.description}" }
                                 td { class: "col-file", "{scenario.file_name}" }

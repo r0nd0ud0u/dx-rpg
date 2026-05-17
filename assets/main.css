@@ -826,15 +826,17 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 }
 /* Description column in scenarios table gets more room */
 .admin-table td.col-description,
-.admin-table th.col-description { width: 34%; white-space: normal; word-break: break-word; }
+.admin-table th.col-description { width: 30%; white-space: normal; word-break: break-word; }
 .admin-table td.col-level,
-.admin-table th.col-level { width: 6%; }
+.admin-table th.col-level { width: 5%; text-align: center; }
 .admin-table td.col-universe,
-.admin-table th.col-universe { width: 10%; }
+.admin-table th.col-universe { width: 9%; }
+.admin-table td.col-name,
+.admin-table th.col-name { width: 22%; font-weight: 600; }
 .admin-table td.col-bosses,
-.admin-table th.col-bosses { width: 7%; }
+.admin-table th.col-bosses { width: 6%; text-align: center; }
 .admin-table td.col-file,
-.admin-table th.col-file { width: 18%; word-break: break-all; font-size: .75rem; }
+.admin-table th.col-file { width: 16%; word-break: break-word; font-size: .75rem; color: var(--rpg-teal); }
 .admin-table tr:last-child td { border-bottom: none; }
 .admin-table tr:hover td { background: rgba(255,255,255,.03); }
 
@@ -868,3 +870,122 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 .scenario-history-level { color: var(--rpg-gold); font-size: .8rem; }
 .scenario-history-status { font-size: .75rem; font-weight: 600; }
 
+
+/* =============================================
+   CHARACTER SELECTION CARDS
+   ============================================= */
+.char-select-container {
+    display: flex; flex-direction: column; gap: var(--sp-md);
+    width: 100%;
+}
+.char-select-title {
+    font-size: 1rem; font-weight: 700; color: var(--rpg-gold);
+    margin: 0 0 var(--sp-sm);
+}
+.char-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: var(--sp-md);
+    width: 100%;
+}
+.char-card {
+    position: relative;
+    display: flex; flex-direction: column;
+    background: var(--rpg-bg-card);
+    border: 2px solid var(--rpg-border);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
+}
+.char-card:hover {
+    border-color: var(--rpg-gold);
+    box-shadow: 0 0 12px rgba(190,148,65,.35);
+    transform: translateY(-2px);
+}
+.char-card-selected {
+    border-color: var(--rpg-gold) !important;
+    box-shadow: 0 0 18px rgba(190,148,65,.55) !important;
+}
+.char-card-portrait {
+    width: 100%; aspect-ratio: 1 / 1;
+    background: var(--rpg-bg-card-alt);
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+}
+.char-card-img {
+    width: 100%; height: 100%; object-fit: cover;
+}
+.char-card-info {
+    display: flex; flex-direction: column; gap: 3px;
+    padding: var(--sp-sm);
+}
+.char-card-name {
+    font-size: .88rem; font-weight: 700; color: var(--rpg-text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.char-card-badges {
+    display: flex; align-items: center; gap: var(--sp-sm);
+    flex-wrap: wrap;
+}
+.char-card-class {
+    font-size: .72rem; color: var(--rpg-text-muted);
+    background: rgba(255,255,255,.06);
+    border-radius: var(--r-sm);
+    padding: 1px 6px;
+}
+.char-card-level {
+    font-size: .68rem; color: var(--rpg-gold);
+    font-weight: 700;
+}
+.char-card-hp {
+    display: flex; align-items: center; gap: 4px;
+    font-size: .72rem;
+}
+.char-card-hp-label {
+    color: var(--rpg-success-light); font-weight: 700;
+}
+.char-card-hp-val {
+    color: var(--rpg-text-muted);
+}
+.char-card-desc {
+    font-size: .68rem; color: var(--rpg-text-muted);
+    margin: var(--sp-xs) 0 0;
+    line-height: 1.35;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.char-card-check {
+    position: absolute; top: 6px; right: 8px;
+    font-size: 1.2rem; color: var(--rpg-gold);
+    text-shadow: 0 0 6px rgba(190,148,65,.7);
+}
+/* Chosen / others section */
+.char-select-chosen-list, .char-select-others {
+    display: flex; flex-direction: column; gap: var(--sp-xs);
+    background: var(--rpg-bg-card-alt);
+    border: 1px solid var(--rpg-border);
+    border-radius: var(--r-md);
+    padding: var(--sp-sm) var(--sp-md);
+}
+.char-select-others-title {
+    font-size: .78rem; color: var(--rpg-text-muted);
+    margin: 0 0 var(--sp-xs); font-weight: 600;
+}
+.char-select-chosen-row {
+    display: flex; align-items: center; gap: var(--sp-md);
+    font-size: .85rem;
+}
+.char-select-player-name {
+    color: var(--rpg-gold); font-weight: 600; min-width: 80px;
+}
+.char-select-chosen-char {
+    color: var(--rpg-text);
+}
+.char-select-waiting {
+    color: var(--rpg-text-muted); font-style: italic;
+}
+/* Universe badge in lobby info bar */
+.lobby-universe {
+    color: var(--rpg-teal) !important; font-weight: 700;
+}

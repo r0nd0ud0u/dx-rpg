@@ -55,6 +55,8 @@ pub fn LobbyPage() -> Element {
                         "⏳ Loading…"
                     }
                 }
+
+                // Info bar: server + players + universe
                 div { class: "lobby-info-bar",
                     div { class: "lobby-info-item",
                         span { class: "lobby-info-label", "Server" }
@@ -66,8 +68,39 @@ pub fn LobbyPage() -> Element {
                             "{server_data_snap.players_data.players_info.len()} / {server_data_snap.core_game_data.players_nb}"
                         }
                     }
+                    {
+                        // Show universe from first scenario
+                        let universe = server_data_snap
+                            .core_game_data
+                            .game_manager
+                            .all_scenarios
+                            .first()
+                            .map(|s| s.universe.as_str())
+                            .unwrap_or("");
+                        if !universe.is_empty() {
+                            rsx! {
+                                div { class: "lobby-info-item",
+                                    span { class: "lobby-info-label", "Universe" }
+                                    span { class: "lobby-info-value lobby-universe", "🌐 {universe}" }
+                                }
+                            }
+                        } else {
+                            rsx! {}
+                        }
+                    }
+                    {
+                        // Total scenarios
+                        let nb = server_data_snap.core_game_data.game_manager.all_scenarios.len();
+                        rsx! {
+                            div { class: "lobby-info-item",
+                                span { class: "lobby-info-label", "Scenarios" }
+                                span { class: "lobby-info-value", "{nb}" }
+                            }
+                        }
+                    }
                 }
-                // if the current client is the host, show start game button
+
+                // Start game button (host only, when all players have picked a character)
                 if SERVER_NAME() == local_login_name_session() && all_players_have_character_name
                     && (server_data_snap.core_game_data.game_phase == GamePhase::InitGame
                         || server_data_snap.core_game_data.game_phase == GamePhase::Loading
@@ -82,6 +115,7 @@ pub fn LobbyPage() -> Element {
                         "▶ Start Game"
                     }
                 }
+
                 CharacterSelect {}
             }
         } else if server_data_snap.core_game_data.game_phase == GamePhase::Running {
