@@ -269,34 +269,44 @@ pub fn NewAtkButton(
         .any(|atk| atk.name == attack_type.name);
     let attack_name = attack_type.name.clone();
     let launcher_id_name = launcher.id_name.clone();
+    let description = attack_type.description.clone();
+    let has_description = !description.is_empty();
     rsx! {
-        Button {
-            variant: if can_be_launched { ButtonVariant::AtkName } else { ButtonVariant::AtkNameBlocked },
-            onclick: move |_| {
-                let async_atk_name = attack_name.clone();
-                let async_launcher_name = launcher_id_name.clone();
-                async move {
-                    selected_atk_name.set(async_atk_name.clone());
-
-                    *display_atklist_sig.write() = false;
-                    // update target
-                    let _ = socket
-                        .send(
-                            ClientEvent::RequestTargetedCharacter(
-                                SERVER_NAME(),
+        Tooltip { disabled: !has_description,
+            TooltipTrigger {
+                Button {
+                    variant: if can_be_launched {
+                        ButtonVariant::AtkName
+                    } else {
+                        ButtonVariant::AtkNameBlocked
+                    },
+                    onclick: move |_| {
+                        let async_atk_name = attack_name.clone();
+                        let async_launcher_name = launcher_id_name.clone();
+                        async move {
+                            selected_atk_name.set(async_atk_name.clone());
+                            *display_atklist_sig.write() = false;
+                            let _ = socket
+                                .send(
+                                    ClientEvent::RequestTargetedCharacter(
+                                        SERVER_NAME(),
+                                        async_launcher_name.clone(),
+                                        async_atk_name.clone(),
+                                    ),
+                                )
+                                .await;
+                            tracing::info!(
+                                "set_targeted_characters {} for atk {}",
                                 async_launcher_name.clone(),
-                                async_atk_name.clone(),
-                            ),
-                        )
-                        .await;
-                    tracing::info!(
-                        "set_targeted_characters {} for atk {}", async_launcher_name.clone(),
-                        async_atk_name.clone()
-                    );
+                                async_atk_name.clone()
+                            );
+                        }
+                    },
+                    disabled: !can_be_launched,
+                    "{attack_type.name}"
                 }
-            },
-            disabled: !can_be_launched,
-            "{attack_type.name}"
+            }
+            TooltipContent { "{description}" }
         }
     }
 }
@@ -377,28 +387,49 @@ pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Elem
         };
     }
 
+    // Group by name: preserve first-occurrence order, count duplicates
+    let mut seen_order: Vec<String> = Vec::new();
+    let mut counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    for name in &potions {
+        let entry = counts.entry(name.clone()).or_insert(0);
+        if *entry == 0 {
+            seen_order.push(name.clone());
+        }
+        *entry += 1;
+    }
+
     rsx! {
         div { class: "attack-list",
-            for potion_name in potions {
-                Button {
-                    variant: ButtonVariant::AtkName,
-                    onclick: {
-                        let pname = potion_name.clone();
-                        let player = local_session_player_name();
-                        move |_| {
-                            let async_potion = pname.clone();
-                            let async_player = player.clone();
-                            async move {
-                                let _ = socket
-                                    .send(
-                                        ClientEvent::UsePotion(SERVER_NAME(), async_player, async_potion),
-                                    )
-                                    .await;
-                                display_potionlist_sig.set(false);
-                            }
+            for potion_name in seen_order {
+                {
+                    let count = counts[&potion_name];
+                    let label = if count > 1 {
+                        format!("💊 {} ×{}", potion_name, count)
+                    } else {
+                        format!("💊 {}", potion_name)
+                    };
+                    rsx! {
+                        Button {
+                            variant: ButtonVariant::AtkName,
+                            onclick: {
+                                let pname = potion_name.clone();
+                                let player = local_session_player_name();
+                                move |_| {
+                                    let async_potion = pname.clone();
+                                    let async_player = player.clone();
+                                    async move {
+                                        let _ = socket
+                                            .send(
+                                                ClientEvent::UsePotion(SERVER_NAME(), async_player, async_potion),
+                                            )
+                                            .await;
+                                        display_potionlist_sig.set(false);
+                                    }
+                                }
+                            },
+                            "{label}"
                         }
-                    },
-                    "💊 {potion_name}"
+                    }
                 }
             }
         }

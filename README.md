@@ -20,6 +20,86 @@ A browser-based multiplayer RPG built with [Dioxus](https://dioxuslabs.com/) (Ru
 
 ---
 
+## Features
+
+### 10-Stage Scenario Progression
+
+The game ships with 10 progressive stages designed to level up players gradually:
+
+| Stage | Name | Enemy | Recommended Level |
+|-------|------|-------|-------------------|
+| 1 | Patrouille Gobeline | Gobelin Eclaireur | 1 |
+| 2 | Embuscade Gobeline | Gobelin Eclaireur + Angmar10PV | 2 |
+| 3 | Le Pillard Orc | Orc Pillard | 3 |
+| 4 | Patrouille Mixte | Orc Pillard + Gobelin Eclaireur | 4 |
+| 5 | Le Champion des Orcs | Champion Orc | 5 |
+| 6 | Colère du Champion | Champion Orc + Gobelin Eclaireur | 6 |
+| 7 | L'Ombre du Mordor | Nécromancien du Mordor | 7 |
+| 8 | Rituel des Ténèbres | Nécromancien + Gobelin Eclaireur | 8 |
+| 9 | Le Cavalier Sans Visage | Nazgul | 9 |
+| 10 | L'Oeil de Sauron | Sauron l'Oeil Flamboyant (Boss) | 10 |
+
+Each scenario is defined as a JSON file under `offlines/scenarios/`. Enemies are defined in `offlines/characters/` and their attacks in `offlines/attack/<enemy-name>/`.
+
+### Save Slot System
+
+Players are limited to a configurable number of save slots (default: 3). Configure via `.env`:
+
+```env
+MAX_SAVES=3
+```
+
+The "Create Server" page shows all save slots with:
+- Empty slots: click to start a new game immediately
+- Occupied slots: shows game name, current scenario, and last save date; click to select then "Overwrite & Play"
+
+### Attack Tooltips with Description
+
+Attacks can now include an optional `Description` field in their JSON:
+
+```json
+{
+  "Name": "Griffure",
+  "Description": "A quick scratch dealing light physical damage.",
+  ...
+}
+```
+
+When present, hovering over the attack button in the character sheet shows the description as a tooltip.
+
+This requires `lib-rpg` branch `feat/attack-description` (commit `08af5ad82d406aee8f452f05e7b763035fa2fd44`).
+
+### Scenarios Progress Sheet
+
+During a game, click **📜 Scenarios** in the game toolbar to open a side sheet showing all scenarios and their progress state (Not Started / In Progress / ✅ Completed).
+
+### Admin Panel
+
+Enable the admin panel via `.env`:
+
+```env
+ADMIN_ENABLED=true
+```
+
+Navigate to `/admin` to access:
+- **Users tab**: list all users with connection status and save count; delete users
+- **Scenarios tab**: list all loaded scenarios with level, boss count, and description
+
+---
+
+## Configuration (`.env`)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `IP` | `0.0.0.0` | Bind address |
+| `PORT` | `8080` | HTTP port |
+| `DATABASE_URL` | `sqlite:db.sqlite` | SQLite connection string |
+| `USE_PASSWORD` | `false` | Require password on login |
+| `MAX_SAVES` | `3` | Max save slots per user |
+| `ADMIN_ENABLED` | `false` | Enable `/admin` panel |
+
+---
+
 ## Architecture
 
 ### High-level overview

@@ -61,7 +61,7 @@ static CLIENTS: Lazy<SharedClients> = Lazy::new(|| Arc::new(Mutex::new(HashMap::
 pub enum ClientEvent {
     LoginAllSessions(String, i64),  // `String`: username, `i64`: sql-id
     RequestLogOut(String),          // `String`: username
-    InitializeGame(String, String), // `String`: server_name, `String`: player_name
+    InitializeGame(String, String, String), // `String`: server_name, `String`: player_name, `String`: universe
     AddCharacterOnServerData(String, String, String), // `String`: server_name, `String`: player_name, `String`: character_name
     StartGame(String),                                // `String`: server_name
     LaunchAttack(String, String),                     // `String`: server_name, `String`: atk name
@@ -182,9 +182,9 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("{} is starting a new game", server_name);
                                 start_new_game_by_player(&server_name, false).await;
                             }
-                            Ok(ClientEvent::InitializeGame(server_name, player_name)) => {
-                                tracing::info!("{} is initializing a new game", server_name);
-                                let Ok(_) = init_new_game_by_player(&server_name, client_id, &player_name).await else {
+                            Ok(ClientEvent::InitializeGame(server_name, player_name, universe)) => {
+                                tracing::info!("{} is initializing a new game (universe: {})", server_name, universe);
+                                let Ok(_) = init_new_game_by_player(&server_name, client_id, &player_name, &universe).await else {
                                     tracing::error!("Failed to initialize game for server {}, player {}", server_name, player_name);
                                     return;
                                 };
@@ -251,6 +251,9 @@ pub async fn on_rcv_client_event(
                             Ok(ClientEvent::UsePotion(server_name, player_name, potion_name)) => {
                                 tracing::info!("Player {} using potion {} on server {}", player_name, potion_name, server_name);
                                 use_potion_handler(&server_name, &player_name, &potion_name);
+                                // Using a potion counts as the turn action — advance the turn
+                                update_core_game_data_after_atk(&server_name, None, tx_server.clone()).await;
+                                process_ennemy_atk(&server_name, tx_server.clone()).await;
                             }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
@@ -551,10 +554,20 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
 }
 
 #[cfg(feature = "server")]
-pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &str) -> Result<()> {
+pub async fn init_new_game_by_player(server_name: &str, id: u32, player_name: &str, universe: &str) -> Result<()> {
     let dm = DATA_MANAGER.lock().unwrap();
+    // Filter scenarios by chosen universe (empty = all)
+    let scenarios = if universe.is_empty() {
+        dm.all_scenarios.clone()
+    } else {
+        dm.all_scenarios
+            .iter()
+            .filter(|s| s.universe == universe)
+            .cloned()
+            .collect()
+    };
     // init a new game
-    let mut core_game_data = CoreGameData::new(&dm, server_name)?;
+    let mut core_game_data = CoreGameData::new_with_scenarios(&dm, server_name, scenarios)?;
     drop(dm);
     tracing::info!("New core game data created for player: {}", server_name);
     // update ongoing servers data list
@@ -629,8 +642,7 @@ pub fn use_potion_handler(server_name: &str, player_name: &str, potion_name: &st
             }
         }
     }
-    drop(sm);
-    update_clients_server_data(server_name);
+    // Note: caller is responsible for broadcasting updated state and advancing the turn
 }
 
 #[cfg(feature = "server")]

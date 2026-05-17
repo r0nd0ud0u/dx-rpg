@@ -2349,6 +2349,7 @@ dependencies = [
  "axum_session_auth",
  "axum_session_sqlx",
  "bcrypt",
+ "chrono",
  "colorgrad",
  "dioxus",
  "dioxus-charts",
@@ -3998,7 +3999,7 @@ checksum = "7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8"
 [[package]]
 name = "lib-rpg"
 version = "1.4.1"
-source = "git+https://github.com/r0nd0ud0u/lib-rpg.git?rev=33dbde8fb70524ef31760534a80df58cc5a09e88#33dbde8fb70524ef31760534a80df58cc5a09e88"
+source = "git+https://github.com/r0nd0ud0u/lib-rpg.git?rev=6779021#6779021a81a316ed7433801391f9c2312299cdae"
 dependencies = [
  "anyhow",
  "chrono",

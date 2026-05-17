@@ -11,7 +11,7 @@ use lib_rpg::{
         LogData,
         const_colors::{DARK_RED, LIGHT_BLUE, LIGHT_GREEN},
     },
-    server::server_manager::ServerData,
+    server::{scenario::ScenarioState, server_manager::ServerData},
 };
 
 use crate::{
@@ -53,15 +53,24 @@ fn SaveButton(is_saved: Signal<bool>) -> Element {
     }
 }
 
+#[derive(Clone, PartialEq)]
+enum SheetKind {
+    Menu,
+    Inventory,
+    Logs,
+    Stats,
+    Scenarios,
+}
+
 #[component]
 pub fn GameSheets() -> Element {
     let mut open = use_signal(|| false);
-    let mut side = use_signal(|| SheetSide::Right);
+    let mut sheet_kind: Signal<SheetKind> = use_signal(|| SheetKind::Menu);
     let mut is_saved: Signal<bool> = use_signal(|| false);
 
-    let open_sheet = move |s: SheetSide| {
+    let open_sheet = move |kind: SheetKind| {
         move |_| {
-            side.set(s);
+            sheet_kind.set(kind.clone());
             open.set(true);
         }
     };
@@ -73,47 +82,57 @@ pub fn GameSheets() -> Element {
         div { display: "flex", gap: "0.5rem",
             Button {
                 variant: ButtonVariant::Outline,
-                onclick: open_sheet(SheetSide::Top),
+                onclick: open_sheet(SheetKind::Menu),
                 "Menu"
             }
             Button {
                 variant: ButtonVariant::Outline,
-                onclick: open_sheet(SheetSide::Right),
+                onclick: open_sheet(SheetKind::Inventory),
                 "Inventory"
             }
             Button {
                 variant: ButtonVariant::Outline,
-                onclick: open_sheet(SheetSide::Bottom),
+                onclick: open_sheet(SheetKind::Logs),
                 "Logs"
             }
             Button {
                 variant: ButtonVariant::Outline,
-                onclick: open_sheet(SheetSide::Left),
+                onclick: open_sheet(SheetKind::Stats),
                 "Game stats"
+            }
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: open_sheet(SheetKind::Scenarios),
+                "📜 Scenarios"
             }
         }
         Sheet { open: open(), on_open_change: move |v| open.set(v),
-            match side() {
-                SheetSide::Right => {
+            match sheet_kind() {
+                SheetKind::Inventory => {
                     InventorySheet(InventorySheetProps {
                         s: SheetSide::Right,
                     })
                 }
-                SheetSide::Left => {
+                SheetKind::Stats => {
                     GameStatsSheet(GameStatsSheetProps {
                         s: SheetSide::Left,
                     })
                 }
-                SheetSide::Top => {
+                SheetKind::Menu => {
                     MenuSheet(MenuSheetProps {
                         s: SheetSide::Top,
                         open_wnd: open,
                         is_saved,
                     })
                 }
-                SheetSide::Bottom => {
+                SheetKind::Logs => {
                     LogsSheet(LogsSheetProps {
                         s: SheetSide::Bottom,
+                    })
+                }
+                SheetKind::Scenarios => {
+                    ScenariosSheet(ScenariosSheetProps {
+                        s: SheetSide::Right,
                     })
                 }
             }
@@ -502,6 +521,71 @@ fn LogsList(logs: Vec<LogData>, filter: String) -> Element {
                     div { style: "padding: 4px 8px; margin: 2px 0; border-left: 3px solid {log.color}; border-radius: 0 4px 4px 0; font-size: 0.82rem; color: {log.color}; word-break: break-word;",
                         "{log.message}"
                     }
+                }
+            }
+        }
+    }
+}
+
+// ─── Scenarios Sheet ──────────────────────────────────────────────────────────
+
+/// A sheet showing all scenarios and their completion state for the current game.
+#[component]
+fn ScenariosSheet(s: SheetSide) -> Element {
+    let server_data = use_context::<Signal<ServerData>>();
+    let snap = server_data();
+    let gm = &snap.core_game_data.game_manager;
+    let states = &gm.states_scenarios;
+
+    // Sort scenarios by numeric level (not string) so level 10 comes after level 9
+    let mut sorted_scenarios = gm.all_scenarios.clone();
+    sorted_scenarios.sort_by_key(|s| s.level);
+
+    rsx! {
+        SheetContent { side: s,
+            SheetHeader {
+                SheetTitle { "📜 Scenarios" }
+                SheetDescription { "Progress through all available stages." }
+            }
+
+            div {
+                display: "flex",
+                flex_direction: "column",
+                gap: "0.5rem",
+                padding: "0 1rem",
+
+                if sorted_scenarios.is_empty() {
+                    div { style: "color:var(--rpg-text-muted); text-align:center; padding:2rem; font-size:0.85rem;",
+                        "No scenarios loaded."
+                    }
+                } else {
+                    div { class: "scenario-history",
+                        for scenario in sorted_scenarios.iter() {
+                            {
+                                let state = states.get(&scenario.name).cloned().unwrap_or(ScenarioState::NotStarted);
+                                let (status_text, chip_class, item_class) = match state {
+                                    ScenarioState::Completed => ("✅ Completed", "scenario-chip completed", "scenario-history-item completed"),
+                                    ScenarioState::InProgress => ("⚔️ In Progress", "scenario-chip in-progress", "scenario-history-item"),
+                                    ScenarioState::NotStarted => ("🔒 Not Started", "scenario-chip", "scenario-history-item not-started"),
+                                };
+                                rsx! {
+                                    div { class: item_class,
+                                        span { class: "scenario-history-level", "{scenario.level}" }
+                                        div { class: "scenario-history-name", "{scenario.name}" }
+                                        span { class: chip_class, "{status_text}" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            SheetFooter {
+                SheetClose {
+                    r#as: |attributes| rsx! {
+                        Button { variant: ButtonVariant::Outline, attributes, "Close" }
+                    },
                 }
             }
         }

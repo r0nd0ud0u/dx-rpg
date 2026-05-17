@@ -262,3 +262,96 @@ pub async fn update_all_connection_status(is_connected: bool) -> Result<(), Serv
         Err(e) => Err(ServerFnError::new(format!("{}", e))),
     }
 }
+
+/// Returns true if the Admin CRUD panel is enabled (controlled by `ADMIN_ENABLED` env var).
+#[server]
+pub async fn is_admin_enabled() -> Result<bool, ServerFnError> {
+    Ok(std::env::var("ADMIN_ENABLED")
+        .unwrap_or_else(|_| "true".to_string())
+        .trim()
+        .to_lowercase()
+        != "false")
+}
+
+/// Summary of one registered user shown in the admin user list.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct AdminUserInfo {
+    pub username: String,
+    pub is_connected: bool,
+    pub nb_saves: usize,
+}
+
+/// Returns the list of all users with lightweight metadata, for the admin panel.
+#[server]
+pub async fn admin_list_users() -> Result<Vec<AdminUserInfo>, ServerFnError> {
+    use crate::common::SAVED_DATA;
+    use lib_rpg::{common::constants::paths_const::GAMES_DIR, utils::list_dirs_in_dir};
+
+    let pool = get_db().await;
+    let rows: Vec<SqlUser> = sqlx::query_as("SELECT * FROM users")
+        .fetch_all(pool)
+        .await
+        .map_err(|e| ServerFnError::new(format!("{e}")))?;
+
+    let users = rows
+        .into_iter()
+        .map(|row| {
+            let save_dir = SAVED_DATA
+                .join(&row.username)
+                .join(GAMES_DIR.to_path_buf());
+            let nb_saves = list_dirs_in_dir(&save_dir).map(|v| v.len()).unwrap_or(0);
+            AdminUserInfo {
+                username: row.username,
+                is_connected: row.is_connected,
+                nb_saves,
+            }
+        })
+        .collect();
+    Ok(users)
+}
+
+/// Summary of one scenario shown in the admin scenario list.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct AdminScenarioInfo {
+    pub name: String,
+    pub description: String,
+    pub level: u64,
+    pub nb_bosses: usize,
+    pub file_name: String,
+    pub universe: String,
+}
+
+/// Returns the list of all scenarios loaded in the data manager.
+#[server]
+pub async fn admin_list_scenarios() -> Result<Vec<AdminScenarioInfo>, ServerFnError> {
+    use crate::common::DATA_MANAGER;
+    let dm = DATA_MANAGER.lock().map_err(|e| ServerFnError::new(format!("{e}")))?;
+    let infos = dm
+        .all_scenarios
+        .iter()
+        .map(|s| {
+            let file_name = if s.universe.is_empty() {
+                format!("stage_{}.json", s.level)
+            } else {
+                format!("{}/stage_{}.json", s.universe, s.level)
+            };
+            AdminScenarioInfo {
+                name: s.name.clone(),
+                description: s.description.clone(),
+                level: s.level,
+                nb_bosses: s.boss_patterns.len(),
+                file_name,
+                universe: s.universe.clone(),
+            }
+        })
+        .collect();
+    Ok(infos)
+}
+
+/// Returns sorted list of distinct universe names (empty string = no universe).
+#[server]
+pub async fn get_available_universes() -> Result<Vec<String>, ServerFnError> {
+    use crate::common::DATA_MANAGER;
+    let dm = DATA_MANAGER.lock().map_err(|e| ServerFnError::new(format!("{e}")))?;
+    Ok(dm.list_universes())
+}

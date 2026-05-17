@@ -699,3 +699,172 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     60%{transform:translateX(9px) rotate(2.4deg);}
     75%{transform:translateX(-6px) rotate(-1.2deg);}
 }
+
+/* =============================================
+   SAVE SLOT GRID
+   ============================================= */
+.save-slot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--sp-lg);
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: var(--sp-xl);
+}
+.save-slot-card {
+    background: var(--rpg-bg-card);
+    border: 2px solid var(--rpg-border-light);
+    border-radius: var(--r-lg);
+    padding: var(--sp-lg);
+    display: flex; flex-direction: column;
+    align-items: center; gap: var(--sp-sm);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color var(--t-normal), box-shadow var(--t-normal), transform var(--t-fast);
+    min-height: 130px;
+}
+.save-slot-empty {
+    border-style: dashed;
+    border-color: var(--rpg-border);
+    opacity: .75;
+}
+.save-slot-empty:hover {
+    border-color: var(--rpg-teal);
+    opacity: 1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 18px rgba(0,212,177,.15);
+}
+.save-slot-occupied { border-color: var(--rpg-hero); }
+.save-slot-occupied:hover {
+    border-color: var(--rpg-gold);
+    box-shadow: 0 4px 18px rgba(201,162,39,.18);
+    transform: translateY(-2px);
+}
+.save-slot-occupied.selected {
+    border-color: var(--rpg-gold);
+    background: rgba(201,162,39,.07);
+}
+.save-slot-icon { font-size: 1.8rem; }
+.save-slot-label { font-size: .9rem; color: var(--rpg-text-muted); }
+.save-slot-info {
+    display: flex; flex-direction: column; gap: 3px;
+    width: 100%; text-align: left;
+}
+.save-slot-name { font-weight: 700; font-size: .95rem; color: var(--rpg-text); }
+.save-slot-scenario { font-size: .78rem; color: var(--rpg-teal); }
+.save-slot-date { font-size: .75rem; color: var(--rpg-text-muted); }
+.save-slot-actions { margin-top: var(--sp-sm); width: 100%; }
+
+/* Universe selector on create-game page */
+.universe-selector { width: 100%; max-width: 800px; margin-bottom: var(--sp-xl); }
+.universe-grid {
+    display: flex; flex-wrap: wrap; gap: var(--sp-md);
+    justify-content: center;
+}
+.universe-card {
+    background: var(--rpg-bg-card);
+    border: 2px solid var(--rpg-border-light);
+    border-radius: var(--r-lg);
+    padding: var(--sp-md) var(--sp-xl);
+    display: flex; flex-direction: column; align-items: center; gap: var(--sp-xs);
+    cursor: pointer;
+    transition: border-color var(--t-normal), box-shadow var(--t-normal);
+    min-width: 140px; text-align: center;
+}
+.universe-card:hover {
+    border-color: var(--rpg-teal);
+    box-shadow: 0 4px 18px rgba(0,212,177,.15);
+}
+.universe-card-selected {
+    border-color: var(--rpg-gold);
+    background: rgba(201,162,39,.07);
+    box-shadow: 0 4px 18px rgba(201,162,39,.18);
+}
+.universe-icon { font-size: 1.6rem; }
+.universe-name { font-size: .9rem; font-weight: 600; text-transform: capitalize; color: var(--rpg-text); }
+
+/* =============================================
+   ADMIN EXTENDED (scenarios, users, themes)
+   ============================================= */
+.admin-tabs {
+    display: flex; gap: var(--sp-sm); flex-wrap: wrap;
+    border-bottom: 1px solid var(--rpg-border-light);
+    margin-bottom: var(--sp-lg);
+}
+.admin-tab {
+    padding: 8px 18px;
+    border-radius: var(--r-sm) var(--r-sm) 0 0;
+    border: 1px solid transparent; border-bottom: none;
+    cursor: pointer; font-size: .88rem; font-weight: 600;
+    color: var(--rpg-text-muted);
+    background: transparent;
+    transition: background var(--t-fast), color var(--t-fast);
+}
+.admin-tab.active {
+    background: var(--rpg-bg-card);
+    color: var(--rpg-gold);
+    border-color: var(--rpg-border-light);
+}
+.admin-tab:hover:not(.active) { color: var(--rpg-text); background: rgba(255,255,255,.04); }
+
+.admin-table {
+    width: 100%; border-collapse: collapse;
+    font-size: .85rem; margin-top: var(--sp-md); table-layout: fixed;
+}
+.admin-table th {
+    text-align: left; padding: 8px 12px;
+    color: var(--rpg-text-muted); font-weight: 600;
+    border-bottom: 1px solid var(--rpg-border-light);
+    font-size: .78rem; text-transform: uppercase; letter-spacing: .06em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.admin-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--rpg-border);
+    vertical-align: middle;
+    overflow: hidden; text-overflow: ellipsis;
+}
+/* Description column in scenarios table gets more room */
+.admin-table td.col-description,
+.admin-table th.col-description { width: 34%; white-space: normal; word-break: break-word; }
+.admin-table td.col-level,
+.admin-table th.col-level { width: 6%; }
+.admin-table td.col-universe,
+.admin-table th.col-universe { width: 10%; }
+.admin-table td.col-bosses,
+.admin-table th.col-bosses { width: 7%; }
+.admin-table td.col-file,
+.admin-table th.col-file { width: 18%; word-break: break-all; font-size: .75rem; }
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-table tr:hover td { background: rgba(255,255,255,.03); }
+
+.scenario-chip {
+    display: inline-block; padding: 2px 8px;
+    border-radius: 99px; font-size: .72rem; font-weight: 600;
+    border: 1px solid var(--rpg-border-light);
+    color: var(--rpg-text-muted);
+}
+.scenario-chip.completed { background: rgba(39,103,73,.3); border-color: var(--rpg-success-light); color: var(--rpg-success-light); }
+.scenario-chip.in-progress { background: rgba(43,108,176,.3); border-color: var(--rpg-teal); color: var(--rpg-teal); }
+
+/* =============================================
+   SCENARIO HISTORY (completed scenarios view)
+   ============================================= */
+.scenario-history {
+    display: flex; flex-direction: column; gap: var(--sp-sm);
+    width: 100%;
+}
+.scenario-history-item {
+    display: flex; align-items: center; gap: var(--sp-md);
+    background: var(--rpg-bg-card-alt);
+    border: 1px solid var(--rpg-border);
+    border-radius: var(--r-md);
+    padding: var(--sp-sm) var(--sp-md);
+    font-size: .88rem;
+}
+.scenario-history-item.completed { border-left: 3px solid var(--rpg-success-light); }
+.scenario-history-item.not-started { opacity: .55; }
+.scenario-history-name { flex: 1; font-weight: 600; }
+.scenario-history-level { color: var(--rpg-gold); font-size: .8rem; }
+.scenario-history-status { font-size: .75rem; font-weight: 600; }
+
