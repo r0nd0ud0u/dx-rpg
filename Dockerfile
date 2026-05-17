@@ -19,8 +19,6 @@ COPY Cargo.toml .
 COPY Cargo.lock .
 COPY assets assets
 COPY offlines/ offlines/
-COPY .env .env
-COPY db.sqlite db.sqlite
 COPY Dioxus.toml .
 
 # Install `dx`
@@ -32,22 +30,29 @@ ENV PATH="/.cargo/bin:$PATH"
 RUN --mount=type=ssh dx bundle --platform web --release
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y libssl3 pkg-config
+RUN apt-get update && apt-get install -y libssl3 pkg-config curl && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/dx/dx-rpg/release/web/ /usr/local/app
 COPY ./offlines/ /usr/local/app/offlines/
-COPY ./.env/ /usr/local/app/.env
-COPY ./db.sqlite/ /usr/local/app/db.sqlite
 
-# Set correct permissions for db.sqlite and the app directory
-RUN chmod -R 777 /usr/local/app
-RUN chmod 666 /usr/local/app/db.sqlite
+# Create directories for persistent data volumes
+RUN mkdir -p /data /usr/local/app/saved_data
+
+# Set correct permissions for the app directory and data volumes
+RUN chmod -R 755 /usr/local/app && chmod 777 /data /usr/local/app/saved_data
 
 # set our port and make sure to listen for all connections
 ENV PORT=8080
 ENV IP=0.0.0.0
+# DATABASE_URL must be provided at runtime (e.g. via docker-compose environment)
+ENV DATABASE_URL=sqlite:///data/db.sqlite
 
 # expose the port 8080
 EXPOSE 8080
 
 WORKDIR /usr/local/app
-ENTRYPOINT [ "/usr/local/app/server" ]
+
+# Entrypoint script: ensure /data/db.sqlite exists before starting the app
+RUN printf '#!/bin/sh\nmkdir -p /data\ntouch /data/db.sqlite\nexec /usr/local/app/server "$@"\n' > /entrypoint.sh \
+    && chmod +x /entrypoint.sh
+
+ENTRYPOINT [ "/entrypoint.sh" ]
