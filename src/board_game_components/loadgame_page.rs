@@ -11,110 +11,113 @@ use crate::{
 
 #[component]
 pub fn LoadGame() -> Element {
-    // contexts
     let games_list = use_context::<Signal<Vec<std::path::PathBuf>>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let local_login_name_session = use_context::<Signal<String>>();
 
-    // states
-    let mut active_button: Signal<i64> = use_signal(|| -1);
+    let mut selected: Signal<Option<usize>> = use_signal(|| None);
     let navigator = use_navigator();
 
-    // snap
     let games_list_snap = games_list();
-
-    // create a list by reading the games_list signal and  splitting the path by "/" or "\" and taking the last element (the game name)
-    let games_list_split = games_list_snap
-        .iter()
-        .map(|path| {
-            // split trying both separators to be sure
-            let path_str = path.to_string_lossy();
-            let split_by_slash: Vec<&str> = path_str.split('/').collect();
-            let split_by_backslash: Vec<&str> = path_str.split('\\').collect();
-            let game_name = if split_by_slash.len() > split_by_backslash.len() {
-                split_by_slash.last().unwrap_or(&"")
-            } else {
-                split_by_backslash.last().unwrap_or(&"")
-            };
-            game_name.to_string()
-        })
-        .collect::<Vec<String>>();
-
-    let save_count = games_list_split.len();
+    let save_count = games_list_snap.len();
     let plural = if save_count != 1 { "s" } else { "" };
+
+    /// Extract the game name from a PathBuf (last path component).
+    fn extract_name(path: &std::path::Path) -> String {
+        path.file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| path.to_string_lossy().into_owned())
+    }
 
     rsx! {
         div { class: "home-container",
             h2 { class: "rpg-title", "💾 Load Game" }
             p { class: "rpg-subtitle", "{save_count} saved adventure{plural}" }
 
-            div { class: "load-game-card",
-                if games_list_split.is_empty() {
-                    div { class: "load-empty",
-                        span { "📂" }
-                        p { "No saved games found" }
+            if games_list_snap.is_empty() {
+                div { class: "load-empty",
+                    span { "📂" }
+                    p { "No saved games found." }
+                    p { style: "font-size:.82rem; color:var(--rpg-text-muted);",
+                        "Create a new game first."
                     }
-                } else {
-                    div { class: "game-list",
-                        for (index, game_name) in games_list_split.iter().enumerate() {
-                            button {
-                                class: if active_button() as usize == index { "game-item selected" } else { "game-item" },
-                                onclick: move |_| async move { active_button.set(index as i64) },
-                                span { class: "game-item-icon", "🎮" }
-                                span { class: "game-item-name", "{game_name}" }
-                                if active_button() as usize == index {
-                                    span { class: "game-item-check", "✓" }
+                }
+            } else {
+                div { class: "save-slot-grid",
+                    for (index, path) in games_list_snap.iter().enumerate() {
+                        {
+                            let game_name = extract_name(path);
+                            let is_selected = selected() == Some(index);
+                            rsx! {
+                                div {
+                                    class: if is_selected { "save-slot-card save-slot-occupied selected" } else { "save-slot-card save-slot-occupied" },
+                                    onclick: move |_| {
+                                        if selected() == Some(index) {
+                                            selected.set(None);
+                                        } else {
+                                            selected.set(Some(index));
+                                        }
+                                    },
+                                    span { class: "save-slot-icon", "🎮" }
+                                    div { class: "save-slot-info",
+                                        span { class: "save-slot-name", "{game_name}" }
+                                    }
+                                    if is_selected {
+                                        div { class: "save-slot-actions",
+                                            Button {
+                                                variant: ButtonVariant::GreenType,
+                                                onclick: move |_| {
+                                                    let cur_game = games_list()
+                                                        .get(index)
+                                                        .unwrap()
+                                                        .to_owned();
+                                                    let player = local_login_name_session();
+                                                    async move {
+                                                        let _ = socket
+                                                            .send(ClientEvent::LoadGame(
+                                                                cur_game,
+                                                                player,
+                                                            ))
+                                                            .await;
+                                                        navigator.push(Route::LobbyPage {});
+                                                    }
+                                                },
+                                                "▶ Load"
+                                            }
+                                            Button {
+                                                variant: ButtonVariant::Destructive,
+                                                onclick: move |_| {
+                                                    let cur_game = games_list()
+                                                        .get(index)
+                                                        .unwrap()
+                                                        .to_owned();
+                                                    async move {
+                                                        match server_file_utils::delete_game(cur_game).await {
+                                                            Ok(_) => {
+                                                                let _ = socket
+                                                                    .send(
+                                                                        ClientEvent::RequestSavedGameList(
+                                                                            local_login_name_session()
+                                                                                .clone(),
+                                                                        ),
+                                                                    )
+                                                                    .await;
+                                                            }
+                                                            Err(e) => {
+                                                                tracing::error!("Error deleting game: {}", e);
+                                                            }
+                                                        }
+                                                        selected.set(None);
+                                                    }
+                                                },
+                                                "🗑 Delete"
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            }
-
-            div { class: "load-actions",
-                Button {
-                    variant: ButtonVariant::GreenType,
-                    disabled: active_button() == -1,
-                    onclick: move |_| {
-                        let cur_game = games_list().get(active_button() as usize).unwrap().to_owned();
-                        async move {
-                            let _ = socket
-                                .clone()
-                                .send(
-                                    ClientEvent::LoadGame(cur_game.clone(), local_login_name_session()),
-                                )
-                                .await;
-                            navigator.push(Route::LobbyPage {});
-                        }
-                    },
-                    "▶ Load Game"
-                }
-                Button {
-                    variant: ButtonVariant::Destructive,
-                    disabled: active_button() == -1,
-                    onclick: move |_| {
-                        let cur_game = games_list().get(active_button() as usize).unwrap().to_owned();
-                        async move {
-                            match server_file_utils::delete_game(cur_game.clone()).await {
-                                Ok(_) => {
-                                    let _ = socket
-                                        .clone()
-                                        .send(
-                                            ClientEvent::RequestSavedGameList(
-                                                local_login_name_session().clone(),
-                                            ),
-                                        )
-                                        .await;
-                                }
-                                Err(e) => {
-                                    tracing::error!("Error deleting game: {}", e);
-                                    return;
-                                }
-                            };
-                            active_button.set(-1);
-                        }
-                    },
-                    "🗑 Delete"
                 }
             }
         }

@@ -7,153 +7,265 @@ use dioxus::{
 };
 use lib_rpg::{
     character_mod::character::Character,
+    common::constants::stats_const::HP,
     server::server_manager::{GamePhase, ServerData},
 };
 
 use crate::{
-    components::{
-        label::Label,
-        select::{
-            Select, SelectGroup, SelectGroupLabel, SelectItemIndicator, SelectList, SelectOption,
-            SelectTrigger, SelectValue,
-        },
-    },
+    common::PATH_IMG,
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
+fn strip_id_suffix(id_name: &str) -> &str {
+    id_name.split("_#").next().unwrap_or(id_name)
+}
+
 #[component]
 pub fn CharacterSelect() -> Element {
-    // contexts
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
 
-    // snapshot except local_login_name_session because it's used in the ClassSelect component
     let local_name = local_login_name_session();
     let server_data_snap = server_data();
 
-    // avoid unexpected behavior for the select display
     if server_data_snap.players_data.players_info.is_empty() {
         return rsx! {};
     }
-    // filter hashmap
-    let players_except_current_client: HashMap<String, String> = server_data_snap
+
+    let chosen: HashMap<String, String> = server_data_snap
+        .core_game_data
+        .heroes_chosen
+        .iter()
+        .map(|(k, v)| (k.clone(), strip_id_suffix(v).to_string()))
+        .collect();
+
+    let mut others: Vec<(String, String)> = server_data_snap
         .players_data
         .players_info
         .iter()
         .filter(|(k, _)| k.as_str() != local_name.as_str())
-        .map(|(k, v)| {
-            let name = v
-                .character_id_names
-                .first()
-                .unwrap_or(&"No character selected".to_string())
-                .split("_#")
-                .next()
-                .unwrap_or("No character selected")
-                .to_string();
-            (k.clone(), name)
+        .map(|(k, _)| {
+            let char_name = chosen.get(k).cloned().unwrap_or_else(|| "—".to_string());
+            (k.clone(), char_name)
         })
         .collect();
+    others.sort_by(|a, b| a.0.cmp(&b.0));
 
-    let connected: HashMap<String, String> = server_data_snap
-        .core_game_data
-        .heroes_chosen
-        .iter()
-        .map(|(key, value)| {
-            let status = if server_data_snap.players_data.players_info.contains_key(key) {
-                "✅"
-            } else {
-                "❌"
-            };
+    let is_single = server_data_snap.core_game_data.is_single_player;
 
-            (key.clone(), format!("{} {}", value, status))
-        })
-        .collect();
     rsx! {
-        div { style: "display: flex; flex-direction: column; height: 40px; gap: 10px;",
-            h3 { "Players:" }
-            div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
-                if server_data_snap.core_game_data.game_phase == GamePhase::InitGame {
-                    ClassSelect { player_name: local_login_name_session().clone() }
+        div { class: "char-select-container",
+            h3 { class: "char-select-title",
+                if is_single {
+                    "🎮 Single Player — Choose Your Heroes"
                 } else {
-                    div { style: "display: flex; flex-direction: column; height: 40px; gap: 10px;",
-                        for player in connected.clone() {
-                            Label { html_for: "sheet-demo-name", "{player.0}: {player.1} " }
+                    "👥 Choose Your Character"
+                }
+            }
+
+            if server_data_snap.core_game_data.game_phase == GamePhase::InitGame {
+                CharacterCardGrid {
+                    player_name: local_name.clone(),
+                    is_single_player: is_single,
+                }
+            } else {
+                div { class: "char-select-chosen-list",
+                    for (player, choice) in chosen.clone() {
+                        div { class: "char-select-chosen-row",
+                            span { class: "char-select-player-name", "{player}" }
+                            span { class: "char-select-chosen-char", "{choice}" }
                         }
                     }
                 }
             }
-            if server_data_snap.core_game_data.game_phase == GamePhase::InitGame {
-                for player in players_except_current_client.clone() {
-                    div { style: "display: flex; flex-direction: row; height: 40px; gap: 10px;",
-                        Label { html_for: "sheet-demo-name", "{player.0}" }
-                        Label { html_for: "sheet-demo-name", "{player.1}" }
+
+            if server_data_snap.core_game_data.game_phase == GamePhase::InitGame
+                && !others.is_empty()
+            {
+                div { class: "char-select-others",
+                    p { class: "char-select-others-title", "Other players:" }
+                    for (player, choice) in others {
+                        div { class: "char-select-chosen-row",
+                            span { class: "char-select-player-name", "{player}" }
+                            span {
+                                class: if choice == "—" {
+                                    "char-select-waiting"
+                                } else {
+                                    "char-select-chosen-char"
+                                },
+                                "{choice}"
+                            }
+                        }
                     }
                 }
             }
         }
-
     }
 }
 
 #[component]
-pub fn ClassSelect(player_name: String) -> Element {
-    // contexts
+pub fn CharacterCardGrid(player_name: String, is_single_player: bool) -> Element {
     let server_data = use_context::<Signal<ServerData>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
-    let all_characters_names = use_context::<Signal<Vec<Character>>>();
-    let separator = "-";
-    let characters = all_characters_names()
+    let all_characters = use_context::<Signal<Vec<Character>>>();
+
+    let selected_names: Vec<String> = server_data()
+        .core_game_data
+        .heroes_chosen
+        .iter()
+        .filter(|(k, _)| {
+            k.as_str() == player_name.as_str() || k.starts_with(&format!("{}__sp", player_name))
+        })
+        .map(|(_, v)| strip_id_suffix(v).to_string())
+        .collect();
+
+    let hero_chars: Vec<Character> = all_characters()
         .into_iter()
-        .enumerate()
-        .map(|(i, c)| {
-            let name = format!("{}{}{}", c.class.to_emoji(), separator, c.db_full_name);
-            rsx! {
-                SelectOption::<String> { index: i, value: name.to_string(), text_value: "{name}",
-                    {name}
-                    SelectItemIndicator {}
-                }
-            }
-        });
+        .filter(|c| c.kind == lib_rpg::character_mod::character::CharacterKind::Hero)
+        .collect();
 
-    // callback for when the selected character changes
-    let on_value_change_selected_character = move |e: Option<String>| {
-        let l_player_name = player_name.clone();
-        async move {
-            match e {
-                Some(value) => {
-                    tracing::info!("Selected character: {}", value);
-                    let db_full_name = value
-                        .split_once(separator)
-                        .map(|(_, db_full_name)| db_full_name.to_string())
-                        .unwrap_or_else(|| value.clone());
-                    let _ = socket
-                        .send(ClientEvent::AddCharacterOnServerData(
-                            server_data().core_game_data.server_name.clone(),
-                            l_player_name.clone(),
-                            db_full_name.clone(),
-                        ))
-                        .await;
-                }
-                None => {
-                    tracing::info!("No character selected");
-                }
-            }
-        }
-    };
+    let extra_count = server_data()
+        .core_game_data
+        .heroes_chosen
+        .keys()
+        .filter(|k| k.starts_with(&format!("{}__sp", player_name)))
+        .count();
 
-    // render the select component
     rsx! {
-
-        Select::<String> {
-            placeholder: "Select your character",
-            on_value_change: on_value_change_selected_character,
-            SelectTrigger { aria_label: "Select Trigger", width: "12rem", SelectValue {} }
-            SelectList { aria_label: "Select Demo",
-                SelectGroup {
-                    SelectGroupLabel { "Characters" }
-                    {characters}
+        div { class: "char-card-grid",
+            for c in hero_chars {
+                {
+                    let is_selected = selected_names.contains(&c.db_full_name);
+                    let taken_by = if !is_single_player {
+                        server_data()
+                            .core_game_data
+                            .heroes_chosen
+                            .iter()
+                            .find(|(k, v)| {
+                                k.as_str() != player_name.as_str()
+                                    && !k.starts_with(&format!("{}__sp", player_name))
+                                    && strip_id_suffix(v) == c.db_full_name.as_str()
+                            })
+                            .map(|(k, _)| k.clone())
+                    } else {
+                        None
+                    };
+                    let is_taken = taken_by.is_some();
+                    let cname = c.db_full_name.clone();
+                    let server_name = server_data().core_game_data.server_name.clone();
+                    let pname = player_name.clone();
+                    let max_hp = c.stats.all_stats.get(HP).map(|s| s.max).unwrap_or(0);
+                    let desc = c.description.clone();
+                    let is_sp = is_single_player;
+                    let sel_names_snap = selected_names.clone();
+                    let sd_signal = server_data; // Signal<ServerData> is Copy
+                    rsx! {
+                        div {
+                            class: if is_taken {
+                                "char-card char-card-taken"
+                            } else if is_selected {
+                                "char-card char-card-selected"
+                            } else {
+                                "char-card"
+                            },
+                            onclick: move |_| {
+                                if is_taken { return; }
+                                let cn = cname.clone();
+                                let sn = server_name.clone();
+                                let pn = pname.clone();
+                                let sel = sel_names_snap.clone();
+                                spawn(async move {
+                                    if is_sp {
+                                        if sel.contains(&cn) {
+                                            // Find the key that holds this character and remove it
+                                            let remove_key = sd_signal
+                                                .peek()
+                                                .core_game_data
+                                                .heroes_chosen
+                                                .iter()
+                                                .find(|(_, v)| strip_id_suffix(v) == cn.as_str())
+                                                .map(|(k, _)| k.clone());
+                                            if let Some(key) = remove_key {
+                                                let _ = socket
+                                                    .send(ClientEvent::RemoveCharacterOnServerData(sn, key))
+                                                    .await;
+                                            }
+                                            return;
+                                        }
+                                        let key = if sel.is_empty() {
+                                            pn.clone()
+                                        } else {
+                                            format!("{}__sp{}", pn, extra_count + 1)
+                                        };
+                                        tracing::info!("SP: Adding {} under key {}", cn, key);
+                                        let _ = socket
+                                            .send(ClientEvent::AddCharacterOnServerData(sn, key, cn))
+                                            .await;
+                                    } else {
+                                        tracing::info!("Selected character: {}", cn);
+                                        let _ = socket
+                                            .send(ClientEvent::AddCharacterOnServerData(sn, pn, cn))
+                                            .await;
+                                    }
+                                });
+                            },
+                            div { class: "char-card-portrait",
+                                img {
+                                    src: format!("{}/{}.png", PATH_IMG, c.photo_name),
+                                    class: "char-card-img",
+                                    alt: "{c.db_full_name}",
+                                }
+                            }
+                            div { class: "char-card-info",
+                                span { class: "char-card-name", "{c.db_full_name}" }
+                                div { class: "char-card-badges",
+                                    span { class: "char-card-class",
+                                        "{c.class.to_emoji()} {c.class.to_str()}"
+                                    }
+                                    span { class: "char-card-level", "Lv {c.level}" }
+                                }
+                                div { class: "char-card-hp",
+                                    span { class: "char-card-hp-label", "HP" }
+                                    span { class: "char-card-hp-val", "{max_hp}" }
+                                }
+                                if !desc.is_empty() {
+                                    p { class: "char-card-desc", "{desc}" }
+                                }
+                            }
+                            if is_taken {
+                                if let Some(taker) = taken_by.clone() {
+                                    div { class: "char-card-taken-label", "🔒 {taker}" }
+                                }
+                            } else if is_selected {
+                                div { class: "char-card-check", "✓" }
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::strip_id_suffix;
+
+    #[test]
+    fn strip_id_suffix_removes_hash_part() {
+        assert_eq!(strip_id_suffix("Bulbasaur_#1"), "Bulbasaur");
+        assert_eq!(strip_id_suffix("Mewtwo Armure_#1"), "Mewtwo Armure");
+        assert_eq!(strip_id_suffix("Thraïn_#2"), "Thraïn");
+    }
+
+    #[test]
+    fn strip_id_suffix_no_suffix_unchanged() {
+        assert_eq!(strip_id_suffix("Charmander"), "Charmander");
+        assert_eq!(strip_id_suffix(""), "");
+    }
+
+    #[test]
+    fn strip_id_suffix_multiple_hashes_keeps_first_segment() {
+        assert_eq!(strip_id_suffix("Hero_#1_#2"), "Hero");
     }
 }

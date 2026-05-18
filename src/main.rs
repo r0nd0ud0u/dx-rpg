@@ -234,6 +234,9 @@ fn App() -> Element {
     use_context_provider(|| saved_game_list);
     use_context_provider(|| all_characters_names);
     use_context_provider(|| toggle_atk_animation);
+    // Show attack tooltips — default true, overridden from DB once settings load
+    let show_atk_tooltips: Signal<bool> = use_signal(|| true);
+    use_context_provider(|| show_atk_tooltips);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
