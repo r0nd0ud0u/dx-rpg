@@ -20,6 +20,133 @@ A browser-based multiplayer RPG built with [Dioxus](https://dioxuslabs.com/) (Ru
 
 ---
 
+## Features
+
+### Universes & Scenario Progression
+
+The game ships with two universes, each with 10 progressive stages:
+
+#### LOTR Universe (`offlines/scenarios/lotr/`)
+
+| Stage | Name | Enemies |
+|-------|------|---------|
+| 1 | Patrouille Gobeline | Gobelin Eclaireur |
+| 2 | Embuscade Gobeline | Gobelin Eclaireur + Angmar10PV |
+| 3-10 | … | … |
+
+#### Pokémon Universe (`offlines/scenarios/pokemon/`)
+
+| Stage | Name | Enemies |
+|-------|------|---------|
+| 1 | Patrouille Rattata | Rattata |
+| 2 | Double Attaque | Rattata + Pidgey |
+| 3 | Colère de Mankey | Mankey |
+| 4 | Embuscade en Montagne | Mankey + Pidgey |
+| 5 | Machoke le Colosse | Machoke |
+| 6 | L'Ombre de Gengar | Gengar |
+| 7 | Fantômes de la Tour | Haunter + Gengar |
+| 8 | Dragonite Déchaîné | Dragonite |
+| 9 | Mewtwo Éveillé | Mewtwo |
+| 10 | Mewtwo Armure Ultime | Mewtwo Armure |
+
+**Pokémon Heroes** (selectable characters):
+
+| Character | Class | Energy | Signature Moves |
+|-----------|-------|--------|-----------------|
+| Bulbasaur | Mage | Mana | Vine Whip, Leech Seed, Razor Leaf, Solar Beam |
+| Charmander | Berserker | Berserk | Ember, Fire Spin, Flamethrower, Fire Blast |
+| Squirtle | Paladin | Vigor | Water Gun, Withdraw, Surf, Ice Beam |
+
+Each scenario is defined as a JSON file under `offlines/scenarios/`. Characters live in `offlines/characters/` and attacks in `offlines/attack/<character-name>/`.
+
+### Save Slot System
+
+Players are limited to a configurable number of save slots (default: 3). Configure via `.env`:
+
+```env
+MAX_SAVES=3
+```
+
+The "Create Server" page shows all save slots with:
+- Empty slots: click to start a new game immediately
+- Occupied slots: shows game name, current scenario, and last save date; click to select then "Overwrite & Play"
+
+### Attack Tooltips with Description
+
+Attacks can now include an optional `Description` field in their JSON:
+
+```json
+{
+  "Name": "Griffure",
+  "Description": "A quick scratch dealing light physical damage.",
+  ...
+}
+```
+
+When present, hovering over the attack button in the character sheet shows the description as a tooltip.
+
+This requires `lib-rpg` branch `feat/attack-description` (commit `08af5ad82d406aee8f452f05e7b763035fa2fd44`).
+
+### Scenarios Progress Sheet
+
+During a game, click **📜 Scenarios** in the game toolbar to open a side sheet showing all scenarios and their progress state (Not Started / In Progress / ✅ Completed).
+
+### Admin Panel
+
+Enable the admin panel via `.env`:
+
+```env
+ADMIN_ENABLED=true
+```
+
+Navigate to `/admin` to access:
+- **Users tab**: list all users with connection status and save count; delete users
+- **Scenarios tab**: list all loaded scenarios with level, boss count, and description
+- **Characters tab**: list all hero characters with portrait, class, level, description, and full stats table
+
+### Game Mode: Single-player vs Multiplayer
+
+When creating a server, choose between:
+- **Multiplayer** (default): each connected player picks exactly one character; other characters appear as locked (🔒) on the selection screen
+- **Single-player**: one player can pick multiple heroes; each extra hero is added with an `__sp{N}` key; the player controls all heroes in battle. Clicking a **selected** hero card in single-player mode deselects and removes that hero from the current game session.
+
+### Settings Panel (⚙️)
+
+In the game toolbar, a **Settings** sheet lets each user:
+- Toggle **Attack Tooltips** — show/hide attack description on hover (persisted per-user in the DB)
+
+The Settings sheet uses a dedicated Dioxus component scope, avoiding hook-count mismatch panics that could occur when switching between game sheets.
+
+Settings are stored in the `user_settings` table: `(username, key, value)`.
+
+### Game Stats Sheet (improved)
+
+The 📊 Stats sheet now shows:
+- KPI grid: Turn, Round, Kill count
+- Active player indicator
+- Scenario progress bar (scenarios completed / total)
+- Current scenario name, level, universe
+- HP bars for all active heroes
+
+### Load Game page
+
+The Load Game page now shows save-slot style cards identical to the Create Server page, with load and delete actions inline.
+
+---
+
+## Configuration (`.env`)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `IP` | `0.0.0.0` | Bind address |
+| `PORT` | `8080` | HTTP port |
+| `DATABASE_URL` | `sqlite:db.sqlite` | SQLite connection string |
+| `USE_PASSWORD` | `false` | Require password on login |
+| `MAX_SAVES` | `3` | Max save slots per user |
+| `ADMIN_ENABLED` | `false` | Enable `/admin` panel |
+
+---
+
 ## Architecture
 
 ### High-level overview

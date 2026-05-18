@@ -1,12 +1,18 @@
 {
-    "name": "Stage 5",
-    "description": "Le deuxième affrontement contre les forces du Mordor. Angmar et Angmar10PV défendent les portes obscures.",
+    "name": "Le Champion des Orcs",
+    "description": "Le champion des orcs débarque avec sa garde. Intermédiaire et redoutable, il enchaîne frappes dévastatrices et charges de zone.",
     "boss_patterns": {
-        "Angmar": [0],
-        "Angmar10PV": [0]
+        "Champion Orc": [0]
     },
     "level": 5,
     "loots": [
+        {
+            "name": "Super potion",
+            "kind": "Consumable",
+            "rank": "Intermediate",
+            "level": 2,
+            "classes": ["Standard"]
+        },
         {
             "name": "medium belt",
             "kind": "Equipment",
@@ -20,13 +26,6 @@
             "rank": "Intermediate",
             "level": 2,
             "classes": ["Healer", "Mage"]
-        },
-        {
-            "name": "Super potion",
-            "kind": "Consumable",
-            "rank": "Intermediate",
-            "level": 2,
-            "classes": ["Standard"]
         },
         {
             "name": "gold",

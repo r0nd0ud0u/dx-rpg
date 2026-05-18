@@ -10,6 +10,8 @@ use crate::{
 
 pub async fn send_initialize_game(
     user_name: &str,
+    universe: &str,
+    is_single_player: bool,
     socket: UseWebsocket<ClientEvent, ServerEvent, CborEncoding>,
 ) {
     if user_name.is_empty() {
@@ -22,6 +24,8 @@ pub async fn send_initialize_game(
         .send(ClientEvent::InitializeGame(
             SERVER_NAME().clone(),
             user_name.to_string(),
+            universe.to_string(),
+            is_single_player,
         ))
         .await;
 }
