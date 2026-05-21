@@ -21,26 +21,17 @@ pub struct AttackFormData {
 
 /// Returns the list of attack file stems for a given character.
 #[server]
-pub async fn admin_list_attacks(
-    character_name: String,
-) -> Result<Vec<String>, ServerFnError> {
+pub async fn admin_list_attacks(character_name: String) -> Result<Vec<String>, ServerFnError> {
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
-    let dir = Path::new(OFFLINE_PATH)
-        .join("attack")
-        .join(&character_name);
+    let dir = Path::new(OFFLINE_PATH).join("attack").join(&character_name);
     if !dir.exists() {
         return Ok(Vec::new());
     }
     let mut names: Vec<String> = std::fs::read_dir(&dir)
         .map_err(|e| ServerFnError::new(format!("Cannot read {dir:?}: {e}")))?
         .flatten()
-        .filter(|e| {
-            e.path()
-                .extension()
-                .map(|x| x == "json")
-                .unwrap_or(false)
-        })
+        .filter(|e| e.path().extension().map(|x| x == "json").unwrap_or(false))
         .filter_map(|e| {
             e.path()
                 .file_stem()
@@ -118,8 +109,11 @@ pub async fn admin_get_attack_form(
         .map_err(|e| ServerFnError::new(format!("Cannot read {path:?}: {e}")))?;
     let v: serde_json::Value = serde_json::from_str(&content)
         .map_err(|e| ServerFnError::new(format!("Invalid JSON: {e}")))?;
-    let effet_json = serde_json::to_string_pretty(v.get("Effet").unwrap_or(&serde_json::Value::Array(Vec::new())))
-        .unwrap_or_else(|_| "[]".to_owned());
+    let effet_json = serde_json::to_string_pretty(
+        v.get("Effet")
+            .unwrap_or(&serde_json::Value::Array(Vec::new())),
+    )
+    .unwrap_or_else(|_| "[]".to_owned());
     Ok(AttackFormData {
         nom: v["Nom"].as_str().unwrap_or("").to_owned(),
         niveau: v["Niveau"].as_i64().unwrap_or(1),

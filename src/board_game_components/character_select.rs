@@ -158,19 +158,13 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
                     let sd_signal = server_data; // Signal<ServerData> is Copy
                     rsx! {
                         div {
-                            class: if is_taken {
-                                "char-card char-card-taken"
-                            } else if is_selected {
-                                "char-card char-card-selected"
-                            } else {
-                                "char-card"
-                            },
+                            class: if is_taken { "char-card char-card-taken" } else if is_selected { "char-card char-card-selected" } else { "char-card" },
                             onclick: move |_| {
                                 if is_taken {
                                     return;
                                 }
                                 let cn = cname.clone();
-                                let sn = server_name.clone(); // Find the key that holds this character and remove it // Find the key that holds this character and remove it
+                                let sn = server_name.clone(); // Find the key that holds this character and remove it  Find the key that holds this character and remove it
                                 let pn = pname.clone();
                                 let sel = sel_names_snap.clone();
                                 spawn(async move {
@@ -192,20 +186,23 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
                                         }
                                         let key = if sel.is_empty() {
                                             pn.clone()
-                                        } else {
+                                        }
+                                        div { class: "char-card-info",
                                             format!("{}__sp{}", pn, extra_count + 1)
                                         };
                                         tracing::info!("SP: Adding {} under key {}", cn, key);
                                         let _ = socket
                                             .send(ClientEvent::AddCharacterOnServerData(sn, key, cn))
                                             .await;
-                                    } else {
+                                    }
+                                    }
                                         tracing::info!("Selected character: {}", cn);
                                         let _ = socket
                                             .send(ClientEvent::AddCharacterOnServerData(sn, pn, cn))
                                             .await;
                                     }
-                                });
+                                }
+                                }
                             },
                             div { class: "char-card-portrait",
                                 img {

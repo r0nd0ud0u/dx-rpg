@@ -24,10 +24,17 @@ pub struct StatEntry {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct CharacterFormData {
     pub name: String,
+    pub short_name: String,
     pub class: String,
     pub level: u64,
     pub photo: String,
     pub char_type: String,
+    pub rank: String,
+    pub color: String,
+    pub description: String,
+    pub max_actions: i64,
+    pub energies: Vec<String>,
+    pub is_blocking_atk: bool,
     pub stats: Vec<StatEntry>,
 }
 
@@ -108,12 +115,12 @@ pub async fn list_universes_server() -> Result<Vec<String>, ServerFnError> {
         if let Ok(entries) = std::fs::read_dir(&dir) {
             for entry in entries.flatten() {
                 let p = entry.path();
-                if p.is_dir() {
-                    if let Some(name) = p.file_name() {
-                        let s = name.to_string_lossy().to_string();
-                        if !s.is_empty() {
-                            universes.insert(s);
-                        }
+                if p.is_dir()
+                    && let Some(name) = p.file_name()
+                {
+                    let s = name.to_string_lossy().to_string();
+                    if !s.is_empty() {
+                        universes.insert(s);
                     }
                 }
             }
@@ -185,10 +192,24 @@ pub async fn admin_get_character_form(
     let v: serde_json::Value = serde_json::from_str(&content)
         .map_err(|e| ServerFnError::new(format!("Invalid JSON: {e}")))?;
     let name = v["Name"].as_str().unwrap_or("").to_owned();
+    let short_name = v["Short name"].as_str().unwrap_or("").to_owned();
     let class = v["Class"].as_str().unwrap_or("Standard").to_owned();
     let level = v["Level"].as_u64().unwrap_or(1);
     let photo = v["Photo"].as_str().unwrap_or("").to_owned();
     let char_type = v["Type"].as_str().unwrap_or("Hero").to_owned();
+    let rank = v["Rank"].as_str().unwrap_or("Common").to_owned();
+    let color = v["Color"].as_str().unwrap_or("").to_owned();
+    let description = v["Description"].as_str().unwrap_or("").to_owned();
+    let max_actions = v["max-actions-by-round"].as_i64().unwrap_or(1);
+    let is_blocking_atk = v["is-blocking-atk"].as_bool().unwrap_or(false);
+    let energies = v["energies"]
+        .as_array()
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|e| e["kind"].as_str().map(|s| s.to_owned()))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
     let stats = if let Some(stats_obj) = v["Stats"].as_object() {
         let mut s: Vec<StatEntry> = stats_obj
             .iter()
@@ -203,7 +224,21 @@ pub async fn admin_get_character_form(
     } else {
         Vec::new()
     };
-    Ok(CharacterFormData { name, class, level, photo, char_type, stats })
+    Ok(CharacterFormData {
+        name,
+        short_name,
+        class,
+        level,
+        photo,
+        char_type,
+        rank,
+        color,
+        description,
+        max_actions,
+        energies,
+        is_blocking_atk,
+        stats,
+    })
 }
 
 /// Saves key character fields back into the JSON file, preserving other fields.
@@ -223,11 +258,26 @@ pub async fn admin_save_character_form(
         .map_err(|e| ServerFnError::new(format!("Cannot read {path:?}: {e}")))?;
     let mut v: serde_json::Value = serde_json::from_str(&content)
         .map_err(|e| ServerFnError::new(format!("Invalid JSON: {e}")))?;
-    v["Name"] = serde_json::Value::String(form.name);
+    v["Name"] = serde_json::Value::String(form.name.clone());
+    if !form.name.is_empty() {
+        v["IdName"] = serde_json::Value::String(format!("{}_#1", form.name));
+    }
+    v["Short name"] = serde_json::Value::String(form.short_name);
     v["Class"] = serde_json::Value::String(form.class);
     v["Level"] = serde_json::json!(form.level);
     v["Photo"] = serde_json::Value::String(form.photo);
     v["Type"] = serde_json::Value::String(form.char_type);
+    v["Rank"] = serde_json::Value::String(form.rank);
+    v["Color"] = serde_json::Value::String(form.color);
+    v["Description"] = serde_json::Value::String(form.description);
+    v["max-actions-by-round"] = serde_json::json!(form.max_actions);
+    v["is-blocking-atk"] = serde_json::json!(form.is_blocking_atk);
+    v["energies"] = serde_json::json!(
+        form.energies
+            .iter()
+            .map(|k| serde_json::json!({"kind": k}))
+            .collect::<Vec<_>>()
+    );
     for stat in &form.stats {
         v["Stats"][&stat.stat_name]["Current"] = serde_json::json!(stat.current);
         v["Stats"][&stat.stat_name]["Max"] = serde_json::json!(stat.max);

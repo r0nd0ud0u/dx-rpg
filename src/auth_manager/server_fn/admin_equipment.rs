@@ -10,10 +10,10 @@ pub async fn admin_list_equipment_types() -> Result<Vec<String>, ServerFnError> 
     if let Ok(entries) = std::fs::read_dir(&dir) {
         for entry in entries.flatten() {
             let p = entry.path();
-            if p.is_dir() {
-                if let Some(name) = p.file_name() {
-                    types.push(name.to_string_lossy().to_string());
-                }
+            if p.is_dir()
+                && let Some(name) = p.file_name()
+            {
+                types.push(name.to_string_lossy().to_string());
             }
         }
     }
@@ -36,10 +36,10 @@ pub async fn admin_list_equipment_categories(
     if let Ok(entries) = std::fs::read_dir(&dir) {
         for entry in entries.flatten() {
             let p = entry.path();
-            if p.is_dir() {
-                if let Some(name) = p.file_name() {
-                    categories.push(name.to_string_lossy().to_string());
-                }
+            if p.is_dir()
+                && let Some(name) = p.file_name()
+            {
+                categories.push(name.to_string_lossy().to_string());
             }
         }
     }
@@ -55,8 +55,12 @@ pub async fn admin_list_equipment_items(
 ) -> Result<Vec<String>, ServerFnError> {
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
-    if eq_type.contains("..") || eq_type.contains('/') || eq_type.contains('\\')
-        || category.contains("..") || category.contains('/') || category.contains('\\')
+    if eq_type.contains("..")
+        || eq_type.contains('/')
+        || eq_type.contains('\\')
+        || category.contains("..")
+        || category.contains('/')
+        || category.contains('\\')
     {
         return Err(ServerFnError::new("Invalid path component".to_owned()));
     }
@@ -68,10 +72,11 @@ pub async fn admin_list_equipment_items(
     if let Ok(entries) = std::fs::read_dir(&dir) {
         for entry in entries.flatten() {
             let p = entry.path();
-            if p.is_file() && p.extension().map(|x| x == "json").unwrap_or(false) {
-                if let Some(stem) = p.file_stem() {
-                    items.push(stem.to_string_lossy().to_string());
-                }
+            if p.is_file()
+                && p.extension().map(|x| x == "json").unwrap_or(false)
+                && let Some(stem) = p.file_stem()
+            {
+                items.push(stem.to_string_lossy().to_string());
             }
         }
     }
@@ -161,7 +166,11 @@ pub async fn list_available_images() -> Result<Vec<String>, ServerFnError> {
                     .map(|x| x == "png" || x == "jpg" || x == "jpeg" || x == "webp" || x == "gif")
                     .unwrap_or(false)
             })
-            .filter_map(|e| e.path().file_name().map(|n| n.to_string_lossy().to_string()))
+            .filter_map(|e| {
+                e.path()
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+            })
             .collect(),
         Err(_) => Vec::new(),
     };

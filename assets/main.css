@@ -1479,3 +1479,62 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     text-decoration: none;
 }
 .app-footer-info a:hover { text-decoration: underline; }
+
+/* ── Admin stats table (replaces stats grid) ─────────────────────────────── */
+.admin-stats-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 16px;
+    margin-bottom: 12px;
+}
+.admin-stats-header {
+    display: grid;
+    grid-template-columns: 1fr 72px 16px 72px;
+    gap: 4px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--rpg-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    grid-column: 1 / -1;
+    border-bottom: 1px solid var(--rpg-border);
+}
+.admin-stats-row {
+    display: grid;
+    grid-template-columns: 1fr 72px 16px 72px;
+    gap: 4px;
+    align-items: center;
+    padding: 3px 8px;
+    background: var(--rpg-bg-card);
+    border: 1px solid var(--rpg-border);
+    border-radius: 5px;
+}
+.ast-col-name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--rpg-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ast-col-val { /* placeholder for header alignment */ }
+.ast-col-sep {
+    text-align: center;
+    color: var(--rpg-text-muted);
+    font-size: 0.85rem;
+}
+.ast-input {
+    width: 100%;
+    padding: 2px 6px;
+    background: var(--rpg-bg-input, var(--rpg-bg-card-alt));
+    border: 1px solid var(--rpg-border);
+    border-radius: 4px;
+    color: var(--rpg-text);
+    font-size: 0.85rem;
+    text-align: right;
+}
+.ast-input:focus {
+    outline: none;
+    border-color: var(--rpg-primary);
+}

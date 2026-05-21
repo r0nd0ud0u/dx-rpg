@@ -6,13 +6,12 @@ use crate::{
         AdminCharacterInfo, AdminScenarioInfo, AdminUserInfo, AttackFormData, CharacterFormData,
         ScenarioDetail, ScenarioLootItem, StatEntry, admin_delete_attack, admin_delete_equipment,
         admin_get_attack_form, admin_get_attack_json, admin_get_character_form,
-        admin_get_character_json, admin_get_equipment_json, admin_list_attacks,
-        admin_list_bosses, admin_list_characters, admin_list_equipment_categories,
-        admin_list_equipment_items, admin_list_equipment_types, admin_list_scenarios,
-        admin_list_users, admin_save_attack_form, admin_save_attack_json,
-        admin_save_character_form, admin_save_character_json, admin_save_equipment_json,
-        delete_scenario_json, delete_user, get_scenario_detail, is_admin_enabled,
-        list_universes_server, save_scenario_detail,
+        admin_get_character_json, admin_get_equipment_json, admin_list_attacks, admin_list_bosses,
+        admin_list_characters, admin_list_equipment_categories, admin_list_equipment_items,
+        admin_list_equipment_types, admin_list_scenarios, admin_list_users, admin_save_attack_form,
+        admin_save_attack_json, admin_save_character_form, admin_save_character_json,
+        admin_save_equipment_json, delete_scenario_json, delete_user, get_scenario_detail,
+        is_admin_enabled, list_universes_server, save_scenario_detail,
     },
     common::PATH_IMG,
     components::{
@@ -678,10 +677,17 @@ fn AdminCharactersTab() -> Element {
 
     // Character form signals
     let mut form_name = use_signal(String::new);
+    let mut form_short_name = use_signal(String::new);
     let mut form_class = use_signal(String::new);
     let mut form_level = use_signal(|| "1".to_string());
     let mut form_photo = use_signal(String::new);
     let mut form_char_type = use_signal(|| "Hero".to_string());
+    let mut form_rank = use_signal(|| "Common".to_string());
+    let mut form_color = use_signal(String::new);
+    let mut form_description = use_signal(String::new);
+    let mut form_max_actions = use_signal(|| "1".to_string());
+    let mut form_energies: Signal<Vec<String>> = use_signal(Vec::new);
+    let mut form_is_blocking_atk = use_signal(|| false);
     let mut form_stats: Signal<Vec<StatEntry>> = use_signal(Vec::new);
 
     // Attack management state
@@ -735,15 +741,26 @@ fn AdminCharactersTab() -> Element {
         .unwrap_or_default();
 
     let displayed: Vec<AdminCharacterInfo> = {
-        let source = if show_bosses() { boss_characters() } else { characters() };
+        let source = if show_bosses() {
+            boss_characters()
+        } else {
+            characters()
+        };
         if selected_universe().is_empty() {
             source
         } else {
-            source.into_iter().filter(|c| c.universe == selected_universe()).collect()
+            source
+                .into_iter()
+                .filter(|c| c.universe == selected_universe())
+                .collect()
         }
     };
 
-    let kind_label = if show_bosses() { "👹 Bosses" } else { "🧙 Heroes" };
+    let kind_label = if show_bosses() {
+        "👹 Bosses"
+    } else {
+        "🧙 Heroes"
+    };
 
     rsx! {
         // Universe filter
@@ -849,10 +866,17 @@ fn AdminCharactersTab() -> Element {
                                                     match admin_get_character_form(u, n.clone()).await {
                                                         Ok(form) => {
                                                             form_name.set(form.name);
+                                                            form_short_name.set(form.short_name);
                                                             form_class.set(form.class);
                                                             form_level.set(form.level.to_string());
                                                             form_photo.set(form.photo);
                                                             form_char_type.set(form.char_type);
+                                                            form_rank.set(form.rank);
+                                                            form_color.set(form.color);
+                                                            form_description.set(form.description);
+                                                            form_max_actions.set(form.max_actions.to_string());
+                                                            form_energies.set(form.energies);
+                                                            form_is_blocking_atk.set(form.is_blocking_atk);
                                                             form_stats.set(form.stats);
                                                             char_edit_form_mode.set(true);
                                                             edit_char_name.set(Some(n));
@@ -957,10 +981,24 @@ fn AdminCharactersTab() -> Element {
                                 }
                                 div { class: "admin-form-field",
                                     Label {
+                                        html_for: "char-short-name",
+                                        color: "var(--rpg-text-muted)",
+                                        font_size: "0.82rem",
+                                        "Short name"
+                                    }
+                                    Input {
+                                        placeholder: "Short name",
+                                        r#type: "text",
+                                        value: "{form_short_name}",
+                                        oninput: move |e: FormEvent| form_short_name.set(e.value()),
+                                    }
+                                }
+                                div { class: "admin-form-field", // Description
+                                    Label {
                                         html_for: "char-class",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Class"
+                                        "Class" // Energies & toggles
                                     }
                                     select {
                                         class: "admin-select",
@@ -996,16 +1034,26 @@ fn AdminCharactersTab() -> Element {
                                 }
                                 div { class: "admin-form-field",
                                     Label {
-                                        html_for: "char-photo",
+                                        html_for: "char-rank",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Photo (without extension)"
+                                        "Rank"
                                     }
-                                    Input {
-                                        placeholder: "e.g. Thalia",
-                                        r#type: "text",
-                                        value: "{form_photo}",
-                                        oninput: move |e: FormEvent| form_photo.set(e.value()),
+                                    select {
+                                        class: "admin-select",
+                                        value: "{form_rank}",
+                                        onchange: move |e| form_rank.set(e.value()),
+                                        option { value: "Common", selected: form_rank() == "Common", "Common" }
+                                        option {
+                                            value: "Intermediate",
+                                            selected: form_rank() == "Intermediate",
+                                            "Intermediate"
+                                        }
+                                        option {
+                                            value: "Advanced",
+                                            selected: form_rank() == "Advanced",
+                                            "Advanced"
+                                        }
                                     }
                                 }
                                 div { class: "admin-form-field",
@@ -1023,21 +1071,126 @@ fn AdminCharactersTab() -> Element {
                                         option { value: "Boss", selected: form_char_type() == "Boss", "Boss" }
                                     }
                                 }
+                                div { class: "admin-form-field",
+                                    Label {
+                                        html_for: "char-photo",
+                                        color: "var(--rpg-text-muted)",
+                                        font_size: "0.82rem",
+                                        "Photo (without extension)"
+                                    }
+                                    Input {
+                                        placeholder: "e.g. Thalia",
+                                        r#type: "text",
+                                        value: "{form_photo}",
+                                        oninput: move |e: FormEvent| form_photo.set(e.value()),
+                                    }
+                                }
+                                div { class: "admin-form-field",
+                                    Label {
+                                        html_for: "char-color",
+                                        color: "var(--rpg-text-muted)",
+                                        font_size: "0.82rem",
+                                        "Color"
+                                    }
+                                    Input {
+                                        placeholder: "e.g. green",
+                                        r#type: "text",
+                                        value: "{form_color}",
+                                        oninput: move |e: FormEvent| form_color.set(e.value()),
+                                    }
+                                }
+                                div { class: "admin-form-field",
+                                    Label {
+                                        html_for: "char-max-actions",
+                                        color: "var(--rpg-text-muted)",
+                                        font_size: "0.82rem",
+                                        "Max actions / round"
+                                    }
+                                    Input {
+                                        r#type: "number",
+                                        value: "{form_max_actions}",
+                                        oninput: move |e: FormEvent| form_max_actions.set(e.value()),
+                                    }
+                                }
                             }
+                            // Description
+                            Label {
+                                html_for: "char-description",
+                                color: "var(--rpg-text-muted)",
+                                font_size: "0.82rem",
+                                "Description"
+                            }
+                            textarea {
+                                class: "admin-json-textarea",
+                                rows: "3",
+                                placeholder: "Character description…",
+                                value: "{form_description}",
+                                oninput: move |e: FormEvent| form_description.set(e.value()),
+                            }
+                            // Energies & toggles
+                            div { style: "display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:10px 0;",
+                                div { style: "display:flex;flex-direction:column;gap:4px;",
+                                    p { style: "font-size:0.82rem;color:var(--rpg-text-muted);margin:0 0 4px;",
+                                        "Energies"
+                                    }
+                                    div { style: "display:flex;gap:10px;flex-wrap:wrap;",
+                                        for energy in ["Mana", "Rage", "Vigor"] {
+                                            {
+                                                let e = energy;
+                                                let has = form_energies().contains(&e.to_owned());
+                                                rsx! {
+                                                    label { style: "display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9rem;",
+                                                        input {
+                                                            r#type: "checkbox",
+                                                            checked: has,
+                                                            onchange: move |_| {
+                                                                let mut energies = form_energies();
+                                                                if energies.contains(&e.to_owned()) {
+                                                                    energies.retain(|x| x != e);
+                                                                } else {
+                                                                    energies.push(e.to_owned());
+                                                                }
+                                                                form_energies.set(energies);
+                                                            },
+                                                        }
+                                                        "{e}"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                label { style: "display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;",
+                                    input {
+                                        r#type: "checkbox",
+                                        checked: form_is_blocking_atk(),
+                                        onchange: move |_| form_is_blocking_atk.set(!form_is_blocking_atk()),
+                                    }
+                                    "Is blocking attack"
+                                }
+                            }
+                            // Stats table
                             if !form_stats().is_empty() {
                                 p { style: "font-weight:600;margin:12px 0 6px;color:var(--rpg-text-muted);font-size:0.82rem;",
                                     "Stats"
                                 }
-                                div { class: "admin-stats-grid",
+                                div { class: "admin-stats-table",
+                                    div { class: "admin-stats-header",
+                                        span { class: "ast-col-name", "Stat" }
+                                        span { class: "ast-col-val", "Current" }
+                                        span { class: "ast-col-sep", "" }
+                                        span { class: "ast-col-val", "Max" }
+                                    }
                                     for (idx, stat) in form_stats().iter().enumerate() {
                                         {
                                             let sname = stat.stat_name.clone();
                                             let idx_cur = idx;
                                             let idx_max = idx;
                                             rsx! {
-                                                div { class: "admin-stat-row",
-                                                    span { class: "admin-stat-name", "{sname}" }
-                                                    Input {
+                                                div { class: "admin-stats-row",
+                                                    span { class: "ast-col-name", "{sname}" }
+                                                    input {
+                                                        class: "ast-input",
                                                         r#type: "number",
                                                         value: "{stat.current}",
                                                         oninput: move |e: FormEvent| {
@@ -1048,8 +1201,9 @@ fn AdminCharactersTab() -> Element {
                                                             form_stats.set(stats);
                                                         },
                                                     }
-                                                    span { style: "color:var(--rpg-text-muted);padding:0 4px;", "/" }
-                                                    Input {
+                                                    span { class: "ast-col-sep", "/" }
+                                                    input {
+                                                        class: "ast-input",
                                                         r#type: "number",
                                                         value: "{stat.max}",
                                                         oninput: move |e: FormEvent| {
@@ -1074,10 +1228,17 @@ fn AdminCharactersTab() -> Element {
                                         let u = selected_universe();
                                         let form = CharacterFormData {
                                             name: form_name(),
+                                            short_name: form_short_name(),
                                             class: form_class(),
                                             level: form_level().trim().parse::<u64>().unwrap_or(1),
                                             photo: form_photo(),
                                             char_type: form_char_type(),
+                                            rank: form_rank(),
+                                            color: form_color(),
+                                            description: form_description(),
+                                            max_actions: form_max_actions().trim().parse::<i64>().unwrap_or(1),
+                                            energies: form_energies(),
+                                            is_blocking_atk: form_is_blocking_atk(),
                                             stats: form_stats(),
                                         };
                                         spawn(async move {
@@ -1118,10 +1279,17 @@ fn AdminCharactersTab() -> Element {
                                         spawn(async move {
                                             if let Ok(form) = admin_get_character_form(u, n.clone()).await {
                                                 form_name.set(form.name);
+                                                form_short_name.set(form.short_name);
                                                 form_class.set(form.class);
                                                 form_level.set(form.level.to_string());
                                                 form_photo.set(form.photo);
                                                 form_char_type.set(form.char_type);
+                                                form_rank.set(form.rank);
+                                                form_color.set(form.color);
+                                                form_description.set(form.description);
+                                                form_max_actions.set(form.max_actions.to_string());
+                                                form_energies.set(form.energies);
+                                                form_is_blocking_atk.set(form.is_blocking_atk);
                                                 form_stats.set(form.stats);
                                                 char_edit_form_mode.set(true);
                                             }

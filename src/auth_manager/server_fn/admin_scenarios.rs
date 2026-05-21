@@ -13,10 +13,7 @@ pub struct AdminScenarioInfo {
 
 /// Parses a scenario JSON file into AdminScenarioInfo.
 #[cfg(feature = "server")]
-fn parse_scenario_info(
-    path: &std::path::Path,
-    universe: &str,
-) -> Option<AdminScenarioInfo> {
+fn parse_scenario_info(path: &std::path::Path, universe: &str) -> Option<AdminScenarioInfo> {
     let content = std::fs::read_to_string(path).ok()?;
     let v: serde_json::Value = serde_json::from_str(&content).ok()?;
     let name = v["name"].as_str().unwrap_or("").to_owned();
@@ -25,10 +22,7 @@ fn parse_scenario_info(
     }
     let description = v["description"].as_str().unwrap_or("").to_owned();
     let level = v["level"].as_u64().unwrap_or(0);
-    let nb_bosses = v["boss_patterns"]
-        .as_object()
-        .map(|o| o.len())
-        .unwrap_or(0);
+    let nb_bosses = v["boss_patterns"].as_object().map(|o| o.len()).unwrap_or(0);
     let file_name = path
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
@@ -55,10 +49,11 @@ pub async fn admin_list_scenarios() -> Result<Vec<AdminScenarioInfo>, ServerFnEr
     if let Ok(entries) = std::fs::read_dir(&scenarios_dir) {
         for entry in entries.flatten() {
             let p = entry.path();
-            if p.is_file() && p.extension().map(|e| e == "json").unwrap_or(false) {
-                if let Some(info) = parse_scenario_info(&p, "") {
-                    infos.push(info);
-                }
+            if p.is_file()
+                && p.extension().map(|e| e == "json").unwrap_or(false)
+                && let Some(info) = parse_scenario_info(&p, "")
+            {
+                infos.push(info);
             }
         }
     }
@@ -77,10 +72,9 @@ pub async fn admin_list_scenarios() -> Result<Vec<AdminScenarioInfo>, ServerFnEr
                         let sp = sub_entry.path();
                         if sp.is_file()
                             && sp.extension().map(|e| e == "json").unwrap_or(false)
+                            && let Some(info) = parse_scenario_info(&sp, &universe)
                         {
-                            if let Some(info) = parse_scenario_info(&sp, &universe) {
-                                infos.push(info);
-                            }
+                            infos.push(info);
                         }
                     }
                 }
@@ -114,12 +108,7 @@ pub async fn list_scenarios_for_universe(universe: String) -> Result<Vec<String>
         .map_err(|e| ServerFnError::new(format!("Cannot read {dir:?}: {e}")))?;
     let mut names: Vec<String> = entries
         .filter_map(|e| e.ok())
-        .filter(|e| {
-            e.path()
-                .extension()
-                .map(|x| x == "json")
-                .unwrap_or(false)
-        })
+        .filter(|e| e.path().extension().map(|x| x == "json").unwrap_or(false))
         .filter_map(|e| {
             e.path()
                 .file_stem()
@@ -260,20 +249,25 @@ pub async fn save_scenario_detail(
         }
     }
 
-    let loots_json_arr: Vec<serde_json::Value> = detail.loots.iter().map(|item| {
-        let classes: Vec<serde_json::Value> = item.classes
-            .split(',')
-            .map(|c| serde_json::Value::String(c.trim().to_owned()))
-            .filter(|v| v.as_str().map(|s| !s.is_empty()).unwrap_or(false))
-            .collect();
-        serde_json::json!({
-            "name": item.name,
-            "kind": item.kind,
-            "rank": item.rank,
-            "level": item.level,
-            "classes": classes,
+    let loots_json_arr: Vec<serde_json::Value> = detail
+        .loots
+        .iter()
+        .map(|item| {
+            let classes: Vec<serde_json::Value> = item
+                .classes
+                .split(',')
+                .map(|c| serde_json::Value::String(c.trim().to_owned()))
+                .filter(|v| v.as_str().map(|s| !s.is_empty()).unwrap_or(false))
+                .collect();
+            serde_json::json!({
+                "name": item.name,
+                "kind": item.kind,
+                "rank": item.rank,
+                "level": item.level,
+                "classes": classes,
+            })
         })
-    }).collect();
+        .collect();
 
     let scenario = serde_json::json!({
         "name": detail.name,
