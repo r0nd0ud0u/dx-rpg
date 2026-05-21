@@ -52,6 +52,7 @@ dioxus-charts = "0.4.0"
 strum = "0.28.0"
 strum_macros = "0.28.0"
 chrono = { version = "0.4", features = ["serde"] }
+data-encoding = { version = "2", optional = true }
 
 [patch."https://github.com/r0nd0ud0u/lib-rpg.git"]
 lib-rpg = { path = "../lib-rpg" }
@@ -71,6 +72,7 @@ server = [
     "dep:axum_session_auth",
     "dep:axum_session_sqlx",
     "bcrypt",
+    "dep:data-encoding",
 ]
 web = ["dioxus/web"]
 desktop = ["dioxus/desktop"]

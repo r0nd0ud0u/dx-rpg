@@ -102,7 +102,6 @@ pub fn CharacterSelect(universe: String) -> Element {
 #[component]
 pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: String) -> Element {
     let server_data = use_context::<Signal<ServerData>>();
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let all_characters = use_context::<Signal<Vec<Character>>>();
 
     let selected_names: Vec<String> = server_data()
@@ -148,93 +147,123 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
                         None
                     };
                     let is_taken = taken_by.is_some();
-                    let cname = c.db_full_name.clone();
                     let server_name = server_data().core_game_data.server_name.clone();
-                    let pname = player_name.clone();
-                    let max_hp = c.stats.all_stats.get(HP).map(|s| s.max).unwrap_or(0);
-                    let desc = c.description.clone();
-                    let is_sp = is_single_player;
-                    let sel_names_snap = selected_names.clone();
-                    let sd_signal = server_data; // Signal<ServerData> is Copy
                     rsx! {
-                        div {
-                            class: if is_taken { "char-card char-card-taken" } else if is_selected { "char-card char-card-selected" } else { "char-card" },
-                            onclick: move |_| {
-                                if is_taken {
-                                    return;
-                                }
-                                let cn = cname.clone();
-                                let sn = server_name.clone(); // Find the key that holds this character and remove it  Find the key that holds this character and remove it
-                                let pn = pname.clone();
-                                let sel = sel_names_snap.clone();
-                                spawn(async move {
-                                    if is_sp {
-                                        if sel.contains(&cn) {
-                                            let remove_key = sd_signal
-                                                .peek()
-                                                .core_game_data
-                                                .heroes_chosen
-                                                .iter()
-                                                .find(|(_, v)| strip_id_suffix(v) == cn.as_str())
-                                                .map(|(k, _)| k.clone());
-                                            if let Some(key) = remove_key {
-                                                let _ = socket
-                                                    .send(ClientEvent::RemoveCharacterOnServerData(sn, key))
-                                                    .await;
-                                            }
-                                            return;
-                                        }
-                                        let key = if sel.is_empty() {
-                                            pn.clone()
-                                        }
-                                        div { class: "char-card-info",
-                                            format!("{}__sp{}", pn, extra_count + 1)
-                                        };
-                                        tracing::info!("SP: Adding {} under key {}", cn, key);
-                                        let _ = socket
-                                            .send(ClientEvent::AddCharacterOnServerData(sn, key, cn))
-                                            .await;
-                                    }
-                                    }
-                                        tracing::info!("Selected character: {}", cn);
-                                        let _ = socket
-                                            .send(ClientEvent::AddCharacterOnServerData(sn, pn, cn))
-                                            .await;
-                                    }
-                                }
-                                }
-                            },
-                            div { class: "char-card-portrait",
-                                img {
-                                    src: format!("{}/{}.png", PATH_IMG, c.photo_name),
-                                    class: "char-card-img",
-                                    alt: "{c.db_full_name}",
-                                }
-                            }
-                            div { class: "char-card-info",
-                                span { class: "char-card-name", "{c.db_full_name}" }
-                                div { class: "char-card-badges",
-                                    span { class: "char-card-class", "{c.class.to_emoji()} {c.class.to_str()}" }
-                                    span { class: "char-card-level", "Lv {c.level}" }
-                                }
-                                div { class: "char-card-hp",
-                                    span { class: "char-card-hp-label", "HP" }
-                                    span { class: "char-card-hp-val", "{max_hp}" }
-                                }
-                                if !desc.is_empty() {
-                                    p { class: "char-card-desc", "{desc}" }
-                                }
-                            }
-                            if is_taken {
-                                if let Some(taker) = taken_by.clone() {
-                                    div { class: "char-card-taken-label", "🔒 {taker}" }
-                                }
-                            } else if is_selected {
-                                div { class: "char-card-check", "✓" }
-                            }
+                        CharCardItem {
+                            c: c.clone(),
+                            player_name: player_name.clone(),
+                            server_name,
+                            is_single_player,
+                            extra_count,
+                            selected_names: selected_names.clone(),
+                            is_selected,
+                            is_taken,
+                            taken_by,
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+#[component]
+fn CharCardItem(
+    c: Character,
+    player_name: String,
+    server_name: String,
+    is_single_player: bool,
+    extra_count: usize,
+    selected_names: Vec<String>,
+    is_selected: bool,
+    is_taken: bool,
+    taken_by: Option<String>,
+) -> Element {
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let sd_signal = use_context::<Signal<ServerData>>();
+    let max_hp = c.stats.all_stats.get(HP).map(|s| s.max).unwrap_or(0);
+    let desc = c.description.clone();
+
+    // onclick defined outside rsx! to prevent dx fmt corruption
+    let cname = c.db_full_name.clone();
+    let pname = player_name.clone();
+    let sname = server_name.clone();
+    let sel_snap = selected_names.clone();
+    let onclick_handler = move |_: Event<MouseData>| {
+        if is_taken {
+            return;
+        }
+        let cn = cname.clone();
+        let sn = sname.clone();
+        let pn = pname.clone();
+        let sel = sel_snap.clone();
+        spawn(async move {
+            if is_single_player {
+                if sel.contains(&cn) {
+                    let remove_key = sd_signal
+                        .peek()
+                        .core_game_data
+                        .heroes_chosen
+                        .iter()
+                        .find(|(_, v)| strip_id_suffix(v) == cn.as_str())
+                        .map(|(k, _)| k.clone());
+                    if let Some(key) = remove_key {
+                        let _ = socket
+                            .send(ClientEvent::RemoveCharacterOnServerData(sn, key))
+                            .await;
+                    }
+                    return;
+                }
+                let key = if sel.is_empty() {
+                    pn.clone()
+                } else {
+                    format!("{}__sp{}", pn, extra_count + 1)
+                };
+                tracing::info!("SP: Adding {} under key {}", cn, key);
+                let _ = socket
+                    .send(ClientEvent::AddCharacterOnServerData(sn, key, cn))
+                    .await;
+            } else {
+                tracing::info!("Selected character: {}", cn);
+                let _ = socket
+                    .send(ClientEvent::AddCharacterOnServerData(sn, pn, cn))
+                    .await;
+            }
+        });
+    };
+
+    rsx! {
+        div {
+            class: if is_taken { "char-card char-card-taken" } else if is_selected { "char-card char-card-selected" } else { "char-card" },
+            onclick: onclick_handler,
+            div { class: "char-card-portrait",
+                img {
+                    src: format!("{}/{}.png", PATH_IMG, c.photo_name),
+                    class: "char-card-img",
+                    alt: "{c.db_full_name}",
+                }
+            }
+            div { class: "char-card-info",
+                span { class: "char-card-name", "{c.db_full_name}" }
+                div { class: "char-card-badges",
+                    span { class: "char-card-class", "{c.class.to_emoji()} {c.class.to_str()}" }
+                    span { class: "char-card-level", "Lv {c.level}" }
+                }
+                div { class: "char-card-hp",
+                    span { class: "char-card-hp-label", "HP" }
+                    span { class: "char-card-hp-val", "{max_hp}" }
+                }
+                if !desc.is_empty() {
+                    p { class: "char-card-desc", "{desc}" }
+                }
+            }
+            if is_taken {
+                if let Some(taker) = taken_by.clone() {
+                    div { class: "char-card-taken-label", "🔒 {taker}" }
+                }
+            } else if is_selected {
+                div { class: "char-card-check", "✓" }
             }
         }
     }

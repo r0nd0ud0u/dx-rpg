@@ -1,17 +1,23 @@
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
 
+/// JS snippet to read the selected file as base64 from a named file input.
+const JS_READ_CHAR_PHOTO: &str = "const input = document.getElementById('char-photo-file'); const file = input && input.files && input.files[0]; if (!file) { dioxus.send(null); return; } const reader = new FileReader(); reader.onload = function(ev) { const b64 = ev.target.result.split(',')[1]; dioxus.send({name: file.name, data: b64}); }; reader.readAsDataURL(file);";
+const JS_READ_ATK_PHOTO: &str = "const input = document.getElementById('atk-photo-file'); const file = input && input.files && input.files[0]; if (!file) { dioxus.send(null); return; } const reader = new FileReader(); reader.onload = function(ev) { const b64 = ev.target.result.split(',')[1]; dioxus.send({name: file.name, data: b64}); }; reader.readAsDataURL(file);";
+
 use crate::{
     auth_manager::server_fn::{
         AdminCharacterInfo, AdminScenarioInfo, AdminUserInfo, AttackFormData, CharacterFormData,
-        ScenarioDetail, ScenarioLootItem, StatEntry, admin_delete_attack, admin_delete_equipment,
-        admin_get_attack_form, admin_get_attack_json, admin_get_character_form,
-        admin_get_character_json, admin_get_equipment_json, admin_list_attacks, admin_list_bosses,
+        EquipStatEntry, EquipmentFormData, ScenarioDetail, ScenarioLootItem, StatEntry,
+        admin_create_universe, admin_delete_attack, admin_delete_equipment, admin_get_attack_form,
+        admin_get_attack_json, admin_get_character_form, admin_get_character_json,
+        admin_get_equipment_form, admin_get_equipment_json, admin_list_attacks, admin_list_bosses,
         admin_list_characters, admin_list_equipment_categories, admin_list_equipment_items,
         admin_list_equipment_types, admin_list_scenarios, admin_list_users, admin_save_attack_form,
         admin_save_attack_json, admin_save_character_form, admin_save_character_json,
-        admin_save_equipment_json, delete_scenario_json, delete_user, get_scenario_detail,
-        is_admin_enabled, list_universes_server, save_scenario_detail,
+        admin_save_equipment_form, admin_save_equipment_json, delete_scenario_json, delete_user,
+        get_scenario_detail, is_admin_enabled, list_universes_server, save_scenario_detail,
+        upload_photo,
     },
     common::PATH_IMG,
     components::{
@@ -711,8 +717,17 @@ fn AdminCharactersTab() -> Element {
     let mut atk_cout_vigueur = use_signal(|| "0".to_string());
     let mut atk_duree = use_signal(|| "1".to_string());
     let mut atk_aggro = use_signal(|| "0".to_string());
+    let mut atk_degats = use_signal(|| "0".to_string());
+    let mut atk_soin = use_signal(|| "0".to_string());
+    let mut atk_regen_mana = use_signal(|| "0".to_string());
+    let mut atk_regen_rage = use_signal(|| "0".to_string());
+    let mut atk_regen_vigueur = use_signal(|| "0".to_string());
     let mut atk_photo = use_signal(String::new);
     let mut atk_effet = use_signal(|| "[]".to_string());
+
+    // Universe creation
+    let mut new_universe_name = use_signal(String::new);
+    let mut universe_feedback = use_signal(String::new);
 
     use_effect(move || {
         spawn(async move {
@@ -762,6 +777,57 @@ fn AdminCharactersTab() -> Element {
         "🧙 Heroes"
     };
 
+    // Photo upload handlers defined outside rsx! to avoid dx fmt corruption
+    let on_char_photo_change = move |_: FormEvent| {
+        let mut js = document::eval(JS_READ_CHAR_PHOTO);
+        spawn(async move {
+            if let Ok(val) = js.recv::<serde_json::Value>().await
+                && !val.is_null()
+            {
+                let name = val
+                    .get("name")
+                    .and_then(|v: &serde_json::Value| v.as_str())
+                    .map(String::from);
+                let data = val
+                    .get("data")
+                    .and_then(|v: &serde_json::Value| v.as_str())
+                    .map(String::from);
+                if let (Some(name), Some(data)) = (name, data) {
+                    let stem = name
+                        .rsplit_once('.')
+                        .map(|(s, _)| s.to_owned())
+                        .unwrap_or_else(|| name.clone());
+                    match upload_photo(name, data).await {
+                        Ok(_) => form_photo.set(stem),
+                        Err(e) => char_feedback.set(format!("❌ Upload: {e}")),
+                    }
+                }
+            }
+        });
+    };
+    let on_atk_photo_change = move |_: FormEvent| {
+        let mut js = document::eval(JS_READ_ATK_PHOTO);
+        spawn(async move {
+            if let Ok(val) = js.recv::<serde_json::Value>().await
+                && !val.is_null()
+                && let (Some(name), Some(data)) = (
+                    val.get("name")
+                        .and_then(|v: &serde_json::Value| v.as_str())
+                        .map(String::from),
+                    val.get("data")
+                        .and_then(|v: &serde_json::Value| v.as_str())
+                        .map(String::from),
+                )
+            {
+                let fname = name.clone();
+                match upload_photo(name, data).await {
+                    Ok(_) => atk_photo.set(fname),
+                    Err(e) => attack_feedback.set(format!("❌ Upload: {e}")),
+                }
+            }
+        });
+    };
+
     rsx! {
         // Universe filter
         div { class: "admin-card",
@@ -777,6 +843,43 @@ fn AdminCharactersTab() -> Element {
                 option { value: "", "— all universes —" }
                 for u in &universes {
                     option { value: "{u}", "{u}" }
+                }
+            }
+        }
+
+        // Create new universe
+        div { class: "admin-card",
+            p { class: "admin-section-title", "🌍 Create Universe" }
+            div { style: "display:flex;gap:8px;align-items:center;",
+                Input {
+                    placeholder: "Universe name (e.g. pokemon)",
+                    r#type: "text",
+                    value: "{new_universe_name}",
+                    oninput: move |e: FormEvent| new_universe_name.set(e.value()),
+                }
+                Button {
+                    variant: ButtonVariant::Primary,
+                    onclick: move |_| {
+                        let name = new_universe_name().trim().to_owned();
+                        if name.is_empty() {
+                            return;
+                        }
+                        spawn(async move {
+                            match admin_create_universe(name).await {
+                                Ok(()) => {
+                                    universe_feedback.set("✅ Universe created.".to_owned());
+                                    new_universe_name.set(String::new());
+                                }
+                                Err(e) => universe_feedback.set(format!("❌ {e}")),
+                            }
+                        });
+                    },
+                    "Create"
+                }
+            }
+            if !universe_feedback().is_empty() {
+                p { class: if universe_feedback().starts_with('✅') { "admin-answer" } else { "admin-answer-error" },
+                    "{universe_feedback}"
                 }
             }
         }
@@ -1083,6 +1186,20 @@ fn AdminCharactersTab() -> Element {
                                         r#type: "text",
                                         value: "{form_photo}",
                                         oninput: move |e: FormEvent| form_photo.set(e.value()),
+                                    }
+                                }
+                                div { class: "admin-form-field",
+                                    Label {
+                                        html_for: "char-photo-file",
+                                        color: "var(--rpg-text-muted)",
+                                        font_size: "0.82rem",
+                                        "Upload Photo"
+                                    }
+                                    input {
+                                        r#type: "file",
+                                        id: "char-photo-file",
+                                        accept: "image/png,image/jpeg,image/webp,image/gif",
+                                        onchange: on_char_photo_change,
                                     }
                                 }
                                 div { class: "admin-form-field",
@@ -1509,6 +1626,20 @@ fn AdminCharactersTab() -> Element {
                                     }
                                     div { class: "admin-form-field",
                                         Label {
+                                            html_for: "atk-photo-file",
+                                            color: "var(--rpg-text-muted)",
+                                            font_size: "0.82rem",
+                                            "Upload Photo"
+                                        }
+                                        input {
+                                            r#type: "file",
+                                            id: "atk-photo-file",
+                                            accept: "image/png,image/jpeg,image/webp,image/gif",
+                                            onchange: on_atk_photo_change,
+                                        }
+                                    }
+                                    div { class: "admin-form-field",
+                                        Label {
                                             html_for: "atk-mana",
                                             color: "var(--rpg-text-muted)",
                                             font_size: "0.82rem",
@@ -1572,6 +1703,71 @@ fn AdminCharactersTab() -> Element {
                                             oninput: move |e: FormEvent| atk_aggro.set(e.value()),
                                         }
                                     }
+                                    div { class: "admin-form-field",
+                                        Label {
+                                            html_for: "atk-degats",
+                                            color: "var(--rpg-text-muted)",
+                                            font_size: "0.82rem",
+                                            "Dégâts"
+                                        }
+                                        Input {
+                                            r#type: "number",
+                                            value: "{atk_degats}",
+                                            oninput: move |e: FormEvent| atk_degats.set(e.value()),
+                                        }
+                                    }
+                                    div { class: "admin-form-field",
+                                        Label {
+                                            html_for: "atk-soin",
+                                            color: "var(--rpg-text-muted)",
+                                            font_size: "0.82rem",
+                                            "Soin"
+                                        }
+                                        Input {
+                                            r#type: "number",
+                                            value: "{atk_soin}",
+                                            oninput: move |e: FormEvent| atk_soin.set(e.value()),
+                                        }
+                                    }
+                                    div { class: "admin-form-field",
+                                        Label {
+                                            html_for: "atk-regen-mana",
+                                            color: "var(--rpg-text-muted)",
+                                            font_size: "0.82rem",
+                                            "Regen Mana"
+                                        }
+                                        Input {
+                                            r#type: "number",
+                                            value: "{atk_regen_mana}",
+                                            oninput: move |e: FormEvent| atk_regen_mana.set(e.value()),
+                                        }
+                                    }
+                                    div { class: "admin-form-field",
+                                        Label {
+                                            html_for: "atk-regen-rage",
+                                            color: "var(--rpg-text-muted)",
+                                            font_size: "0.82rem",
+                                            "Regen Rage"
+                                        }
+                                        Input {
+                                            r#type: "number",
+                                            value: "{atk_regen_rage}",
+                                            oninput: move |e: FormEvent| atk_regen_rage.set(e.value()),
+                                        }
+                                    }
+                                    div { class: "admin-form-field",
+                                        Label {
+                                            html_for: "atk-regen-vigueur",
+                                            color: "var(--rpg-text-muted)",
+                                            font_size: "0.82rem",
+                                            "Regen Vigueur"
+                                        }
+                                        Input {
+                                            r#type: "number",
+                                            value: "{atk_regen_vigueur}",
+                                            oninput: move |e: FormEvent| atk_regen_vigueur.set(e.value()),
+                                        }
+                                    }
                                 }
                                 Label {
                                     html_for: "atk-description",
@@ -1615,6 +1811,11 @@ fn AdminCharactersTab() -> Element {
                                                 cout_vigueur: atk_cout_vigueur().trim().parse::<i64>().unwrap_or(0),
                                                 duree: atk_duree().trim().parse::<i64>().unwrap_or(1),
                                                 aggro: atk_aggro().trim().parse::<i64>().unwrap_or(0),
+                                                degats: atk_degats().trim().parse::<i64>().unwrap_or(0),
+                                                soin: atk_soin().trim().parse::<i64>().unwrap_or(0),
+                                                regen_mana: atk_regen_mana().trim().parse::<i64>().unwrap_or(0),
+                                                regen_rage: atk_regen_rage().trim().parse::<i64>().unwrap_or(0),
+                                                regen_vigueur: atk_regen_vigueur().trim().parse::<i64>().unwrap_or(0),
                                                 photo: atk_photo(),
                                                 effet_json: atk_effet(),
                                             };
@@ -1678,6 +1879,11 @@ fn AdminCharactersTab() -> Element {
                                                         atk_cout_vigueur.set(form.cout_vigueur.to_string());
                                                         atk_duree.set(form.duree.to_string());
                                                         atk_aggro.set(form.aggro.to_string());
+                                                        atk_degats.set(form.degats.to_string());
+                                                        atk_soin.set(form.soin.to_string());
+                                                        atk_regen_mana.set(form.regen_mana.to_string());
+                                                        atk_regen_rage.set(form.regen_rage.to_string());
+                                                        atk_regen_vigueur.set(form.regen_vigueur.to_string());
                                                         atk_photo.set(form.photo);
                                                         atk_effet.set(form.effet_json);
                                                         attack_edit_form_mode.set(true);
@@ -1814,8 +2020,15 @@ fn AdminEquipmentTab() -> Element {
     let mut eq_items: Signal<Vec<String>> = use_signal(Vec::new);
     let mut selected_item: Signal<Option<String>> = use_signal(|| None);
     let mut eq_json = use_signal(String::new);
+    let mut eq_form_mode = use_signal(|| true);
     let mut feedback = use_signal(String::new);
     let mut confirm_delete_item: Signal<Option<String>> = use_signal(|| None);
+
+    // Equipment form signals
+    let mut eq_nom = use_signal(String::new);
+    let mut eq_nom_unique = use_signal(String::new);
+    let mut eq_categorie = use_signal(String::new);
+    let mut eq_stats: Signal<Vec<EquipStatEntry>> = use_signal(Vec::new);
 
     use_effect(move || {
         spawn(async move {
@@ -1907,10 +2120,22 @@ fn AdminEquipmentTab() -> Element {
                                             let c = c_btn.clone();
                                             feedback.set(String::new());
                                             spawn(async move {
-                                                match admin_get_equipment_json(t, c, n.clone()).await {
+                                                match admin_get_equipment_json(t.clone(), c.clone(), n.clone()).await {
                                                     Ok(json) => {
                                                         eq_json.set(json);
-                                                        selected_item.set(Some(n));
+                                                        selected_item.set(Some(n.clone()));
+                                                    }
+                                                    Err(e) => {
+                                                        feedback.set(format!("❌ {e}"));
+                                                        return;
+                                                    }
+                                                }
+                                                match admin_get_equipment_form(t, c, n).await {
+                                                    Ok(form) => {
+                                                        eq_nom.set(form.nom);
+                                                        eq_nom_unique.set(form.nom_unique);
+                                                        eq_categorie.set(form.categorie);
+                                                        eq_stats.set(form.stats);
                                                     }
                                                     Err(e) => feedback.set(format!("❌ {e}")),
                                                 }
@@ -1962,39 +2187,183 @@ fn AdminEquipmentTab() -> Element {
         }
 
         if let Some(item_name) = selected_item() {
-            div { class: "admin-full-card",
-                p { class: "admin-section-title", "✏️ Edit: {item_name}" }
-                textarea {
-                    class: "admin-json-textarea",
-                    rows: "26",
-                    value: "{eq_json}",
-                    oninput: move |e: FormEvent| eq_json.set(e.value()),
-                }
-                div { style: "display:flex;gap:8px;margin-top:8px;",
-                    Button {
-                        variant: ButtonVariant::Primary,
-                        onclick: move |_| {
-                            let t = selected_type();
-                            let c = selected_category();
-                            let n = item_name.clone();
-                            let json = eq_json();
-                            spawn(async move {
-                                match admin_save_equipment_json(t, c, n, json).await {
-                                    Ok(()) => feedback.set("✅ Saved.".to_owned()),
-                                    Err(e) => feedback.set(format!("❌ {e}")),
+            {
+                let item_name_save = item_name.clone();
+                let item_name_cancel = item_name.clone();
+                rsx! {
+                    div { class: "admin-full-card",
+                        div { style: "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;",
+                            p { class: "admin-section-title", style: "margin:0;", "✏️ {item_name}" }
+                            Button {
+                                variant: ButtonVariant::Secondary,
+                                onclick: move |_| eq_form_mode.set(!eq_form_mode()),
+                                if eq_form_mode() {
+                                    "✏️ JSON mode"
+                                } else { // — Form editor —
+                                    "📝 Form mode"
                                 }
-                            });
-                        },
-                        "💾 Save"
-                    }
-                    Button {
-                        variant: ButtonVariant::Secondary,
-                        onclick: move |_| {
-                            selected_item.set(None);
-                            eq_json.set(String::new());
-                            feedback.set(String::new());
-                        },
-                        "Cancel"
+                            }
+                        }
+                        if eq_form_mode() {
+                            // — Form editor —
+                            div { class: "admin-form-grid",
+                                div { class: "admin-form-field",
+                                    Label {
+                                        html_for: "eq-nom",
+                                        color: "var(--rpg-text-muted)",
+                                        font_size: "0.82rem",
+                                        "Nom"
+                                    }
+                                    Input {
+                                        r#type: "text",
+                                        value: "{eq_nom}",
+                                        oninput: move |e: FormEvent| eq_nom.set(e.value()),
+                                    }
+                                }
+                                div { class: "admin-form-field",
+                                    Label {
+                                        html_for: "eq-nom-unique",
+                                        color: "var(--rpg-text-muted)",
+                                        font_size: "0.82rem",
+                                        "Nom unique"
+                                    }
+                                    Input {
+                                        r#type: "text",
+                                        value: "{eq_nom_unique}",
+                                        oninput: move |e: FormEvent| eq_nom_unique.set(e.value()),
+                                    }
+                                }
+                                div { class: "admin-form-field",
+                                    Label {
+                                        html_for: "eq-categorie",
+                                        color: "var(--rpg-text-muted)",
+                                        font_size: "0.82rem",
+                                        "Catégorie"
+                                    }
+                                    Input {
+                                        r#type: "text",
+                                        value: "{eq_categorie}",
+                                        oninput: move |e: FormEvent| eq_categorie.set(e.value()),
+                                    }
+                                }
+                            }
+                            // Stats table
+                            p { style: "font-weight:600;margin:10px 0 4px;", "Stats" }
+                            table { class: "admin-stats-table",
+                                thead {
+                                    tr { class: "admin-stats-header",
+                                        th { class: "ast-col-name", "Stat" }
+                                        th { class: "ast-col-sep" }
+                                        th { class: "ast-col-name", "Flat" }
+                                        th { class: "ast-col-sep" }
+                                        th { class: "ast-col-name", "%" }
+                                    }
+                                }
+                                tbody {
+                                    for (idx, stat) in eq_stats().into_iter().enumerate() {
+                                        tr { class: "admin-stats-row",
+                                            td { class: "ast-col-name", "{stat.stat_name}" }
+                                            td { class: "ast-col-sep", ":" }
+                                            td { class: "ast-col-name",
+                                                Input {
+                                                    r#type: "number",
+                                                    class: "ast-input",
+                                                    value: "{stat.equip_value}",
+                                                    oninput: move |e: FormEvent| {
+                                                        let mut stats = eq_stats();
+                                                        if let Some(s) = stats.get_mut(idx) {
+                                                            s.equip_value = e.value().trim().parse::<i64>().unwrap_or(0);
+                                                        }
+                                                        eq_stats.set(stats);
+                                                    },
+                                                }
+                                            }
+                                            td { class: "ast-col-sep", "/" }
+                                            td { class: "ast-col-name",
+                                                Input {
+                                                    r#type: "number",
+                                                    class: "ast-input",
+                                                    value: "{stat.equip_percent}",
+                                                    oninput: move |e: FormEvent| {
+                                                        let mut stats = eq_stats();
+                                                        if let Some(s) = stats.get_mut(idx) {
+                                                            s.equip_percent = e.value().trim().parse::<i64>().unwrap_or(0);
+                                                        }
+                                                        eq_stats.set(stats);
+                                                    },
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            div { style: "display:flex;gap:8px;margin-top:8px;",
+                                Button {
+                                    variant: ButtonVariant::Primary,
+                                    onclick: move |_| {
+                                        let t = selected_type();
+                                        let c = selected_category();
+                                        let n = item_name_save.clone();
+                                        let form = EquipmentFormData {
+                                            nom: eq_nom(),
+                                            nom_unique: eq_nom_unique(),
+                                            categorie: eq_categorie(),
+                                            stats: eq_stats(),
+                                        };
+                                        spawn(async move {
+                                            match admin_save_equipment_form(t, c, n, form).await {
+                                                Ok(()) => feedback.set("✅ Saved.".to_owned()),
+                                                Err(e) => feedback.set(format!("❌ {e}")),
+                                            }
+                                        });
+                                    },
+                                    "💾 Save"
+                                }
+                                Button {
+                                    variant: ButtonVariant::Secondary,
+                                    onclick: move |_| {
+                                        selected_item.set(None);
+                                        feedback.set(String::new());
+                                    },
+                                    "Cancel"
+                                }
+                            }
+                        } else {
+                            // — JSON editor —
+                            textarea {
+                                class: "admin-json-textarea",
+                                rows: "26",
+                                value: "{eq_json}",
+                                oninput: move |e: FormEvent| eq_json.set(e.value()),
+                            }
+                            div { style: "display:flex;gap:8px;margin-top:8px;",
+                                Button {
+                                    variant: ButtonVariant::Primary,
+                                    onclick: move |_| {
+                                        let t = selected_type();
+                                        let c = selected_category();
+                                        let n = item_name_cancel.clone();
+                                        let json = eq_json();
+                                        spawn(async move {
+                                            match admin_save_equipment_json(t, c, n, json).await {
+                                                Ok(()) => feedback.set("✅ Saved.".to_owned()),
+                                                Err(e) => feedback.set(format!("❌ {e}")),
+                                            }
+                                        });
+                                    },
+                                    "💾 Save"
+                                }
+                                Button {
+                                    variant: ButtonVariant::Secondary,
+                                    onclick: move |_| {
+                                        selected_item.set(None);
+                                        eq_json.set(String::new());
+                                        feedback.set(String::new());
+                                    },
+                                    "Cancel"
+                                }
+                            }
+                        }
                     }
                 }
             }
