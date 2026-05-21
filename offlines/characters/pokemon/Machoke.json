@@ -16,13 +16,13 @@
       }
     ]
   },
-  "Level": 10,
-  "Name": "Mewtwo Armure",
-  "IdName": "Mewtwo_Armure_#1",
-  "Photo": "Angmar",
-  "Rank": "Advanced",
+  "Level": 5,
+  "Name": "Machoke",
+  "IdName": "Machoke_#1",
+  "Photo": "default",
+  "Rank": "Intermediate",
   "Shape": "",
-  "Short name": "Mewtwo Armure",
+  "Short name": "Machoke",
   "Stats": {
     "Aggro": {
       "Current": 0,
@@ -41,28 +41,28 @@
       "Max": 0
     },
     "Critical strike": {
-      "Current": 25,
-      "Max": 25
+      "Current": 14,
+      "Max": 14
     },
     "Dodge": {
-      "Current": 15,
-      "Max": 15
+      "Current": 6,
+      "Max": 6
     },
     "HP": {
-      "Current": 640,
-      "Max": 640
+      "Current": 390,
+      "Max": 390
     },
     "HP regeneration": {
       "Current": 0,
       "Max": 0
     },
     "Magical armor": {
-      "Current": 90,
-      "Max": 90
+      "Current": 20,
+      "Max": 20
     },
     "Magical power": {
-      "Current": 110,
-      "Max": 110
+      "Current": 15,
+      "Max": 15
     },
     "Mana": {
       "Current": 0,
@@ -73,12 +73,12 @@
       "Max": 0
     },
     "Physical armor": {
-      "Current": 60,
-      "Max": 60
+      "Current": 55,
+      "Max": 55
     },
     "Physical power": {
-      "Current": 65,
-      "Max": 65
+      "Current": 60,
+      "Max": 60
     },
     "Speed": {
       "Current": 0,
@@ -93,8 +93,8 @@
       "Max": 9999
     },
     "Vigor regeneration": {
-      "Current": 20,
-      "Max": 20
+      "Current": 15,
+      "Max": 15
     }
   },
   "Tx-rx": [
@@ -107,12 +107,13 @@
   ],
   "Type": "Boss",
   "is-blocking-atk": false,
-  "max-actions-by-round": 3,
+  "max-actions-by-round": 2,
   "nb-actions-in-round": 0,
   "energies": [
     {
       "kind": "Vigor"
     }
   ],
-  "Description": "Mewtwo in armoured form. The pinnacle of Pokémon power — psychic storms shatter every defence."
+  "Description": "Powerful Fighting Pokémon. Lifts heroes with raw muscle and crushes them with superpowered blows."
+
 }

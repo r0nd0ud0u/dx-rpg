@@ -21,7 +21,7 @@ fn strip_id_suffix(id_name: &str) -> &str {
 }
 
 #[component]
-pub fn CharacterSelect() -> Element {
+pub fn CharacterSelect(universe: String) -> Element {
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
 
@@ -67,6 +67,7 @@ pub fn CharacterSelect() -> Element {
                 CharacterCardGrid {
                     player_name: local_name.clone(),
                     is_single_player: is_single,
+                    universe: universe.clone(),
                 }
             } else {
                 div { class: "char-select-chosen-list",
@@ -87,12 +88,7 @@ pub fn CharacterSelect() -> Element {
                     for (player, choice) in others {
                         div { class: "char-select-chosen-row",
                             span { class: "char-select-player-name", "{player}" }
-                            span {
-                                class: if choice == "—" {
-                                    "char-select-waiting"
-                                } else {
-                                    "char-select-chosen-char"
-                                },
+                            span { class: if choice == "—" { "char-select-waiting" } else { "char-select-chosen-char" },
                                 "{choice}"
                             }
                         }
@@ -104,7 +100,7 @@ pub fn CharacterSelect() -> Element {
 }
 
 #[component]
-pub fn CharacterCardGrid(player_name: String, is_single_player: bool) -> Element {
+pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: String) -> Element {
     let server_data = use_context::<Signal<ServerData>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let all_characters = use_context::<Signal<Vec<Character>>>();
@@ -122,6 +118,7 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool) -> Element
     let hero_chars: Vec<Character> = all_characters()
         .into_iter()
         .filter(|c| c.kind == lib_rpg::character_mod::character::CharacterKind::Hero)
+        .filter(|c| universe.is_empty() || c.universe == universe)
         .collect();
 
     let extra_count = server_data()
@@ -169,15 +166,16 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool) -> Element
                                 "char-card"
                             },
                             onclick: move |_| {
-                                if is_taken { return; }
+                                if is_taken {
+                                    return;
+                                }
                                 let cn = cname.clone();
-                                let sn = server_name.clone();
+                                let sn = server_name.clone(); // Find the key that holds this character and remove it // Find the key that holds this character and remove it
                                 let pn = pname.clone();
                                 let sel = sel_names_snap.clone();
                                 spawn(async move {
                                     if is_sp {
                                         if sel.contains(&cn) {
-                                            // Find the key that holds this character and remove it
                                             let remove_key = sd_signal
                                                 .peek()
                                                 .core_game_data
@@ -196,7 +194,8 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool) -> Element
                                             pn.clone()
                                         } else {
                                             format!("{}__sp{}", pn, extra_count + 1)
-                                        };
+                                        }
+                                        div { class: "char-card-hp",
                                         tracing::info!("SP: Adding {} under key {}", cn, key);
                                         let _ = socket
                                             .send(ClientEvent::AddCharacterOnServerData(sn, key, cn))
@@ -219,9 +218,7 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool) -> Element
                             div { class: "char-card-info",
                                 span { class: "char-card-name", "{c.db_full_name}" }
                                 div { class: "char-card-badges",
-                                    span { class: "char-card-class",
-                                        "{c.class.to_emoji()} {c.class.to_str()}"
-                                    }
+                                    span { class: "char-card-class", "{c.class.to_emoji()} {c.class.to_str()}" }
                                     span { class: "char-card-level", "Lv {c.level}" }
                                 }
                                 div { class: "char-card-hp",

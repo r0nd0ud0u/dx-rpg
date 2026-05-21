@@ -1,6 +1,6 @@
 {
-  "Class": "Mage",
-  "Color": "green",
+  "Class": "Berserker",
+  "Color": "orange",
   "Experience": 0,
   "CharacterRoundsInfo": {
     "is_first_round": false,
@@ -17,12 +17,12 @@
     ]
   },
   "Level": 1,
-  "Name": "Bulbasaur",
-  "IdName": "Bulbasaur_#1",
-  "Photo": "bulbasaur",
+  "Name": "Charmander",
+  "IdName": "Charmander_#1",
+  "Photo": "default",
   "Rank": "Common",
   "Shape": "",
-  "Short name": "Bulbasaur",
+  "Short name": "Charmander",
   "Stats": {
     "Aggro": {
       "Current": 0,
@@ -33,52 +33,52 @@
       "Max": 3
     },
     "Berserk": {
-      "Current": 0,
-      "Max": 0
+      "Current": 80,
+      "Max": 80
     },
     "Berserk rate": {
-      "Current": 0,
-      "Max": 0
+      "Current": 10,
+      "Max": 10
     },
     "Critical strike": {
+      "Current": 14,
+      "Max": 14
+    },
+    "Dodge": {
       "Current": 8,
       "Max": 8
     },
-    "Dodge": {
-      "Current": 5,
-      "Max": 5
-    },
     "HP": {
-      "Current": 85,
-      "Max": 85
+      "Current": 75,
+      "Max": 75
     },
     "HP regeneration": {
-      "Current": 5,
-      "Max": 5
+      "Current": 4,
+      "Max": 4
     },
     "Magical armor": {
-      "Current": 30,
-      "Max": 30
+      "Current": 20,
+      "Max": 20
     },
     "Magical power": {
-      "Current": 50,
-      "Max": 50
-    },
-    "Mana": {
-      "Current": 100,
-      "Max": 100
-    },
-    "Mana regeneration": {
-      "Current": 18,
-      "Max": 18
-    },
-    "Physical armor": {
-      "Current": 15,
-      "Max": 15
-    },
-    "Physical power": {
       "Current": 30,
       "Max": 30
+    },
+    "Mana": {
+      "Current": 0,
+      "Max": 0
+    },
+    "Mana regeneration": {
+      "Current": 0,
+      "Max": 0
+    },
+    "Physical armor": {
+      "Current": 20,
+      "Max": 20
+    },
+    "Physical power": {
+      "Current": 55,
+      "Max": 55
     },
     "Speed": {
       "Current": 0,
@@ -112,7 +112,7 @@
           "is_equipped": true
         }
       ],
-      "Boots": [
+      "Shoes": [
         {
           "unique_name": "starting shoes",
           "is_equipped": true
@@ -148,8 +148,9 @@
   },
   "energies": [
     {
-      "kind": "Mana"
+      "kind": "Berserk"
     }
   ],
-  "Description": "The Seed Pokémon from Pallet Town. Channels solar energy to heal allies and unleash grass and poison attacks."
+  "Description": "The Lizard Pokémon. Rages through battles with fire claws and breath, growing stronger as its flame burns brighter."
+
 }

@@ -101,8 +101,8 @@ ADMIN_ENABLED=true
 
 Navigate to `/admin` to access:
 - **Users tab**: list all users with connection status and save count; delete users
-- **Scenarios tab**: list all loaded scenarios with level, boss count, and description
-- **Characters tab**: list all hero characters with portrait, class, level, description, and full stats table
+- **Scenarios tab**: filter by universe, then list/add/edit/delete scenarios for that universe via an inline JSON editor
+- **Characters tab**: filter by universe; list all hero characters with portrait, class, level, description, universe badge, and full stats table
 
 ### Game Mode: Single-player vs Multiplayer
 
@@ -226,8 +226,12 @@ dx-rpg/
 │   │   └── server_file_utils.rs  # Save / load game state to/from disk
 │   └── widgets/                  # Composite UI widgets (charts, equipment tab…)
 ├── offlines/                     # Static game data (characters, scenarios, attacks)
-│   ├── characters/               # JSON character definitions
-│   ├── scenarios/                # JSON scenario definitions
+│   ├── characters/               # JSON character definitions — organized by universe
+│   │   ├── lotr/                 # LOTR hero & boss characters
+│   │   └── pokemon/              # Pokémon hero & boss characters
+│   ├── scenarios/                # JSON scenario definitions — organized by universe
+│   │   ├── lotr/                 # LOTR stages (stage_1.json … stage_10.json)
+│   │   └── pokemon/              # Pokémon stages (stage_1.json … stage_10.json)
 │   └── attack/                   # JSON attack/skill definitions
 ├── assets/                       # CSS and static assets
 ├── docs/                         # Deployment documentation

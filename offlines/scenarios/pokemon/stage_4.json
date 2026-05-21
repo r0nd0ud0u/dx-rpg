@@ -23,7 +23,7 @@
     {
       "name": "gold",
       "kind": "Currency",
-      "rank": "Uncommon",
+      "rank": "Common",
       "level": 50,
       "classes": [
         "Standard"

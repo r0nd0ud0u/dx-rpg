@@ -51,7 +51,7 @@ pub fn GameBoard() -> Element {
     let is_spectator = if server_data().core_game_data.is_single_player {
         false
     } else {
-        my_character.as_ref().map_or(true, |char_name| {
+        my_character.as_ref().is_none_or(|char_name| {
             !server_data()
                 .core_game_data
                 .game_manager

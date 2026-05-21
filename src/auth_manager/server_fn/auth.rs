@@ -45,7 +45,6 @@ pub async fn login(
             }
             if !use_password || is_valid {
                 tracing::info!("{}", format!("{:?}", rows[0].id));
-                // update is_connected status in db
                 match update_connection_status(username, true).await {
                     Ok(()) => {
                         auth.login_user(rows[0].id);
@@ -169,8 +168,6 @@ pub async fn delete_user(
     }
 }
 
-/// Get the current user's permissions, guarding the endpoint with the `Auth` validator.
-/// If this returns false, we use the `or_unauthorized` extension to return a 401 error.
 #[get("/api/user/permissions", auth: Session)]
 pub async fn get_permissions() -> Result<HashSet<String>> {
     use axum_session_auth::{Auth, Rights};
@@ -189,7 +186,6 @@ pub async fn get_permissions() -> Result<HashSet<String>> {
     Ok(user.permissions)
 }
 
-/// Just like `login`, but this time we log out the user.
 #[post("/api/user/logout", auth: Session)]
 pub async fn logout() -> Result<(), ServerFnError> {
     let name = match get_user_name().await {
@@ -205,10 +201,6 @@ pub async fn logout() -> Result<(), ServerFnError> {
     }
 }
 
-/// We can access the current user via `auth.current_user`.
-/// We can have both anonymous user (id 1) and a logged in user (id 2).
-///
-/// Logged-in users will have more permissions which we can modify.
 #[post("/api/user/name", auth: Session)]
 pub async fn get_user_name() -> Result<String> {
     Ok(auth.current_user.unwrap().username)
@@ -261,141 +253,6 @@ pub async fn update_all_connection_status(is_connected: bool) -> Result<(), Serv
         Ok(_) => Ok(()),
         Err(e) => Err(ServerFnError::new(format!("{}", e))),
     }
-}
-
-/// Returns true if the Admin CRUD panel is enabled (controlled by `ADMIN_ENABLED` env var).
-#[server]
-pub async fn is_admin_enabled() -> Result<bool, ServerFnError> {
-    Ok(std::env::var("ADMIN_ENABLED")
-        .unwrap_or_else(|_| "true".to_string())
-        .trim()
-        .to_lowercase()
-        != "false")
-}
-
-/// Summary of one registered user shown in the admin user list.
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct AdminUserInfo {
-    pub username: String,
-    pub is_connected: bool,
-    pub nb_saves: usize,
-}
-
-/// Returns the list of all users with lightweight metadata, for the admin panel.
-#[server]
-pub async fn admin_list_users() -> Result<Vec<AdminUserInfo>, ServerFnError> {
-    use crate::common::SAVED_DATA;
-    use lib_rpg::{common::constants::paths_const::GAMES_DIR, utils::list_dirs_in_dir};
-
-    let pool = get_db().await;
-    let rows: Vec<SqlUser> = sqlx::query_as("SELECT * FROM users")
-        .fetch_all(pool)
-        .await
-        .map_err(|e| ServerFnError::new(format!("{e}")))?;
-
-    let users = rows
-        .into_iter()
-        .map(|row| {
-            let save_dir = SAVED_DATA.join(&row.username).join(GAMES_DIR.to_path_buf());
-            let nb_saves = list_dirs_in_dir(&save_dir).map(|v| v.len()).unwrap_or(0);
-            AdminUserInfo {
-                username: row.username,
-                is_connected: row.is_connected,
-                nb_saves,
-            }
-        })
-        .collect();
-    Ok(users)
-}
-
-/// Summary of one scenario shown in the admin scenario list.
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct AdminScenarioInfo {
-    pub name: String,
-    pub description: String,
-    pub level: u64,
-    pub nb_bosses: usize,
-    pub file_name: String,
-    pub universe: String,
-}
-
-/// Returns the list of all scenarios loaded in the data manager.
-#[server]
-pub async fn admin_list_scenarios() -> Result<Vec<AdminScenarioInfo>, ServerFnError> {
-    use crate::common::DATA_MANAGER;
-    let dm = DATA_MANAGER
-        .lock()
-        .map_err(|e| ServerFnError::new(format!("{e}")))?;
-    let infos = dm
-        .all_scenarios
-        .iter()
-        .map(|s| {
-            let file_name = if s.universe.is_empty() {
-                format!("stage_{}.json", s.level)
-            } else {
-                format!("{}/stage_{}.json", s.universe, s.level)
-            };
-            AdminScenarioInfo {
-                name: s.name.clone(),
-                description: s.description.clone(),
-                level: s.level,
-                nb_bosses: s.boss_patterns.len(),
-                file_name,
-                universe: s.universe.clone(),
-            }
-        })
-        .collect();
-    Ok(infos)
-}
-
-/// Returns sorted list of distinct universe names (empty string = no universe).
-#[server]
-pub async fn get_available_universes() -> Result<Vec<String>, ServerFnError> {
-    use crate::common::DATA_MANAGER;
-    let dm = DATA_MANAGER
-        .lock()
-        .map_err(|e| ServerFnError::new(format!("{e}")))?;
-    Ok(dm.list_universes())
-}
-
-/// Summary of one hero character for the admin panel.
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct AdminCharacterInfo {
-    pub db_full_name: String,
-    pub photo_name: String,
-    pub class: String,
-    pub level: u64,
-    pub description: String,
-    pub stats: std::collections::HashMap<String, (u64, u64)>, // name -> (current, max)
-}
-
-/// Returns the list of hero characters for the admin panel.
-#[server]
-pub async fn admin_list_characters() -> Result<Vec<AdminCharacterInfo>, ServerFnError> {
-    use crate::common::DATA_MANAGER;
-    use lib_rpg::character_mod::character::CharacterKind;
-    let dm = DATA_MANAGER
-        .lock()
-        .map_err(|e| ServerFnError::new(format!("{e}")))?;
-    let infos = dm
-        .all_heroes
-        .iter()
-        .filter(|c| c.kind == CharacterKind::Hero)
-        .map(|c| AdminCharacterInfo {
-            db_full_name: c.db_full_name.clone(),
-            photo_name: c.photo_name.clone(),
-            class: format!("{} {}", c.class.to_emoji(), c.class.to_str()),
-            level: c.level,
-            description: c.description.clone(),
-            stats: c
-                .stats
-                .all_stats
-                .iter()
-                .map(|(k, v)| (k.clone(), (v.current, v.max)))
-                .collect(),
-        })
-        .collect();
-    Ok(infos)
 }
 
 /// Get a user setting value (returns default_val if not set).

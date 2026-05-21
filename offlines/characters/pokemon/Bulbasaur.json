@@ -1,6 +1,6 @@
 {
-  "Class": "Paladin",
-  "Color": "blue",
+  "Class": "Mage",
+  "Color": "green",
   "Experience": 0,
   "CharacterRoundsInfo": {
     "is_first_round": false,
@@ -17,12 +17,12 @@
     ]
   },
   "Level": 1,
-  "Name": "Squirtle",
-  "IdName": "Squirtle_#1",
-  "Photo": "squirtle",
+  "Name": "Bulbasaur",
+  "IdName": "Bulbasaur_#1",
+  "Photo": "default",
   "Rank": "Common",
   "Shape": "",
-  "Short name": "Squirtle",
+  "Short name": "Bulbasaur",
   "Stats": {
     "Aggro": {
       "Current": 0,
@@ -49,32 +49,32 @@
       "Max": 5
     },
     "HP": {
-      "Current": 105,
-      "Max": 105
+      "Current": 85,
+      "Max": 85
     },
     "HP regeneration": {
-      "Current": 8,
-      "Max": 8
+      "Current": 5,
+      "Max": 5
     },
     "Magical armor": {
-      "Current": 35,
-      "Max": 35
+      "Current": 30,
+      "Max": 30
     },
     "Magical power": {
-      "Current": 25,
-      "Max": 25
+      "Current": 50,
+      "Max": 50
     },
     "Mana": {
-      "Current": 0,
-      "Max": 0
+      "Current": 100,
+      "Max": 100
     },
     "Mana regeneration": {
-      "Current": 0,
-      "Max": 0
+      "Current": 18,
+      "Max": 18
     },
     "Physical armor": {
-      "Current": 45,
-      "Max": 45
+      "Current": 15,
+      "Max": 15
     },
     "Physical power": {
       "Current": 30,
@@ -85,16 +85,16 @@
       "Max": 0
     },
     "Speed regeneration": {
-      "Current": 15,
-      "Max": 15
-    },
-    "Vigor": {
-      "Current": 100,
-      "Max": 100
-    },
-    "Vigor regeneration": {
       "Current": 20,
       "Max": 20
+    },
+    "Vigor": {
+      "Current": 0,
+      "Max": 0
+    },
+    "Vigor regeneration": {
+      "Current": 0,
+      "Max": 0
     }
   },
   "Type": "Hero",
@@ -112,7 +112,7 @@
           "is_equipped": true
         }
       ],
-      "Boots": [
+      "Shoes": [
         {
           "unique_name": "starting shoes",
           "is_equipped": true
@@ -148,8 +148,9 @@
   },
   "energies": [
     {
-      "kind": "Vigor"
+      "kind": "Mana"
     }
   ],
-  "Description": "The Tiny Turtle Pokémon. Hides behind its shell to absorb hits and drowns enemies with powerful water jets."
+  "Description": "The Seed Pokémon from Pallet Town. Channels solar energy to heal allies and unleash grass and poison attacks."
+
 }

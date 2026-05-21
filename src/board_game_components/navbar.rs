@@ -168,5 +168,27 @@ pub fn Navbar() -> Element {
         }
 
         Outlet::<Route> {}
+
+        // ── Footer ────────────────────────────────────────────────────────────
+        footer { class: "app-footer",
+            div { class: "app-footer-inner",
+                div { class: "app-footer-brand",
+                    span { class: "app-footer-icon", "⚔️" }
+                    span { class: "app-footer-name", "dx-rpg" }
+                    span { class: "app-footer-version", {concat!("v", env!("CARGO_PKG_VERSION"))} }
+                }
+                div { class: "app-footer-info",
+                    span { "Built with " }
+                    a {
+                        href: "https://dioxuslabs.com",
+                        target: "_blank",
+                        rel: "noopener",
+                        "Dioxus"
+                    }
+                    span { " · " }
+                    span { "⚡ Rust + WASM" }
+                }
+            }
+        }
     }
 }

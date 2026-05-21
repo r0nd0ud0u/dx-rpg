@@ -114,7 +114,7 @@ pub async fn get_save_slots(player_name: String) -> Result<Vec<SaveSlotInfo>, Se
             let (current_scenario, scenario_level) = fs::read_to_string(&save_file)
                 .ok()
                 .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
-                .and_then(|v| {
+                .map(|v| {
                     let scenario = v
                         .pointer("/game_manager/current_scenario/name")
                         .and_then(|n| n.as_str())
@@ -124,7 +124,7 @@ pub async fn get_save_slots(player_name: String) -> Result<Vec<SaveSlotInfo>, Se
                         .pointer("/game_manager/current_scenario/level")
                         .and_then(|n| n.as_u64())
                         .unwrap_or(0);
-                    Some((scenario, level))
+                    (scenario, level)
                 })
                 .unwrap_or_default();
 

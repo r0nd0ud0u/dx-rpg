@@ -61,6 +61,7 @@ fn main() {
 
         // Create an axum router that dioxus will attach the app to
         Ok(dioxus::server::router(App)
+            .route("/img-srv/{filename}", axum::routing::get(serve_img_handler))
             .layer(AuthLayer::new(Some(pool.clone())).with_config(
                 AuthConfig::<i64>::default().with_anonymous_user_id(Some(STARTING_CLIENT_ID)),
             ))
@@ -72,6 +73,43 @@ fn main() {
                 .await?,
             )))
     });
+}
+
+#[cfg(feature = "server")]
+pub async fn serve_img_handler(
+    axum::extract::Path(filename): axum::extract::Path<String>,
+) -> axum::response::Response {
+    use axum::http::{StatusCode, header};
+    use axum::response::IntoResponse;
+    // Security: reject any path traversal attempt
+    if filename.contains("..") || filename.contains('/') || filename.contains('\\') {
+        return (
+            StatusCode::BAD_REQUEST,
+            [(header::CONTENT_TYPE, "text/plain")],
+            vec![],
+        )
+            .into_response();
+    }
+    let photos_dir = std::env::var("PHOTOS_PATH").unwrap_or_else(|_| "assets/img".to_owned());
+    let path = std::path::Path::new(&photos_dir).join(&filename);
+    match std::fs::read(&path) {
+        Ok(bytes) => {
+            let mime = match path.extension().and_then(|e| e.to_str()) {
+                Some("png") => "image/png",
+                Some("jpg") | Some("jpeg") => "image/jpeg",
+                Some("webp") => "image/webp",
+                Some("gif") => "image/gif",
+                _ => "application/octet-stream",
+            };
+            (StatusCode::OK, [(header::CONTENT_TYPE, mime)], bytes).into_response()
+        }
+        Err(_) => (
+            StatusCode::NOT_FOUND,
+            [(header::CONTENT_TYPE, "text/plain")],
+            vec![],
+        )
+            .into_response(),
+    }
 }
 
 #[cfg(feature = "server")]
