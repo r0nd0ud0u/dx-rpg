@@ -194,8 +194,7 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
                                             pn.clone()
                                         } else {
                                             format!("{}__sp{}", pn, extra_count + 1)
-                                        }
-                                        div { class: "char-card-hp",
+                                        };
                                         tracing::info!("SP: Adding {} under key {}", cn, key);
                                         let _ = socket
                                             .send(ClientEvent::AddCharacterOnServerData(sn, key, cn))
