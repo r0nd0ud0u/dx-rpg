@@ -45,7 +45,7 @@ pub fn CharacterSelect(universe: String) -> Element {
         .iter()
         .filter(|(k, _)| k.as_str() != local_name.as_str())
         .map(|(k, _)| {
-            let char_name = chosen.get(k).cloned().unwrap_or_else(|| "—".to_string());
+            let char_name = chosen.get(k).cloned().unwrap_or_else(|| "—".to_owned());
             (k.clone(), char_name)
         })
         .collect();

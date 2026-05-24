@@ -161,7 +161,7 @@ pub fn LobbyPage() -> Element {
 
                 ButtonLink {
                     target: Route::Home {}.into(),
-                    name: "Not enough players".to_string(),
+                    name: "Not enough players".to_owned(),
                     onclick: move |_| {
                         async move {
                             let _ = socket
@@ -179,7 +179,7 @@ pub fn LobbyPage() -> Element {
         } else if server_data_snap.core_game_data.game_phase == GamePhase::Ended {
             ButtonLink {
                 target: Route::Home {}.into(),
-                name: "No more game, back to home".to_string(),
+                name: "No more game, back to home".to_owned(),
             }
         } else if server_data_snap.core_game_data.game_phase == GamePhase::Default {
 

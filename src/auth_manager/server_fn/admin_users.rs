@@ -6,7 +6,7 @@ use dioxus::prelude::*;
 #[server]
 pub async fn is_admin_enabled() -> Result<bool, ServerFnError> {
     Ok(std::env::var("ADMIN_ENABLED")
-        .unwrap_or_else(|_| "true".to_string())
+        .unwrap_or_else(|_| "true".to_owned())
         .trim()
         .to_lowercase()
         != "false")

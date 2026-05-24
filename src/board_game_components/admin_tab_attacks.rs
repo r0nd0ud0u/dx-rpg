@@ -12,7 +12,21 @@ use crate::{
     },
 };
 
-const JS_READ_ATK_PHOTO: &str = "const input = document.getElementById('atk-photo-file'); const file = input && input.files && input.files[0]; if (!file) { dioxus.send(null); return; } const reader = new FileReader(); reader.onload = function(ev) { const b64 = ev.target.result.split(',')[1]; dioxus.send({name: file.name, data: b64}); }; reader.readAsDataURL(file);";
+// JavaScript code to read an image file from the input with id 'atk-photo-file'.
+// - Gets the selected file from the input element.
+// - If no file is selected, sends null to Dioxus and exits.
+// - Otherwise, reads the file as a DataURL (base64).
+// - When reading is complete, extracts the base64 data and sends an object
+//   containing the file name and the base64 data to Dioxus.
+const JS_READ_ATK_PHOTO: &str = "const input = document.getElementById('atk-photo-file'); \
+     const file = input && input.files && input.files[0]; \
+     if (!file) { dioxus.send(null); return; } \
+     const reader = new FileReader(); \
+     reader.onload = function(ev) { \
+         const b64 = ev.target.result.split(',')[1]; \
+         dioxus.send({name: file.name, data: b64}); \
+     }; \
+     reader.readAsDataURL(file);";
 
 /// Attack management panel for a single character.
 /// `char_name`     — the character whose attacks are being edited.
@@ -28,23 +42,23 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
 
     // Attack form fields
     let mut atk_nom = use_signal(String::new);
-    let mut atk_niveau = use_signal(|| "1".to_string());
+    let mut atk_niveau = use_signal(|| "1".to_owned());
     let mut atk_description = use_signal(String::new);
-    let mut atk_cible = use_signal(|| "Enemy".to_string());
-    let mut atk_portee = use_signal(|| "Individual".to_string());
-    let mut atk_forme = use_signal(|| "Standard".to_string());
-    let mut atk_cout_mana = use_signal(|| "0".to_string());
-    let mut atk_cout_rage = use_signal(|| "0".to_string());
-    let mut atk_cout_vigueur = use_signal(|| "0".to_string());
-    let mut atk_duree = use_signal(|| "1".to_string());
-    let mut atk_aggro = use_signal(|| "0".to_string());
-    let mut atk_degats = use_signal(|| "0".to_string());
-    let mut atk_soin = use_signal(|| "0".to_string());
-    let mut atk_regen_mana = use_signal(|| "0".to_string());
-    let mut atk_regen_rage = use_signal(|| "0".to_string());
-    let mut atk_regen_vigueur = use_signal(|| "0".to_string());
+    let mut atk_cible = use_signal(|| "Enemy".to_owned());
+    let mut atk_portee = use_signal(|| "Individual".to_owned());
+    let mut atk_forme = use_signal(|| "Standard".to_owned());
+    let mut atk_cout_mana = use_signal(|| "0".to_owned());
+    let mut atk_cout_rage = use_signal(|| "0".to_owned());
+    let mut atk_cout_vigueur = use_signal(|| "0".to_owned());
+    let mut atk_duree = use_signal(|| "1".to_owned());
+    let mut atk_aggro = use_signal(|| "0".to_owned());
+    let mut atk_degats = use_signal(|| "0".to_owned());
+    let mut atk_soin = use_signal(|| "0".to_owned());
+    let mut atk_regen_mana = use_signal(|| "0".to_owned());
+    let mut atk_regen_rage = use_signal(|| "0".to_owned());
+    let mut atk_regen_vigueur = use_signal(|| "0".to_owned());
     let mut atk_photo = use_signal(String::new);
-    let mut atk_effet = use_signal(|| "[]".to_string());
+    let mut atk_effet = use_signal(|| "[]".to_owned());
 
     // Photo upload handler
     let on_atk_photo_change = move |_: FormEvent| {

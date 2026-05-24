@@ -91,7 +91,7 @@ async fn get_db_url() -> Result<String, ServerFnError> {
         Err(e) => {
             tracing::error!("DATABASE_URL environment variable not set: {}", e);
             Err(ServerFnError::new(
-                "DATABASE_URL environment variable not set".to_string(),
+                "DATABASE_URL environment variable not set".to_owned(),
             ))
         }
     }

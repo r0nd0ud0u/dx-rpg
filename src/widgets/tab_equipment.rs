@@ -53,7 +53,7 @@ pub fn TabEquipment(c: Character) -> Element {
         c.inventory.equipments.clone().into_iter().collect();
     rsx! {
         Tabs {
-            default_value: "tab1".to_string(),
+            default_value: "tab1".to_owned(),
             horizontal: true,
             max_width: "17em",
             TabList {

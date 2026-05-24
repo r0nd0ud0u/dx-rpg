@@ -17,7 +17,21 @@ use crate::{
     },
 };
 
-const JS_READ_CHAR_PHOTO: &str = "const input = document.getElementById('char-photo-file'); const file = input && input.files && input.files[0]; if (!file) { dioxus.send(null); return; } const reader = new FileReader(); reader.onload = function(ev) { const b64 = ev.target.result.split(',')[1]; dioxus.send({name: file.name, data: b64}); }; reader.readAsDataURL(file);";
+// JavaScript code to read an image file from the input with id 'char-photo-file'.
+// - Gets the selected file from the input element.
+// - If no file is selected, sends null to Dioxus and exits.
+// - Otherwise, reads the file as a DataURL (base64).
+// - When reading is complete, extracts the base64 data and sends an object
+//   containing the file name and the base64 data to Dioxus.
+const JS_READ_CHAR_PHOTO: &str = "const input = document.getElementById('char-photo-file'); \
+     const file = input && input.files && input.files[0]; \
+     if (!file) { dioxus.send(null); return; } \
+     const reader = new FileReader(); \
+     reader.onload = function(ev) { \
+         const b64 = ev.target.result.split(',')[1]; \
+         dioxus.send({name: file.name, data: b64}); \
+     }; \
+     reader.readAsDataURL(file);";
 
 #[component]
 pub fn AdminCharactersTab() -> Element {
@@ -38,13 +52,13 @@ pub fn AdminCharactersTab() -> Element {
     let mut form_name = use_signal(String::new);
     let mut form_short_name = use_signal(String::new);
     let mut form_class = use_signal(String::new);
-    let mut form_level = use_signal(|| "1".to_string());
+    let mut form_level = use_signal(|| "1".to_owned());
     let mut form_photo = use_signal(String::new);
-    let mut form_char_type = use_signal(|| "Hero".to_string());
-    let mut form_rank = use_signal(|| "Common".to_string());
+    let mut form_char_type = use_signal(|| "Hero".to_owned());
+    let mut form_rank = use_signal(|| "Common".to_owned());
     let mut form_color = use_signal(String::new);
     let mut form_description = use_signal(String::new);
-    let mut form_max_actions = use_signal(|| "1".to_string());
+    let mut form_max_actions = use_signal(|| "1".to_owned());
     let mut form_energies: Signal<Vec<String>> = use_signal(Vec::new);
     let mut form_is_blocking_atk = use_signal(|| false);
     let mut form_stats: Signal<Vec<StatEntry>> = use_signal(Vec::new);

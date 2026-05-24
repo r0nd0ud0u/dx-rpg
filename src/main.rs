@@ -25,7 +25,7 @@ fn main() {
     // Init logger
     let _ = dioxus::logger::init(
         std::env::var("LOG_LEVEL")
-            .unwrap_or_else(|_| "info".to_string())
+            .unwrap_or_else(|_| "info".to_owned())
             .parse::<Level>()
             .unwrap_or(Level::INFO),
     );
@@ -148,11 +148,11 @@ fn App() -> Element {
 
     // synced storage
     let mut login_name_session_local_sync =
-        use_synced_storage::<LocalStorage, String>("synced_user_sql_name".to_string(), || {
+        use_synced_storage::<LocalStorage, String>("synced_user_sql_name".to_owned(), || {
             DISCONNECTED_USER.clone()
         });
     let mut login_id_session_local_sync =
-        use_synced_storage::<LocalStorage, i64>("synced_user_sql_id".to_string(), || NO_CLIENT_ID); // from db, integer primary key not null and from 1 upwards
+        use_synced_storage::<LocalStorage, i64>("synced_user_sql_id".to_owned(), || NO_CLIENT_ID); // from db, integer primary key not null and from 1 upwards
 
     // Set the theme to dark on app load
     use_effect(|| {

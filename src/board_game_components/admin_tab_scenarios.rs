@@ -30,7 +30,7 @@ pub fn AdminScenariosTab() -> Element {
     let mut edit_file_stem = use_signal(String::new);
     let mut edit_name = use_signal(String::new);
     let mut edit_description = use_signal(String::new);
-    let mut edit_level = use_signal(|| "1".to_string());
+    let mut edit_level = use_signal(|| "1".to_owned());
     let mut edit_bosses = use_signal(String::new);
     let mut edit_loots: Signal<Vec<ScenarioLootItem>> = use_signal(Vec::new);
     let mut feedback = use_signal(String::new);
@@ -215,7 +215,7 @@ pub fn AdminScenariosTab() -> Element {
                                 edit_file_stem.set(String::new());
                                 edit_name.set(String::new());
                                 edit_description.set(String::new());
-                                edit_level.set("1".to_string());
+                                edit_level.set("1".to_owned());
                                 edit_bosses.set(String::new());
                                 edit_loots.set(Vec::new());
                                 edit_mode.set(ScenarioEditMode::New);

@@ -7,7 +7,7 @@ use std::collections::HashSet;
 #[server]
 pub async fn get_use_password() -> Result<bool, ServerFnError> {
     Ok(std::env::var("USE_PASSWORD")
-        .unwrap_or_else(|_| "false".to_string())
+        .unwrap_or_else(|_| "false".to_owned())
         .trim()
         .to_lowercase()
         == "true")

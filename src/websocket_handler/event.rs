@@ -359,7 +359,7 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
             .players
             .iter()
             .find_map(|(player_name, ids)| ids.contains(&client_id).then(|| player_name.clone()))
-            .unwrap_or_else(|| "Unknown".to_string());
+            .unwrap_or_else(|| "Unknown".to_owned());
 
         tracing::info!("Player {} with id {} is disconnecting", username, client_id);
 
