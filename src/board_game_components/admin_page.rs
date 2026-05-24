@@ -2245,13 +2245,15 @@ fn AdminEquipmentTab() -> Element {
                                             {
                                                 eq_items.set(items);
                                             }
-                                            match admin_get_equipment_json(t.clone(), c.clone(), n.clone()).await
+                                            if let Ok(json) = admin_get_equipment_json(
+                                                    t.clone(),
+                                                    c.clone(),
+                                                    n.clone(),
+                                                )
+                                                .await
                                             {
-                                                Ok(json) => {
-                                                    eq_json.set(json);
-                                                    selected_item.set(Some(n.clone()));
-                                                }
-                                                Err(_) => {}
+                                                eq_json.set(json);
+                                                selected_item.set(Some(n.clone()));
                                             }
                                             if let Ok(form) = admin_get_equipment_form(t, c, n).await {
                                                 eq_nom.set(form.nom);
