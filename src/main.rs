@@ -90,8 +90,15 @@ pub async fn serve_img_handler(
         )
             .into_response();
     }
-    let photos_dir = std::env::var("PHOTOS_PATH").unwrap_or_else(|_| "assets/img".to_owned());
+    let photos_dir = std::env::var("PHOTOS_PATH").unwrap_or_else(|_| "photos".to_owned());
     let path = std::path::Path::new(&photos_dir).join(&filename);
+    // Fallback: also look in the bundled assets/img directory for old photos
+    let path = if path.exists() {
+        path
+    } else {
+        let fallback = std::path::Path::new("assets/img").join(&filename);
+        if fallback.exists() { fallback } else { path }
+    };
     match std::fs::read(&path) {
         Ok(bytes) => {
             let mime = match path.extension().and_then(|e| e.to_str()) {

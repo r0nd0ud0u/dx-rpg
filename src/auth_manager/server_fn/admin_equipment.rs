@@ -225,10 +225,10 @@ pub async fn admin_create_equipment(
 }
 
 /// Returns a list of available image filenames.
-/// Reads from PHOTOS_PATH env var (default: "assets/img").
+/// Reads from PHOTOS_PATH env var (default: "photos").
 #[server]
 pub async fn list_available_images() -> Result<Vec<String>, ServerFnError> {
-    let photos_dir = std::env::var("PHOTOS_PATH").unwrap_or_else(|_| "assets/img".to_owned());
+    let photos_dir = std::env::var("PHOTOS_PATH").unwrap_or_else(|_| "photos".to_owned());
     let mut names: Vec<String> = match std::fs::read_dir(&photos_dir) {
         Ok(entries) => entries
             .flatten()
@@ -404,7 +404,7 @@ pub async fn upload_photo(
     let bytes = data_encoding::BASE64
         .decode(file_data_base64.as_bytes())
         .map_err(|e| ServerFnError::new(format!("Invalid base64: {e}")))?;
-    let photos_dir = std::env::var("PHOTOS_PATH").unwrap_or_else(|_| "assets/img".to_owned());
+    let photos_dir = std::env::var("PHOTOS_PATH").unwrap_or_else(|_| "photos".to_owned());
     std::fs::create_dir_all(&photos_dir)
         .map_err(|e| ServerFnError::new(format!("Cannot create photos dir: {e}")))?;
     let dest = Path::new(&photos_dir).join(&file_name);
