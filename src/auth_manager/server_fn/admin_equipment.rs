@@ -152,6 +152,78 @@ pub async fn admin_delete_equipment(
         .map_err(|e| ServerFnError::new(format!("Cannot delete {path:?}: {e}")))
 }
 
+/// Creates a new equipment item, copying the stats template from an existing
+/// item in the same category (so every stat key is present at zero).
+/// Returns `Err` if the item already exists.
+#[server]
+pub async fn admin_create_equipment(
+    eq_type: String,
+    category: String,
+    item_name: String,
+) -> Result<(), ServerFnError> {
+    use crate::common::OFFLINE_PATH;
+    use std::path::Path;
+    if eq_type.contains("..")
+        || eq_type.contains('/')
+        || eq_type.contains('\\')
+        || category.contains("..")
+        || category.contains('/')
+        || category.contains('\\')
+        || item_name.is_empty()
+        || item_name.contains("..")
+        || item_name.contains('/')
+        || item_name.contains('\\')
+    {
+        return Err(ServerFnError::new("Invalid path component".to_owned()));
+    }
+    let dir = Path::new(OFFLINE_PATH)
+        .join("equipment")
+        .join(&eq_type)
+        .join(&category);
+    let dest = dir.join(format!("{item_name}.json"));
+    if dest.exists() {
+        return Err(ServerFnError::new(format!(
+            "Item '{item_name}' already exists"
+        )));
+    }
+    // Build a stat template by reading an existing item, or use a default set.
+    let template_stats: serde_json::Map<String, serde_json::Value> =
+        if let Ok(entries) = std::fs::read_dir(&dir) {
+            entries
+                .flatten()
+                .find(|e| e.path().extension().map(|x| x == "json").unwrap_or(false))
+                .and_then(|e| std::fs::read_to_string(e.path()).ok())
+                .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+                .and_then(|v| {
+                    v["Stats"].as_object().map(|obj| {
+                        obj.iter()
+                            .map(|(k, _)| {
+                                (
+                                    k.clone(),
+                                    serde_json::json!({"equip_value": 0, "equip_percent": 0}),
+                                )
+                            })
+                            .collect()
+                    })
+                })
+                .unwrap_or_default()
+        } else {
+            serde_json::Map::new()
+        };
+    let new_item = serde_json::json!({
+        "Categorie": category,
+        "Nom": item_name,
+        "Nom unique": item_name,
+        "Stats": template_stats,
+    });
+    std::fs::create_dir_all(&dir)
+        .map_err(|e| ServerFnError::new(format!("Cannot create dir: {e}")))?;
+    let content = serde_json::to_string_pretty(&new_item)
+        .map_err(|e| ServerFnError::new(format!("Serialize error: {e}")))?;
+    std::fs::write(&dest, content.as_bytes())
+        .map_err(|e| ServerFnError::new(format!("Cannot write {dest:?}: {e}")))
+}
+
 /// Returns a list of available image filenames.
 /// Reads from PHOTOS_PATH env var (default: "assets/img").
 #[server]

@@ -18,7 +18,7 @@ use lib_rpg::{
 };
 
 use crate::{
-    common::PATH_IMG,
+    common::photo_src,
     components::button::{Button, ButtonVariant},
 };
 use crate::{
@@ -161,10 +161,7 @@ pub fn CharacterPanel(
                 }
                 // Body: image + bars
                 div { class: "char-body",
-                    img {
-                        src: format!("{}/{}.png", PATH_IMG, c.photo_name),
-                        class: "image-small",
-                    }
+                    img { src: photo_src(&c.photo_name), class: "image-small" }
                     div { class: "character-energy-effects-box",
                         BarComponent {
                             max: c.stats.all_stats[HP].max,

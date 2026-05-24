@@ -12,7 +12,7 @@ use lib_rpg::{
 };
 
 use crate::{
-    common::PATH_IMG,
+    common::photo_src,
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
@@ -239,7 +239,7 @@ fn CharCardItem(
             onclick: onclick_handler,
             div { class: "char-card-portrait",
                 img {
-                    src: format!("{}/{}.png", PATH_IMG, c.photo_name),
+                    src: photo_src(&c.photo_name),
                     class: "char-card-img",
                     alt: "{c.db_full_name}",
                 }

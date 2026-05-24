@@ -1,38 +1,7 @@
 /* =============================================
    RPG App — Design System
+   (tokens defined in dx-components-theme.css)
    ============================================= */
-
-:root {
-  --rpg-bg:           #080c14;
-  --rpg-bg-card:      #0f1623;
-  --rpg-bg-card-alt:  #131a28;
-  --rpg-border:       #1e2a3d;
-  --rpg-border-light: #2a3a55;
-  --rpg-gold:         #c9a227;
-  --rpg-gold-light:   #e8c547;
-  --rpg-teal:         #00d4b1;
-  --rpg-hero:         #2b6cb0;
-  --rpg-hero-dark:    #1a4475;
-  --rpg-boss:         #9b2335;
-  --rpg-boss-dark:    #6b1525;
-  --rpg-text:         #e2e8f0;
-  --rpg-text-muted:   #7a8fa8;
-  --rpg-success:      #276749;
-  --rpg-success-light:#48bb78;
-  --rpg-danger:       #9b2335;
-  --rpg-danger-light: #fc8181;
-  --sp-xs:  4px;
-  --sp-sm:  8px;
-  --sp-md:  16px;
-  --sp-lg:  24px;
-  --sp-xl:  40px;
-  --r-sm:  6px;
-  --r-md:  10px;
-  --r-lg:  16px;
-  --t-fast:   0.15s ease;
-  --t-normal: 0.3s ease;
-  --accent: var(--rpg-teal);
-}
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -1468,14 +1437,14 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 }
 .app-footer-icon { font-size: 1.1rem; }
 .app-footer-name { color: var(--rpg-gold); }
-.app-footer-version { color: var(--rpg-primary); font-family: monospace; }
+.app-footer-version { color: var(--rpg-teal); font-family: monospace; }
 .app-footer-info {
     display: flex;
     align-items: center;
     gap: 6px;
 }
 .app-footer-info a {
-    color: var(--rpg-primary);
+    color: var(--rpg-teal);
     text-decoration: none;
 }
 .app-footer-info a:hover { text-decoration: underline; }
@@ -1536,5 +1505,26 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 }
 .ast-input:focus {
     outline: none;
-    border-color: var(--rpg-primary);
+    border-color: var(--rpg-gold);
+}
+
+/* ── Equipment create form ───────────────────────────────────────────────── */
+.eq-create-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.eq-create-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--rpg-border);
+}
+.eq-create-form .admin-form-field {
+    flex: 1;
+    min-width: 220px;
 }

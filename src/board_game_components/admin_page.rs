@@ -9,17 +9,17 @@ use crate::{
     auth_manager::server_fn::{
         AdminCharacterInfo, AdminScenarioInfo, AdminUserInfo, AttackFormData, CharacterFormData,
         EquipStatEntry, EquipmentFormData, ScenarioDetail, ScenarioLootItem, StatEntry,
-        admin_create_universe, admin_delete_attack, admin_delete_equipment, admin_get_attack_form,
-        admin_get_attack_json, admin_get_character_form, admin_get_character_json,
-        admin_get_equipment_form, admin_get_equipment_json, admin_list_attacks, admin_list_bosses,
-        admin_list_characters, admin_list_equipment_categories, admin_list_equipment_items,
-        admin_list_equipment_types, admin_list_scenarios, admin_list_users, admin_save_attack_form,
-        admin_save_attack_json, admin_save_character_form, admin_save_character_json,
-        admin_save_equipment_form, admin_save_equipment_json, delete_scenario_json, delete_user,
-        get_scenario_detail, is_admin_enabled, list_universes_server, save_scenario_detail,
-        upload_photo,
+        admin_create_equipment, admin_create_universe, admin_delete_attack, admin_delete_equipment,
+        admin_get_attack_form, admin_get_attack_json, admin_get_character_form,
+        admin_get_character_json, admin_get_equipment_form, admin_get_equipment_json,
+        admin_list_attacks, admin_list_bosses, admin_list_characters,
+        admin_list_equipment_categories, admin_list_equipment_items, admin_list_equipment_types,
+        admin_list_scenarios, admin_list_users, admin_save_attack_form, admin_save_attack_json,
+        admin_save_character_form, admin_save_character_json, admin_save_equipment_form,
+        admin_save_equipment_json, delete_scenario_json, delete_user, get_scenario_detail,
+        is_admin_enabled, list_universes_server, save_scenario_detail, upload_photo,
     },
-    common::PATH_IMG,
+    common::photo_src,
     components::{
         button::{Button, ButtonVariant},
         input::Input,
@@ -793,12 +793,9 @@ fn AdminCharactersTab() -> Element {
                     .and_then(|v: &serde_json::Value| v.as_str())
                     .map(String::from);
                 if let (Some(name), Some(data)) = (name, data) {
-                    let stem = name
-                        .rsplit_once('.')
-                        .map(|(s, _)| s.to_owned())
-                        .unwrap_or_else(|| name.clone());
+                    let full_name = name.clone();
                     match upload_photo(name, data).await {
-                        Ok(_) => form_photo.set(stem),
+                        Ok(_) => form_photo.set(full_name),
                         Err(e) => char_feedback.set(format!("❌ Upload: {e}")),
                     }
                 }
@@ -927,7 +924,7 @@ fn AdminCharactersTab() -> Element {
                                     div { class: "admin-char-header",
                                         img {
                                             class: "admin-char-portrait",
-                                            src: format!("{}/{}.png", PATH_IMG, c.photo_name),
+                                            src: photo_src(&c.photo_name),
                                             alt: "{c.db_full_name}",
                                         }
                                         div { class: "admin-char-identity",
@@ -2023,6 +2020,9 @@ fn AdminEquipmentTab() -> Element {
     let mut eq_form_mode = use_signal(|| true);
     let mut feedback = use_signal(String::new);
     let mut confirm_delete_item: Signal<Option<String>> = use_signal(|| None);
+    // New-equipment creation
+    let mut show_create_form = use_signal(|| false);
+    let mut new_item_name = use_signal(String::new);
 
     // Equipment form signals
     let mut eq_nom = use_signal(String::new);
@@ -2186,6 +2186,92 @@ fn AdminEquipmentTab() -> Element {
             }
         }
 
+        // ── Create new equipment item ────────────────────────────────────────
+        if !selected_type().is_empty() && !selected_category().is_empty() {
+            div { class: "admin-card",
+                div { class: "eq-create-header",
+                    p { class: "admin-section-title", style: "margin:0;",
+                        "➕ New Item in {selected_category}"
+                    }
+                    Button {
+                        variant: ButtonVariant::Secondary,
+                        onclick: move |_| {
+                            show_create_form.set(!show_create_form());
+                            new_item_name.set(String::new());
+                        },
+                        if show_create_form() {
+                            "✕ Cancel"
+                        } else {
+                            "➕ New"
+                        }
+                    }
+                }
+                if show_create_form() {
+                    div { class: "eq-create-form",
+                        div { class: "admin-form-field",
+                            Label {
+                                html_for: "eq-new-name",
+                                color: "var(--rpg-text-muted)",
+                                font_size: "0.82rem",
+                                "Item filename (no spaces, no extension)"
+                            }
+                            Input {
+                                id: "eq-new-name",
+                                r#type: "text",
+                                placeholder: "e.g. epic_sword",
+                                value: "{new_item_name}",
+                                oninput: move |e: FormEvent| new_item_name.set(e.value()),
+                            }
+                        }
+                        Button {
+                            variant: ButtonVariant::Primary,
+                            onclick: move |_| {
+                                let t = selected_type();
+                                let c = selected_category();
+                                let n = new_item_name().trim().to_owned();
+                                if n.is_empty() {
+                                    feedback.set("❌ Name cannot be empty.".to_owned());
+                                    return;
+                                }
+                                spawn(async move {
+                                    match admin_create_equipment(t.clone(), c.clone(), n.clone()).await {
+                                        Ok(()) => {
+                                            feedback.set(format!("✅ '{n}' created."));
+                                            show_create_form.set(false);
+                                            new_item_name.set(String::new());
+                                            if let Ok(items) = admin_list_equipment_items(t.clone(), c.clone())
+                                                .await
+                                            // Auto-open the new item for editing
+                                            {
+                                                eq_items.set(items);
+                                            }
+                                            match admin_get_equipment_json(t.clone(), c.clone(), n.clone()).await
+                                            {
+                                                Ok(json) => {
+                                                    eq_json.set(json);
+                                                    selected_item.set(Some(n.clone()));
+                                                }
+                                                Err(_) => {}
+                                            }
+                                            if let Ok(form) = admin_get_equipment_form(t, c, n).await {
+                                                eq_nom.set(form.nom);
+                                                eq_nom_unique.set(form.nom_unique);
+                                                eq_categorie.set(form.categorie);
+                                                eq_stats.set(form.stats);
+                                                eq_form_mode.set(true);
+                                            }
+                                        }
+                                        Err(e) => feedback.set(format!("❌ {e}")),
+                                    }
+                                });
+                            },
+                            "💾 Create"
+                        }
+                    }
+                }
+            }
+        }
+
         if let Some(item_name) = selected_item() {
             {
                 let item_name_save = item_name.clone();
@@ -2248,50 +2334,44 @@ fn AdminEquipmentTab() -> Element {
                                 }
                             }
                             // Stats table
-                            p { style: "font-weight:600;margin:10px 0 4px;", "Stats" }
-                            table { class: "admin-stats-table",
-                                thead {
-                                    tr { class: "admin-stats-header",
-                                        th { class: "ast-col-name", "Stat" }
-                                        th { class: "ast-col-sep" }
-                                        th { class: "ast-col-name", "Flat" }
-                                        th { class: "ast-col-sep" }
-                                        th { class: "ast-col-name", "%" }
-                                    }
+                            if !eq_stats().is_empty() {
+                                p { style: "font-weight:600;margin:12px 0 6px;color:var(--rpg-text-muted);font-size:0.82rem;",
+                                    "Stats"
                                 }
-                                tbody {
+                                div { class: "admin-stats-table",
+                                    div { class: "admin-stats-header",
+                                        span { class: "ast-col-name", "Stat" }
+                                        span { class: "ast-col-val", "Current" }
+                                        span { class: "ast-col-sep", "" }
+                                        span { class: "ast-col-val", "Max" }
+                                    }
                                     for (idx, stat) in eq_stats().into_iter().enumerate() {
-                                        tr { class: "admin-stats-row",
-                                            td { class: "ast-col-name", "{stat.stat_name}" }
-                                            td { class: "ast-col-sep", ":" }
-                                            td { class: "ast-col-name",
-                                                Input {
-                                                    r#type: "number",
-                                                    class: "ast-input",
-                                                    value: "{stat.equip_value}",
-                                                    oninput: move |e: FormEvent| {
-                                                        let mut stats = eq_stats();
-                                                        if let Some(s) = stats.get_mut(idx) {
-                                                            s.equip_value = e.value().trim().parse::<i64>().unwrap_or(0);
-                                                        }
-                                                        eq_stats.set(stats);
-                                                    },
-                                                }
+                                        div { class: "admin-stats-row",
+                                            span { class: "ast-col-name", "{stat.stat_name}" }
+                                            input {
+                                                class: "ast-input",
+                                                r#type: "number",
+                                                value: "{stat.equip_value}",
+                                                oninput: move |e: FormEvent| {
+                                                    let mut stats = eq_stats();
+                                                    if let Some(s) = stats.get_mut(idx) {
+                                                        s.equip_value = e.value().trim().parse::<i64>().unwrap_or(0);
+                                                    }
+                                                    eq_stats.set(stats);
+                                                },
                                             }
-                                            td { class: "ast-col-sep", "/" }
-                                            td { class: "ast-col-name",
-                                                Input {
-                                                    r#type: "number",
-                                                    class: "ast-input",
-                                                    value: "{stat.equip_percent}",
-                                                    oninput: move |e: FormEvent| {
-                                                        let mut stats = eq_stats();
-                                                        if let Some(s) = stats.get_mut(idx) {
-                                                            s.equip_percent = e.value().trim().parse::<i64>().unwrap_or(0);
-                                                        }
-                                                        eq_stats.set(stats);
-                                                    },
-                                                }
+                                            span { class: "ast-col-sep", "/" }
+                                            input {
+                                                class: "ast-input",
+                                                r#type: "number",
+                                                value: "{stat.equip_percent}",
+                                                oninput: move |e: FormEvent| {
+                                                    let mut stats = eq_stats();
+                                                    if let Some(s) = stats.get_mut(idx) {
+                                                        s.equip_percent = e.value().trim().parse::<i64>().unwrap_or(0);
+                                                    }
+                                                    eq_stats.set(stats);
+                                                },
                                             }
                                         }
                                     }

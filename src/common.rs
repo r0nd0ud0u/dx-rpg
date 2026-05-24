@@ -61,3 +61,15 @@ pub const PATH_IMG: Asset = asset!("/assets/img");
 pub const DX_COMP_CSS: Asset = asset!("/assets/dx-components-theme.css");
 
 pub const OFFLINE_PATH: &str = "offlines";
+
+/// Returns the URL for serving a character photo via the dynamic image route.
+/// If `photo_name` already contains an extension (has a dot), the URL is used
+/// as-is; otherwise `.png` is appended for backward-compat with legacy entries
+/// that stored only the filename stem.
+pub fn photo_src(photo_name: &str) -> String {
+    if photo_name.contains('.') {
+        format!("/img-srv/{}", photo_name)
+    } else {
+        format!("/img-srv/{}.png", photo_name)
+    }
+}

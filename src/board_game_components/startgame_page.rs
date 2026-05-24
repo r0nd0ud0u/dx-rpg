@@ -1,6 +1,6 @@
 use crate::board_game_components::character_page::{BarComponent, CharacterPanel};
 use crate::board_game_components::game_sheets::GameSheets;
-use crate::common::{PATH_IMG, Route, SERVER_NAME};
+use crate::common::{Route, SERVER_NAME, photo_src};
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::websocket_handler::msg_from_client::send_disconnect_from_server_data;
 use crate::{
@@ -64,7 +64,7 @@ fn EndStatePanels() -> Element {
                         }
                         div { class: "char-body",
                             img {
-                                src: format!("{}/{}.png", PATH_IMG, c.photo_name),
+                                src: photo_src(&c.photo_name),
                                 class: "image-small",
                             }
                             div { class: "character-energy-effects-box",
