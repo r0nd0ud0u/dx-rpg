@@ -1,4 +1,9 @@
 pub mod admin_page;
+pub mod admin_tab_attacks;
+pub mod admin_tab_characters;
+pub mod admin_tab_equipment;
+pub mod admin_tab_scenarios;
+pub mod admin_tab_users;
 pub mod character_page;
 pub mod character_select;
 pub mod common_comp;

@@ -40,7 +40,7 @@ pub fn GameBoard() -> Element {
     // local signals
     let atk_menu_display = use_signal(|| false);
     let potion_menu_display = use_signal(|| false);
-    let mut selected_atk_name = use_signal(|| "".to_string());
+    let mut selected_atk_name = use_signal(|| "".to_owned());
 
     // spectator: player has no character in active heroes
     let local_session_player_name = use_context::<Signal<String>>();
@@ -51,7 +51,7 @@ pub fn GameBoard() -> Element {
     let is_spectator = if server_data().core_game_data.is_single_player {
         false
     } else {
-        my_character.as_ref().map_or(true, |char_name| {
+        my_character.as_ref().is_none_or(|char_name| {
             !server_data()
                 .core_game_data
                 .game_manager
@@ -107,7 +107,7 @@ pub fn GameBoard() -> Element {
                                 let _ = socket
                                     .send(ClientEvent::LaunchAttack(SERVER_NAME(), selected_atk_name()))
                                     .await;
-                                selected_atk_name.set("".to_string());
+                                selected_atk_name.set("".to_owned());
                             },
                             "⚔️ Launch Attack"
                         }

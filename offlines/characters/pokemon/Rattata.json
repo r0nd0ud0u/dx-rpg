@@ -16,13 +16,13 @@
       }
     ]
   },
-  "Level": 8,
-  "Name": "Dragonite",
-  "IdName": "Dragonite_#1",
-  "Photo": "Angmar",
-  "Rank": "Advanced",
+  "Level": 1,
+  "Name": "Rattata",
+  "IdName": "Rattata_#1",
+  "Photo": "default",
+  "Rank": "Common",
   "Shape": "",
-  "Short name": "Dragonite",
+  "Short name": "Rattata",
   "Stats": {
     "Aggro": {
       "Current": 0,
@@ -41,28 +41,28 @@
       "Max": 0
     },
     "Critical strike": {
-      "Current": 18,
-      "Max": 18
+      "Current": 8,
+      "Max": 8
     },
     "Dodge": {
-      "Current": 12,
-      "Max": 12
+      "Current": 5,
+      "Max": 5
     },
     "HP": {
-      "Current": 450,
-      "Max": 450
+      "Current": 200,
+      "Max": 200
     },
     "HP regeneration": {
       "Current": 0,
       "Max": 0
     },
     "Magical armor": {
-      "Current": 45,
-      "Max": 45
+      "Current": 15,
+      "Max": 15
     },
     "Magical power": {
-      "Current": 60,
-      "Max": 60
+      "Current": 10,
+      "Max": 10
     },
     "Mana": {
       "Current": 0,
@@ -73,12 +73,12 @@
       "Max": 0
     },
     "Physical armor": {
-      "Current": 55,
-      "Max": 55
+      "Current": 25,
+      "Max": 25
     },
     "Physical power": {
-      "Current": 70,
-      "Max": 70
+      "Current": 30,
+      "Max": 30
     },
     "Speed": {
       "Current": 0,
@@ -107,12 +107,13 @@
   ],
   "Type": "Boss",
   "is-blocking-atk": false,
-  "max-actions-by-round": 2,
+  "max-actions-by-round": 1,
   "nb-actions-in-round": 0,
   "energies": [
     {
       "kind": "Vigor"
     }
   ],
-  "Description": "Pseudo-legendary Dragon. Commands wind with its wings and blasts heroes with Hyper Beam."
+  "Description": "A quick Normal-type rodent. Bites with sharp teeth and escapes danger swiftly."
+
 }

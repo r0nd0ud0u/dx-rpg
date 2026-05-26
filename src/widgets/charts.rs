@@ -156,22 +156,22 @@ pub fn TabStats() -> Element {
 
     rsx! {
         Tabs {
-            default_value: "tab0".to_string(),
+            default_value: "tab0".to_owned(),
             horizontal: true,
             max_width: "40em",
             TabList {
-                TabTrigger { value: "tab0".to_string(), index: 0_usize, "All" }
+                TabTrigger { value: "tab0".to_owned(), index: 0_usize, "All" }
                 for (i, c) in heroes.clone().into_iter().enumerate() {
                     TabTrigger { value: format!("tab{}", i + 1), index: i + 1, "{c.id_name}" }
                 }
             }
 
             // "All" tab content
-            TabContent { value: "tab0".to_string(), index: 0_usize, width: "40em",
+            TabContent { value: "tab0".to_owned(), index: 0_usize, width: "40em",
                 div {
                     Tabs {
                         variant: TabsVariant::Default,
-                        default_value: "tab1".to_string(),
+                        default_value: "tab1".to_owned(),
                         horizontal: true,
                         max_width: "40em",
                         TabList {
@@ -209,7 +209,7 @@ pub fn TabStats() -> Element {
                     div {
                         Tabs {
                             variant: TabsVariant::Default,
-                            default_value: "tab1".to_string(),
+                            default_value: "tab1".to_owned(),
                             horizontal: true,
                             max_width: "40em",
                             TabList {

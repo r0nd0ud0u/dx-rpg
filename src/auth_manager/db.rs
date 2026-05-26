@@ -33,12 +33,11 @@ async fn db() -> Pool<Sqlite> {
     // SQLite cannot create missing parent directories on its own.
     if let Some(path_str) = db_url.strip_prefix("sqlite://") {
         let path = std::path::Path::new(path_str);
-        if let Some(parent) = path.parent() {
-            if !parent.as_os_str().is_empty() {
-                if let Err(e) = std::fs::create_dir_all(parent) {
-                    tracing::warn!("Could not create database directory {:?}: {}", parent, e);
-                }
-            }
+        if let Some(parent) = path.parent()
+            && !parent.as_os_str().is_empty()
+            && let Err(e) = std::fs::create_dir_all(parent)
+        {
+            tracing::warn!("Could not create database directory {:?}: {}", parent, e);
         }
     }
 
@@ -92,7 +91,7 @@ async fn get_db_url() -> Result<String, ServerFnError> {
         Err(e) => {
             tracing::error!("DATABASE_URL environment variable not set: {}", e);
             Err(ServerFnError::new(
-                "DATABASE_URL environment variable not set".to_string(),
+                "DATABASE_URL environment variable not set".to_owned(),
             ))
         }
     }

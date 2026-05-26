@@ -25,7 +25,7 @@ fn main() {
     // Init logger
     let _ = dioxus::logger::init(
         std::env::var("LOG_LEVEL")
-            .unwrap_or_else(|_| "info".to_string())
+            .unwrap_or_else(|_| "info".to_owned())
             .parse::<Level>()
             .unwrap_or(Level::INFO),
     );
@@ -61,6 +61,7 @@ fn main() {
 
         // Create an axum router that dioxus will attach the app to
         Ok(dioxus::server::router(App)
+            .route("/img-srv/{filename}", axum::routing::get(serve_img_handler))
             .layer(AuthLayer::new(Some(pool.clone())).with_config(
                 AuthConfig::<i64>::default().with_anonymous_user_id(Some(STARTING_CLIENT_ID)),
             ))
@@ -72,6 +73,50 @@ fn main() {
                 .await?,
             )))
     });
+}
+
+#[cfg(feature = "server")]
+pub async fn serve_img_handler(
+    axum::extract::Path(filename): axum::extract::Path<String>,
+) -> axum::response::Response {
+    use axum::http::{StatusCode, header};
+    use axum::response::IntoResponse;
+    // Security: reject any path traversal attempt
+    if filename.contains("..") || filename.contains('/') || filename.contains('\\') {
+        return (
+            StatusCode::BAD_REQUEST,
+            [(header::CONTENT_TYPE, "text/plain")],
+            vec![],
+        )
+            .into_response();
+    }
+    let photos_dir = std::env::var("PHOTOS_PATH").unwrap_or_else(|_| "photos".to_owned());
+    let path = std::path::Path::new(&photos_dir).join(&filename);
+    // Fallback: also look in the bundled assets/img directory for old photos
+    let path = if path.exists() {
+        path
+    } else {
+        let fallback = std::path::Path::new("assets/img").join(&filename);
+        if fallback.exists() { fallback } else { path }
+    };
+    match std::fs::read(&path) {
+        Ok(bytes) => {
+            let mime = match path.extension().and_then(|e| e.to_str()) {
+                Some("png") => "image/png",
+                Some("jpg") | Some("jpeg") => "image/jpeg",
+                Some("webp") => "image/webp",
+                Some("gif") => "image/gif",
+                _ => "application/octet-stream",
+            };
+            (StatusCode::OK, [(header::CONTENT_TYPE, mime)], bytes).into_response()
+        }
+        Err(_) => (
+            StatusCode::NOT_FOUND,
+            [(header::CONTENT_TYPE, "text/plain")],
+            vec![],
+        )
+            .into_response(),
+    }
 }
 
 #[cfg(feature = "server")]
@@ -103,11 +148,11 @@ fn App() -> Element {
 
     // synced storage
     let mut login_name_session_local_sync =
-        use_synced_storage::<LocalStorage, String>("synced_user_sql_name".to_string(), || {
+        use_synced_storage::<LocalStorage, String>("synced_user_sql_name".to_owned(), || {
             DISCONNECTED_USER.clone()
         });
     let mut login_id_session_local_sync =
-        use_synced_storage::<LocalStorage, i64>("synced_user_sql_id".to_string(), || NO_CLIENT_ID); // from db, integer primary key not null and from 1 upwards
+        use_synced_storage::<LocalStorage, i64>("synced_user_sql_id".to_owned(), || NO_CLIENT_ID); // from db, integer primary key not null and from 1 upwards
 
     // Set the theme to dark on app load
     use_effect(|| {

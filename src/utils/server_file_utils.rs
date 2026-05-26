@@ -24,7 +24,7 @@ pub struct SaveSlotInfo {
 pub async fn save(path: PathBuf, value: String) -> Result<(), ServerFnError> {
     match fs::write(path, value) {
         Ok(_) => Ok(()),
-        Err(_) => Err(ServerFnError::new("Failed to save file".to_string())),
+        Err(_) => Err(ServerFnError::new("Failed to save file".to_owned())),
     }
 }
 
@@ -32,7 +32,7 @@ pub async fn save(path: PathBuf, value: String) -> Result<(), ServerFnError> {
 pub async fn create_dir(path: PathBuf) -> Result<(), ServerFnError> {
     match fs::create_dir_all(path) {
         Ok(_) => Ok(()),
-        Err(_) => Err(ServerFnError::new("Failed to create directory".to_string())),
+        Err(_) => Err(ServerFnError::new("Failed to create directory".to_owned())),
     }
 }
 
@@ -108,13 +108,13 @@ pub async fn get_save_slots(player_name: String) -> Result<Vec<SaveSlotInfo>, Se
                     let dt: chrono::DateTime<chrono::Local> = t.into();
                     dt.format("%Y-%m-%d %H:%M").to_string()
                 })
-                .unwrap_or_else(|_| "—".to_string());
+                .unwrap_or_else(|_| "—".to_owned());
 
             // Try to extract scenario info from save file
             let (current_scenario, scenario_level) = fs::read_to_string(&save_file)
                 .ok()
                 .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
-                .and_then(|v| {
+                .map(|v| {
                     let scenario = v
                         .pointer("/game_manager/current_scenario/name")
                         .and_then(|n| n.as_str())
@@ -124,7 +124,7 @@ pub async fn get_save_slots(player_name: String) -> Result<Vec<SaveSlotInfo>, Se
                         .pointer("/game_manager/current_scenario/level")
                         .and_then(|n| n.as_u64())
                         .unwrap_or(0);
-                    Some((scenario, level))
+                    (scenario, level)
                 })
                 .unwrap_or_default();
 

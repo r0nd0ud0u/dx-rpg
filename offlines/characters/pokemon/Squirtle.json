@@ -1,5 +1,5 @@
 {
-  "Class": "Paladin",
+  "Class": "Warrior",
   "Color": "blue",
   "Experience": 0,
   "CharacterRoundsInfo": {
@@ -19,7 +19,7 @@
   "Level": 1,
   "Name": "Squirtle",
   "IdName": "Squirtle_#1",
-  "Photo": "squirtle",
+  "Photo": "default",
   "Rank": "Common",
   "Shape": "",
   "Short name": "Squirtle",
@@ -112,7 +112,7 @@
           "is_equipped": true
         }
       ],
-      "Boots": [
+      "Shoes": [
         {
           "unique_name": "starting shoes",
           "is_equipped": true
@@ -152,4 +152,5 @@
     }
   ],
   "Description": "The Tiny Turtle Pokémon. Hides behind its shell to absorb hits and drowns enemies with powerful water jets."
+
 }

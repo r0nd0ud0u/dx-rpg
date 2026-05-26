@@ -66,7 +66,7 @@ pub fn SheetContent(
 ) -> Element {
     let class = class
         .map(|c| format!("sheet {c}"))
-        .unwrap_or("sheet".to_string());
+        .unwrap_or("sheet".to_owned());
 
     rsx! {
         dialog::DialogContent {
