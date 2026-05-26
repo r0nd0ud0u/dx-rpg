@@ -16,13 +16,13 @@
       }
     ]
   },
-  "Level": 1,
-  "Name": "Rattata",
-  "IdName": "Rattata_#1",
-  "Photo": "Angmar",
+  "Level": 2,
+  "Name": "Pidgey",
+  "IdName": "Pidgey_#1",
+  "Photo": "default",
   "Rank": "Common",
   "Shape": "",
-  "Short name": "Rattata",
+  "Short name": "Pidgey",
   "Stats": {
     "Aggro": {
       "Current": 0,
@@ -41,28 +41,28 @@
       "Max": 0
     },
     "Critical strike": {
-      "Current": 8,
-      "Max": 8
+      "Current": 10,
+      "Max": 10
     },
     "Dodge": {
-      "Current": 5,
-      "Max": 5
+      "Current": 10,
+      "Max": 10
     },
     "HP": {
-      "Current": 200,
-      "Max": 200
+      "Current": 240,
+      "Max": 240
     },
     "HP regeneration": {
       "Current": 0,
       "Max": 0
     },
     "Magical armor": {
-      "Current": 15,
-      "Max": 15
+      "Current": 20,
+      "Max": 20
     },
     "Magical power": {
-      "Current": 10,
-      "Max": 10
+      "Current": 30,
+      "Max": 30
     },
     "Mana": {
       "Current": 0,
@@ -73,8 +73,8 @@
       "Max": 0
     },
     "Physical armor": {
-      "Current": 25,
-      "Max": 25
+      "Current": 20,
+      "Max": 20
     },
     "Physical power": {
       "Current": 30,
@@ -114,5 +114,6 @@
       "kind": "Vigor"
     }
   ],
-  "Description": "A quick Normal-type rodent. Bites with sharp teeth and escapes danger swiftly."
+  "Description": "A tiny bird Pokémon that kicks up sand and strikes with wing gusts."
+
 }

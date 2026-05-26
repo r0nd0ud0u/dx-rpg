@@ -1,0 +1,157 @@
+{
+  "CharacterRoundsInfo": {
+    "Buf-debuf": [
+      {
+        "is-percent": true,
+        "kind": "DamageRxPercent",
+        "passive-enabled": false,
+        "stats-name": "",
+        "value": 100
+      }
+    ],
+    "is_first_round": false,
+    "is_heal_atk_blocked": false,
+    "is_random_target": false
+  },
+  "Class": "Mage",
+  "Color": "green",
+  "Description": "The Seed Pokémon from Pallet Town. Channels solar energy to heal allies and unleash grass and poison attacks.",
+  "Experience": 0,
+  "IdName": "Bulbasaur_#1",
+  "Level": 1,
+  "Name": "Bulbasaur",
+  "Photo": "arcko.png",
+  "Rank": "Common",
+  "Shape": "",
+  "Short name": "Bulbasaur",
+  "Stats": {
+    "Aggro": {
+      "Current": 0,
+      "Max": 9999
+    },
+    "Aggro rate": {
+      "Current": 3,
+      "Max": 3
+    },
+    "Berserk": {
+      "Current": 0,
+      "Max": 0
+    },
+    "Berserk rate": {
+      "Current": 0,
+      "Max": 0
+    },
+    "Critical strike": {
+      "Current": 8,
+      "Max": 8
+    },
+    "Dodge": {
+      "Current": 5,
+      "Max": 5
+    },
+    "HP": {
+      "Current": 85,
+      "Max": 85
+    },
+    "HP regeneration": {
+      "Current": 5,
+      "Max": 5
+    },
+    "Magical armor": {
+      "Current": 30,
+      "Max": 30
+    },
+    "Magical power": {
+      "Current": 50,
+      "Max": 50
+    },
+    "Mana": {
+      "Current": 100,
+      "Max": 100
+    },
+    "Mana regeneration": {
+      "Current": 18,
+      "Max": 18
+    },
+    "Physical armor": {
+      "Current": 15,
+      "Max": 15
+    },
+    "Physical power": {
+      "Current": 30,
+      "Max": 30
+    },
+    "Speed": {
+      "Current": 0,
+      "Max": 0
+    },
+    "Speed regeneration": {
+      "Current": 20,
+      "Max": 20
+    },
+    "Vigor": {
+      "Current": 0,
+      "Max": 0
+    },
+    "Vigor regeneration": {
+      "Current": 0,
+      "Max": 0
+    }
+  },
+  "Type": "Hero",
+  "energies": [
+    {
+      "kind": "Mana"
+    }
+  ],
+  "inventory": {
+    "consumables": [],
+    "equipments": {
+      "Chest": [
+        {
+          "is_equipped": true,
+          "unique_name": "starting chest"
+        }
+      ],
+      "Head": [
+        {
+          "is_equipped": true,
+          "unique_name": "starting helmet"
+        }
+      ],
+      "LeftWeapon": [
+        {
+          "is_equipped": true,
+          "unique_name": "starting left weapon"
+        }
+      ],
+      "Pants": [
+        {
+          "is_equipped": true,
+          "unique_name": "starting pants"
+        }
+      ],
+      "RightWeapon": [
+        {
+          "is_equipped": true,
+          "unique_name": "starting right weapon"
+        }
+      ],
+      "Shoes": [
+        {
+          "is_equipped": true,
+          "unique_name": "starting shoes"
+        }
+      ],
+      "Tattoes": [
+        {
+          "is_equipped": true,
+          "unique_name": "starting tattoo"
+        }
+      ]
+    },
+    "money": 100
+  },
+  "is-blocking-atk": false,
+  "max-actions-by-round": 1
+}

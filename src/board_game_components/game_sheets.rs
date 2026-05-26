@@ -347,7 +347,7 @@ fn GameStatsSheet(s: SheetSide) -> Element {
                             {
                                 let hp_cur = hero.stats.all_stats.get(HP).map(|a| a.current).unwrap_or(0);
                                 let hp_max = hero.stats.all_stats.get(HP).map(|a| a.max).unwrap_or(1);
-                                let pct = if hp_max > 0 { (hp_cur.max(0) * 100) / hp_max } else { 0 };
+                                let pct = if hp_max > 0 { (hp_cur * 100) / hp_max } else { 0 };
                                 let is_dead = hero.stats.is_dead().unwrap_or(false);
                                 rsx! {
                                     div { class: "stats-hero-row",
@@ -695,8 +695,7 @@ fn SettingsSheet(s: SheetSide) -> Element {
     // Load saved setting on mount
     use_effect(move || {
         spawn(async move {
-            if let Ok(val) =
-                get_user_setting(SETTING_TOOLTIPS.to_string(), "true".to_string()).await
+            if let Ok(val) = get_user_setting(SETTING_TOOLTIPS.to_string(), "true".to_owned()).await
             {
                 show_atk_tooltips.set(val == "true");
             }
@@ -733,14 +732,14 @@ fn SettingsSheet(s: SheetSide) -> Element {
                                 // toggle manually since checkbox `checked` doesn't invert
                                 let new_val = !show_atk_tooltips();
                                 show_atk_tooltips.set(new_val);
-                                save_msg.set("Saving…".to_string());
+                                save_msg.set("Saving…".to_owned());
                                 spawn(async move {
                                     let _ = save_user_setting(
                                             SETTING_TOOLTIPS.to_string(),
                                             if new_val { "true" } else { "false" }.to_string(),
                                         )
                                         .await;
-                                    save_msg.set("✅ Saved".to_string());
+                                    save_msg.set("✅ Saved".to_owned());
                                     let _ = v; // suppress warning
                                 });
                             },

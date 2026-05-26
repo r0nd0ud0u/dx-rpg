@@ -16,13 +16,13 @@
       }
     ]
   },
-  "Level": 3,
-  "Name": "Mankey",
-  "IdName": "Mankey_#1",
-  "Photo": "Angmar",
-  "Rank": "Common",
+  "Level": 9,
+  "Name": "Mewtwo",
+  "IdName": "Mewtwo_#1",
+  "Photo": "default",
+  "Rank": "Advanced",
   "Shape": "",
-  "Short name": "Mankey",
+  "Short name": "Mewtwo",
   "Stats": {
     "Aggro": {
       "Current": 0,
@@ -41,28 +41,28 @@
       "Max": 0
     },
     "Critical strike": {
-      "Current": 12,
-      "Max": 12
+      "Current": 22,
+      "Max": 22
     },
     "Dodge": {
-      "Current": 8,
-      "Max": 8
+      "Current": 18,
+      "Max": 18
     },
     "HP": {
-      "Current": 290,
-      "Max": 290
+      "Current": 510,
+      "Max": 510
     },
     "HP regeneration": {
       "Current": 0,
       "Max": 0
     },
     "Magical armor": {
-      "Current": 15,
-      "Max": 15
+      "Current": 75,
+      "Max": 75
     },
     "Magical power": {
-      "Current": 10,
-      "Max": 10
+      "Current": 95,
+      "Max": 95
     },
     "Mana": {
       "Current": 0,
@@ -73,12 +73,12 @@
       "Max": 0
     },
     "Physical armor": {
-      "Current": 35,
-      "Max": 35
+      "Current": 40,
+      "Max": 40
     },
     "Physical power": {
-      "Current": 45,
-      "Max": 45
+      "Current": 55,
+      "Max": 55
     },
     "Speed": {
       "Current": 0,
@@ -107,12 +107,13 @@
   ],
   "Type": "Boss",
   "is-blocking-atk": false,
-  "max-actions-by-round": 1,
+  "max-actions-by-round": 2,
   "nb-actions-in-round": 0,
   "energies": [
     {
       "kind": "Vigor"
     }
   ],
-  "Description": "A Fighting-type pig monkey. Furiously punches with karate chops and kicks."
+  "Description": "The Genetic Pokémon. Levitates enemies with raw psychic power and erases their will to fight."
+
 }

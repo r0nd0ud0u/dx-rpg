@@ -1,30 +1,31 @@
 {
-  "name": "Mewtwo Armure Ultime",
-  "description": "In its armoured form, Mewtwo is virtually invincible. This is the ultimate challenge.",
   "boss_patterns": {
     "Mewtwo Armure": [
       0
     ]
   },
+  "description": "In its armoured form, Mewtwo is virtually invincible. This is the ultimate challenge.",
   "level": 10,
   "loots": [
     {
-      "name": "Rare potion",
-      "kind": "Consumable",
-      "rank": "Rare",
-      "level": 3,
       "classes": [
         "Standard"
-      ]
+      ],
+      "kind": "Consumable",
+      "level": 3,
+      "name": "Rare potion",
+      "rank": "Advanced"
     },
     {
-      "name": "gold",
-      "kind": "Currency",
-      "rank": "Rare",
-      "level": 80,
       "classes": [
         "Standard"
-      ]
+      ],
+      "kind": "Currency",
+      "level": 80,
+      "name": "gold",
+      "rank": "Advanced"
     }
-  ]
+  ],
+  "name": "Mewtwo Armure Ultime",
+  "universe": "pokemon"
 }

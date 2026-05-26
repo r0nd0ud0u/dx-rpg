@@ -16,13 +16,13 @@
       }
     ]
   },
-  "Level": 6,
-  "Name": "Gengar",
-  "IdName": "Gengar_#1",
-  "Photo": "Angmar",
-  "Rank": "Intermediate",
+  "Level": 10,
+  "Name": "Mewtwo Armure",
+  "IdName": "Mewtwo_Armure_#1",
+  "Photo": "default",
+  "Rank": "Advanced",
   "Shape": "",
-  "Short name": "Gengar",
+  "Short name": "Mewtwo Armure",
   "Stats": {
     "Aggro": {
       "Current": 0,
@@ -41,28 +41,28 @@
       "Max": 0
     },
     "Critical strike": {
-      "Current": 18,
-      "Max": 18
+      "Current": 25,
+      "Max": 25
     },
     "Dodge": {
-      "Current": 20,
-      "Max": 20
+      "Current": 15,
+      "Max": 15
     },
     "HP": {
-      "Current": 340,
-      "Max": 340
+      "Current": 640,
+      "Max": 640
     },
     "HP regeneration": {
       "Current": 0,
       "Max": 0
     },
     "Magical armor": {
-      "Current": 65,
-      "Max": 65
+      "Current": 90,
+      "Max": 90
     },
     "Magical power": {
-      "Current": 75,
-      "Max": 75
+      "Current": 110,
+      "Max": 110
     },
     "Mana": {
       "Current": 0,
@@ -73,12 +73,12 @@
       "Max": 0
     },
     "Physical armor": {
-      "Current": 20,
-      "Max": 20
+      "Current": 60,
+      "Max": 60
     },
     "Physical power": {
-      "Current": 25,
-      "Max": 25
+      "Current": 65,
+      "Max": 65
     },
     "Speed": {
       "Current": 0,
@@ -93,8 +93,8 @@
       "Max": 9999
     },
     "Vigor regeneration": {
-      "Current": 15,
-      "Max": 15
+      "Current": 20,
+      "Max": 20
     }
   },
   "Tx-rx": [
@@ -107,12 +107,13 @@
   ],
   "Type": "Boss",
   "is-blocking-atk": false,
-  "max-actions-by-round": 1,
+  "max-actions-by-round": 3,
   "nb-actions-in-round": 0,
   "energies": [
     {
       "kind": "Vigor"
     }
   ],
-  "Description": "Ghost/Poison Pokémon. Attacks with shadow balls, drains life and hexes heroes with dark energy."
+  "Description": "Mewtwo in armoured form. The pinnacle of Pokémon power — psychic storms shatter every defence."
+
 }

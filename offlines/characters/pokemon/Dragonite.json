@@ -16,13 +16,13 @@
       }
     ]
   },
-  "Level": 5,
-  "Name": "Machoke",
-  "IdName": "Machoke_#1",
-  "Photo": "Angmar",
-  "Rank": "Intermediate",
+  "Level": 8,
+  "Name": "Dragonite",
+  "IdName": "Dragonite_#1",
+  "Photo": "default",
+  "Rank": "Advanced",
   "Shape": "",
-  "Short name": "Machoke",
+  "Short name": "Dragonite",
   "Stats": {
     "Aggro": {
       "Current": 0,
@@ -41,28 +41,28 @@
       "Max": 0
     },
     "Critical strike": {
-      "Current": 14,
-      "Max": 14
+      "Current": 18,
+      "Max": 18
     },
     "Dodge": {
-      "Current": 6,
-      "Max": 6
+      "Current": 12,
+      "Max": 12
     },
     "HP": {
-      "Current": 390,
-      "Max": 390
+      "Current": 450,
+      "Max": 450
     },
     "HP regeneration": {
       "Current": 0,
       "Max": 0
     },
     "Magical armor": {
-      "Current": 20,
-      "Max": 20
+      "Current": 45,
+      "Max": 45
     },
     "Magical power": {
-      "Current": 15,
-      "Max": 15
+      "Current": 60,
+      "Max": 60
     },
     "Mana": {
       "Current": 0,
@@ -77,8 +77,8 @@
       "Max": 55
     },
     "Physical power": {
-      "Current": 60,
-      "Max": 60
+      "Current": 70,
+      "Max": 70
     },
     "Speed": {
       "Current": 0,
@@ -114,5 +114,6 @@
       "kind": "Vigor"
     }
   ],
-  "Description": "Powerful Fighting Pokémon. Lifts heroes with raw muscle and crushes them with superpowered blows."
+  "Description": "Pseudo-legendary Dragon. Commands wind with its wings and blasts heroes with Hyper Beam."
+
 }

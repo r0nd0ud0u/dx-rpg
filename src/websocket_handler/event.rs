@@ -359,7 +359,7 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
             .players
             .iter()
             .find_map(|(player_name, ids)| ids.contains(&client_id).then(|| player_name.clone()))
-            .unwrap_or_else(|| "Unknown".to_string());
+            .unwrap_or_else(|| "Unknown".to_owned());
 
         tracing::info!("Player {} with id {} is disconnecting", username, client_id);
 
@@ -620,35 +620,34 @@ fn get_current_game_path(player_name: &str, current_game_dir: &str) -> PathBuf {
 pub fn use_potion_handler(server_name: &str, player_name: &str, potion_name: &str) {
     use lib_rpg::character_mod::inventory::Consumable;
     let mut sm = SERVER_MANAGER.lock().unwrap();
-    if let Some(server_data) = sm.servers_data.get_mut(server_name) {
-        if let Some(character_id_name) = server_data
+    if let Some(server_data) = sm.servers_data.get_mut(server_name)
+        && let Some(character_id_name) = server_data
             .players_data
             .get_first_character_name(player_name)
+    {
+        let game_state = server_data.core_game_data.game_manager.game_state.clone();
+        if let Some(character) = server_data
+            .core_game_data
+            .game_manager
+            .pm
+            .get_mut_active_hero_character(&character_id_name)
         {
-            let game_state = server_data.core_game_data.game_manager.game_state.clone();
-            if let Some(character) = server_data
-                .core_game_data
-                .game_manager
-                .pm
-                .get_mut_active_hero_character(&character_id_name)
-            {
-                let launcher_stats = character.stats.clone();
-                let consumable: Option<Consumable> = character
-                    .inventory
-                    .consumables
-                    .iter()
-                    .find(|c| c.name == potion_name)
-                    .cloned();
-                if let Some(c) = consumable {
-                    match character.use_consumable(c, &game_state, &launcher_stats) {
-                        Ok(_) => tracing::info!(
-                            "Player {} used potion {} successfully",
-                            player_name,
-                            potion_name
-                        ),
-                        Err(e) => {
-                            tracing::error!("Failed to use potion {}: {}", potion_name, e)
-                        }
+            let launcher_stats = character.stats.clone();
+            let consumable: Option<Consumable> = character
+                .inventory
+                .consumables
+                .iter()
+                .find(|c| c.name == potion_name)
+                .cloned();
+            if let Some(c) = consumable {
+                match character.use_consumable(c, &game_state, &launcher_stats) {
+                    Ok(_) => tracing::info!(
+                        "Player {} used potion {} successfully",
+                        player_name,
+                        potion_name
+                    ),
+                    Err(e) => {
+                        tracing::error!("Failed to use potion {}: {}", potion_name, e)
                     }
                 }
             }

@@ -1,6 +1,6 @@
 use crate::board_game_components::character_page::{BarComponent, CharacterPanel};
 use crate::board_game_components::game_sheets::GameSheets;
-use crate::common::{PATH_IMG, Route, SERVER_NAME};
+use crate::common::{Route, SERVER_NAME, photo_src};
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::websocket_handler::msg_from_client::send_disconnect_from_server_data;
 use crate::{
@@ -24,7 +24,7 @@ fn EndStatePanels() -> Element {
     let server_data = use_context::<Signal<ServerData>>();
     let atk_menu = use_signal(|| false);
     let potion_menu = use_signal(|| false);
-    let selected_atk = use_signal(|| "".to_string());
+    let selected_atk = use_signal(|| "".to_owned());
 
     rsx! {
         div { class: "grid-board",
@@ -32,7 +32,7 @@ fn EndStatePanels() -> Element {
                 for c in server_data().core_game_data.game_manager.pm.active_heroes.iter() {
                     CharacterPanel {
                         c: c.clone(),
-                        current_player_id_name: "".to_string(),
+                        current_player_id_name: "".to_owned(),
                         selected_atk_name: selected_atk,
                         atk_menu_display: atk_menu,
                         potion_menu_display: potion_menu,
@@ -64,7 +64,7 @@ fn EndStatePanels() -> Element {
                         }
                         div { class: "char-body",
                             img {
-                                src: format!("{}/{}.png", PATH_IMG, c.photo_name),
+                                src: photo_src(&c.photo_name),
                                 class: "image-small",
                             }
                             div { class: "character-energy-effects-box",

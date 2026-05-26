@@ -1,38 +1,7 @@
 /* =============================================
    RPG App — Design System
+   (tokens defined in dx-components-theme.css)
    ============================================= */
-
-:root {
-  --rpg-bg:           #080c14;
-  --rpg-bg-card:      #0f1623;
-  --rpg-bg-card-alt:  #131a28;
-  --rpg-border:       #1e2a3d;
-  --rpg-border-light: #2a3a55;
-  --rpg-gold:         #c9a227;
-  --rpg-gold-light:   #e8c547;
-  --rpg-teal:         #00d4b1;
-  --rpg-hero:         #2b6cb0;
-  --rpg-hero-dark:    #1a4475;
-  --rpg-boss:         #9b2335;
-  --rpg-boss-dark:    #6b1525;
-  --rpg-text:         #e2e8f0;
-  --rpg-text-muted:   #7a8fa8;
-  --rpg-success:      #276749;
-  --rpg-success-light:#48bb78;
-  --rpg-danger:       #9b2335;
-  --rpg-danger-light: #fc8181;
-  --sp-xs:  4px;
-  --sp-sm:  8px;
-  --sp-md:  16px;
-  --sp-lg:  24px;
-  --sp-xl:  40px;
-  --r-sm:  6px;
-  --r-md:  10px;
-  --r-lg:  16px;
-  --t-fast:   0.15s ease;
-  --t-normal: 0.3s ease;
-  --accent: var(--rpg-teal);
-}
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -1018,6 +987,18 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 /* =============================================
    ADMIN CHARACTERS GRID
    ============================================= */
+.loot-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    padding: 6px 8px;
+    background: var(--rpg-bg-card-alt);
+    border: 1px solid var(--rpg-border);
+    border-radius: var(--r-sm);
+}
+.loot-row input { flex: 2 1 120px; min-width: 80px; }
+.loot-select { flex: 1 1 110px; min-width: 80px; }
 .admin-char-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -1266,4 +1247,284 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
     font-size: .62rem; font-weight: 700; color: rgba(255,255,255,.85);
     text-shadow: 0 1px 2px rgba(0,0,0,.8);
+}
+
+/* ── RPG-Styled Select / Dropdown ──────────────────────────────────────── */
+.lobby-select,
+.admin-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: var(--rpg-bg-card);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c9a227' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    border: 1.5px solid var(--rpg-gold);
+    border-radius: var(--r-sm);
+    color: var(--rpg-text);
+    padding: 8px 36px 8px 14px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color .2s, box-shadow .2s;
+    min-width: 180px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.4), inset 0 1px 0 rgba(201,162,39,.08);
+}
+.lobby-select:hover,
+.admin-select:hover {
+    border-color: var(--rpg-gold-light);
+    box-shadow: 0 0 8px rgba(201,162,39,.35), 0 2px 8px rgba(0,0,0,.4);
+}
+.lobby-select:focus,
+.admin-select:focus {
+    outline: none;
+    border-color: var(--rpg-gold-light);
+    box-shadow: 0 0 0 3px rgba(201,162,39,.25);
+}
+.lobby-select option,
+.admin-select option {
+    background-color: var(--rpg-bg-card-alt);
+    color: var(--rpg-text);
+}
+
+/* Universe selector container in lobby */
+.lobby-universe-select {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-sm);
+    margin-bottom: var(--sp-lg);
+}
+.lobby-universe-select label {
+    font-size: 0.85rem;
+    color: var(--rpg-gold);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* ── App Footer ───────────────────────────────────────────────────────────── */
+.app-footer {
+    margin-top: auto;
+    padding: 14px 24px;
+    background: var(--rpg-bg-card);
+    border-top: 1px solid var(--rpg-border);
+    font-size: 0.8rem;
+    color: var(--rpg-text-muted);
+}
+.app-footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.app-footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+.app-footer-icon { font-size: 1.1rem; }
+.app-footer-name { color: var(--rpg-gold); }
+.app-footer-version {
+    background: var(--rpg-bg-card-alt);
+    border: 1px solid var(--rpg-border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.72rem;
+    font-family: monospace;
+}
+.app-footer-info { display: flex; gap: 4px; align-items: center; }
+.app-footer-info a { color: var(--rpg-gold); text-decoration: none; }
+.app-footer-info a:hover { text-decoration: underline; }
+
+/* ── Admin Form Grid ──────────────────────────────────────────────────────── */
+.admin-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.admin-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* ── Admin Stats Grid ─────────────────────────────────────────────────────── */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.admin-stat-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--rpg-bg-card-alt);
+    border: 1px solid var(--rpg-border);
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+.admin-stat-name {
+    min-width: 100px;
+    font-size: 0.82rem;
+    color: var(--rpg-text-muted);
+    font-weight: 500;
+}
+.admin-stat-row input {
+    width: 68px;
+}
+
+/* ── Admin form grid ──────────────────────────────────────────────────────── */
+.admin-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.admin-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* ── Admin stats grid ─────────────────────────────────────────────────────── */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 8px;
+}
+.admin-stat-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--rpg-bg-card);
+    border: 1px solid var(--rpg-border);
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+.admin-stat-name {
+    min-width: 120px;
+    font-weight: 500;
+    color: var(--rpg-text-muted);
+    font-size: 0.85rem;
+}
+
+/* ── App footer ───────────────────────────────────────────────────────────── */
+.app-footer {
+    margin-top: auto;
+    padding: 14px 24px;
+    background: var(--rpg-bg-card);
+    border-top: 1px solid var(--rpg-border);
+    font-size: 0.8rem;
+    color: var(--rpg-text-muted);
+}
+.app-footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.app-footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+.app-footer-icon { font-size: 1.1rem; }
+.app-footer-name { color: var(--rpg-gold); }
+.app-footer-version { color: var(--rpg-teal); font-family: monospace; }
+.app-footer-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.app-footer-info a {
+    color: var(--rpg-teal);
+    text-decoration: none;
+}
+.app-footer-info a:hover { text-decoration: underline; }
+
+/* ── Admin stats table (replaces stats grid) ─────────────────────────────── */
+.admin-stats-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 16px;
+    margin-bottom: 12px;
+}
+.admin-stats-header {
+    display: grid;
+    grid-template-columns: 1fr 72px 16px 72px;
+    gap: 4px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--rpg-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    grid-column: 1 / -1;
+    border-bottom: 1px solid var(--rpg-border);
+}
+.admin-stats-row {
+    display: grid;
+    grid-template-columns: 1fr 72px 16px 72px;
+    gap: 4px;
+    align-items: center;
+    padding: 3px 8px;
+    background: var(--rpg-bg-card);
+    border: 1px solid var(--rpg-border);
+    border-radius: 5px;
+}
+.ast-col-name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--rpg-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ast-col-val { /* placeholder for header alignment */ }
+.ast-col-sep {
+    text-align: center;
+    color: var(--rpg-text-muted);
+    font-size: 0.85rem;
+}
+.ast-input {
+    width: 100%;
+    padding: 2px 6px;
+    background: var(--rpg-bg-input, var(--rpg-bg-card-alt));
+    border: 1px solid var(--rpg-border);
+    border-radius: 4px;
+    color: var(--rpg-text);
+    font-size: 0.85rem;
+    text-align: right;
+}
+.ast-input:focus {
+    outline: none;
+    border-color: var(--rpg-gold);
+}
+
+/* ── Equipment create form ───────────────────────────────────────────────── */
+.eq-create-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.eq-create-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--rpg-border);
+}
+.eq-create-form .admin-form-field {
+    flex: 1;
+    min-width: 220px;
 }

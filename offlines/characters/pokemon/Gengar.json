@@ -16,13 +16,13 @@
       }
     ]
   },
-  "Level": 9,
-  "Name": "Mewtwo",
-  "IdName": "Mewtwo_#1",
-  "Photo": "Angmar",
-  "Rank": "Advanced",
+  "Level": 6,
+  "Name": "Gengar",
+  "IdName": "Gengar_#1",
+  "Photo": "default",
+  "Rank": "Intermediate",
   "Shape": "",
-  "Short name": "Mewtwo",
+  "Short name": "Gengar",
   "Stats": {
     "Aggro": {
       "Current": 0,
@@ -41,28 +41,28 @@
       "Max": 0
     },
     "Critical strike": {
-      "Current": 22,
-      "Max": 22
-    },
-    "Dodge": {
       "Current": 18,
       "Max": 18
     },
+    "Dodge": {
+      "Current": 20,
+      "Max": 20
+    },
     "HP": {
-      "Current": 510,
-      "Max": 510
+      "Current": 340,
+      "Max": 340
     },
     "HP regeneration": {
       "Current": 0,
       "Max": 0
     },
     "Magical armor": {
-      "Current": 75,
-      "Max": 75
+      "Current": 65,
+      "Max": 65
     },
     "Magical power": {
-      "Current": 95,
-      "Max": 95
+      "Current": 75,
+      "Max": 75
     },
     "Mana": {
       "Current": 0,
@@ -73,12 +73,12 @@
       "Max": 0
     },
     "Physical armor": {
-      "Current": 40,
-      "Max": 40
+      "Current": 20,
+      "Max": 20
     },
     "Physical power": {
-      "Current": 55,
-      "Max": 55
+      "Current": 25,
+      "Max": 25
     },
     "Speed": {
       "Current": 0,
@@ -107,12 +107,13 @@
   ],
   "Type": "Boss",
   "is-blocking-atk": false,
-  "max-actions-by-round": 2,
+  "max-actions-by-round": 1,
   "nb-actions-in-round": 0,
   "energies": [
     {
       "kind": "Vigor"
     }
   ],
-  "Description": "The Genetic Pokémon. Levitates enemies with raw psychic power and erases their will to fight."
+  "Description": "Ghost/Poison Pokémon. Attacks with shadow balls, drains life and hexes heroes with dark energy."
+
 }

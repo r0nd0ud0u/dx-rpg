@@ -7,6 +7,7 @@ use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::components::button::ButtonVariant;
 use crate::{
+    auth_manager::server_fn::list_universes_server,
     board_game_components::{
         character_select::CharacterSelect, common_comp::ButtonLink, startgame_page::RunningGamePage,
     },
@@ -24,6 +25,10 @@ pub fn LobbyPage() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let local_login_name_session = use_context::<Signal<String>>();
     let server_data = use_context::<Signal<ServerData>>();
+
+    // Universe selection
+    let mut selected_universe = use_signal(String::new);
+    let universes_resource = use_resource(list_universes_server);
 
     // all players info have a character name
     let server_data_snap = server_data();
@@ -69,19 +74,11 @@ pub fn LobbyPage() -> Element {
                         }
                     }
                     {
-                        // Show universe from first scenario
-                        let universe = server_data_snap
-                            .core_game_data
-                            .game_manager
-                            .all_scenarios
-                            .first()
-                            .map(|s| s.universe.as_str())
-                            .unwrap_or("");
-                        if !universe.is_empty() {
+                        if !selected_universe().is_empty() {
                             rsx! {
                                 div { class: "lobby-info-item",
                                     span { class: "lobby-info-label", "Universe" }
-                                    span { class: "lobby-info-value lobby-universe", "🌐 {universe}" }
+                                    span { class: "lobby-info-value lobby-universe", "🌐 {selected_universe()}" }
                                 }
                             }
                         } else {
@@ -89,8 +86,17 @@ pub fn LobbyPage() -> Element {
                         }
                     }
                     {
-                        // Total scenarios
-                        let nb = server_data_snap.core_game_data.game_manager.all_scenarios.len();
+                        let nb = if selected_universe().is_empty() {
+                            server_data_snap.core_game_data.game_manager.all_scenarios.len()
+                        } else {
+                            server_data_snap
+                                .core_game_data
+                                .game_manager
+                                .all_scenarios
+                                .iter()
+                                .filter(|s| s.universe == selected_universe())
+                                .count()
+                        };
                         rsx! {
                             div { class: "lobby-info-item",
                                 span { class: "lobby-info-label", "Scenarios" }
@@ -116,7 +122,34 @@ pub fn LobbyPage() -> Element {
                     }
                 }
 
-                CharacterSelect {}
+                // Universe selector
+                {
+                    let universes = universes_resource
+                        .read()
+                        .as_ref()
+                        .and_then(|r| r.as_ref().ok())
+                        .cloned()
+                        .unwrap_or_default();
+                    rsx! {
+                        div { class: "lobby-universe-select",
+                            label { class: "lobby-info-label", "Choose Universe" }
+                            select {
+                                class: "lobby-select",
+                                value: "{selected_universe}",
+                                onchange: move |e| selected_universe.set(e.value()),
+                                option { value: "", "— select a universe —" }
+                                for u in &universes {
+                                    option { value: "{u}", "{u}" }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Character selection — only shown once a universe is chosen
+                if !selected_universe().is_empty() {
+                    CharacterSelect { universe: selected_universe() }
+                }
             }
         } else if server_data_snap.core_game_data.game_phase == GamePhase::Running {
             // check if there is more characters in game than users
@@ -128,7 +161,7 @@ pub fn LobbyPage() -> Element {
 
                 ButtonLink {
                     target: Route::Home {}.into(),
-                    name: "Not enough players".to_string(),
+                    name: "Not enough players".to_owned(),
                     onclick: move |_| {
                         async move {
                             let _ = socket
@@ -146,7 +179,7 @@ pub fn LobbyPage() -> Element {
         } else if server_data_snap.core_game_data.game_phase == GamePhase::Ended {
             ButtonLink {
                 target: Route::Home {}.into(),
-                name: "No more game, back to home".to_string(),
+                name: "No more game, back to home".to_owned(),
             }
         } else if server_data_snap.core_game_data.game_phase == GamePhase::Default {
 
