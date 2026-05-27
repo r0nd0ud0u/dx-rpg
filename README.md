@@ -237,7 +237,8 @@ dx-rpg/
 ├── docs/                         # Deployment documentation
 ├── scripts/                      # Build & Docker helper scripts
 ├── Dockerfile                    # Multi-stage Docker build
-├── docker-compose.yml            # Production stack (app + SQLite web UI)
+├── deploy/                       # Docker Compose stack & Nginx configs
+│   └── docker-compose.yml        # Production stack (app + SQLite web UI)
 └── Cargo.toml
 ```
 
@@ -341,14 +342,17 @@ dx serve --platform web
 docker compose down -v
 ```
 
-**Persistent data** is stored in two named Docker volumes:
+**Persistent data** is stored in named Docker volumes:
 
 | Volume | Path in container | Content |
 |--------|-------------------|---------|
 | `dx-rpg_db_data` | `/data/db.sqlite` | User accounts, sessions |
 | `dx-rpg_saved_data` | `/usr/local/app/saved_data/` | Per-user game saves |
+| `dx-rpg_photos_data` | `/usr/local/app/photos/` | Admin-uploaded images |
 
-Both volumes survive `docker compose stop`, `docker compose down`, and image updates. Only `docker compose down -v` removes them.
+All volumes survive `docker compose stop`, `docker compose down`, and image updates. Only `docker compose down -v` removes them.
+
+> **Note**: `docker_compose_up.sh` and `docker_compose_down.sh` both use `--remove-orphans` to automatically clean up containers from previous service definitions.
 
 ### SQLite web UI (admin)
 
@@ -363,12 +367,15 @@ ssh -L 8082:localhost:8082 user@your-server
 ### Build locally and push
 
 ```bash
-# Build image locally
+# Build image locally (--no-cache forces a fresh build; prunes dangling images on completion)
 ./scripts/docker_build.sh
 
 # Or trigger the GitHub Action by pushing a tag
 git tag v1.2.3 && git push origin v1.2.3
 ```
+
+> `docker_build.sh` always passes `--no-cache` to avoid stale cached layers when dependencies or
+> `offlines/` data change between builds. Old dangling images are pruned automatically after each build.
 
 ---
 

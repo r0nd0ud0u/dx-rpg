@@ -7,9 +7,9 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/.."
+COMPOSE_DIR="$SCRIPT_DIR/../deploy"
 
 echo "Stopping dx-rpg stack..."
-docker compose down
+docker-compose -f "$COMPOSE_DIR/docker-compose.yml" down --remove-orphans
 echo "Done. Volumes are preserved (data not lost)."
-echo "To fully reset volumes: docker compose down -v"
+echo "To fully reset volumes: docker-compose -f deploy/docker-compose.yml down -v"

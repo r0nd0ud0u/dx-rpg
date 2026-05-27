@@ -35,10 +35,10 @@ COPY --from=builder /app/target/dx/dx-rpg/release/web/ /usr/local/app
 COPY ./offlines/ /usr/local/app/offlines/
 
 # Create directories for persistent data volumes
-RUN mkdir -p /data /usr/local/app/saved_data
+RUN mkdir -p /data /usr/local/app/saved_data /usr/local/app/photos
 
 # Set correct permissions for the app directory and data volumes
-RUN chmod -R 755 /usr/local/app && chmod 777 /data /usr/local/app/saved_data
+RUN chmod -R 755 /usr/local/app && chmod 777 /data /usr/local/app/saved_data /usr/local/app/photos
 
 # set our port and make sure to listen for all connections
 ENV PORT=8080
