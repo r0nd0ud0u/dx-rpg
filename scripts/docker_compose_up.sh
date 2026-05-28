@@ -5,13 +5,13 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+COMPOSE_DIR="$SCRIPT_DIR/../deploy"
 
 VOLUME_NAME="dx-rpg_db_data"
 
 # Stop any running containers first
 echo "Stopping any existing containers..."
-docker-compose down 2>/dev/null || true
+docker-compose -f "$COMPOSE_DIR/docker-compose.yml" down 2>/dev/null || true
 
 # Ensure /data/db.sqlite exists inside the volume before starting the app.
 echo "Ensuring database file exists in volume '$VOLUME_NAME'..."
@@ -21,7 +21,7 @@ docker run --rm \
 echo "  /data/db.sqlite is ready."
 
 echo "Starting dx-rpg stack..."
-docker-compose up -d
+docker-compose -f "$COMPOSE_DIR/docker-compose.yml" up -d --remove-orphans
 
 echo ""
 echo "Services:"
