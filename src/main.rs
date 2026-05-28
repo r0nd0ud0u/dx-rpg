@@ -75,6 +75,46 @@ fn main() {
     });
 }
 
+/// Resolves the filesystem path for a static image bundled from `assets/img/`.
+///
+/// Dioxus content-hashes the folder at bundle time:
+///   dev  (dx serve, CWD = project root): `assets/img/<file>`
+///   prod (Docker, CWD = bundle output):  `public/assets/img-<hash>/<file>`
+///
+/// The bundled directory is discovered once and cached for the process lifetime.
+#[cfg(feature = "server")]
+fn resolve_static_img(filename: &str) -> std::path::PathBuf {
+    use std::sync::OnceLock;
+    static BUNDLED_IMG_DIR: OnceLock<Option<std::path::PathBuf>> = OnceLock::new();
+
+    // dev: assets/img/ exists relative to the project root (dx serve CWD)
+    let dev = std::path::Path::new("assets/img").join(filename);
+    if dev.exists() {
+        return dev;
+    }
+
+    // bundled: Dioxus emits public/assets/img-<hash>/ — discover it once
+    let bundled_dir = BUNDLED_IMG_DIR.get_or_init(|| {
+        std::fs::read_dir("public/assets")
+            .ok()?
+            .flatten()
+            .find(|e| {
+                e.file_name().to_string_lossy().starts_with("img-")
+                    && e.file_type().map(|t| t.is_dir()).unwrap_or(false)
+            })
+            .map(|e| e.path())
+    });
+
+    if let Some(dir) = bundled_dir {
+        let candidate = dir.join(filename);
+        if candidate.exists() {
+            return candidate;
+        }
+    }
+
+    dev // not found — return dev path so the caller gets a clear 404
+}
+
 #[cfg(feature = "server")]
 pub async fn serve_img_handler(
     axum::extract::Path(filename): axum::extract::Path<String>,
@@ -92,12 +132,11 @@ pub async fn serve_img_handler(
     }
     let photos_dir = std::env::var("PHOTOS_PATH").unwrap_or_else(|_| "photos".to_owned());
     let path = std::path::Path::new(&photos_dir).join(&filename);
-    // Fallback: also look in the bundled assets/img directory for old photos
+    // Prefer user-uploaded photo; fall back to static bundled image
     let path = if path.exists() {
         path
     } else {
-        let fallback = std::path::Path::new("assets/img").join(&filename);
-        if fallback.exists() { fallback } else { path }
+        resolve_static_img(&filename)
     };
     match std::fs::read(&path) {
         Ok(bytes) => {
