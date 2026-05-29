@@ -1,6 +1,6 @@
 {
-    "name": "Le Champion des Orcs",
-    "description": "Le champion des orcs débarque avec sa garde. Intermédiaire et redoutable, il enchaîne frappes dévastatrices et charges de zone.",
+    "name": "The Orc Champion",
+    "description": "The orc champion arrives with his guard. A fearsome mid-tier fighter, he chains devastating strikes with area-of-effect charges.",
     "boss_patterns": {
         "Champion Orc": [0]
     },

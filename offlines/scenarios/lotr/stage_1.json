@@ -1,6 +1,6 @@
 {
-    "name": "Patrouille Gobeline",
-    "description": "Un gobelin éclaireur monte la garde aux abords de la forêt sombre. Combat d'initiation pour découvrir les mécaniques de base.",
+    "name": "Goblin Patrol",
+    "description": "A goblin scout guards the edge of the dark forest. An introductory encounter to learn the basic game mechanics.",
     "boss_patterns": {
         "Gobelin Eclaireur": [0]
     },
