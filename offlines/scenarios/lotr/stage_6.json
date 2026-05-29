@@ -1,6 +1,6 @@
 {
-    "name": "Colere du Champion",
-    "description": "Le champion orc revient accompagné d'un gobelin éclaireur. Gérer la priorité des cibles est essentiel : éliminez le gobelin rapidement ou risquez d'être débordé.",
+    "name": "Champion's Wrath",
+    "description": "The orc champion returns with a goblin scout at his side. Target priority is critical — eliminate the goblin first or risk being overwhelmed.",
     "boss_patterns": {
         "Champion Orc": [0],
         "Gobelin Eclaireur": [0]

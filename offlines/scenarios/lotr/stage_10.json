@@ -1,6 +1,6 @@
 {
-    "name": "L'Oeil de Sauron",
-    "description": "Sauron l'Œil Flamboyant, seigneur des ténèbres, s'éveille. Ses sorts de zone dévastent l'ensemble du groupe, sa frappe corrompue broie les individus et sa malédiction ancienne empoisonne toute résistance. Seul un groupe parfaitement coordonné peut espérer survivre.",
+    "name": "The Eye of Sauron",
+    "description": "Sauron the Blazing Eye, lord of darkness, awakens. His area spells devastate the entire group, his corrupted strike crushes individuals, and his ancient curse poisons all resistance. Only a perfectly coordinated group can hope to survive.",
     "boss_patterns": {
         "Sauron l'Oeil Flamboyant": [0]
     },

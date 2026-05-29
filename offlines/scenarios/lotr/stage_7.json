@@ -1,6 +1,6 @@
 {
-    "name": "L'Ombre du Mordor",
-    "description": "Le nécromancien du Mordor invoque ses pouvoirs sombres. Ses sorts magiques ignorent une grande partie de l'armure physique. Préparez vos défenses magiques.",
+    "name": "Shadow of Mordor",
+    "description": "The Necromancer of Mordor calls upon his dark powers. His magical spells bypass most physical armour — prepare your magical defences.",
     "boss_patterns": {
         "Necromancien du Mordor": [0]
     },

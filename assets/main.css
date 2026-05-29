@@ -15,6 +15,14 @@ body {
 
 h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 
+/* ── Page layout (flex column so footer sticks to bottom) ─────────────────── */
+.page-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+.page-content { flex: 1; }
+
 /* NAVBAR */
 .navbar {
     background: rgba(8,12,20,0.97);
@@ -1304,7 +1312,7 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 /* ── App Footer ───────────────────────────────────────────────────────────── */
 .app-footer {
     margin-top: auto;
-    padding: 14px 24px;
+    padding: 20px 24px;
     background: var(--rpg-bg-card);
     border-top: 1px solid var(--rpg-border);
     font-size: 0.8rem;
@@ -1314,16 +1322,17 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     max-width: 1100px;
     margin: 0 auto;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 16px;
 }
 .app-footer-brand {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 0.9rem;
 }
 .app-footer-icon { font-size: 1.1rem; }
 .app-footer-name { color: var(--rpg-gold); }
@@ -1334,7 +1343,28 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     padding: 1px 6px;
     font-size: 0.72rem;
     font-family: monospace;
+    color: var(--rpg-teal);
 }
+.app-footer-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.app-footer-section-title {
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--rpg-gold);
+    margin-bottom: 2px;
+}
+.app-footer-section a {
+    color: var(--rpg-text-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.app-footer-section a:hover { color: var(--rpg-gold); text-decoration: underline; }
+.app-footer-sep { margin: 0 4px; opacity: 0.4; }
 .app-footer-info { display: flex; gap: 4px; align-items: center; }
 .app-footer-info a { color: var(--rpg-gold); text-decoration: none; }
 .app-footer-info a:hover { text-decoration: underline; }
@@ -1413,41 +1443,12 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     font-size: 0.85rem;
 }
 
-/* ── App footer ───────────────────────────────────────────────────────────── */
-.app-footer {
-    margin-top: auto;
-    padding: 14px 24px;
-    background: var(--rpg-bg-card);
-    border-top: 1px solid var(--rpg-border);
-    font-size: 0.8rem;
-    color: var(--rpg-text-muted);
-}
-.app-footer-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-.app-footer-brand {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 600;
-}
-.app-footer-icon { font-size: 1.1rem; }
-.app-footer-name { color: var(--rpg-gold); }
-.app-footer-version { color: var(--rpg-teal); font-family: monospace; }
+/* ── App footer (duplicate block — kept minimal, canonical above) ─────────── */
 .app-footer-info {
     display: flex;
     align-items: center;
     gap: 6px;
 }
-.app-footer-info a {
-    color: var(--rpg-teal);
-    text-decoration: none;
-}
-.app-footer-info a:hover { text-decoration: underline; }
 
 /* ── Admin stats table (replaces stats grid) ─────────────────────────────── */
 .admin-stats-table {
