@@ -30,24 +30,31 @@ The game ships with two universes, each with 10 progressive stages:
 
 | Stage | Name | Enemies |
 |-------|------|---------|
-| 1 | Patrouille Gobeline | Gobelin Eclaireur |
-| 2 | Embuscade Gobeline | Gobelin Eclaireur + Angmar10PV |
-| 3-10 | … | … |
+| 1 | Goblin Patrol | Gobelin Eclaireur |
+| 2 | Goblin Ambush | Gobelin Eclaireur + Angmar10PV |
+| 3 | The Orc Pillager | Orc Pillard |
+| 4 | Mixed Patrol | Orc Pillard + Gobelin Eclaireur |
+| 5 | The Orc Champion | Champion Orc |
+| 6 | Champion's Wrath | Champion Orc + Gobelin Eclaireur |
+| 7 | Shadow of Mordor | Necromancien du Mordor |
+| 8 | Ritual of Darkness | Necromancien du Mordor + Gobelin Eclaireur |
+| 9 | The Faceless Rider | Nazgul |
+| 10 | The Eye of Sauron | Sauron l'Oeil Flamboyant |
 
 #### Pokémon Universe (`offlines/scenarios/pokemon/`)
 
 | Stage | Name | Enemies |
 |-------|------|---------|
-| 1 | Patrouille Rattata | Rattata |
-| 2 | Double Attaque | Rattata + Pidgey |
-| 3 | Colère de Mankey | Mankey |
-| 4 | Embuscade en Montagne | Mankey + Pidgey |
-| 5 | Machoke le Colosse | Machoke |
-| 6 | L'Ombre de Gengar | Gengar |
-| 7 | Fantômes de la Tour | Haunter + Gengar |
-| 8 | Dragonite Déchaîné | Dragonite |
-| 9 | Mewtwo Éveillé | Mewtwo |
-| 10 | Mewtwo Armure Ultime | Mewtwo Armure |
+| 1 | Rattata Patrol | Rattata |
+| 2 | Double Strike | Rattata + Pidgey |
+| 3 | Mankey's Fury | Mankey |
+| 4 | Mountain Ambush | Mankey + Pidgey |
+| 5 | Machoke the Colossus | Machoke |
+| 6 | Gengar's Shadow | Gengar |
+| 7 | Tower Ghosts | Haunter + Gengar |
+| 8 | Dragonite Unleashed | Dragonite |
+| 9 | Mewtwo Awakened | Mewtwo |
+| 10 | Armored Mewtwo Ultimate | Mewtwo Armure |
 
 **Pokémon Heroes** (selectable characters):
 

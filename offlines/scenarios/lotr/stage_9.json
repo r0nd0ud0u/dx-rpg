@@ -1,6 +1,6 @@
 {
-    "name": "Le Cavalier Sans Visage",
-    "description": "Un Nazgûl, spectre redoutable au service de Sauron, fond sur votre groupe. Sa cible est aléatoire et ses attaques ignorent les stratégies d'aggro. Survivre à ses assauts est déjà un exploit.",
+    "name": "The Faceless Rider",
+    "description": "A Nazgûl, a dreadful wraith in Sauron's service, descends upon your group. His target is random and his attacks ignore aggro strategies. Surviving his onslaught is already an achievement.",
     "boss_patterns": {
         "Nazgul": [0]
     },

@@ -45,150 +45,247 @@ pub fn Navbar() -> Element {
     let snap_local_login_name_session = local_login_name_session();
 
     rsx! {
-        // ── Navbar bar ────────────────────────────────────────────────────────
-        div { class: "navbar",
-            // Left: brand + admin panel link
-            div { style: "display: flex; align-items: center; gap: 1rem;",
-                Link {
-                    class: "navbar-brand",
-                    to: Route::Home {},
-                    onclick: move |_| async move {
-                        send_disconnect_from_server_data(socket, &local_login_name_session()).await;
-                    },
-                    "⚔️ RPG"
-                }
-                if snap_local_login_name_session == ADMIN.to_string() {
-                    Link { class: "navbar-admin-link", to: Route::AdminPage {}, "🛡️ Panel" }
-                }
-            }
-            // Right: trigger buttons only (no dialog roots here)
-            div { style: "display: flex; flex-direction: row; align-items: center; gap: 0.75rem;",
-                // Help trigger
-                Button {
-                    variant: ButtonVariant::Outline,
-                    onclick: move |_| help_open.set(true),
-                    "?"
-                }
-                // Quit-game trigger (only while a game is running)
-                if server_data().core_game_data.game_phase == GamePhase::Running {
-                    Button {
-                        onclick: move |_| quit_open.set(true),
-                        r#type: "button",
-                        "Quit game"
-                    }
-                }
-                if snap_local_login_name_session != *DISCONNECTED_USER {
-                    span { class: "navbar-user", "👤 {snap_local_login_name_session}" }
-                }
-                Button {
-                    variant: if snap_local_login_name_session == *DISCONNECTED_USER { ButtonVariant::Secondary } else { ButtonVariant::Destructive },
-                    onclick: move |_| async move {
-                        if local_login_name_session() != *DISCONNECTED_USER {
-                            match logout().await {
-                                Ok(_) => {
-                                    tracing::info!("{} is logged out", local_login_name_session());
-                                    let _ = socket
-                                        .clone()
-                                        .send(ClientEvent::RequestLogOut(local_login_name_session()))
-                                        .await;
-                                    *local_login_name_session.write() = (*DISCONNECTED_USER).to_string();
-                                    *local_login_id_session.write() = NO_CLIENT_ID;
-                                }
-                                Err(_) => {
-                                    tracing::info!("Error on {} logout", local_login_name_session())
-                                }
-                            }
-                        }
-                        navigator.push(Route::Home {});
-                    },
-                    if snap_local_login_name_session == *DISCONNECTED_USER {
-                        "Sign in"
-                    } else {
-                        "Sign out"
-                    }
-                }
-            }
-        }
-
-        // ── Dialog roots — rendered at layout level, NOT inside the navbar div ──
-
-        // Help dialog
-        AlertDialogRoot { open: help_open(), on_open_change: move |v| help_open.set(v),
-            AlertDialogContent {
-                AlertDialogTitle { "How to play" }
-                AlertDialogDescription {
-                    div { style: "text-align:left; line-height:1.7;",
-                        p { "1. 🔐 Sign in or register on the login page." }
-                        p { "2. 🎮 Create a new game or join an ongoing one from the home page." }
-                        p {
-                            "3. 🧙 In the Lobby, select your character with the dropdown. Wait for all players to pick one."
-                        }
-                        p {
-                            "4. ▶️ The host (server owner) clicks 'Start Game' when everyone is ready."
-                        }
-                        p {
-                            "5. ⚔️ On your turn, click the ⚔️ button on your character card to open the attack list, then click an attack."
-                        }
-                        p {
-                            "6. 🎯 Click the target buttons that appear on characters to set your target(s), then confirm with '⚔️ Launch Attack'."
-                        }
-                        p { "7. 💊 Click the 💊 button on your character card to use a potion." }
-                        p { "8. 📦 Open 'Inventory' (game toolbar) to see your stats and equipment." }
-                        p { "9. 📊 Open 'Game Stats' (game toolbar) to track damage and healing." }
-                        p {
-                            "10. 🏆 At end of scenario the host loads the next one; at end of game, replay or quit."
-                        }
-                    }
-                }
-                AlertDialogAction {
-                    AlertDialogCancel { "Close" }
-                }
-            }
-        }
-
-        // Quit-game confirmation dialog
-        AlertDialogRoot { open: quit_open(), on_open_change: move |v| quit_open.set(v),
-            AlertDialogContent {
-                AlertDialogTitle { "Quit Game" }
-                AlertDialogDescription { "Are you sure you want to quit the game?" }
-                AlertDialogAction {
-                    AlertDialogCancel { "Cancel" }
-                    AlertDialogAction {
-                        on_click: move |_| {
-                            async move {
-                                send_quit(socket, &local_login_name_session()).await;
-                                let navigator = use_navigator();
-                                navigator.push(Route::Home {});
-                            }
+        div { class: "page-layout",
+            // ── Navbar bar ────────────────────────────────────────────────────────
+            div { class: "navbar",
+                // Left: brand + admin panel link
+                div { style: "display: flex; align-items: center; gap: 1rem;",
+                    Link {
+                        class: "navbar-brand",
+                        to: Route::Home {},
+                        onclick: move |_| async move {
+                            send_disconnect_from_server_data(socket, &local_login_name_session()).await;
                         },
-                        "Confirm"
+                        "⚔️ RPG"
+                    }
+                    if snap_local_login_name_session == ADMIN.to_string() {
+                        Link {
+                            class: "navbar-admin-link",
+                            to: Route::AdminPage {},
+                            "🛡️ Panel"
+                        }
+                    }
+                }
+                // Right: trigger buttons only (no dialog roots here)
+                div { style: "display: flex; flex-direction: row; align-items: center; gap: 0.75rem;",
+                    // Help trigger
+                    Button {
+                        variant: ButtonVariant::Outline,
+                        onclick: move |_| help_open.set(true),
+                        "?"
+                    }
+                    // Quit-game trigger (only while a game is running)
+                    if server_data().core_game_data.game_phase == GamePhase::Running {
+                        Button {
+                            onclick: move |_| quit_open.set(true),
+                            r#type: "button",
+                            "Quit game"
+                        }
+                    }
+                    if snap_local_login_name_session != *DISCONNECTED_USER {
+                        span { class: "navbar-user", "👤 {snap_local_login_name_session}" }
+                    }
+                    Button {
+                        variant: if snap_local_login_name_session == *DISCONNECTED_USER { ButtonVariant::Secondary } else { ButtonVariant::Destructive },
+                        onclick: move |_| async move {
+                            if local_login_name_session() != *DISCONNECTED_USER {
+                                match logout().await {
+                                    Ok(_) => {
+                                        tracing::info!("{} is logged out", local_login_name_session());
+                                        let _ = socket
+                                            .clone()
+                                            .send(ClientEvent::RequestLogOut(local_login_name_session()))
+                                            .await;
+                                        *local_login_name_session.write() = (*DISCONNECTED_USER).to_string();
+                                        *local_login_id_session.write() = NO_CLIENT_ID;
+                                    }
+                                    Err(_) => {
+                                        tracing::info!("Error on {} logout", local_login_name_session())
+                                    }
+                                }
+                            }
+                            navigator.push(Route::Home {});
+                        },
+                        if snap_local_login_name_session == *DISCONNECTED_USER {
+                            "Sign in"
+                        } else {
+                            "Sign out"
+                        }
                     }
                 }
             }
-        }
 
-        Outlet::<Route> {}
+            // ── Dialog roots — rendered at layout level, NOT inside the navbar div ──
 
-        // ── Footer ────────────────────────────────────────────────────────────
-        footer { class: "app-footer",
-            div { class: "app-footer-inner",
-                div { class: "app-footer-brand",
-                    span { class: "app-footer-icon", "⚔️" }
-                    span { class: "app-footer-name", "dx-rpg" }
-                    span { class: "app-footer-version", {concat!("v", env!("CARGO_PKG_VERSION"))} }
-                }
-                div { class: "app-footer-info",
-                    span { "Built with " }
-                    a {
-                        href: "https://dioxuslabs.com",
-                        target: "_blank",
-                        rel: "noopener",
-                        "Dioxus"
+            // Help dialog
+            AlertDialogRoot { open: help_open(), on_open_change: move |v| help_open.set(v),
+                AlertDialogContent {
+                    AlertDialogTitle { "How to play" }
+                    AlertDialogDescription {
+                        div { style: "text-align:left; line-height:1.8; max-height:70vh; overflow-y:auto; padding-right:4px;",
+                            // Getting started
+                            p { style: "font-weight:700; color:var(--rpg-gold); margin-bottom:2px;",
+                                "🚀 Getting started"
+                            }
+                            p { "1. 🔐 Sign in or create an account on the login page." }
+                            p { "2. 🌍 Choose a universe (LOTR or Pokémon) when creating a server." }
+                            p { "3. 🎮 From the home page, create a new game or join an ongoing one." }
+
+                            // Game mode
+                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
+                                "🕹️ Game modes"
+                            }
+                            p {
+                                "• Multiplayer — each connected player picks exactly one hero; other cards are locked 🔒 for other players."
+                            }
+                            p {
+                                "• Single-player — one player picks multiple heroes and controls them all in battle; click a selected card again to deselect it."
+                            }
+
+                            // Lobby & character selection
+                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
+                                "🧙 Lobby & character selection"
+                            }
+                            p {
+                                "4. Select your character card in the lobby. Wait for all players to be ready."
+                            }
+                            p { "5. ▶️ The host clicks 'Start Game' once everyone has chosen." }
+
+                            // Combat
+                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
+                                "⚔️ Combat"
+                            }
+                            p {
+                                "6. On your turn, click ⚔️ on your character card to open the attack list, then pick an attack."
+                            }
+                            p {
+                                "7. 🎯 Click target buttons to select your target(s), then confirm with '⚔️ Launch Attack'."
+                            }
+                            p {
+                                "8. 💊 Click 💊 on your character card to use a potion (counts as your turn action)."
+                            }
+
+                            // Toolbar
+                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
+                                "🛠️ Game toolbar"
+                            }
+                            p { "9. 📦 Inventory — view your hero's stats and equipment." }
+                            p {
+                                "10. 📊 Stats — track damage dealt, healing done, kill count, and scenario progress bar."
+                            }
+                            p {
+                                "11. 📜 Scenarios — side sheet listing all stages with their completion status (Not Started / In Progress / ✅ Done)."
+                            }
+                            p {
+                                "12. ⚙️ Settings — toggle 'Attack Tooltips' to show/hide attack descriptions on hover."
+                            }
+
+                            // Progression
+                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
+                                "🏆 Progression"
+                            }
+                            p { "13. At the end of a scenario the host loads the next stage." }
+                            p {
+                                "14. Each universe has 10 progressive stages. Complete them all to win!"
+                            }
+                            p {
+                                "15. Save slots (up to 3 by default) let you continue a run later from the Load Game page."
+                            }
+
+                            // Admin
+                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
+                                "🛡️ Admin panel"
+                            }
+                            p { "16. If you are an admin, access the 🛡️ Panel link in the navbar." }
+                            p { "    • Users tab: manage accounts and connection status." }
+                            p { "    • Characters tab: browse all heroes and bosses by universe." }
+                            p {
+                                "    • Scenarios tab: add, edit or delete scenarios via inline JSON editor."
+                            }
+                        }
                     }
-                    span { " · " }
-                    span { "⚡ Rust + WASM" }
+                    AlertDialogAction {
+                        AlertDialogCancel { "Close" }
+                    }
                 }
             }
-        }
+
+            // Quit-game confirmation dialog
+            AlertDialogRoot { open: quit_open(), on_open_change: move |v| quit_open.set(v),
+                AlertDialogContent {
+                    AlertDialogTitle { "Quit Game" }
+                    AlertDialogDescription { "Are you sure you want to quit the game?" }
+                    AlertDialogAction {
+                        AlertDialogCancel { "Cancel" }
+                        AlertDialogAction {
+                            on_click: move |_| {
+                                async move {
+                                    send_quit(socket, &local_login_name_session()).await;
+                                    let navigator = use_navigator();
+                                    navigator.push(Route::Home {});
+                                }
+                            },
+                            "Confirm"
+                        }
+                    }
+                }
+            }
+
+            Outlet::<Route> {}
+
+            // ── Footer ────────────────────────────────────────────────────────────
+            footer { class: "app-footer",
+                div { class: "app-footer-inner",
+                    // Brand
+                    div { class: "app-footer-brand",
+                        span { class: "app-footer-icon", "⚔️" }
+                        span { class: "app-footer-name", "dx-rpg" }
+                        span { class: "app-footer-version", {concat!("v", env!("CARGO_PKG_VERSION"))} }
+                    }
+                    // About
+                    div { class: "app-footer-section",
+                        span { class: "app-footer-section-title", "About" }
+                        a {
+                            href: "https://github.com/r0nd0ud0u/dx-rpg",
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                            "GitHub"
+                        }
+                        span { class: "app-footer-sep", "·" }
+                        a {
+                            href: "https://github.com/r0nd0ud0u/lib-rpg",
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                            "lib-rpg engine"
+                        }
+                        span { class: "app-footer-sep", "·" }
+                        a {
+                            href: "https://dioxuslabs.com",
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                            "Built with Dioxus"
+                        }
+                        span { "⚡ Rust + WASM" }
+                    }
+                    // Contact
+                    div { class: "app-footer-section",
+                        span { class: "app-footer-section-title", "Contact" }
+                        a {
+                            href: "https://github.com/r0nd0ud0u/dx-rpg/issues",
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                            "Report an issue"
+                        }
+                        span { class: "app-footer-sep", "·" }
+                        a {
+                            href: "https://github.com/r0nd0ud0u/dx-rpg/discussions",
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                            "Discussions"
+                        }
+                    }
+                }
+            }
+        } // end page-layout
     }
 }

@@ -1,6 +1,6 @@
 {
-    "name": "Embuscade Gobeline",
-    "description": "Deux gobelins éclaireurs tendent une embuscade. Gérer plusieurs ennemis en simultané est la clé de la victoire.",
+    "name": "Goblin Ambush",
+    "description": "Two goblin scouts set a trap on the forest path. Managing multiple enemies at once is the key to victory.",
     "boss_patterns": {
         "Gobelin Eclaireur": [0],
         "Angmar10PV": [0]
