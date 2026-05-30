@@ -15,6 +15,7 @@ A browser-based multiplayer RPG built with [Dioxus](https://dioxuslabs.com/) (Ru
 - [Project Structure](#project-structure)
 - [Data Flow](#data-flow)
 - [Development Setup](#development-setup)
+- [Responsive Design](#responsive-design)
 - [Deployment](#deployment)
 - [Screenshots](#screenshots)
 
@@ -62,7 +63,7 @@ The game ships with two universes, each with 10 progressive stages:
 |-----------|-------|--------|-----------------|
 | Bulbasaur | Mage | Mana | Vine Whip, Leech Seed, Razor Leaf, Solar Beam |
 | Charmander | Berserker | Berserk | Ember, Fire Spin, Flamethrower, Fire Blast |
-| Squirtle | Paladin | Vigor | Water Gun, Withdraw, Surf, Ice Beam |
+| Squirtle | Warrior | Vigor | Water Gun, Withdraw, Surf, Ice Beam |
 
 Each scenario is defined as a JSON file under `offlines/scenarios/`. Characters live in `offlines/characters/` and attacks in `offlines/attack/<character-name>/`.
 
@@ -331,6 +332,35 @@ rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
 dx serve --platform web
 # Open http://localhost:8080
 ```
+
+---
+
+## Responsive Design
+
+The UI is designed to work on desktop, tablet, and mobile devices.
+All responsive rules live in `assets/main.css` as two `max-width` media-query layers
+stacked on top of the existing desktop-first styles.
+
+### Strategy
+
+| Breakpoint | Target | Key changes |
+|------------|--------|-------------|
+| ≥ 769 px (default) | Desktop | Full 3-column game board, fixed navbar, all sidebars visible |
+| ≤ 768 px | Tablet / landscape phone | Game board collapses to single column (heroes → log → bosses stacked), reduced padding & font sizes, toolbar wraps, username badge hidden |
+| ≤ 480 px | Portrait phone | Action grid forces 2 columns, save-slot cards go 1-column, mode-toggle and action buttons stack vertically, character portrait shrinks to 56 px |
+
+### What is already responsive (no media queries needed)
+
+- Most card grids use `auto-fill` / `auto-fit` and reflow naturally.
+- Admin tables scroll horizontally via `overflow-x: auto` on their container.
+- The footer and lobby info bar use `flex-wrap: wrap`.
+- The viewport meta tag (`width=device-width, initial-scale=1`) is present in `index.html`.
+
+### Touch-friendliness notes
+
+- All interactive buttons are `≥ 44 px` tall in their default (desktop) state.
+- Attack target buttons use absolute positioning and remain tappable as circular hit-areas.
+- Sheet overlays (Dioxus `Sheet` component) occupy the full screen width on narrow viewports.
 
 ---
 
