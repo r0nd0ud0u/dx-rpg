@@ -1529,3 +1529,100 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     flex: 1;
     min-width: 220px;
 }
+
+/* =============================================
+   RESPONSIVE  —  mobile & tablet
+   Strategy: two max-width breakpoints layered on
+   top of the existing desktop-first styles.
+
+   Approach
+   ────────
+   • Desktop  (≥ 769 px) : existing rules, no change
+   • Tablet   (≤ 768 px) : collapse the 3-column game
+     board to a single column, shrink padding/type
+   • Phone    (≤ 480 px) : further compaction —
+     single-column cards, stacked action groups
+
+   The viewport meta is already present in index.html:
+     <meta name="viewport" content="width=device-width, initial-scale=1">
+   ============================================= */
+
+/* ── Tablet & landscape phones (≤ 768 px) ──────────────────────────────── */
+@media (max-width: 768px) {
+
+    /* Navbar */
+    .navbar         { padding: 0 var(--sp-sm); height: 52px; }
+    .navbar-brand   { font-size: 1rem; }
+    /* Hide the username chip to reclaim horizontal space */
+    .navbar-user    { display: none; }
+
+    /* Page wrappers */
+    .rpg-page       { padding: var(--sp-lg) var(--sp-sm); }
+    .rpg-title      { font-size: 1.5rem; }
+    .home-container { padding: var(--sp-lg) var(--sp-sm); gap: var(--sp-lg); }
+
+    /* Game board: 3 fixed columns → single column (heroes / log / bosses stacked) */
+    .grid-board {
+        grid-template-columns: 1fr;
+        gap: var(--sp-md);
+    }
+    /* Character panel: release the fixed 260 px width */
+    .character { width: 100%; min-width: 0; }
+
+    /* Game toolbar: allow wrapping onto a second row */
+    .game-toolbar { flex-wrap: wrap; height: auto; }
+
+    /* Lobby */
+    .lobby-page     { padding: var(--sp-md) var(--sp-sm); }
+    .lobby-info-bar { padding: var(--sp-sm) var(--sp-md); gap: var(--sp-md); }
+
+    /* Admin page */
+    .admin-page-container { padding: var(--sp-md) var(--sp-sm); }
+
+    /* Create server */
+    .create-server-section { padding: var(--sp-md); }
+
+    /* Load game */
+    .load-game-card { max-width: 100%; }
+
+    /* Scenario end */
+    .scenario-end-page { padding: var(--sp-lg) var(--sp-sm); }
+}
+
+/* ── Small phones portrait (≤ 480 px) ──────────────────────────────────── */
+@media (max-width: 480px) {
+
+    /* Typography */
+    .rpg-title    { font-size: 1.25rem; }
+    .navbar-brand { font-size: .9rem; }
+
+    /* Page padding */
+    .rpg-page { padding: var(--sp-md) var(--sp-xs); }
+
+    /* Action grid: 2 fixed columns instead of auto-fit */
+    .action-grid { grid-template-columns: 1fr 1fr; max-width: 100%; }
+
+    /* Save-slot grid: single column on the smallest screens */
+    .save-slot-grid { grid-template-columns: 1fr; }
+
+    /* Mode toggle: stack the two buttons vertically */
+    .mode-toggle { flex-direction: column; }
+
+    /* Load-game action buttons: full width & stacked */
+    .load-actions                           { flex-direction: column; align-items: stretch; }
+    .load-actions .button-link              { width: 100%; }
+    .load-actions .button-link .header-text { width: 100%; text-align: center; }
+
+    /* Scenario-end action buttons: same treatment */
+    .scenario-actions { flex-direction: column; align-items: stretch; }
+
+    /* Game board: tighter padding on tiny screens */
+    .grid-board { padding: var(--sp-xs); gap: var(--sp-sm); }
+
+    /* Character panel: compact portrait image */
+    .image-small { width: 56px; height: 56px; }
+
+    /* Admin tabs: smaller and denser */
+    .admin-tabs { gap: var(--sp-xs); }
+    .admin-tab  { padding: 6px 12px; font-size: .8rem; }
+}
