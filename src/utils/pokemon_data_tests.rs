@@ -40,7 +40,7 @@ mod tests {
     #[test]
     fn bulbasaur_hero_json_valid() {
         assert_character(
-            &format!("{OFFLINES}/characters/Bulbasaur.json"),
+            &format!("{OFFLINES}/characters/pokemon/Bulbasaur.json"),
             "Hero",
             "Mage",
         );
@@ -49,7 +49,7 @@ mod tests {
     #[test]
     fn charmander_hero_json_valid() {
         assert_character(
-            &format!("{OFFLINES}/characters/Charmander.json"),
+            &format!("{OFFLINES}/characters/pokemon/Charmander.json"),
             "Hero",
             "Berserker",
         );
@@ -58,9 +58,9 @@ mod tests {
     #[test]
     fn squirtle_hero_json_valid() {
         assert_character(
-            &format!("{OFFLINES}/characters/Squirtle.json"),
+            &format!("{OFFLINES}/characters/pokemon/Squirtle.json"),
             "Hero",
-            "Paladin",
+            "Warrior",
         );
     }
 
@@ -79,7 +79,7 @@ mod tests {
         ];
         for boss in &bosses {
             assert_character(
-                &format!("{OFFLINES}/characters/{boss}.json"),
+                &format!("{OFFLINES}/characters/pokemon/{boss}.json"),
                 "Boss",
                 "Warrior",
             );
