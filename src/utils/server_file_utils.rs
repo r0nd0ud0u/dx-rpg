@@ -18,6 +18,12 @@ pub struct SaveSlotInfo {
     pub current_scenario: String,
     /// Current scenario level
     pub scenario_level: u64,
+    /// Universe selected for this game, empty = all universes
+    pub universe: String,
+    /// Whether this game is single-player
+    pub is_single_player: bool,
+    /// Number of players required
+    pub players_nb: i64,
 }
 
 #[server]
@@ -111,22 +117,36 @@ pub async fn get_save_slots(player_name: String) -> Result<Vec<SaveSlotInfo>, Se
                 .unwrap_or_else(|_| "—".to_owned());
 
             // Try to extract scenario info from save file
-            let (current_scenario, scenario_level) = fs::read_to_string(&save_file)
-                .ok()
-                .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
-                .map(|v| {
-                    let scenario = v
-                        .pointer("/game_manager/current_scenario/name")
-                        .and_then(|n| n.as_str())
-                        .unwrap_or("")
-                        .to_string();
-                    let level = v
-                        .pointer("/game_manager/current_scenario/level")
-                        .and_then(|n| n.as_u64())
-                        .unwrap_or(0);
-                    (scenario, level)
-                })
-                .unwrap_or_default();
+            let (current_scenario, scenario_level, universe, is_single_player, players_nb) =
+                fs::read_to_string(&save_file)
+                    .ok()
+                    .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+                    .map(|v| {
+                        let scenario = v
+                            .pointer("/game_manager/current_scenario/name")
+                            .and_then(|n| n.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let level = v
+                            .pointer("/game_manager/current_scenario/level")
+                            .and_then(|n| n.as_u64())
+                            .unwrap_or(0);
+                        let universe = v
+                            .pointer("/universe")
+                            .and_then(|n| n.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let is_sp = v
+                            .pointer("/is_single_player")
+                            .and_then(|n| n.as_bool())
+                            .unwrap_or(false);
+                        let nb = v
+                            .pointer("/players_nb")
+                            .and_then(|n| n.as_i64())
+                            .unwrap_or(0);
+                        (scenario, level, universe, is_sp, nb)
+                    })
+                    .unwrap_or_default();
 
             SaveSlotInfo {
                 path: game_path,
@@ -134,6 +154,9 @@ pub async fn get_save_slots(player_name: String) -> Result<Vec<SaveSlotInfo>, Se
                 last_saved,
                 current_scenario,
                 scenario_level,
+                universe,
+                is_single_player,
+                players_nb,
             }
         })
         .collect();
@@ -146,6 +169,9 @@ pub async fn get_save_slots(player_name: String) -> Result<Vec<SaveSlotInfo>, Se
             last_saved: String::new(),
             current_scenario: String::new(),
             scenario_level: 0,
+            universe: String::new(),
+            is_single_player: false,
+            players_nb: 0,
         });
     }
 

@@ -115,6 +115,20 @@ pub fn CreateServer() -> Element {
                                         }
                                     }
                                     span { class: "save-slot-date", "🕐 {slot.last_saved}" }
+                                    div { class: "save-slot-meta",
+                                        if slot.is_single_player {
+                                            span { class: "save-slot-mode", "🎮 Solo" }
+                                        } else {
+                                            span { class: "save-slot-mode",
+                                                "👥 Multi ({slot.players_nb}p)"
+                                            }
+                                        }
+                                        if !slot.universe.is_empty() {
+                                            span { class: "save-slot-universe",
+                                                "🌐 {slot.universe}"
+                                            }
+                                        }
+                                    }
                                 }
                                 if selected_slot() == Some(idx) {
                                     div { class: "save-slot-actions",

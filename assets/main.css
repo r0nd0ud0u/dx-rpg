@@ -1626,3 +1626,124 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     .admin-tabs { gap: var(--sp-xs); }
     .admin-tab  { padding: 6px 12px; font-size: .8rem; }
 }
+
+/* ═══════════════════════════════════════════════════════
+   RPG Stats Panel (charts.rs)
+   ═══════════════════════════════════════════════════════ */
+.rpg-stats-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+    padding: 1rem 0.75rem;
+    overflow-y: auto;
+    max-height: 70vh;
+}
+
+/* Summary cards row */
+.rpg-stat-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.6rem;
+}
+.rpg-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    background: var(--rpg-bg-card, #1e2235);
+    border-radius: 8px;
+    padding: 0.55rem 0.75rem;
+    min-width: 0;
+}
+.rpg-stat-card-icon { font-size: 1.4rem; flex-shrink: 0; }
+.rpg-stat-card-body { display: flex; flex-direction: column; min-width: 0; }
+.rpg-stat-card-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--rpg-text-primary, #e8d5a3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.rpg-stat-card-label {
+    font-size: 0.72rem;
+    color: var(--rpg-text-muted, #8a8fa8);
+    white-space: nowrap;
+}
+
+/* Section header */
+.rpg-section { display: flex; flex-direction: column; gap: 0.5rem; }
+.rpg-section-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--rpg-text-muted, #8a8fa8);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0;
+}
+
+/* Bar rows */
+.rpg-bar-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.rpg-bar-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 35%) 1fr 60px;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+}
+.rpg-bar-label {
+    color: var(--rpg-text-primary, #e8d5a3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.rpg-bar-track {
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    height: 10px;
+    overflow: hidden;
+}
+.rpg-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+.rpg-bar-value {
+    text-align: right;
+    color: var(--rpg-text-muted, #8a8fa8);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.78rem;
+}
+
+/* Empty state */
+.rpg-no-data {
+    color: var(--rpg-text-muted, #8a8fa8);
+    font-style: italic;
+    font-size: 0.85rem;
+    padding: 0.5rem 0;
+    margin: 0;
+}
+
+/* ── Aggro badge in char header ──────────────────────────────────────────── */
+.char-aggro {
+    font-size: 0.72rem;
+    color: var(--rpg-gold, #e8d5a3);
+    background: rgba(232,213,163,0.12);
+    border-radius: 4px;
+    padding: 1px 5px;
+    cursor: default;
+}
+
+/* ── Potion bag section header ───────────────────────────────────────────── */
+.potion-bag-header {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--rpg-text-muted, #8a8fa8);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 2px 2px;
+    margin-top: 4px;
+    border-top: 1px solid var(--rpg-border, rgba(255,255,255,0.1));
+}
+.potion-bag-header:first-child { border-top: none; margin-top: 0; }
+
