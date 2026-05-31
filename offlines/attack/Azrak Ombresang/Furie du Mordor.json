@@ -85,7 +85,7 @@
             "Value": 0,
             "Buffer": {
                 "kind": "CooldownTurnsNumber",
-                "value": 0,
+                "value": 6,
                 "is-percent": false,
                 "stats-name": "",
                 "passive-enabled": false

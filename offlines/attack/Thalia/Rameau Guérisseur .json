@@ -7,13 +7,13 @@
         {
             "Cible": "Ally",
             "Portée": "Individual",
-            "Tours actifs": 1,
+            "Tours actifs": 4,
             "IsMagicEffect": true,
             "Buffer": {
                 "kind": "DecreasingRateOnTurn",
                 "value": 3,
                 "is-percent": false,
-                "stats-name": "",
+                "stats-name": "HP",
                 "passive-enabled": false
             }
         },

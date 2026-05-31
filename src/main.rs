@@ -6,7 +6,10 @@ use dioxus::{
 use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use dotenv::dotenv;
 use dx_rpg::{
-    common::{DISCONNECTED_USER, DX_COMP_CSS, Route, SERVER_NAME},
+    common::{
+        CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
+        CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS, Route, SERVER_NAME,
+    },
     websocket_handler::{
         NO_CLIENT_ID,
         event::{ClientEvent, ServerEvent, on_rcv_client_event},
@@ -317,16 +320,21 @@ fn App() -> Element {
     use_context_provider(|| ongoing_games);
     use_context_provider(|| saved_game_list);
     use_context_provider(|| all_characters_names);
-    use_context_provider(|| toggle_atk_animation);
+    // Wrap each bool signal in a distinct newtype so Dioxus context lookup
+    // (keyed by TypeId) stores them independently instead of all colliding on Signal<bool>.
+    use_context_provider(|| CtxToggleAtkAnimation(toggle_atk_animation));
     // Show attack tooltips — default true, overridden from DB once settings load
     let show_atk_tooltips: Signal<bool> = use_signal(|| true);
-    use_context_provider(|| show_atk_tooltips);
+    use_context_provider(|| CtxShowAtkTooltips(show_atk_tooltips));
     // Show boss energy bars — default hidden
-    let show_boss_energy: Signal<bool> = use_signal(|| false);
-    use_context_provider(|| show_boss_energy);
+    let show_boss_energy: Signal<bool> = use_signal(|| true);
+    use_context_provider(|| CtxShowBossEnergy(show_boss_energy));
     // Show hero aggro — default hidden
-    let show_hero_aggro: Signal<bool> = use_signal(|| false);
-    use_context_provider(|| show_hero_aggro);
+    let show_hero_aggro: Signal<bool> = use_signal(|| true);
+    use_context_provider(|| CtxShowHeroAggro(show_hero_aggro));
+    // Show boss HP bar — default visible
+    let show_boss_hp: Signal<bool> = use_signal(|| true);
+    use_context_provider(|| CtxShowBossHp(show_boss_hp));
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

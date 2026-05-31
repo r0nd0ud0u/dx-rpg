@@ -22,7 +22,10 @@ use crate::{
     components::button::{Button, ButtonVariant},
 };
 use crate::{
-    common::{ENERGY_GRAD, SERVER_NAME},
+    common::{
+        CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
+        CtxToggleAtkAnimation, ENERGY_GRAD, SERVER_NAME,
+    },
     components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
@@ -42,12 +45,17 @@ fn process_css_class_on_atk(last_atk: &ResultLaunchAttack, id_name: &str) -> &'s
         .all_dodging
         .iter()
         .any(|dodge_info| dodge_info.name == id_name && dodge_info.is_blocking);
-    match (is_blinking, is_dodging, is_blocking) {
-        (true, _, false) => "blink-1",
-        (true, _, true) => "jello-horizontal",
-        (_, true, _) => "wobble-hor-bottom",
-        _ => "",
+    // Blocking takes priority so the jello animation always shows (even without damage)
+    if is_blocking {
+        return "jello-horizontal";
     }
+    if is_dodging {
+        return "wobble-hor-bottom";
+    }
+    if is_blinking {
+        return "blink-1";
+    }
+    ""
 }
 
 #[component]
@@ -62,9 +70,10 @@ pub fn CharacterPanel(
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
     let local_session_player_name = use_context::<Signal<String>>();
-    let toggle_atk_animation = use_context::<Signal<bool>>();
-    let show_boss_energy = use_context::<Signal<bool>>();
-    let show_hero_aggro = use_context::<Signal<bool>>();
+    let toggle_atk_animation = use_context::<CtxToggleAtkAnimation>().0;
+    let show_boss_energy = use_context::<CtxShowBossEnergy>().0;
+    let show_hero_aggro = use_context::<CtxShowHeroAggro>().0;
+    let show_boss_hp = use_context::<CtxShowBossHp>().0;
     // get first player of the list
     let current_character = {
         let sd = server_data();
@@ -102,6 +111,18 @@ pub fn CharacterPanel(
     } else {
         "var(--secondary-error-color)"
     };
+    // Highlight the panel whose turn it is to play
+    let is_active_player = c.id_name == current_player_id_name;
+    let panel_border = if is_active_player {
+        "2px solid var(--rpg-gold)"
+    } else {
+        "none"
+    };
+    let panel_box_shadow = if is_active_player {
+        "0 0 12px 2px rgba(201,162,39,0.55)"
+    } else {
+        "none"
+    };
     let energy_list = IndexMap::from([
         (MANA.to_owned(), ("MP".to_owned(), EnergyKind::Mana)),
         (VIGOR.to_owned(), ("VP".to_owned(), EnergyKind::Vigor)),
@@ -127,7 +148,11 @@ pub fn CharacterPanel(
                 hots_bufs: CharacterRoundsInfo::get_hot_and_buf_nbs_txts(&c.character_rounds_info.all_effects),
                 prefer_left: c.kind == CharacterKind::Boss,
             }
-            div { class: "character", background_color: bg,
+            div {
+                class: "character",
+                background_color: bg,
+                border: panel_border,
+                box_shadow: panel_box_shadow,
                 // Header: name + level + attack button
                 div { class: "char-header",
                     span { class: "char-name-text", "{c.db_full_name}" }
@@ -157,7 +182,15 @@ pub fn CharacterPanel(
                                 "⏳"
                             }
                         }
-                        if current_character == c.id_name && !c.inventory.consumables.is_empty() {
+                        if current_character == c.id_name
+                            && (!c.inventory.consumables.is_empty()
+                                || !server_data()
+                                    .core_game_data
+                                    .game_manager
+                                    .pm
+                                    .party_consumables
+                                    .is_empty())
+                        {
                             Button {
                                 variant: ButtonVariant::AtkMenu,
                                 onclick: move |_| async move {
@@ -173,10 +206,12 @@ pub fn CharacterPanel(
                 div { class: "char-body",
                     img { src: photo_src(&c.photo_name), class: "image-small" }
                     div { class: "character-energy-effects-box",
-                        BarComponent {
-                            max: c.stats.all_stats[HP].max,
-                            current: c.stats.all_stats[HP].current,
-                            name: HP.to_owned(),
+                        if c.kind == CharacterKind::Hero || (show_boss_hp() && c.kind == CharacterKind::Boss) {
+                            BarComponent {
+                                max: c.stats.all_stats[HP].max,
+                                current: c.stats.all_stats[HP].current,
+                                name: HP.to_owned(),
+                            }
                         }
                         if c.kind == CharacterKind::Hero || show_boss_energy() {
                             for (stat, energy) in energy_list.iter() {
@@ -284,7 +319,7 @@ pub fn NewAtkButton(
 ) -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
-    let show_tooltips = use_context::<Signal<bool>>();
+    let show_tooltips = use_context::<CtxShowAtkTooltips>().0;
     // local signals
     let can_be_launched = launcher
         .character_rounds_info
@@ -438,9 +473,9 @@ pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Elem
 
     rsx! {
         div { class: "attack-list",
-            // ── Personal bag ─────────────────────────────────────────────
+            // ── Personal potions ──────────────────────────────────────────────
             if !personal_order.is_empty() {
-                span { class: "potion-bag-header", "🎒 Personal bag" }
+                span { class: "potion-bag-header", "💊 Personal potion" }
                 for potion_name in personal_order {
                     {
                         let count = personal_counts[&potion_name];
@@ -472,9 +507,9 @@ pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Elem
                     }
                 }
             }
-            // ── Party (shared) bag ────────────────────────────────────────
+            // ── Common consumables (shared party bag) ────────────────────────────────────────
             if !party_order.is_empty() {
-                span { class: "potion-bag-header", "🎁 Party bag" }
+                span { class: "potion-bag-header", "🎁 Common consumable" }
                 for potion_name in party_order {
                     {
                         let count = party_counts[&potion_name];

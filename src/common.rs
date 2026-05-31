@@ -62,6 +62,30 @@ pub const DX_COMP_CSS: Asset = asset!("/assets/dx-components-theme.css");
 
 pub const OFFLINE_PATH: &str = "offlines";
 
+// ── Per-setting context newtypes ─────────────────────────────────────────────
+// Each wraps a `Signal<bool>` in a distinct type so that Dioxus context lookup
+// (which is keyed by TypeId) stores and retrieves them independently.
+
+/// Whether attack animations are enabled on the board
+#[derive(Clone, Copy)]
+pub struct CtxToggleAtkAnimation(pub Signal<bool>);
+
+/// Whether boss energy (mana/vigor/berserk) bars are shown
+#[derive(Clone, Copy)]
+pub struct CtxShowBossEnergy(pub Signal<bool>);
+
+/// Whether hero aggro values are shown on character panels
+#[derive(Clone, Copy)]
+pub struct CtxShowHeroAggro(pub Signal<bool>);
+
+/// Whether attack tooltip descriptions are shown on hover
+#[derive(Clone, Copy)]
+pub struct CtxShowAtkTooltips(pub Signal<bool>);
+
+/// Whether the boss HP bar is shown
+#[derive(Clone, Copy)]
+pub struct CtxShowBossHp(pub Signal<bool>);
+
 /// Returns the URL for serving a character photo via the dynamic image route.
 /// If `photo_name` already contains an extension (has a dot), the URL is used
 /// as-is; otherwise `.png` is appended for backward-compat with legacy entries
