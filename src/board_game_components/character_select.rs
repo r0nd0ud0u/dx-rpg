@@ -72,15 +72,20 @@ pub fn CharacterSelect(universe: String) -> Element {
             } else {
                 div { class: "char-select-chosen-list",
                     for (player, choice) in chosen.clone() {
-                        div { class: "char-select-chosen-row",
-                            span { class: "char-select-player-name", "{player}" }
-                            span { class: "char-select-chosen-char", "{choice}" }
+                        // In single-player, hide internal __sp keys from the confirmation view
+                        if !is_single || !player.contains("__sp") {
+                            div { class: "char-select-chosen-row",
+                                span { class: "char-select-player-name", "{player}" }
+                                span { class: "char-select-chosen-char", "{choice}" }
+                            }
                         }
                     }
                 }
             }
 
-            if server_data_snap.core_game_data.game_phase == GamePhase::InitGame
+            // "Other players" panel: hidden in single-player mode
+            if !is_single
+                && server_data_snap.core_game_data.game_phase == GamePhase::InitGame
                 && !others.is_empty()
             {
                 div { class: "char-select-others",

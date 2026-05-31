@@ -63,6 +63,8 @@ pub fn CharacterPanel(
     let server_data = use_context::<Signal<ServerData>>();
     let local_session_player_name = use_context::<Signal<String>>();
     let toggle_atk_animation = use_context::<Signal<bool>>();
+    let show_boss_energy = use_context::<Signal<bool>>();
+    let show_hero_aggro = use_context::<Signal<bool>>();
     // get first player of the list
     let current_character = {
         let sd = server_data();
@@ -121,12 +123,20 @@ pub fn CharacterPanel(
 
     rsx! {
         div { class: class_css, position: "relative",
-            CharacterTooltip { hots_bufs: CharacterRoundsInfo::get_hot_and_buf_nbs_txts(&c.character_rounds_info.all_effects) }
+            CharacterTooltip {
+                hots_bufs: CharacterRoundsInfo::get_hot_and_buf_nbs_txts(&c.character_rounds_info.all_effects),
+                prefer_left: c.kind == CharacterKind::Boss,
+            }
             div { class: "character", background_color: bg,
                 // Header: name + level + attack button
                 div { class: "char-header",
                     span { class: "char-name-text", "{c.db_full_name}" }
                     span { class: "char-level", "Lvl {c.level}" }
+                    if c.kind == CharacterKind::Hero && show_hero_aggro() {
+                        if let Some(aggro_stat) = c.stats.all_stats.get(AGGRO) {
+                            span { class: "char-aggro", title: "Aggro", "🎯 {aggro_stat.current}" }
+                        }
+                    }
                     if is_auto_atk() {
                         Button {
                             variant: ButtonVariant::AtkAutoMenu,
@@ -168,12 +178,14 @@ pub fn CharacterPanel(
                             current: c.stats.all_stats[HP].current,
                             name: HP.to_owned(),
                         }
-                        for (stat, energy) in energy_list.iter() {
-                            if c.stats.all_stats[stat].max > 0 && c.has_energy_kind(&energy.1) {
-                                BarComponent {
-                                    max: c.stats.all_stats[stat].max,
-                                    current: c.stats.all_stats[stat].current,
-                                    name: energy.0.clone(),
+                        if c.kind == CharacterKind::Hero || show_boss_energy() {
+                            for (stat, energy) in energy_list.iter() {
+                                if c.stats.all_stats[stat].max > 0 && c.has_energy_kind(&energy.1) {
+                                    BarComponent {
+                                        max: c.stats.all_stats[stat].max,
+                                        current: c.stats.all_stats[stat].current,
+                                        name: energy.0.clone(),
+                                    }
                                 }
                             }
                         }
@@ -369,7 +381,10 @@ pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Elem
     let server_data = use_context::<Signal<ServerData>>();
     let local_session_player_name = use_context::<Signal<String>>();
 
-    let potions: Vec<String> = server_data()
+    let snap = server_data();
+
+    // Personal potions
+    let potions: Vec<String> = snap
         .core_game_data
         .game_manager
         .pm
@@ -384,7 +399,34 @@ pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Elem
         })
         .unwrap_or_default();
 
-    if potions.is_empty() {
+    // Party bag potions
+    let party_potions: Vec<String> = snap
+        .core_game_data
+        .game_manager
+        .pm
+        .party_consumables
+        .iter()
+        .map(|c| c.name.clone())
+        .collect();
+
+    fn group_by_name(names: &[String]) -> (Vec<String>, std::collections::HashMap<String, usize>) {
+        let mut seen_order: Vec<String> = Vec::new();
+        let mut counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        for name in names {
+            let entry = counts.entry(name.clone()).or_insert(0);
+            if *entry == 0 {
+                seen_order.push(name.clone());
+            }
+            *entry += 1;
+        }
+        (seen_order, counts)
+    }
+
+    let (personal_order, personal_counts) = group_by_name(&potions);
+    let (party_order, party_counts) = group_by_name(&party_potions);
+
+    let is_empty = personal_order.is_empty() && party_order.is_empty();
+    if is_empty {
         return rsx! {
             div { class: "attack-list",
                 span { style: "color: var(--rpg-text-muted); font-size: 0.85rem;",
@@ -394,47 +436,72 @@ pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Elem
         };
     }
 
-    // Group by name: preserve first-occurrence order, count duplicates
-    let mut seen_order: Vec<String> = Vec::new();
-    let mut counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
-    for name in &potions {
-        let entry = counts.entry(name.clone()).or_insert(0);
-        if *entry == 0 {
-            seen_order.push(name.clone());
-        }
-        *entry += 1;
-    }
-
     rsx! {
         div { class: "attack-list",
-            for potion_name in seen_order {
-                {
-                    let count = counts[&potion_name];
-                    let label = if count > 1 {
-                        format!("💊 {} ×{}", potion_name, count)
-                    } else {
-                        format!("💊 {}", potion_name)
-                    };
-                    rsx! {
-                        Button {
-                            variant: ButtonVariant::AtkName,
-                            onclick: {
-                                let pname = potion_name.clone();
-                                let player = local_session_player_name();
-                                move |_| {
-                                    let async_potion = pname.clone();
-                                    let async_player = player.clone();
-                                    async move {
-                                        let _ = socket
-                                            .send(
-                                                ClientEvent::UsePotion(SERVER_NAME(), async_player, async_potion),
-                                            )
-                                            .await;
-                                        display_potionlist_sig.set(false);
+            // ── Personal bag ─────────────────────────────────────────────
+            if !personal_order.is_empty() {
+                span { class: "potion-bag-header", "🎒 Personal bag" }
+                for potion_name in personal_order {
+                    {
+                        let count = personal_counts[&potion_name];
+                        let label = if count > 1 {
+                            format!("💊 {} ×{}", potion_name, count)
+                        } else {
+                            format!("💊 {}", potion_name)
+                        };
+                        rsx! {
+                            Button {
+                                variant: ButtonVariant::AtkName,
+                                onclick: {
+                                    let pname = potion_name.clone();
+                                    let player = local_session_player_name();
+                                    move |_| {
+                                        let async_potion = pname.clone();
+                                        let async_player = player.clone();
+                                        async move {
+                                            let _ = socket
+                                                .send(ClientEvent::UsePotion(SERVER_NAME(), async_player, async_potion))
+                                                .await;
+                                            display_potionlist_sig.set(false);
+                                        }
                                     }
-                                }
-                            },
-                            "{label}"
+                                },
+                                "{label}"
+                            }
+                        }
+                    }
+                }
+            }
+            // ── Party (shared) bag ────────────────────────────────────────
+            if !party_order.is_empty() {
+                span { class: "potion-bag-header", "🎁 Party bag" }
+                for potion_name in party_order {
+                    {
+                        let count = party_counts[&potion_name];
+                        let label = if count > 1 {
+                            format!("✨ {} ×{}", potion_name, count)
+                        } else {
+                            format!("✨ {}", potion_name)
+                        };
+                        rsx! {
+                            Button {
+                                variant: ButtonVariant::AtkName,
+                                onclick: {
+                                    let pname = potion_name.clone();
+                                    let player = local_session_player_name();
+                                    move |_| {
+                                        let async_potion = pname.clone();
+                                        let async_player = player.clone();
+                                        async move {
+                                            let _ = socket
+                                                .send(ClientEvent::UsePartyPotion(SERVER_NAME(), async_player, async_potion))
+                                                .await;
+                                            display_potionlist_sig.set(false);
+                                        }
+                                    }
+                                },
+                                "{label}"
+                            }
                         }
                     }
                 }
@@ -468,7 +535,7 @@ fn get_cost(atk: &AttackType) -> String {
 }
 
 #[component]
-fn CharacterTooltip(hots_bufs: HotsBufs) -> Element {
+fn CharacterTooltip(hots_bufs: HotsBufs, prefer_left: bool) -> Element {
     let has_effects = hots_bufs.hot_nb > 0
         || hots_bufs.dot_nb > 0
         || hots_bufs.buf_nb > 0
@@ -476,6 +543,11 @@ fn CharacterTooltip(hots_bufs: HotsBufs) -> Element {
     if !has_effects {
         return rsx! {};
     }
+    let side = if prefer_left {
+        ContentSide::Left
+    } else {
+        ContentSide::Right
+    };
     rsx! {
         div { class: "character-effects",
             Tooltip {
@@ -495,7 +567,7 @@ fn CharacterTooltip(hots_bufs: HotsBufs) -> Element {
                         }
                     }
                 }
-                TooltipContent { side: ContentSide::Right,
+                TooltipContent { side,
                     for txt in hots_bufs.hot_txt {
                         p { style: "margin: 0;", "🌿 {txt}" }
                     }

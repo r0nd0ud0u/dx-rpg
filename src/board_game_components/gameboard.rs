@@ -116,25 +116,41 @@ pub fn GameBoard() -> Element {
                             ResultAtkText { ra: server_data.read().core_game_data.game_manager.game_state.last_result_atk.clone() }
                         }
                         div {
-                            if !server_data
-                                .read()
-                                .core_game_data
-                                .game_manager
-                                .game_state
-                                .last_result_atk
-                                .logs_end_of_round
-                                .is_empty()
                             {
-                                for log in server_data
+                                let logs = server_data
                                     .read()
                                     .core_game_data
                                     .game_manager
                                     .game_state
                                     .last_result_atk
                                     .logs_end_of_round
-                                    .iter()
-                                {
-                                    "{log.message}\n"
+                                    .clone();
+                                let ra = server_data
+                                    .read()
+                                    .core_game_data
+                                    .game_manager
+                                    .game_state
+                                    .last_result_atk
+                                    .clone();
+                                if !logs.is_empty() {
+                                    rsx! {
+                                        div { class: "round-log-header",
+                                            "🔄 Round {ra.round_nb} — Turn {ra.turn_nb}"
+                                        }
+                                        for log in logs.iter() {
+                                            {
+                                                let msg = log.message.replace('\n', "<br/>");
+                                                rsx! {
+                                                    div {
+                                                        style: "color: {log.color}; font-size: 0.82rem; padding: 1px 0;",
+                                                        dangerous_inner_html: "{msg}"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    rsx! {}
                                 }
                             }
                         }
@@ -164,12 +180,15 @@ pub fn GameBoard() -> Element {
 }
 
 #[component]
-fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
+pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
     rsx! {
         if !ra.new_game_atk_effects.is_empty() {
             "Last attack:\n"
             if ra.is_crit {
-                "Critical Strike !"
+                div {
+                    style: "color: var(--secondary-color-2); font-weight: bold; font-size: 1.1em;",
+                    "💥 Critical Strike!"
+                }
             }
             for d in ra.all_dodging {
                 if d.is_dodging {
@@ -193,20 +212,40 @@ fn AmountText(gae: GameAtkEffect) -> Element {
     if gae.effect_outcome.real_amount_tx < 0 {
         colortext = "var(--secondary-color-2)";
     }
+    // Highlight critical hits
+    let crit_style = if gae.effect_outcome.is_critical {
+        "font-weight: bold; text-decoration: underline;"
+    } else {
+        ""
+    };
+    let stat = &gae
+        .processed_effect_param
+        .input_effect_param
+        .buffer
+        .stats_name;
+    let kind = &gae.processed_effect_param.input_effect_param.buffer.kind;
+    let target = &gae.effect_outcome.target_id_name;
+    let amount = gae.effect_outcome.real_amount_tx;
+    let full = gae.effect_outcome.full_amount_tx;
+
     rsx! {
         if gae.processed_effect_param.input_effect_param.buffer.kind
             == BufKinds::CooldownTurnsNumber
         {
-            div { color: colortext,
-                "{gae.processed_effect_param.input_effect_param.buffer.kind}: {gae.processed_effect_param.input_effect_param.buffer.value}"
+            div { color: colortext, style: crit_style,
+                "Cooldown on {target}: {gae.processed_effect_param.input_effect_param.buffer.value} turns"
             }
         } else if gae.processed_effect_param.input_effect_param.buffer.stats_name == HP {
-            div { color: colortext,
-                "{gae.processed_effect_param.input_effect_param.buffer.kind}-{gae.processed_effect_param.input_effect_param.buffer.stats_name} {gae.effect_outcome.target_id_name}: {gae.effect_outcome.real_amount_tx}"
+            div { color: colortext, style: crit_style,
+                if full == amount {
+                    "{target} → {amount} HP"
+                } else {
+                    "{target} → {amount} HP (raw: {full})"
+                }
             }
         } else {
-            div { color: colortext,
-                "{gae.processed_effect_param.input_effect_param.buffer.kind}-{gae.processed_effect_param.input_effect_param.buffer.stats_name} {gae.effect_outcome.target_id_name}: {gae.effect_outcome.real_amount_tx}"
+            div { color: colortext, style: crit_style,
+                "{target} → {stat} {amount} ({kind})"
             }
         }
     }

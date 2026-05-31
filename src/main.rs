@@ -321,6 +321,12 @@ fn App() -> Element {
     // Show attack tooltips — default true, overridden from DB once settings load
     let show_atk_tooltips: Signal<bool> = use_signal(|| true);
     use_context_provider(|| show_atk_tooltips);
+    // Show boss energy bars — default hidden
+    let show_boss_energy: Signal<bool> = use_signal(|| false);
+    use_context_provider(|| show_boss_energy);
+    // Show hero aggro — default hidden
+    let show_hero_aggro: Signal<bool> = use_signal(|| false);
+    use_context_provider(|| show_hero_aggro);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
