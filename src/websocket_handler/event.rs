@@ -78,8 +78,9 @@ pub enum ClientEvent {
     RequestSetOneTarget(String, String, String, String), // `String`: launcher name, `String`: server name, `String`: atk name, `String`: target name
     SaveGame(String, String), // `String`: server name, `String`: player name
     AddLog(String, Vec<LogData>), // `String`: server name, `Vec<LogData>`: log info to add (ex: ["Player1 used Fireball on Player2 for 30 damage", "Player2 is now burning and will take 5 damage for 3 turns"])
-    RequestToggleEquip(String, String, String), // `String`: equipment unique name, `String`: player name, `String`: server name
-    LoadNextScenario(String),                   // `String`: server name
+    RequestToggleEquip(String, String, String), // `String`: equipment unique name, `String`: character id_name, `String`: server name
+    RequestMarkEquipSeen(String, String, String), // `String`: category key, `String`: character id_name, `String`: server name
+    LoadNextScenario(String),                     // `String`: server name
     UsePotion(String, String, String), // `String`: server name, `String`: player name, `String`: potion name
     UsePartyPotion(String, String, String), // server_name, player_name, potion_name
 }
@@ -138,7 +139,7 @@ pub async fn on_rcv_client_event(
 
             // Main loop: handle incoming socket messages and outgoing queued messages
             loop {
-                use crate::websocket_handler::event_inventory::request_toggle_equip;
+                use crate::websocket_handler::event_inventory::{request_toggle_equip, request_mark_equip_seen};
 
                 tokio::select! {
                     // Outgoing messages destined for this client
@@ -251,9 +252,13 @@ pub async fn on_rcv_client_event(
                                 add_log_to_app(&server_name, logs);
                                 update_clients_server_data(&server_name);
                             }
-                            Ok(ClientEvent::RequestToggleEquip(equipment_unique_name, player_name, server_name)) => {
-                                tracing::info!("Client {} requested to toggle equip for equipment {} by player {} on server {}", client_id, equipment_unique_name, player_name, server_name);
-                                request_toggle_equip(&equipment_unique_name, &player_name, &server_name).await;
+                            Ok(ClientEvent::RequestToggleEquip(equipment_unique_name, character_id_name, server_name)) => {
+                                tracing::info!("Client {} requested to toggle equip for equipment {} by character {} on server {}", client_id, equipment_unique_name, character_id_name, server_name);
+                                request_toggle_equip(&equipment_unique_name, &character_id_name, &server_name).await;
+                            }
+                            Ok(ClientEvent::RequestMarkEquipSeen(category_key, character_id_name, server_name)) => {
+                                tracing::info!("Client {} marking equip category {} as seen for character {} on server {}", client_id, category_key, character_id_name, server_name);
+                                request_mark_equip_seen(&category_key, &character_id_name, &server_name);
                             }
                             Ok(ClientEvent::LoadNextScenario(server_name)) => {
                                 tracing::info!("Client {} requested to load next scenario for server {}", client_id, server_name);
@@ -1085,9 +1090,39 @@ fn remove_character_on_server_data(server_name: &str, player_key: &str) {
 
 #[cfg(feature = "server")]
 fn set_universe_on_server_data(server_name: &str, universe: &str) {
+    use lib_rpg::server::scenario::ScenarioState;
+
+    let dm = DATA_MANAGER.lock().unwrap();
+    let all_scenarios_full = dm.all_scenarios.clone();
+    drop(dm);
+
+    // Filter scenarios by the new universe (empty = all)
+    let filtered_scenarios: Vec<_> = if universe.is_empty() {
+        all_scenarios_full
+    } else {
+        all_scenarios_full
+            .into_iter()
+            .filter(|s| s.universe == universe)
+            .collect()
+    };
+
     let mut sm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         server_data.core_game_data.universe = universe.to_owned();
+        // Replace scenario list and rebuild states map so scenario count is correct
+        server_data.core_game_data.game_manager.all_scenarios = filtered_scenarios.clone();
+        server_data
+            .core_game_data
+            .game_manager
+            .states_scenarios
+            .clear();
+        for scenario in &filtered_scenarios {
+            server_data
+                .core_game_data
+                .game_manager
+                .states_scenarios
+                .insert(scenario.name.clone(), ScenarioState::NotStarted);
+        }
     }
     drop(sm);
     update_clients_server_data(server_name);
@@ -1148,6 +1183,10 @@ async fn load_game_by_player(
     } else {
         GamePhase::Loading
     };
+    // Mark this game as loaded from a save so the lobby locks the universe selector
+    if !is_replay {
+        app.loaded_from_save = true;
+    }
 
     // persist state (no locks involved)
     save_core_game_data(&app, SAVED_CORE_GAME_DATA, &player_name).await;

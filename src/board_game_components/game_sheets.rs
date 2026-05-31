@@ -1,12 +1,9 @@
-use std::collections::BTreeMap;
-
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
 use dioxus_primitives::scroll_area::ScrollDirection;
 use lib_rpg::{
-    character_mod::{character::Character, stats::Attribute},
     common::{
         constants::stats_const::HP,
         log_data::{
@@ -72,6 +69,7 @@ pub fn GameSheets() -> Element {
     let mut open = use_signal(|| false);
     let mut sheet_kind: Signal<SheetKind> = use_signal(|| SheetKind::Menu);
     let mut is_saved: Signal<bool> = use_signal(|| false);
+    let server_data = use_context::<Signal<ServerData>>();
 
     let open_sheet = move |kind: SheetKind| {
         move |_| {
@@ -83,6 +81,14 @@ pub fn GameSheets() -> Element {
         is_saved.set(false);
     }
 
+    let has_new_equipment = server_data()
+        .core_game_data
+        .game_manager
+        .pm
+        .active_heroes
+        .iter()
+        .any(|h| h.inventory.has_unseen_equipment());
+
     rsx! {
         div { display: "flex", gap: "0.5rem",
             Button {
@@ -93,7 +99,11 @@ pub fn GameSheets() -> Element {
             Button {
                 variant: ButtonVariant::Outline,
                 onclick: open_sheet(SheetKind::Inventory),
+                position: "relative",
                 "Inventory"
+                if has_new_equipment {
+                    span { class: "equip-tab-new-badge", style: "position:absolute;top:2px;right:2px;", title: "New equipment!" }
+                }
             }
             Button {
                 variant: ButtonVariant::Outline,
@@ -149,27 +159,38 @@ fn InventorySheet(s: SheetSide) -> Element {
 
     // snap
     let server_data_snap = server_data();
+    let gm = &server_data_snap.core_game_data.game_manager;
+    let is_single_player = server_data_snap.core_game_data.is_single_player;
 
-    // get character by name
-    let Some(character_name) = server_data_snap
-        .players_data
-        .get_first_character_name(&local_login_name_session())
-    else {
-        return rsx! {};
+    // In single-player mode show a tab per hero; otherwise only show the logged-in hero.
+    let heroes_to_show: Vec<lib_rpg::character_mod::character::Character> = if is_single_player {
+        gm.pm.active_heroes.clone()
+    } else {
+        let Some(character_name) = server_data_snap
+            .players_data
+            .get_first_character_name(&local_login_name_session())
+        else {
+            return rsx! {};
+        };
+        match gm.pm.get_active_hero_character(&character_name) {
+            Some(c) => vec![c.clone()],
+            None => return rsx! {},
+        }
     };
-    let character = match server_data_snap
-        .core_game_data
-        .game_manager
-        .pm
-        .get_active_hero_character(&character_name)
-    {
-        Some(c) => c.clone(),
-        None => Character::default(),
-    };
+
+    // Tab state – index of currently visible hero tab
+    let mut active_tab: Signal<usize> = use_signal(|| 0);
+    let active_tab_idx = active_tab().min(heroes_to_show.len().saturating_sub(1));
+    let character = heroes_to_show
+        .get(active_tab_idx)
+        .cloned()
+        .unwrap_or_default();
 
     // BTreeMap — all stats sorted
-    let ordered_stats: BTreeMap<String, Attribute> =
-        character.stats.all_stats.clone().into_iter().collect();
+    let ordered_stats: std::collections::BTreeMap<
+        String,
+        lib_rpg::character_mod::stats::Attribute,
+    > = character.stats.all_stats.clone().into_iter().collect();
 
     rsx! {
         SheetContent { side: s,
@@ -183,6 +204,30 @@ fn InventorySheet(s: SheetSide) -> Element {
                 flex_direction: "column",
                 gap: "1rem",
                 padding: "0 1rem",
+
+                // Hero selector tabs — only shown in single-player when there are multiple heroes
+                if heroes_to_show.len() > 1 {
+                    div {
+                        display: "flex",
+                        gap: "0.4rem",
+                        flex_wrap: "wrap",
+                        for (i, hero) in heroes_to_show.iter().enumerate() {
+                            button {
+                                class: if i == active_tab_idx { "inv-tab inv-tab--active" } else { "inv-tab" },
+                                onclick: move |_| active_tab.set(i),
+                                position: "relative",
+                                "{hero.db_full_name}"
+                                if hero.inventory.has_unseen_equipment() {
+                                    span {
+                                        class: "equip-tab-new-badge",
+                                        style: "position:absolute;top:2px;right:2px;",
+                                        title: "New equipment for {hero.db_full_name}!"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
                 // Stats grid — 2 columns
                 div {
@@ -249,13 +294,14 @@ fn GameStatsSheet(s: SheetSide) -> Element {
         )
     });
 
-    // Kill count (dead bosses)
-    let kills = gm
-        .pm
-        .all_bosses
-        .iter()
-        .filter(|b| b.stats.is_dead().unwrap_or(false))
-        .count();
+    // Kill count: accumulated from past scenarios plus currently-dead bosses in active_bosses.
+    // all_bosses are templates that never take damage, so we must NOT count them.
+    let kills = gm.game_state.accumulated_kills
+        + gm.pm
+            .active_bosses
+            .iter()
+            .filter(|b| b.stats.is_dead().unwrap_or(false))
+            .count();
     let total_bosses_ever = gm.pm.all_bosses.len();
 
     // Scenario progress: completed scenarios
@@ -693,12 +739,14 @@ fn ScenariosSheet(s: SheetSide) -> Element {
 const SETTING_TOOLTIPS: &str = "show_atk_tooltips";
 const SETTING_BOSS_ENERGY: &str = "show_boss_energy";
 const SETTING_HERO_AGGRO: &str = "show_hero_aggro";
+const SETTING_BOSS_HP: &str = "show_boss_hp";
 
 #[component]
 fn SettingsSheet(s: SheetSide) -> Element {
-    let mut show_atk_tooltips = use_context::<Signal<bool>>();
-    let mut show_boss_energy = use_context::<Signal<bool>>();
-    let mut show_hero_aggro = use_context::<Signal<bool>>();
+    let mut show_atk_tooltips = use_context::<crate::common::CtxShowAtkTooltips>().0;
+    let mut show_boss_energy = use_context::<crate::common::CtxShowBossEnergy>().0;
+    let mut show_hero_aggro = use_context::<crate::common::CtxShowHeroAggro>().0;
+    let mut show_boss_hp = use_context::<crate::common::CtxShowBossHp>().0;
     let mut save_msg: Signal<String> = use_signal(String::new);
 
     // Load saved settings on mount
@@ -709,14 +757,18 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 show_atk_tooltips.set(val == "true");
             }
             if let Ok(val) =
-                get_user_setting(SETTING_BOSS_ENERGY.to_string(), "false".to_owned()).await
+                get_user_setting(SETTING_BOSS_ENERGY.to_string(), "true".to_owned()).await
             {
                 show_boss_energy.set(val == "true");
             }
             if let Ok(val) =
-                get_user_setting(SETTING_HERO_AGGRO.to_string(), "false".to_owned()).await
+                get_user_setting(SETTING_HERO_AGGRO.to_string(), "true".to_owned()).await
             {
                 show_hero_aggro.set(val == "true");
+            }
+            if let Ok(val) = get_user_setting(SETTING_BOSS_HP.to_string(), "true".to_owned()).await
+            {
+                show_boss_hp.set(val == "true");
             }
         });
     });
@@ -771,7 +823,7 @@ fn SettingsSheet(s: SheetSide) -> Element {
                     div { class: "settings-label-group",
                         span { class: "settings-label", "Boss Energy Bars" }
                         span { class: "settings-hint",
-                            "Show mana/vigor/berserk bars for bosses (hidden by default)."
+                            "Show mana/vigor/berserk bars for bosses."
                         }
                     }
                     label { class: "toggle-switch",
@@ -815,6 +867,36 @@ fn SettingsSheet(s: SheetSide) -> Element {
                                 spawn(async move {
                                     let _ = save_user_setting(
                                             SETTING_HERO_AGGRO.to_string(),
+                                            if new_val { "true" } else { "false" }.to_string(),
+                                        )
+                                        .await;
+                                    save_msg.set("✅ Saved".to_owned());
+                                });
+                            },
+                        }
+                        span { class: "toggle-slider" }
+                    }
+                }
+
+                // ── Boss HP Bar ────────────────────────────────────────────────
+                div { class: "settings-row",
+                    div { class: "settings-label-group",
+                        span { class: "settings-label", "Boss HP Bar" }
+                        span { class: "settings-hint",
+                            "Show the HP bar on boss panels (hidden if you want mystery)."
+                        }
+                    }
+                    label { class: "toggle-switch",
+                        input {
+                            r#type: "checkbox",
+                            checked: show_boss_hp(),
+                            onchange: move |_| {
+                                let new_val = !show_boss_hp();
+                                show_boss_hp.set(new_val);
+                                save_msg.set("Saving…".to_owned());
+                                spawn(async move {
+                                    let _ = save_user_setting(
+                                            SETTING_BOSS_HP.to_string(),
                                             if new_val { "true" } else { "false" }.to_string(),
                                         )
                                         .await;

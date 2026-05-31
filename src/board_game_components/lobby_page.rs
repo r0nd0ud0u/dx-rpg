@@ -38,8 +38,8 @@ pub fn LobbyPage() -> Element {
             selected_universe.set(u);
         }
     });
-    // A loaded game already has a universe: don't allow changing it
-    let universe_locked = !server_data().core_game_data.universe.is_empty();
+    // A loaded game already has a universe that should not be changed
+    let universe_locked = server_data().core_game_data.loaded_from_save;
 
     // all players info have a character name
     let server_data_snap = server_data();
@@ -182,9 +182,10 @@ pub fn LobbyPage() -> Element {
                 }
             }
         } else if server_data_snap.core_game_data.game_phase == GamePhase::Running {
-            // check if there is more characters in game than users
-            if server_data_snap.core_game_data.game_manager.pm.active_heroes.len()
-                <= server_data_snap.players_data.players_info.len()
+            // check if there is more characters in game than users (skip in single-player mode)
+            if server_data_snap.core_game_data.is_single_player
+                || server_data_snap.core_game_data.game_manager.pm.active_heroes.len()
+                    <= server_data_snap.players_data.players_info.len()
             {
                 RunningGamePage {}
             } else {

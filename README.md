@@ -118,23 +118,30 @@ When creating a server, choose between:
 - **Multiplayer** (default): each connected player picks exactly one character; other characters appear as locked (🔒) on the selection screen
 - **Single-player**: one player can pick multiple heroes; each extra hero is added with an `__sp{N}` key; the player controls all heroes in battle. Clicking a **selected** hero card in single-player mode deselects and removes that hero from the current game session.
 
+The **Inventory sheet** adapts to the mode: in single-player it shows a tab per hero so you can inspect each character's stats & equipment; in multiplayer it shows only your own hero's data.
+
 ### Settings Panel (⚙️)
 
-In the game toolbar, a **Settings** sheet lets each user:
-- Toggle **Attack Tooltips** — show/hide attack description on hover (persisted per-user in the DB)
+In the game toolbar, a **Settings** sheet lets each user toggle options that are persisted per-user in the DB:
 
-The Settings sheet uses a dedicated Dioxus component scope, avoiding hook-count mismatch panics that could occur when switching between game sheets.
+| Setting | Key | Default | Description |
+|---------|-----|---------|-------------|
+| Attack Tooltips | `show_atk_tooltips` | on | Show attack description on hover in the attack list |
+| Boss Energy Bars | `show_boss_energy` | off | Show mana/vigor/berserk bars on boss panels |
+| Hero Aggro | `show_hero_aggro` | off | Show aggro value on hero panel headers |
+| Boss HP Bar | `show_boss_hp` | on | Show the HP bar on boss panels |
 
-Settings are stored in the `user_settings` table: `(username, key, value)`.
+Each setting is stored as an independent context in Dioxus using a distinct newtype wrapper (`CtxShowBossHp`, `CtxShowBossEnergy`, etc.) to prevent context-key collisions that would otherwise occur since all `Signal<bool>` share the same `TypeId`.
 
 ### Game Stats Sheet (improved)
 
 The 📊 Stats sheet now shows:
-- KPI grid: Turn, Round, Kill count
+- KPI grid: Turn, Round, Kill count (correctly accumulates across scenarios)
 - Active player indicator
 - Scenario progress bar (scenarios completed / total)
 - Current scenario name, level, universe
 - HP bars for all active heroes
+- Favourite attack card spanning full width to avoid truncation
 
 ### Load Game page
 

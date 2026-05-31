@@ -28,6 +28,8 @@ use crate::{
 pub fn TabEquipment(c: Character) -> Element {
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let server_name = SERVER_NAME();
     let all_equipments_table = server_data()
         .core_game_data
         .game_manager
@@ -51,28 +53,123 @@ pub fn TabEquipment(c: Character) -> Element {
 
     let ordered_equipments: BTreeMap<EquipmentJsonKey, Vec<EquipmentInventory>> =
         c.inventory.equipments.clone().into_iter().collect();
+
+    // Track the active tab value as a reactive Signal so use_effect can re-run on change.
+    let mut current_tab: Signal<String> = use_signal(|| "tab1".to_string());
+
+    // Ordered list of category keys — used to map tab index back to category.
+    let ordered_categories: Vec<EquipmentJsonKey> =
+        ordered_equipments.keys().cloned().collect();
+    let ordered_categories_eff = ordered_categories.clone();
+    let char_id_eff = c.id_name.clone();
+
+    // Every time the active tab changes (including on initial mount), send mark-seen
+    // for that tab's category so the "new" badge disappears as soon as the user sees it.
+    use_effect(move || {
+        let tab = current_tab();
+        if let Some(idx) = tab
+            .strip_prefix("tab")
+            .and_then(|n| n.parse::<usize>().ok())
+        {
+            if let Some(category) = ordered_categories_eff.get(idx.saturating_sub(1)) {
+                let cat = category.to_string();
+                let sock = socket.clone();
+                let srv = server_name.clone();
+                let cid = char_id_eff.clone();
+                spawn(async move {
+                    let _ = sock
+                        .send(ClientEvent::RequestMarkEquipSeen(cat, cid, srv))
+                        .await;
+                });
+            }
+        }
+    });
+
     rsx! {
         Tabs {
             default_value: "tab1".to_owned(),
+            on_value_change: move |val: String| current_tab.set(val),
             horizontal: true,
-            max_width: "17em",
+            width: "100%",
             TabList {
-                for (i, e) in ordered_equipments.iter().enumerate() {
-                    TabTrigger { value: format!("tab{}", i + 1), index: i, "{e.0}" }
-                }
-            }
-            for (i, e) in ordered_equipments.iter().enumerate() {
-                TabContent { value: format!("tab{}", i + 1), index: i, width: "17em",
-                    div {
-                        for (_j, item) in e.1.iter().enumerate() {
-                            EquipmentTooltip {
-                                e_inventory: item.clone(),
-                                all_inventory_equipments: flatten_inventory_equipments.clone(),
+                for (i, (key, items)) in ordered_equipments.iter().enumerate() {
+                    {
+                        let has_new = items.iter().any(|e| e.is_new);
+                        let equipped_count = items.iter().filter(|e| e.is_equipped).count();
+                        rsx! {
+                            TabTrigger { value: format!("tab{}", i + 1), index: i,
+                                span { class: "equip-tab-label",
+                                    "{key}"
+                                    if equipped_count > 0 {
+                                        span { class: "equip-tab-equipped-badge", title: "{equipped_count} equipped",
+                                            "✓"
+                                        }
+                                    }
+                                    if has_new {
+                                        span { class: "equip-tab-new-badge", title: "New item!",
+                                            "!"
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
-
                 }
+            }
+            for (i, (key, items)) in ordered_equipments.iter().enumerate() {
+                {
+                    let tab_key = key.clone();
+                    rsx! {
+                        TabContent { value: format!("tab{}", i + 1), index: i, width: "100%",
+                            EquipmentTabContent {
+                                category_key: tab_key,
+                                items: items.clone(),
+                                all_inventory_equipments: flatten_inventory_equipments.clone(),
+                                character_id_name: c.id_name.clone(),
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn EquipmentTabContent(
+    category_key: EquipmentJsonKey,
+    items: Vec<EquipmentInventory>,
+    all_inventory_equipments: Vec<Equipment>,
+    character_id_name: String,
+) -> Element {
+    // Partition: equipped first, then unequipped
+    let equipped: Vec<&EquipmentInventory> = items.iter().filter(|e| e.is_equipped).collect();
+    let unequipped: Vec<&EquipmentInventory> = items.iter().filter(|e| !e.is_equipped).collect();
+
+    rsx! {
+        div { class: "equip-tab-content",
+            if !equipped.is_empty() {
+                div { class: "equip-section-title", "✅ Equipped" }
+            }
+            for item in equipped {
+                EquipmentTooltip {
+                    e_inventory: item.clone(),
+                    all_inventory_equipments: all_inventory_equipments.clone(),
+                    character_id_name: character_id_name.clone(),
+                }
+            }
+            if !unequipped.is_empty() {
+                div { class: "equip-section-title", "🎒 In bag" }
+            }
+            for item in unequipped {
+                EquipmentTooltip {
+                    e_inventory: item.clone(),
+                    all_inventory_equipments: all_inventory_equipments.clone(),
+                    character_id_name: character_id_name.clone(),
+                }
+            }
+            if items.is_empty() {
+                div { class: "equip-empty", "No item in this slot." }
             }
         }
     }
@@ -82,12 +179,13 @@ pub fn TabEquipment(c: Character) -> Element {
 fn EquipmentTooltip(
     e_inventory: EquipmentInventory,
     all_inventory_equipments: Vec<Equipment>,
+    character_id_name: String,
 ) -> Element {
     // context
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
-    let local_login_name_session = use_context::<Signal<String>>();
 
     let e_inventory_name = e_inventory.unique_name.clone();
+    let is_new = e_inventory.is_new;
 
     let equipment = match all_inventory_equipments
         .iter()
@@ -108,44 +206,64 @@ fn EquipmentTooltip(
             if stat_value.buf_equip_value == 0 && stat_value.buf_equip_percent == 0 {
                 None
             } else {
-                Some(format!("{}: {}", stat_name, stat_value.buf_equip_value))
+                Some(format!("{}: +{}", stat_name, stat_value.buf_equip_value))
             }
         })
         .collect::<Vec<String>>();
+
     rsx! {
-        div { class: "character-effects",
+        div { class: "equip-item-row",
             Tooltip {
                 TooltipTrigger {
                     div {
                         Button {
                             variant: if e_inventory.is_equipped { ButtonVariant::Primary } else { ButtonVariant::Secondary },
-                            width: "17em",
+                            width: "15em",
                             onclick: move |_| {
                                 let mv_e_inventory_name = e_inventory_name.clone();
+                                let mv_character_id_name = character_id_name.clone();
                                 async move {
-                                    // send equip/unequip request
                                     let _ = socket
                                         .send(
                                             ClientEvent::RequestToggleEquip(
                                                 mv_e_inventory_name,
-                                                local_login_name_session(),
+                                                mv_character_id_name,
                                                 SERVER_NAME(),
                                             ),
                                         )
                                         .await;
                                 }
                             },
-                            "{e_inventory.unique_name}"
+                            span { class: "equip-btn-label",
+                                if is_new {
+                                    span { class: "equip-new-dot", title: "New!", "🆕 " }
+                                }
+                                "{e_inventory.unique_name}"
+                                if e_inventory.is_equipped {
+                                    span { class: "equip-equipped-check", " ✓" }
+                                }
+                            }
                         }
                     }
                 }
                 TooltipContent { side: ContentSide::Right,
-                    for stat in stats {
-                        p { style: "margin: 0;", "{stat}" }
+                    p { style: "margin:0 0 4px 0; font-weight:600; color:var(--rpg-gold,#c9a227);",
+                        "{e_inventory.unique_name}"
+                    }
+                    if stats.is_empty() {
+                        p { style: "margin:0; color: var(--rpg-text-muted,#8a8fa8); font-style:italic;",
+                            "No stat bonuses."
+                        }
+                    } else {
+                        for stat in stats {
+                            p { style: "margin: 0;", "{stat}" }
+                        }
+                    }
+                    p { style: "margin:4px 0 0 0; font-size:0.72rem; color:var(--rpg-text-muted,#8a8fa8);",
+                        if e_inventory.is_equipped { "Click to unequip" } else { "Click to equip" }
                     }
                 }
             }
         }
-
     }
 }

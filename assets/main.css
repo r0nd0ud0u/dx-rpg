@@ -324,7 +324,7 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     padding: var(--sp-xs) var(--sp-sm);
     border-radius: var(--r-md);
     display:flex; flex-direction:column; gap:6px;
-    transition: border-color var(--t-fast);
+    transition: border-color var(--t-fast), box-shadow var(--t-fast);
     margin-bottom: 22px;
 }
 /* Header row: name + level + attack button */
@@ -1669,6 +1669,14 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     color: var(--rpg-text-muted, #8a8fa8);
     white-space: nowrap;
 }
+/* A wide card spans 2 grid columns so long attack names aren't truncated */
+.rpg-stat-card--wide {
+    grid-column: span 2;
+}
+.rpg-stat-card--wide .rpg-stat-card-value {
+    white-space: normal;
+    word-break: break-word;
+}
 
 /* Section header */
 .rpg-section { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -1747,3 +1755,140 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 }
 .potion-bag-header:first-child { border-top: none; margin-top: 0; }
 
+
+/* ── Inventory hero tabs (single-player multi-hero view) ─────────────────── */
+.inv-tab {
+    background: var(--rpg-bg-card, #1e2235);
+    border: 1px solid var(--rpg-border-light, rgba(255,255,255,0.12));
+    border-radius: 6px;
+    color: var(--rpg-text-muted, #8a8fa8);
+    font-size: 0.78rem;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: background var(--t-fast), color var(--t-fast);
+}
+.inv-tab:hover { background: rgba(201,162,39,0.12); color: var(--rpg-gold, #c9a227); }
+.inv-tab--active {
+    background: rgba(201,162,39,0.18);
+    border-color: var(--rpg-gold, #c9a227);
+    color: var(--rpg-gold, #c9a227);
+    font-weight: 600;
+}
+
+/* ── Equipment inventory tab enhancements ─────────────────────────────────── */
+
+/* Tab label wrapper */
+.equip-tab-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Small "✓" badge shown on tabs that have at least one equipped item */
+.equip-tab-equipped-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--rpg-teal, #2dd4bf);
+    color: #0f172a;
+    font-size: 0.6rem;
+    font-weight: 700;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+/* "!" badge shown on tabs with at least one unseen (new) item */
+.equip-tab-new-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #f59e0b;
+    color: #0f172a;
+    font-size: 0.65rem;
+    font-weight: 800;
+    line-height: 1;
+    flex-shrink: 0;
+    animation: pulse-badge 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% { transform: scale(1);   opacity: 1;    }
+    50%       { transform: scale(1.2); opacity: 0.75; }
+}
+
+/* Tab content container */
+.equip-tab-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 4px;
+}
+
+/* Section headers inside a tab ("Equipped" / "In bag") */
+.equip-section-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--rpg-text-muted, #8a8fa8);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 0 2px 2px;
+}
+
+/* Empty slot message */
+.equip-empty {
+    font-size: 0.78rem;
+    color: var(--rpg-text-muted, #8a8fa8);
+    font-style: italic;
+    padding: 6px 2px;
+}
+
+/* Row wrapper for each equipment entry */
+.equip-item-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Button label: new-dot + name + equipped check */
+.equip-btn-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* "🆕 " prefix when item is unseen */
+.equip-new-dot {
+    font-size: 0.8em;
+    flex-shrink: 0;
+}
+
+/* "✓" suffix for equipped items */
+.equip-equipped-check {
+    color: var(--rpg-teal, #2dd4bf);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+
+/* Equipment inventory tab enhancements */
+.equip-tab-label { display: inline-flex; align-items: center; gap: 4px; }
+.equip-tab-equipped-badge { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: var(--rpg-teal, #2dd4bf); color: #0f172a; font-size: 0.6rem; font-weight: 700; flex-shrink: 0; }
+.equip-tab-new-badge { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: #f59e0b; color: #0f172a; font-size: 0.65rem; font-weight: 800; flex-shrink: 0; animation: pulse-badge 1.2s ease-in-out infinite; }
+@keyframes pulse-badge { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.75; } }
+.equip-tab-content { display: flex; flex-direction: column; gap: 2px; padding-top: 4px; }
+.equip-section-title { font-size: 0.7rem; font-weight: 600; color: var(--rpg-text-muted, #8a8fa8); text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 0 2px 2px; }
+.equip-empty { font-size: 0.78rem; color: var(--rpg-text-muted, #8a8fa8); font-style: italic; padding: 6px 2px; }
+.equip-item-row { display: flex; align-items: center; gap: 6px; }
+.equip-btn-label { display: inline-flex; align-items: center; gap: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; }
+.equip-new-dot { font-size: 0.8em; flex-shrink: 0; }
+.equip-equipped-check { color: var(--rpg-teal, #2dd4bf); font-weight: 700; flex-shrink: 0; }

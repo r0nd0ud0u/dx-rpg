@@ -13,7 +13,7 @@ use lib_rpg::{
 
 use crate::{
     board_game_components::character_page::{AttackList, CharacterPanel, PotionList},
-    common::SERVER_NAME,
+    common::{CtxToggleAtkAnimation, SERVER_NAME},
     components::button::{Button, ButtonVariant},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
@@ -24,7 +24,7 @@ pub fn GameBoard() -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
-    let toggle_atk_animation = use_context::<Signal<bool>>();
+    let toggle_atk_animation = use_context::<CtxToggleAtkAnimation>().0;
 
     // eval server_data
     if server_data() == ServerData::default() {
@@ -112,6 +112,24 @@ pub fn GameBoard() -> Element {
                             "⚔️ Launch Attack"
                         }
                     } else {
+                        {
+                            let ra = server_data
+                                .read()
+                                .core_game_data
+                                .game_manager
+                                .game_state
+                                .last_result_atk
+                                .clone();
+                            if !ra.logs_end_of_round.is_empty() {
+                                rsx! {
+                                    div { class: "round-log-header",
+                                        "🔄 Turn {ra.turn_nb} — Round {ra.round_nb}"
+                                    }
+                                }
+                            } else {
+                                rsx! {}
+                            }
+                        }
                         div { class: "{output_text_css_class}",
                             ResultAtkText { ra: server_data.read().core_game_data.game_manager.game_state.last_result_atk.clone() }
                         }
@@ -125,18 +143,8 @@ pub fn GameBoard() -> Element {
                                     .last_result_atk
                                     .logs_end_of_round
                                     .clone();
-                                let ra = server_data
-                                    .read()
-                                    .core_game_data
-                                    .game_manager
-                                    .game_state
-                                    .last_result_atk
-                                    .clone();
                                 if !logs.is_empty() {
                                     rsx! {
-                                        div { class: "round-log-header",
-                                            "🔄 Round {ra.round_nb} — Turn {ra.turn_nb}"
-                                        }
                                         for log in logs.iter() {
                                             {
                                                 let msg = log.message.replace('\n', "<br/>");
@@ -181,8 +189,10 @@ pub fn GameBoard() -> Element {
 
 #[component]
 pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
+    // Show "Last attack" block whenever there are effects OR at least one dodge/block to report.
+    let has_dodge_info = ra.all_dodging.iter().any(|d| d.is_dodging || d.is_blocking);
     rsx! {
-        if !ra.new_game_atk_effects.is_empty() {
+        if !ra.new_game_atk_effects.is_empty() || has_dodge_info {
             "Last attack:\n"
             if ra.is_crit {
                 div {
@@ -245,7 +255,7 @@ fn AmountText(gae: GameAtkEffect) -> Element {
             }
         } else {
             div { color: colortext, style: crit_style,
-                "{target} → {stat} {amount} ({kind})"
+                "{target} → {stat} {full} ({kind})"
             }
         }
     }

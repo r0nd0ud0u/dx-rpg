@@ -29,10 +29,21 @@ fn total_uses(atks: &[AtksInfo]) -> i64 {
 // ─── Summary cards ──────────────────────────────────────────────────────────
 
 #[component]
-fn StatCard(label: String, value: String, color: String, icon: String) -> Element {
+fn StatCard(
+    label: String,
+    value: String,
+    color: String,
+    icon: String,
+    #[props(default)] wide: bool,
+) -> Element {
+    let card_class = if wide {
+        "rpg-stat-card rpg-stat-card--wide"
+    } else {
+        "rpg-stat-card"
+    };
     rsx! {
         div {
-            class: "rpg-stat-card",
+            class: "{card_class}",
             style: "border-left: 4px solid {color};",
             span { class: "rpg-stat-card-icon", "{icon}" }
             div { class: "rpg-stat-card-body",
@@ -223,6 +234,7 @@ fn HeroStatsPanel(atks_info: Vec<AtksInfo>, rounds: usize) -> Element {
                     value: top_atk.to_owned(),
                     color: "#e67e22".to_owned(),
                     icon: "⭐".to_owned(),
+                    wide: true,
                 }
             }
 
