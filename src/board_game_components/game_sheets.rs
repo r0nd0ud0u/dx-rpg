@@ -588,8 +588,13 @@ fn LogsList(logs: Vec<LogData>, filter: String) -> Element {
                     }
                 }
                 for log in filtered {
-                    div { style: "padding: 4px 8px; margin: 2px 0; border-left: 3px solid {log.color}; border-radius: 0 4px 4px 0; font-size: 0.82rem; color: {log.color}; word-break: break-word;",
-                        "{log.message}"
+                    {
+                        let msg = log.message.replace('\n', "<br/>");
+                        rsx! {
+                            div { style: "padding: 4px 8px; margin: 2px 0; border-left: 3px solid {log.color}; border-radius: 0 4px 4px 0; font-size: 0.82rem; color: {log.color}; word-break: break-word;",
+                                dangerous_inner_html: "{msg}"
+                            }
+                        }
                     }
                 }
             }
@@ -686,18 +691,32 @@ fn ScenariosSheet(s: SheetSide) -> Element {
 // ─── Settings Sheet ───────────────────────────────────────────────────────────
 
 const SETTING_TOOLTIPS: &str = "show_atk_tooltips";
+const SETTING_BOSS_ENERGY: &str = "show_boss_energy";
+const SETTING_HERO_AGGRO: &str = "show_hero_aggro";
 
 #[component]
 fn SettingsSheet(s: SheetSide) -> Element {
     let mut show_atk_tooltips = use_context::<Signal<bool>>();
+    let mut show_boss_energy = use_context::<Signal<bool>>();
+    let mut show_hero_aggro = use_context::<Signal<bool>>();
     let mut save_msg: Signal<String> = use_signal(String::new);
 
-    // Load saved setting on mount
+    // Load saved settings on mount
     use_effect(move || {
         spawn(async move {
             if let Ok(val) = get_user_setting(SETTING_TOOLTIPS.to_string(), "true".to_owned()).await
             {
                 show_atk_tooltips.set(val == "true");
+            }
+            if let Ok(val) =
+                get_user_setting(SETTING_BOSS_ENERGY.to_string(), "false".to_owned()).await
+            {
+                show_boss_energy.set(val == "true");
+            }
+            if let Ok(val) =
+                get_user_setting(SETTING_HERO_AGGRO.to_string(), "false".to_owned()).await
+            {
+                show_hero_aggro.set(val == "true");
             }
         });
     });
@@ -729,7 +748,6 @@ fn SettingsSheet(s: SheetSide) -> Element {
                             checked: show_atk_tooltips(),
                             onchange: move |e| {
                                 let v = e.value() == "true" || show_atk_tooltips();
-                                // toggle manually since checkbox `checked` doesn't invert
                                 let new_val = !show_atk_tooltips();
                                 show_atk_tooltips.set(new_val);
                                 save_msg.set("Saving…".to_owned());
@@ -740,7 +758,67 @@ fn SettingsSheet(s: SheetSide) -> Element {
                                         )
                                         .await;
                                     save_msg.set("✅ Saved".to_owned());
-                                    let _ = v; // suppress warning
+                                    let _ = v;
+                                });
+                            },
+                        }
+                        span { class: "toggle-slider" }
+                    }
+                }
+
+                // ── Boss Energy Bars ───────────────────────────────────────────
+                div { class: "settings-row",
+                    div { class: "settings-label-group",
+                        span { class: "settings-label", "Boss Energy Bars" }
+                        span { class: "settings-hint",
+                            "Show mana/vigor/berserk bars for bosses (hidden by default)."
+                        }
+                    }
+                    label { class: "toggle-switch",
+                        input {
+                            r#type: "checkbox",
+                            checked: show_boss_energy(),
+                            onchange: move |_| {
+                                let new_val = !show_boss_energy();
+                                show_boss_energy.set(new_val);
+                                save_msg.set("Saving…".to_owned());
+                                spawn(async move {
+                                    let _ = save_user_setting(
+                                            SETTING_BOSS_ENERGY.to_string(),
+                                            if new_val { "true" } else { "false" }.to_string(),
+                                        )
+                                        .await;
+                                    save_msg.set("✅ Saved".to_owned());
+                                });
+                            },
+                        }
+                        span { class: "toggle-slider" }
+                    }
+                }
+
+                // ── Hero Aggro ─────────────────────────────────────────────────
+                div { class: "settings-row",
+                    div { class: "settings-label-group",
+                        span { class: "settings-label", "Hero Aggro" }
+                        span { class: "settings-hint",
+                            "Show aggro value on the hero panel header."
+                        }
+                    }
+                    label { class: "toggle-switch",
+                        input {
+                            r#type: "checkbox",
+                            checked: show_hero_aggro(),
+                            onchange: move |_| {
+                                let new_val = !show_hero_aggro();
+                                show_hero_aggro.set(new_val);
+                                save_msg.set("Saving…".to_owned());
+                                spawn(async move {
+                                    let _ = save_user_setting(
+                                            SETTING_HERO_AGGRO.to_string(),
+                                            if new_val { "true" } else { "false" }.to_string(),
+                                        )
+                                        .await;
+                                    save_msg.set("✅ Saved".to_owned());
                                 });
                             },
                         }

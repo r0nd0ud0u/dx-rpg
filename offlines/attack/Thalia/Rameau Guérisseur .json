@@ -7,26 +7,20 @@
         {
             "Cible": "Ally",
             "Portée": "Individual",
-            "Stat": "HP",
-            "Tours actifs": 4,
-            "Type": "DecreasingRateOnTurn",
-            "Valeur de l'effet": 3,
-            "Value": 32,
+            "Tours actifs": 1,
             "IsMagicEffect": true,
             "Buffer": {
                 "kind": "DecreasingRateOnTurn",
-                "value": 32,
+                "value": 3,
                 "is-percent": false,
-                "stats-name": "HP",
+                "stats-name": "",
                 "passive-enabled": false
             }
         },
         {
             "Cible": "Ally",
             "Portée": "Individual",
-            "Stat": "Magic power",
             "Tours actifs": 4,
-            "Type": "ChangeMaxStatByPercentage",
             "Valeur de l'effet": 0,
             "Value": 10,
             "IsMagicEffect": true,
@@ -35,23 +29,6 @@
                 "value": 10,
                 "is-percent": true,
                 "stats-name": "Magic power",
-                "passive-enabled": false
-            }
-        },
-        {
-            "Cible": "",
-            "Portée": "",
-            "Stat": "",
-            "Tours actifs": 1,
-            "Type": "",
-            "Valeur de l'effet": 0,
-            "Value": 0,
-            "IsMagicEffect": true,
-            "Buffer": {
-                "kind": "ChangeCurrentStatByValue",
-                "value": -35,
-                "is-percent": false,
-                "stats-name": "HP",
                 "passive-enabled": false
             }
         }

@@ -65,6 +65,7 @@ pub enum ClientEvent {
     AddCharacterOnServerData(String, String, String), // `String`: server_name, `String`: player_name, `String`: character_name
     RemoveCharacterOnServerData(String, String),      // `String`: server_name, `String`: player_key
     StartGame(String),                                // `String`: server_name
+    SetUniverse(String, String),                      // server_name, universe
     LaunchAttack(String, String),                     // `String`: server_name, `String`: atk name
     AddPlayer(String),                                // `String`: username
     JoinServerData(String, String), // `String`: server_name, `String`: player_name
@@ -80,6 +81,7 @@ pub enum ClientEvent {
     RequestToggleEquip(String, String, String), // `String`: equipment unique name, `String`: player name, `String`: server name
     LoadNextScenario(String),                   // `String`: server name
     UsePotion(String, String, String), // `String`: server name, `String`: player name, `String`: potion name
+    UsePartyPotion(String, String, String), // server_name, player_name, potion_name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -183,6 +185,10 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("{} is starting a new game", server_name);
                                 start_new_game_by_player(&server_name, false).await;
                             }
+                            Ok(ClientEvent::SetUniverse(server_name, universe)) => {
+                                tracing::info!("Setting universe '{}' for server {}", universe, server_name);
+                                set_universe_on_server_data(&server_name, &universe);
+                            }
                             Ok(ClientEvent::InitializeGame(server_name, player_name, universe, is_single_player)) => {
                                 tracing::info!("{} is initializing a new game (universe: {}, single: {})", server_name, universe, is_single_player);
                                 let Ok(_) = init_new_game_by_player(&server_name, client_id, &player_name, &universe, is_single_player).await else {
@@ -257,6 +263,12 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("Player {} using potion {} on server {}", player_name, potion_name, server_name);
                                 use_potion_handler(&server_name, &player_name, &potion_name);
                                 // Using a potion counts as the turn action — advance the turn
+                                update_core_game_data_after_atk(&server_name, None, tx_server.clone()).await;
+                                process_ennemy_atk(&server_name, tx_server.clone()).await;
+                            }
+                            Ok(ClientEvent::UsePartyPotion(server_name, player_name, potion_name)) => {
+                                tracing::info!("Player {} using party potion {} on server {}", player_name, potion_name, server_name);
+                                use_party_potion_handler(&server_name, &player_name, &potion_name);
                                 update_core_game_data_after_atk(&server_name, None, tx_server.clone()).await;
                                 process_ennemy_atk(&server_name, tx_server.clone()).await;
                             }
@@ -599,6 +611,7 @@ pub async fn init_new_game_by_player(
     // add server data
     core_game_data.game_phase = GamePhase::InitGame;
     core_game_data.is_single_player = is_single_player;
+    core_game_data.universe = universe.to_string();
     // add first player
     core_game_data.players_nb = 0;
     add_server_data_with_player(&core_game_data, server_name, id, player_name);
@@ -654,6 +667,31 @@ pub fn use_potion_handler(server_name: &str, player_name: &str, potion_name: &st
         }
     }
     // Note: caller is responsible for broadcasting updated state and advancing the turn
+}
+
+#[cfg(feature = "server")]
+pub fn use_party_potion_handler(server_name: &str, player_name: &str, potion_name: &str) {
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    if let Some(server_data) = sm.servers_data.get_mut(server_name)
+        && let Some(character_id_name) = server_data
+            .players_data
+            .get_first_character_name(player_name)
+    {
+        let game_state = server_data.core_game_data.game_manager.game_state.clone();
+        match server_data
+            .core_game_data
+            .game_manager
+            .pm
+            .use_party_consumable(&character_id_name, potion_name, &game_state)
+        {
+            Ok(_) => tracing::info!(
+                "Player {} used party potion {} successfully",
+                player_name,
+                potion_name
+            ),
+            Err(e) => tracing::error!("Failed to use party potion {}: {}", potion_name, e),
+        }
+    }
 }
 
 #[cfg(feature = "server")]
@@ -1040,6 +1078,16 @@ fn remove_character_on_server_data(server_name: &str, player_key: &str) {
                 }
             }
         }
+    }
+    drop(sm);
+    update_clients_server_data(server_name);
+}
+
+#[cfg(feature = "server")]
+fn set_universe_on_server_data(server_name: &str, universe: &str) {
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    if let Some(server_data) = sm.servers_data.get_mut(server_name) {
+        server_data.core_game_data.universe = universe.to_owned();
     }
     drop(sm);
     update_clients_server_data(server_name);

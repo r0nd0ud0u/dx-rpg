@@ -30,6 +30,17 @@ pub fn LobbyPage() -> Element {
     let mut selected_universe = use_signal(String::new);
     let universes_resource = use_resource(list_universes_server);
 
+    // Pre-select the saved universe (if loading an existing game)
+    let saved_universe = server_data().core_game_data.universe.clone();
+    use_effect(move || {
+        let u = saved_universe.clone();
+        if !u.is_empty() && selected_universe().is_empty() {
+            selected_universe.set(u);
+        }
+    });
+    // A loaded game already has a universe: don't allow changing it
+    let universe_locked = !server_data().core_game_data.universe.is_empty();
+
     // all players info have a character name
     let server_data_snap = server_data();
 
@@ -122,7 +133,7 @@ pub fn LobbyPage() -> Element {
                     }
                 }
 
-                // Universe selector
+                // Universe selector — hidden when loading a saved game (universe already fixed)
                 {
                     let universes = universes_resource
                         .read()
@@ -130,16 +141,35 @@ pub fn LobbyPage() -> Element {
                         .and_then(|r| r.as_ref().ok())
                         .cloned()
                         .unwrap_or_default();
-                    rsx! {
-                        div { class: "lobby-universe-select",
-                            label { class: "lobby-info-label", "Choose Universe" }
-                            select {
-                                class: "lobby-select",
-                                value: "{selected_universe}",
-                                onchange: move |e| selected_universe.set(e.value()),
-                                option { value: "", "— select a universe —" }
-                                for u in &universes {
-                                    option { value: "{u}", "{u}" }
+                    if universe_locked {
+                        rsx! {
+                            div { class: "lobby-universe-select",
+                                label { class: "lobby-info-label", "Universe (saved)" }
+                                div { class: "lobby-universe-locked",
+                                    "🔒 {selected_universe()}"
+                                }
+                            }
+                        }
+                    } else {
+                        rsx! {
+                            div { class: "lobby-universe-select",
+                                label { class: "lobby-info-label", "Choose Universe" }
+                                select {
+                                    class: "lobby-select",
+                                    value: "{selected_universe}",
+                                    onchange: move |e| {
+                                        let v = e.value();
+                                        selected_universe.set(v.clone());
+                                        spawn(async move {
+                                            let _ = socket
+                                                .send(ClientEvent::SetUniverse(SERVER_NAME(), v))
+                                                .await;
+                                        });
+                                    },
+                                    option { value: "", "— select a universe —" }
+                                    for u in &universes {
+                                        option { value: "{u}", "{u}" }
+                                    }
                                 }
                             }
                         }

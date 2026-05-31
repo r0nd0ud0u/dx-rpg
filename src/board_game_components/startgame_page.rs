@@ -140,6 +140,29 @@ pub fn RunningGamePage() -> Element {
         {
             div { class: "scenario-end-page",
                 h2 { class: "scenario-end-title", "🏆 Scenario Complete!" }
+
+                // Show the finishing blow details
+                {
+                    let last_atk = snap_server_data
+                        .core_game_data
+                        .game_manager
+                        .game_state
+                        .last_result_atk
+                        .clone();
+                    if !last_atk.new_game_atk_effects.is_empty() {
+                        rsx! {
+                            div { class: "scenario-section",
+                                h3 { class: "scenario-section-title", "⚔️ Finishing Blow" }
+                                div { class: "scenario-last-atk",
+                                    crate::board_game_components::gameboard::ResultAtkText { ra: last_atk }
+                                }
+                            }
+                        }
+                    } else {
+                        rsx! {}
+                    }
+                }
+
                 EndStatePanels {}
                 div { class: "scenario-actions",
                     if server_data().players_data.owner_player_name == local_login_name_session() {
