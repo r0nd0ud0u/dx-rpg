@@ -193,12 +193,7 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
     let has_dodge_info = ra.all_dodging.iter().any(|d| d.is_dodging || d.is_blocking);
     rsx! {
         if !ra.new_game_atk_effects.is_empty() || has_dodge_info {
-            if !ra.atk_name.is_empty() {
-                div {
-                    style: "font-weight: bold; font-size: 0.95em; margin-bottom: 2px;",
-                    "⚔ {ra.atk_name}"
-                }
-            }
+            "Last attack:\n"
             if ra.is_crit {
                 div {
                     style: "color: var(--secondary-color-2); font-weight: bold; font-size: 1.1em;",
@@ -248,9 +243,14 @@ fn AmountText(gae: GameAtkEffect) -> Element {
             == BufKinds::CooldownTurnsNumber
         {
             div { color: colortext, style: crit_style,
-                "Cooldown on {target}: {gae.processed_effect_param.input_effect_param.buffer.value} turns"
+                "Cooldown on {target}: {gae.processed_effect_param.input_effect_param.nb_turns} turns"
             }
-        } else if gae.processed_effect_param.input_effect_param.buffer.stats_name == HP {
+        } else if gae.processed_effect_param.input_effect_param.buffer.stats_name == HP
+            && gae.processed_effect_param.input_effect_param.buffer.kind
+                != BufKinds::ChangeMaxStatByPercentage
+            && gae.processed_effect_param.input_effect_param.buffer.kind
+                != BufKinds::ChangeMaxStatByValue
+        {
             div { color: colortext, style: crit_style,
                 if full == amount {
                     "{target} → {amount} HP"
