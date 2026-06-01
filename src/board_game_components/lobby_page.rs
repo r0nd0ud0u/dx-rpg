@@ -145,9 +145,7 @@ pub fn LobbyPage() -> Element {
                         rsx! {
                             div { class: "lobby-universe-select",
                                 label { class: "lobby-info-label", "Universe (saved)" }
-                                div { class: "lobby-universe-locked",
-                                    "🔒 {selected_universe()}"
-                                }
+                                div { class: "lobby-universe-locked", "🔒 {selected_universe()}" }
                             }
                         }
                     } else {

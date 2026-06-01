@@ -495,7 +495,9 @@ pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Elem
                                         let async_player = player.clone();
                                         async move {
                                             let _ = socket
-                                                .send(ClientEvent::UsePotion(SERVER_NAME(), async_player, async_potion))
+                                                .send(
+                                                    ClientEvent::UsePotion(SERVER_NAME(), async_player, async_potion),
+                                                )
                                                 .await;
                                             display_potionlist_sig.set(false);
                                         }
@@ -529,7 +531,13 @@ pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Elem
                                         let async_player = player.clone();
                                         async move {
                                             let _ = socket
-                                                .send(ClientEvent::UsePartyPotion(SERVER_NAME(), async_player, async_potion))
+                                                .send(
+                                                    ClientEvent::UsePartyPotion(
+                                                        SERVER_NAME(),
+                                                        async_player,
+                                                        async_potion,
+                                                    ),
+                                                )
                                                 .await;
                                             display_potionlist_sig.set(false);
                                         }

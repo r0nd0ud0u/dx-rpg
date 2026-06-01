@@ -122,9 +122,7 @@ pub fn GameBoard() -> Element {
                                 .clone();
                             if !ra.logs_end_of_round.is_empty() {
                                 rsx! {
-                                    div { class: "round-log-header",
-                                        "🔄 Turn {ra.turn_nb} — Round {ra.round_nb}"
-                                    }
+                                    div { class: "round-log-header", "🔄 Turn {ra.turn_nb} — Round {ra.round_nb}" }
                                 }
                             } else {
                                 rsx! {}
@@ -151,7 +149,7 @@ pub fn GameBoard() -> Element {
                                                 rsx! {
                                                     div {
                                                         style: "color: {log.color}; font-size: 0.82rem; padding: 1px 0;",
-                                                        dangerous_inner_html: "{msg}"
+                                                        dangerous_inner_html: "{msg}",
                                                     }
                                                 }
                                             }
@@ -195,8 +193,7 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
         if !ra.new_game_atk_effects.is_empty() || has_dodge_info {
             "Last attack:\n"
             if ra.is_crit {
-                div {
-                    style: "color: var(--secondary-color-2); font-weight: bold; font-size: 1.1em;",
+                div { style: "color: var(--secondary-color-2); font-weight: bold; font-size: 1.1em;",
                     "💥 Critical Strike!"
                 }
             }
@@ -259,9 +256,7 @@ fn AmountText(gae: GameAtkEffect) -> Element {
                 }
             }
         } else {
-            div { color: colortext, style: crit_style,
-                "{target} → {stat} {full} ({kind})"
-            }
+            div { color: colortext, style: crit_style, "{target} → {stat} {full} ({kind})" }
         }
     }
 }

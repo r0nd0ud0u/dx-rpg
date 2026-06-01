@@ -58,8 +58,7 @@ pub fn TabEquipment(c: Character) -> Element {
     let mut current_tab: Signal<String> = use_signal(|| "tab1".to_string());
 
     // Ordered list of category keys — used to map tab index back to category.
-    let ordered_categories: Vec<EquipmentJsonKey> =
-        ordered_equipments.keys().cloned().collect();
+    let ordered_categories: Vec<EquipmentJsonKey> = ordered_equipments.keys().cloned().collect();
     let ordered_categories_eff = ordered_categories.clone();
     let char_id_eff = c.id_name.clone();
 
@@ -101,14 +100,14 @@ pub fn TabEquipment(c: Character) -> Element {
                                 span { class: "equip-tab-label",
                                     "{key}"
                                     if equipped_count > 0 {
-                                        span { class: "equip-tab-equipped-badge", title: "{equipped_count} equipped",
+                                        span {
+                                            class: "equip-tab-equipped-badge",
+                                            title: "{equipped_count} equipped",
                                             "✓"
                                         }
                                     }
                                     if has_new {
-                                        span { class: "equip-tab-new-badge", title: "New item!",
-                                            "!"
-                                        }
+                                        span { class: "equip-tab-new-badge", title: "New item!", "!" }
                                     }
                                 }
                             }
@@ -260,7 +259,11 @@ fn EquipmentTooltip(
                         }
                     }
                     p { style: "margin:4px 0 0 0; font-size:0.72rem; color:var(--rpg-text-muted,#8a8fa8);",
-                        if e_inventory.is_equipped { "Click to unequip" } else { "Click to equip" }
+                        if e_inventory.is_equipped {
+                            "Click to unequip"
+                        } else {
+                            "Click to equip"
+                        }
                     }
                 }
             }
