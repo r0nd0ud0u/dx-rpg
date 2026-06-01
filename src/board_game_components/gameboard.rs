@@ -193,7 +193,12 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
     let has_dodge_info = ra.all_dodging.iter().any(|d| d.is_dodging || d.is_blocking);
     rsx! {
         if !ra.new_game_atk_effects.is_empty() || has_dodge_info {
-            "Last attack:\n"
+            if !ra.atk_name.is_empty() {
+                div {
+                    style: "font-weight: bold; font-size: 0.95em; margin-bottom: 2px;",
+                    "⚔ {ra.atk_name}"
+                }
+            }
             if ra.is_crit {
                 div {
                     style: "color: var(--secondary-color-2); font-weight: bold; font-size: 1.1em;",
