@@ -14,6 +14,20 @@
             "classes": ["Standard"]
         },
         {
+            "name": "potion of resurrection",
+            "kind": "Consumable",
+            "rank": "Advanced",
+            "level": 3,
+            "classes": ["Standard"]
+        },
+        {
+            "name": "mana potion",
+            "kind": "Consumable",
+            "rank": "Intermediate",
+            "level": 2,
+            "classes": ["Mage", "Healer"]
+        },
+        {
             "name": "medium belt",
             "kind": "Equipment",
             "rank": "Advanced",

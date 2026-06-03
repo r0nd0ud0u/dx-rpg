@@ -142,6 +142,18 @@ pub fn CharacterPanel(
         class_css = "";
     }
 
+    let extra_rounds = {
+        let sd = server_data();
+        sd.core_game_data
+            .game_manager
+            .game_state
+            .order_to_play
+            .iter()
+            .filter(|id| **id == c.id_name)
+            .count()
+            .saturating_sub(1)
+    };
+
     rsx! {
         div { class: class_css, position: "relative",
             CharacterTooltip {
@@ -157,6 +169,13 @@ pub fn CharacterPanel(
                 div { class: "char-header",
                     span { class: "char-name-text", "{c.db_full_name}" }
                     span { class: "char-level", "Lvl {c.level}" }
+                    if extra_rounds > 0 {
+                        span {
+                            class: "char-extra-rounds",
+                            title: "Extra round from speed advantage",
+                            "⚡×{extra_rounds}"
+                        }
+                    }
                     if c.kind == CharacterKind::Hero && show_hero_aggro() {
                         if let Some(aggro_stat) = c.stats.all_stats.get(AGGRO) {
                             span { class: "char-aggro", title: "Aggro", "🎯 {aggro_stat.current}" }
