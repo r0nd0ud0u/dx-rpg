@@ -108,16 +108,6 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
     let server_data = use_context::<Signal<ServerData>>();
     let all_characters = use_context::<Signal<Vec<Character>>>();
 
-    let selected_names: Vec<String> = server_data()
-        .core_game_data
-        .heroes_chosen
-        .iter()
-        .filter(|(k, _)| {
-            k.as_str() == player_name.as_str() || k.starts_with(&format!("{}__sp", player_name))
-        })
-        .map(|(_, v)| strip_id_suffix(v).to_string())
-        .collect();
-
     let hero_chars: Vec<Character> = all_characters()
         .into_iter()
         .filter(|c| c.kind == lib_rpg::character_mod::character::CharacterKind::Hero)
@@ -128,7 +118,6 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
         div { class: "char-card-grid",
             for c in hero_chars {
                 {
-                    let is_selected = selected_names.contains(&c.db_full_name);
                     let taken_by = if !is_single_player {
                         server_data()
                             .core_game_data
@@ -151,7 +140,6 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
                             player_name: player_name.clone(),
                             server_name,
                             is_single_player,
-                            is_selected,
                             is_taken,
                             taken_by,
                         }
@@ -162,14 +150,12 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 #[component]
 fn CharCardItem(
     c: Character,
     player_name: String,
     server_name: String,
     is_single_player: bool,
-    is_selected: bool,
     is_taken: bool,
     taken_by: Option<String>,
 ) -> Element {
@@ -177,6 +163,14 @@ fn CharCardItem(
     let sd_signal = use_context::<Signal<ServerData>>();
     let max_hp = c.stats.all_stats.get(HP).map(|s| s.max).unwrap_or(0);
     let desc = c.description.clone();
+
+    // Subscribe directly to server_data so this component always re-renders on changes.
+    // Derive is_selected here instead of receiving it as a prop to avoid stale prop values.
+    let heroes_chosen = sd_signal().core_game_data.heroes_chosen.clone();
+    let is_selected = heroes_chosen.iter().any(|(k, v)| {
+        (k == &player_name || k.starts_with(&format!("{}__sp", player_name)))
+            && strip_id_suffix(v) == c.db_full_name.as_str()
+    });
 
     // onclick defined outside rsx! to prevent dx fmt corruption
     let cname = c.db_full_name.clone();
@@ -189,58 +183,58 @@ fn CharCardItem(
         let cn = cname.clone();
         let sn = sname.clone();
         let pn = pname.clone();
-        spawn(async move {
-            // Always read fresh state from the signal to avoid stale closure captures
-            let heroes_chosen = sd_signal.peek().core_game_data.heroes_chosen.clone();
-            let sel: Vec<String> = heroes_chosen
-                .iter()
-                .filter(|(k, _)| {
-                    k.as_str() == pn.as_str()
-                        || k.starts_with(&format!("{}__sp", pn))
-                })
-                .map(|(_, v)| strip_id_suffix(v).to_string())
-                .collect();
+        // Read state synchronously at click time to guarantee freshness
+        let hc = sd_signal.peek().core_game_data.heroes_chosen.clone();
+        let sel: Vec<String> = hc
+            .iter()
+            .filter(|(k, _)| k.as_str() == pn.as_str() || k.starts_with(&format!("{}__sp", pn)))
+            .map(|(_, v)| strip_id_suffix(v).to_string())
+            .collect();
 
-            if sel.contains(&cn) {
-                // Deselect: find and remove the key that maps to this character
-                let remove_key = heroes_chosen
-                    .iter()
-                    .find(|(k, v)| {
-                        (k.as_str() == pn.as_str()
-                            || k.starts_with(&format!("{}__sp", pn)))
-                            && strip_id_suffix(v) == cn.as_str()
-                    })
-                    .map(|(k, _)| k.clone());
-                if let Some(key) = remove_key {
+        if sel.contains(&cn) {
+            // Deselect: find and remove the key that maps to this character
+            let remove_key = hc
+                .iter()
+                .find(|(k, v)| {
+                    (k.as_str() == pn.as_str() || k.starts_with(&format!("{}__sp", pn)))
+                        && strip_id_suffix(v) == cn.as_str()
+                })
+                .map(|(k, _)| k.clone());
+            if let Some(key) = remove_key {
+                spawn(async move {
                     let _ = socket
                         .send(ClientEvent::RemoveCharacterOnServerData(sn, key))
                         .await;
-                }
-                return;
+                });
             }
+            return;
+        }
 
-            // Select
-            if is_single_player {
-                let extra_count = heroes_chosen
-                    .keys()
-                    .filter(|k| k.starts_with(&format!("{}__sp", pn)))
-                    .count();
-                let key = if sel.is_empty() {
-                    pn.clone()
-                } else {
-                    format!("{}__sp{}", pn, extra_count + 1)
-                };
-                tracing::info!("SP: Adding {} under key {}", cn, key);
+        // Select
+        if is_single_player {
+            let extra_count = hc
+                .keys()
+                .filter(|k| k.starts_with(&format!("{}__sp", pn)))
+                .count();
+            let key = if sel.is_empty() {
+                pn.clone()
+            } else {
+                format!("{}__sp{}", pn, extra_count + 1)
+            };
+            tracing::info!("SP: Adding {} under key {}", cn, key);
+            spawn(async move {
                 let _ = socket
                     .send(ClientEvent::AddCharacterOnServerData(sn, key, cn))
                     .await;
-            } else {
-                tracing::info!("Selected character: {}", cn);
+            });
+        } else {
+            tracing::info!("Selected character: {}", cn);
+            spawn(async move {
                 let _ = socket
                     .send(ClientEvent::AddCharacterOnServerData(sn, pn, cn))
                     .await;
-            }
-        });
+            });
+        }
     };
 
     rsx! {
