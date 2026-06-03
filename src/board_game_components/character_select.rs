@@ -268,7 +268,9 @@ fn CharCardItem(
                     div { class: "char-card-taken-label", "🔒 {taker}" }
                 }
             } else if is_selected() {
-                div { class: "char-card-check", "✓" }
+                div { class: "char-card-action char-card-action-selected", "× Remove" }
+            } else {
+                div { class: "char-card-action char-card-action-unselected", "+ Select" }
             }
         }
     }

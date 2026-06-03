@@ -1030,19 +1030,18 @@ fn remove_character_on_server_data(server_name: &str, player_key: &str) {
     let dm = DATA_MANAGER.lock().unwrap();
     let mut sm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
-        // Remove the entry for this player key
-        server_data.players_data.players_info.remove(player_key);
-        // If it was the primary player, also remove all __sp{N} keys
-        if !player_key.contains("__sp") {
-            let sp_keys: Vec<String> = server_data
+        if player_key.contains("__sp") {
+            // Synthetic single-player extra-hero slot: drop the whole entry.
+            server_data.players_data.players_info.remove(player_key);
+        } else {
+            // Real player: keep them in players_info so they stay in the
+            // lobby/selection screen; just clear their chosen character.
+            if let Some(info) = server_data
                 .players_data
                 .players_info
-                .keys()
-                .filter(|k| k.starts_with(&format!("{}__sp", player_key)))
-                .cloned()
-                .collect();
-            for k in sp_keys {
-                server_data.players_data.players_info.remove(&k);
+                .get_mut(player_key)
+            {
+                info.character_id_names.clear();
             }
         }
         // Rebuild active_heroes and heroes_chosen from remaining entries

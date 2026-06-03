@@ -932,10 +932,23 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
     overflow: hidden;
 }
-.char-card-check {
-    position: absolute; top: 6px; right: 8px;
-    font-size: 1.2rem; color: var(--rpg-gold);
-    text-shadow: 0 0 6px rgba(190,148,65,.7);
+.char-card-action {
+    font-size: .72rem; font-weight: 700; padding: 5px 8px;
+    text-align: center; margin-top: auto;
+    border-top: 1px solid var(--rpg-border);
+    transition: background var(--t-fast), color var(--t-fast);
+}
+.char-card-action-unselected {
+    background: rgba(255,255,255,.04); color: var(--rpg-text-muted);
+}
+.char-card:not(.char-card-selected):hover .char-card-action-unselected {
+    background: rgba(190,148,65,.12); color: var(--rpg-gold);
+}
+.char-card-action-selected {
+    background: rgba(180,45,45,.22); color: #ff6b6b;
+}
+.char-card-selected:hover .char-card-action-selected {
+    background: rgba(220,60,60,.35); color: #ff8080;
 }
 /* Chosen / others section */
 .char-select-chosen-list, .char-select-others {
