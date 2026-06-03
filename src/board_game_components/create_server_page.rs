@@ -124,9 +124,7 @@ pub fn CreateServer() -> Element {
                                             }
                                         }
                                         if !slot.universe.is_empty() {
-                                            span { class: "save-slot-universe",
-                                                "🌐 {slot.universe}"
-                                            }
+                                            span { class: "save-slot-universe", "🌐 {slot.universe}" }
                                         }
                                     }
                                 }

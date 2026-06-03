@@ -2,7 +2,7 @@ use dioxus::fullstack::CborEncoding;
 use dioxus::prelude::*;
 use dioxus::{fullstack::UseWebsocket, logger::tracing};
 
-use crate::utils::server_file_utils;
+use crate::utils::server_file_utils::{SaveSlotInfo, delete_game, get_save_slots};
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::{
     common::Route,
@@ -11,30 +11,39 @@ use crate::{
 
 #[component]
 pub fn LoadGame() -> Element {
-    let games_list = use_context::<Signal<Vec<std::path::PathBuf>>>();
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let local_login_name_session = use_context::<Signal<String>>();
 
+    let mut slots: Signal<Vec<SaveSlotInfo>> = use_signal(Vec::new);
     let mut selected: Signal<Option<usize>> = use_signal(|| None);
+    let mut error_msg: Signal<String> = use_signal(String::new);
     let navigator = use_navigator();
 
-    let games_list_snap = games_list();
-    let save_count = games_list_snap.len();
-    let plural = if save_count != 1 { "s" } else { "" };
+    let player = local_login_name_session();
+    use_effect(move || {
+        let player_name = player.clone();
+        spawn(async move {
+            match get_save_slots(player_name).await {
+                Ok(s) => slots.set(s.into_iter().filter(|s| !s.name.is_empty()).collect()),
+                Err(e) => error_msg.set(format!("Failed to load saves: {e}")),
+            }
+        });
+    });
 
-    /// Extract the game name from a PathBuf (last path component).
-    fn extract_name(path: &std::path::Path) -> String {
-        path.file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_else(|| path.to_string_lossy().into_owned())
-    }
+    let occupied_slots = slots();
+    let save_count = occupied_slots.len();
+    let plural = if save_count != 1 { "s" } else { "" };
 
     rsx! {
         div { class: "home-container",
             h2 { class: "rpg-title", "💾 Load Game" }
             p { class: "rpg-subtitle", "{save_count} saved adventure{plural}" }
 
-            if games_list_snap.is_empty() {
+            if !error_msg().is_empty() {
+                p { class: "admin-answer-error", "{error_msg}" }
+            }
+
+            if occupied_slots.is_empty() {
                 div { class: "load-empty",
                     span { "📂" }
                     p { "No saved games found." }
@@ -44,9 +53,8 @@ pub fn LoadGame() -> Element {
                 }
             } else {
                 div { class: "save-slot-grid",
-                    for (index, path) in games_list_snap.iter().enumerate() {
+                    for (index, slot) in occupied_slots.iter().enumerate() {
                         {
-                            let game_name = extract_name(path);
                             let is_selected = selected() == Some(index);
                             rsx! {
                                 div {
@@ -58,56 +66,68 @@ pub fn LoadGame() -> Element {
                                             selected.set(Some(index));
                                         }
                                     },
-                                    span { class: "save-slot-icon", "🎮" }
+                                    span { class: "save-slot-icon", "💾" }
                                     div { class: "save-slot-info",
-                                        span { class: "save-slot-name", "{game_name}" }
+                                        span { class: "save-slot-name", "{slot.name}" }
+                                        if !slot.current_scenario.is_empty() {
+                                            span { class: "save-slot-scenario",
+                                                "📜 {slot.current_scenario} (Lvl {slot.scenario_level})"
+                                            }
+                                        }
+                                        span { class: "save-slot-date", "🕐 {slot.last_saved}" }
+                                        div { class: "save-slot-meta",
+                                            if slot.is_single_player {
+                                                span { class: "save-slot-mode", "🎮 Solo" }
+                                            } else {
+                                                span { class: "save-slot-mode",
+                                                    "👥 Multi ({slot.players_nb}p)"
+                                                }
+                                            }
+                                            if !slot.universe.is_empty() {
+                                                span { class: "save-slot-universe", "🌐 {slot.universe}" }
+                                            }
+                                        }
                                     }
                                     if is_selected {
                                         div { class: "save-slot-actions",
                                             Button {
                                                 variant: ButtonVariant::GreenType,
-                                                onclick: move |_| {
-                                                    let cur_game = games_list()
-                                                        .get(index)
-                                                        .unwrap()
-                                                        .to_owned();
+                                                onclick: {
+                                                    let path = slot.path.clone();
                                                     let player = local_login_name_session();
-                                                    async move {
-                                                        let _ = socket
-                                                            .send(ClientEvent::LoadGame(
-                                                                cur_game,
-                                                                player,
-                                                            ))
-                                                            .await;
-                                                        navigator.push(Route::LobbyPage {});
+                                                    move |_| {
+                                                        let p = path.clone();
+                                                        let pl = player.clone();
+                                                        async move {
+                                                            let _ = socket
+                                                                .send(ClientEvent::LoadGame(p, pl))
+                                                                .await;
+                                                            navigator.push(Route::LobbyPage {});
+                                                        }
                                                     }
                                                 },
                                                 "▶ Load"
                                             }
                                             Button {
                                                 variant: ButtonVariant::Destructive,
-                                                onclick: move |_| {
-                                                    let cur_game = games_list()
-                                                        .get(index)
-                                                        .unwrap()
-                                                        .to_owned();
-                                                    async move {
-                                                        match server_file_utils::delete_game(cur_game).await {
-                                                            Ok(_) => {
-                                                                let _ = socket
-                                                                    .send(
-                                                                        ClientEvent::RequestSavedGameList(
-                                                                            local_login_name_session()
-                                                                                .clone(),
-                                                                        ),
-                                                                    )
-                                                                    .await;
+                                                onclick: {
+                                                    let path = slot.path.clone();
+                                                    move |_| {
+                                                        let p = path.clone();
+                                                        async move {
+                                                            match delete_game(p).await {
+                                                                Ok(_) => {
+                                                                    match get_save_slots(local_login_name_session().clone()).await {
+                                                                        Ok(s) => slots.set(s.into_iter().filter(|s| !s.name.is_empty()).collect()),
+                                                                        Err(e) => tracing::error!("Failed to reload slots: {}", e),
+                                                                    }
+                                                                }
+                                                                Err(e) => {
+                                                                    tracing::error!("Error deleting game: {}", e);
+                                                                }
                                                             }
-                                                            Err(e) => {
-                                                                tracing::error!("Error deleting game: {}", e);
-                                                            }
+                                                            selected.set(None);
                                                         }
-                                                        selected.set(None);
                                                     }
                                                 },
                                                 "🗑 Delete"

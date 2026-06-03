@@ -14,6 +14,20 @@
             "classes": ["Standard"]
         },
         {
+            "name": "mana potion",
+            "kind": "Consumable",
+            "rank": "Common",
+            "level": 1,
+            "classes": ["Mage", "Healer"]
+        },
+        {
+            "name": "vigor potion",
+            "kind": "Consumable",
+            "rank": "Common",
+            "level": 1,
+            "classes": ["Warrior"]
+        },
+        {
             "name": "medium amulet",
             "kind": "Equipment",
             "rank": "Common",

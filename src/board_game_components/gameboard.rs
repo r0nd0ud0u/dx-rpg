@@ -122,9 +122,7 @@ pub fn GameBoard() -> Element {
                                 .clone();
                             if !ra.logs_end_of_round.is_empty() {
                                 rsx! {
-                                    div { class: "round-log-header",
-                                        "🔄 Turn {ra.turn_nb} — Round {ra.round_nb}"
-                                    }
+                                    div { class: "round-log-header", "🔄 Turn {ra.turn_nb} — Round {ra.round_nb}" }
                                 }
                             } else {
                                 rsx! {}
@@ -151,7 +149,7 @@ pub fn GameBoard() -> Element {
                                                 rsx! {
                                                     div {
                                                         style: "color: {log.color}; font-size: 0.82rem; padding: 1px 0;",
-                                                        dangerous_inner_html: "{msg}"
+                                                        dangerous_inner_html: "{msg}",
                                                     }
                                                 }
                                             }
@@ -191,12 +189,23 @@ pub fn GameBoard() -> Element {
 pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
     // Show "Last attack" block whenever there are effects OR at least one dodge/block to report.
     let has_dodge_info = ra.all_dodging.iter().any(|d| d.is_dodging || d.is_blocking);
+
+    // Group effects by target, preserving the order of first appearance.
+    let mut ordered_groups: Vec<(String, Vec<GameAtkEffect>)> = Vec::new();
+    for gae in &ra.new_game_atk_effects {
+        let target = gae.effect_outcome.target_id_name.clone();
+        if let Some(group) = ordered_groups.iter_mut().find(|(t, _)| t == &target) {
+            group.1.push(gae.clone());
+        } else {
+            ordered_groups.push((target, vec![gae.clone()]));
+        }
+    }
+
     rsx! {
         if !ra.new_game_atk_effects.is_empty() || has_dodge_info {
             "Last attack:\n"
             if ra.is_crit {
-                div {
-                    style: "color: var(--secondary-color-2); font-weight: bold; font-size: 1.1em;",
+                div { style: "color: var(--secondary-color-2); font-weight: bold; font-size: 1.1em;",
                     "💥 Critical Strike!"
                 }
             }
@@ -207,8 +216,13 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
                     "{d.name} is blocking\n"
                 }
             }
-            for gae in ra.new_game_atk_effects {
-                AmountText { gae: gae.clone() }
+            for (i, (_target, effects)) in ordered_groups.iter().enumerate() {
+                if i > 0 {
+                    hr { style: "border: none; border-top: 1px dashed var(--border-color); margin: 2px 0;" }
+                }
+                for gae in effects {
+                    AmountText { gae: gae.clone() }
+                }
             }
         } else {
             ""
@@ -243,9 +257,14 @@ fn AmountText(gae: GameAtkEffect) -> Element {
             == BufKinds::CooldownTurnsNumber
         {
             div { color: colortext, style: crit_style,
-                "Cooldown on {target}: {gae.processed_effect_param.input_effect_param.buffer.value} turns"
+                "Cooldown on {target}: {gae.processed_effect_param.input_effect_param.nb_turns} turns"
             }
-        } else if gae.processed_effect_param.input_effect_param.buffer.stats_name == HP {
+        } else if gae.processed_effect_param.input_effect_param.buffer.stats_name == HP
+            && gae.processed_effect_param.input_effect_param.buffer.kind
+                != BufKinds::ChangeMaxStatByPercentage
+            && gae.processed_effect_param.input_effect_param.buffer.kind
+                != BufKinds::ChangeMaxStatByValue
+        {
             div { color: colortext, style: crit_style,
                 if full == amount {
                     "{target} → {amount} HP"
@@ -254,9 +273,7 @@ fn AmountText(gae: GameAtkEffect) -> Element {
                 }
             }
         } else {
-            div { color: colortext, style: crit_style,
-                "{target} → {stat} {full} ({kind})"
-            }
+            div { color: colortext, style: crit_style, "{target} → {stat} {full} ({kind})" }
         }
     }
 }

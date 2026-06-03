@@ -84,8 +84,7 @@ pub fn CharacterSelect(universe: String) -> Element {
             }
 
             // "Other players" panel: hidden in single-player mode
-            if !is_single
-                && server_data_snap.core_game_data.game_phase == GamePhase::InitGame
+            if !is_single && server_data_snap.core_game_data.game_phase == GamePhase::InitGame
                 && !others.is_empty()
             {
                 div { class: "char-select-others",
