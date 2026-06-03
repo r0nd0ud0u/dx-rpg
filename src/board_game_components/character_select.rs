@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
-    logger::tracing,
     prelude::*,
 };
 use lib_rpg::{
@@ -164,15 +163,22 @@ fn CharCardItem(
     let max_hp = c.stats.all_stats.get(HP).map(|s| s.max).unwrap_or(0);
     let desc = c.description.clone();
 
-    // Subscribe directly to server_data so this component always re-renders on changes.
-    // Derive is_selected here instead of receiving it as a prop to avoid stale prop values.
-    let heroes_chosen = sd_signal().core_game_data.heroes_chosen.clone();
-    let is_selected = heroes_chosen.iter().any(|(k, v)| {
-        (k == &player_name || k.starts_with(&format!("{}__sp", player_name)))
-            && strip_id_suffix(v) == c.db_full_name.as_str()
+    // use_memo: recomputes whenever sd_signal changes; the handle is Copy so the
+    // onclick closure can call is_selected() to read the *current* value at click
+    // time rather than the bool captured at render time.
+    let pn_memo = player_name.clone();
+    let cn_memo = c.db_full_name.clone();
+    let is_selected = use_memo(move || {
+        sd_signal()
+            .core_game_data
+            .heroes_chosen
+            .iter()
+            .any(|(k, v)| {
+                (k == &pn_memo || k.starts_with(&format!("{}__sp", pn_memo)))
+                    && strip_id_suffix(v) == cn_memo.as_str()
+            })
     });
 
-    // onclick defined outside rsx! to prevent dx fmt corruption
     let cname = c.db_full_name.clone();
     let pname = player_name.clone();
     let sname = server_name.clone();
@@ -184,9 +190,8 @@ fn CharCardItem(
         let sn = sname.clone();
         let pn = pname.clone();
 
-        if is_selected {
-            // is_selected comes from sd_signal() at render time — always reflects live state.
-            // Find the exact key to remove via peek().
+        if is_selected() {
+            // Deselect: look up the exact key to remove
             let remove_key = sd_signal
                 .peek()
                 .core_game_data
@@ -207,27 +212,24 @@ fn CharCardItem(
             return;
         }
 
-        // Select — read how many heroes this player already has to build the right key
+        // Select
         let hc = sd_signal.peek().core_game_data.heroes_chosen.clone();
         if is_single_player {
             let extra_count = hc
                 .keys()
                 .filter(|k| k.starts_with(&format!("{}__sp", pn)))
                 .count();
-            let already_has_primary = hc.contains_key(pn.as_str());
-            let key = if !already_has_primary {
+            let key = if !hc.contains_key(pn.as_str()) {
                 pn.clone()
             } else {
                 format!("{}__sp{}", pn, extra_count + 1)
             };
-            tracing::info!("SP: Adding {} under key {}", cn, key);
             spawn(async move {
                 let _ = socket
                     .send(ClientEvent::AddCharacterOnServerData(sn, key, cn))
                     .await;
             });
         } else {
-            tracing::info!("Selected character: {}", cn);
             spawn(async move {
                 let _ = socket
                     .send(ClientEvent::AddCharacterOnServerData(sn, pn, cn))
@@ -238,7 +240,7 @@ fn CharCardItem(
 
     rsx! {
         div {
-            class: if is_taken { "char-card char-card-taken" } else if is_selected { "char-card char-card-selected" } else { "char-card" },
+            class: if is_taken { "char-card char-card-taken" } else if is_selected() { "char-card char-card-selected" } else { "char-card" },
             onclick: onclick_handler,
             div { class: "char-card-portrait",
                 img {
@@ -265,7 +267,7 @@ fn CharCardItem(
                 if let Some(taker) = taken_by.clone() {
                     div { class: "char-card-taken-label", "🔒 {taker}" }
                 }
-            } else if is_selected {
+            } else if is_selected() {
                 div { class: "char-card-check", "✓" }
             }
         }
