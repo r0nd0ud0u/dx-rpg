@@ -183,17 +183,14 @@ fn CharCardItem(
         let cn = cname.clone();
         let sn = sname.clone();
         let pn = pname.clone();
-        // Read state synchronously at click time to guarantee freshness
-        let hc = sd_signal.peek().core_game_data.heroes_chosen.clone();
-        let sel: Vec<String> = hc
-            .iter()
-            .filter(|(k, _)| k.as_str() == pn.as_str() || k.starts_with(&format!("{}__sp", pn)))
-            .map(|(_, v)| strip_id_suffix(v).to_string())
-            .collect();
 
-        if sel.contains(&cn) {
-            // Deselect: find and remove the key that maps to this character
-            let remove_key = hc
+        if is_selected {
+            // is_selected comes from sd_signal() at render time — always reflects live state.
+            // Find the exact key to remove via peek().
+            let remove_key = sd_signal
+                .peek()
+                .core_game_data
+                .heroes_chosen
                 .iter()
                 .find(|(k, v)| {
                     (k.as_str() == pn.as_str() || k.starts_with(&format!("{}__sp", pn)))
@@ -210,13 +207,15 @@ fn CharCardItem(
             return;
         }
 
-        // Select
+        // Select — read how many heroes this player already has to build the right key
+        let hc = sd_signal.peek().core_game_data.heroes_chosen.clone();
         if is_single_player {
             let extra_count = hc
                 .keys()
                 .filter(|k| k.starts_with(&format!("{}__sp", pn)))
                 .count();
-            let key = if sel.is_empty() {
+            let already_has_primary = hc.contains_key(pn.as_str());
+            let key = if !already_has_primary {
                 pn.clone()
             } else {
                 format!("{}__sp{}", pn, extra_count + 1)
