@@ -229,6 +229,22 @@ fn CharCardItem(
                     .send(ClientEvent::AddCharacterOnServerData(sn, key, cn))
                     .await;
             } else {
+                if sel.contains(&cn) {
+                    // Deselect: remove the current character for this player
+                    let remove_key = sd_signal
+                        .peek()
+                        .core_game_data
+                        .heroes_chosen
+                        .iter()
+                        .find(|(_, v)| strip_id_suffix(v) == cn.as_str())
+                        .map(|(k, _)| k.clone());
+                    if let Some(key) = remove_key {
+                        let _ = socket
+                            .send(ClientEvent::RemoveCharacterOnServerData(sn, key))
+                            .await;
+                    }
+                    return;
+                }
                 tracing::info!("Selected character: {}", cn);
                 let _ = socket
                     .send(ClientEvent::AddCharacterOnServerData(sn, pn, cn))
