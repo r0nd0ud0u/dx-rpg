@@ -102,7 +102,11 @@ pub fn GameSheets() -> Element {
                 position: "relative",
                 "Inventory"
                 if has_new_equipment {
-                    span { class: "equip-tab-new-badge", style: "position:absolute;top:2px;right:2px;", title: "New equipment!" }
+                    span {
+                        class: "equip-tab-new-badge",
+                        style: "position:absolute;top:2px;right:2px;",
+                        title: "New equipment!",
+                    }
                 }
             }
             Button {
@@ -207,10 +211,7 @@ fn InventorySheet(s: SheetSide) -> Element {
 
                 // Hero selector tabs — only shown in single-player when there are multiple heroes
                 if heroes_to_show.len() > 1 {
-                    div {
-                        display: "flex",
-                        gap: "0.4rem",
-                        flex_wrap: "wrap",
+                    div { display: "flex", gap: "0.4rem", flex_wrap: "wrap",
                         for (i, hero) in heroes_to_show.iter().enumerate() {
                             button {
                                 class: if i == active_tab_idx { "inv-tab inv-tab--active" } else { "inv-tab" },
@@ -221,7 +222,7 @@ fn InventorySheet(s: SheetSide) -> Element {
                                     span {
                                         class: "equip-tab-new-badge",
                                         style: "position:absolute;top:2px;right:2px;",
-                                        title: "New equipment for {hero.db_full_name}!"
+                                        title: "New equipment for {hero.db_full_name}!",
                                     }
                                 }
                             }
@@ -637,8 +638,9 @@ fn LogsList(logs: Vec<LogData>, filter: String) -> Element {
                     {
                         let msg = log.message.replace('\n', "<br/>");
                         rsx! {
-                            div { style: "padding: 4px 8px; margin: 2px 0; border-left: 3px solid {log.color}; border-radius: 0 4px 4px 0; font-size: 0.82rem; color: {log.color}; word-break: break-word;",
-                                dangerous_inner_html: "{msg}"
+                            div {
+                                style: "padding: 4px 8px; margin: 2px 0; border-left: 3px solid {log.color}; border-radius: 0 4px 4px 0; font-size: 0.82rem; color: {log.color}; word-break: break-word;",
+                                dangerous_inner_html: "{msg}",
                             }
                         }
                     }
@@ -822,9 +824,7 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 div { class: "settings-row",
                     div { class: "settings-label-group",
                         span { class: "settings-label", "Boss Energy Bars" }
-                        span { class: "settings-hint",
-                            "Show mana/vigor/berserk bars for bosses."
-                        }
+                        span { class: "settings-hint", "Show mana/vigor/berserk bars for bosses." }
                     }
                     label { class: "toggle-switch",
                         input {
@@ -852,9 +852,7 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 div { class: "settings-row",
                     div { class: "settings-label-group",
                         span { class: "settings-label", "Hero Aggro" }
-                        span { class: "settings-hint",
-                            "Show aggro value on the hero panel header."
-                        }
+                        span { class: "settings-hint", "Show aggro value on the hero panel header." }
                     }
                     label { class: "toggle-switch",
                         input {

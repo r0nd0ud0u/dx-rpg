@@ -1741,6 +1741,16 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     cursor: default;
 }
 
+.char-extra-rounds {
+    font-size: 0.72rem;
+    color: #7ecfff;
+    background: rgba(126,207,255,0.15);
+    border-radius: 4px;
+    padding: 1px 5px;
+    cursor: default;
+    font-weight: 700;
+}
+
 /* ── Potion bag section header ───────────────────────────────────────────── */
 .potion-bag-header {
     display: block;

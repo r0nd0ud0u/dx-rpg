@@ -42,9 +42,7 @@ fn StatCard(
         "rpg-stat-card"
     };
     rsx! {
-        div {
-            class: "{card_class}",
-            style: "border-left: 4px solid {color};",
+        div { class: "{card_class}", style: "border-left: 4px solid {color};",
             span { class: "rpg-stat-card-icon", "{icon}" }
             div { class: "rpg-stat-card-body",
                 span { class: "rpg-stat-card-value", "{value}" }
@@ -83,7 +81,9 @@ fn ProgressBar(label: String, value: i64, max: i64, color: String, suffix: Strin
 fn AtkUsageChart(atks_info: Vec<AtksInfo>) -> Element {
     let total_uses: i64 = atks_info.iter().map(|a| a.nb_use).sum();
     if total_uses == 0 {
-        return rsx! { p { class: "rpg-no-data", "No attacks recorded yet." } };
+        return rsx! {
+            p { class: "rpg-no-data", "No attacks recorded yet." }
+        };
     }
 
     // sort descending by usage
@@ -124,7 +124,9 @@ fn AtkUsageChart(atks_info: Vec<AtksInfo>) -> Element {
 fn AtkAmountTable(atks_info: Vec<AtksInfo>) -> Element {
     let has_data = atks_info.iter().any(|a| !a.totals_by_target.is_empty());
     if !has_data {
-        return rsx! { p { class: "rpg-no-data", "No damage or heal data yet." } };
+        return rsx! {
+            p { class: "rpg-no-data", "No damage or heal data yet." }
+        };
     }
 
     let max_dmg = atks_info
@@ -144,7 +146,10 @@ fn AtkAmountTable(atks_info: Vec<AtksInfo>) -> Element {
         div { class: "rpg-section",
             h4 { class: "rpg-section-title", "🗡️ Damage dealt" }
             div { class: "rpg-bar-list",
-                for atk in atks_info.iter().filter(|a| a.totals_by_target.values().any(|t| t.total_real_dmg < 0)) {
+                for atk in atks_info
+                    .iter()
+                    .filter(|a| a.totals_by_target.values().any(|t| t.total_real_dmg < 0))
+                {
                     for (target, totals) in atk.totals_by_target.iter().filter(|(_, t)| t.total_real_dmg < 0) {
                         ProgressBar {
                             label: format!("{} → {}", atk.atk_name, target),
@@ -160,7 +165,10 @@ fn AtkAmountTable(atks_info: Vec<AtksInfo>) -> Element {
         div { class: "rpg-section",
             h4 { class: "rpg-section-title", "💚 Healing done" }
             div { class: "rpg-bar-list",
-                for atk in atks_info.iter().filter(|a| a.totals_by_target.values().any(|t| t.total_real_heal > 0)) {
+                for atk in atks_info
+                    .iter()
+                    .filter(|a| a.totals_by_target.values().any(|t| t.total_real_heal > 0))
+                {
                     for (target, totals) in atk.totals_by_target.iter().filter(|(_, t)| t.total_real_heal > 0) {
                         ProgressBar {
                             label: format!("{} → {}", atk.atk_name, target),
@@ -297,11 +305,7 @@ pub fn TabStats() -> Element {
             TabList {
                 TabTrigger { value: "tab0".to_owned(), index: 0_usize, "🌐 Party" }
                 for (i, c) in heroes.clone().into_iter().enumerate() {
-                    TabTrigger {
-                        value: format!("tab{}", i + 1),
-                        index: i + 1,
-                        "⚔️ {c.db_full_name}"
-                    }
+                    TabTrigger { value: format!("tab{}", i + 1), index: i + 1, "⚔️ {c.db_full_name}" }
                 }
             }
             TabContent { value: "tab0".to_owned(), index: 0_usize, width: "42em",

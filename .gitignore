@@ -20,3 +20,5 @@ saved_data/*
 db.sqlite
 
 .env
+CLAUDE.md
+/.claude/*
