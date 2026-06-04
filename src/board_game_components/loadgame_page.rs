@@ -79,9 +79,7 @@ pub fn LoadGame() -> Element {
                                             if slot.is_single_player {
                                                 span { class: "save-slot-mode", "🎮 Solo" }
                                             } else {
-                                                span { class: "save-slot-mode",
-                                                    "👥 Multi ({slot.players_nb}p)"
-                                                }
+                                                span { class: "save-slot-mode", "👥 Multi ({slot.players_nb}p)" }
                                             }
                                             if !slot.universe.is_empty() {
                                                 span { class: "save-slot-universe", "🌐 {slot.universe}" }
@@ -118,7 +116,10 @@ pub fn LoadGame() -> Element {
                                                             match delete_game(p).await {
                                                                 Ok(_) => {
                                                                     match get_save_slots(local_login_name_session().clone()).await {
-                                                                        Ok(s) => slots.set(s.into_iter().filter(|s| !s.name.is_empty()).collect()),
+                                                                        Ok(s) => {
+                                                                            slots
+                                                                                .set(s.into_iter().filter(|s| !s.name.is_empty()).collect())
+                                                                        }
                                                                         Err(e) => tracing::error!("Failed to reload slots: {}", e),
                                                                     }
                                                                 }

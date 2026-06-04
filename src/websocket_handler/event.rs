@@ -1036,11 +1036,7 @@ fn remove_character_on_server_data(server_name: &str, player_key: &str) {
         } else {
             // Real player: keep them in players_info so they stay in the
             // lobby/selection screen; just clear their chosen character.
-            if let Some(info) = server_data
-                .players_data
-                .players_info
-                .get_mut(player_key)
-            {
+            if let Some(info) = server_data.players_data.players_info.get_mut(player_key) {
                 info.character_id_names.clear();
             }
         }
