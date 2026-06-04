@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
-    logger::tracing,
     prelude::*,
 };
 use lib_rpg::{
@@ -108,34 +107,16 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
     let server_data = use_context::<Signal<ServerData>>();
     let all_characters = use_context::<Signal<Vec<Character>>>();
 
-    let selected_names: Vec<String> = server_data()
-        .core_game_data
-        .heroes_chosen
-        .iter()
-        .filter(|(k, _)| {
-            k.as_str() == player_name.as_str() || k.starts_with(&format!("{}__sp", player_name))
-        })
-        .map(|(_, v)| strip_id_suffix(v).to_string())
-        .collect();
-
     let hero_chars: Vec<Character> = all_characters()
         .into_iter()
         .filter(|c| c.kind == lib_rpg::character_mod::character::CharacterKind::Hero)
         .filter(|c| universe.is_empty() || c.universe == universe)
         .collect();
 
-    let extra_count = server_data()
-        .core_game_data
-        .heroes_chosen
-        .keys()
-        .filter(|k| k.starts_with(&format!("{}__sp", player_name)))
-        .count();
-
     rsx! {
         div { class: "char-card-grid",
             for c in hero_chars {
                 {
-                    let is_selected = selected_names.contains(&c.db_full_name);
                     let taken_by = if !is_single_player {
                         server_data()
                             .core_game_data
@@ -158,9 +139,6 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
                             player_name: player_name.clone(),
                             server_name,
                             is_single_player,
-                            extra_count,
-                            selected_names: selected_names.clone(),
-                            is_selected,
                             is_taken,
                             taken_by,
                         }
@@ -171,16 +149,12 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 #[component]
 fn CharCardItem(
     c: Character,
     player_name: String,
     server_name: String,
     is_single_player: bool,
-    extra_count: usize,
-    selected_names: Vec<String>,
-    is_selected: bool,
     is_taken: bool,
     taken_by: Option<String>,
 ) -> Element {
@@ -189,11 +163,25 @@ fn CharCardItem(
     let max_hp = c.stats.all_stats.get(HP).map(|s| s.max).unwrap_or(0);
     let desc = c.description.clone();
 
-    // onclick defined outside rsx! to prevent dx fmt corruption
+    // use_memo: recomputes whenever sd_signal changes; the handle is Copy so the
+    // onclick closure can call is_selected() to read the *current* value at click
+    // time rather than the bool captured at render time.
+    let pn_memo = player_name.clone();
+    let cn_memo = c.db_full_name.clone();
+    let is_selected = use_memo(move || {
+        sd_signal()
+            .core_game_data
+            .heroes_chosen
+            .iter()
+            .any(|(k, v)| {
+                (k == &pn_memo || k.starts_with(&format!("{}__sp", pn_memo)))
+                    && strip_id_suffix(v) == cn_memo.as_str()
+            })
+    });
+
     let cname = c.db_full_name.clone();
     let pname = player_name.clone();
     let sname = server_name.clone();
-    let sel_snap = selected_names.clone();
     let onclick_handler = move |_: Event<MouseData>| {
         if is_taken {
             return;
@@ -201,61 +189,58 @@ fn CharCardItem(
         let cn = cname.clone();
         let sn = sname.clone();
         let pn = pname.clone();
-        let sel = sel_snap.clone();
-        spawn(async move {
-            if is_single_player {
-                if sel.contains(&cn) {
-                    let remove_key = sd_signal
-                        .peek()
-                        .core_game_data
-                        .heroes_chosen
-                        .iter()
-                        .find(|(_, v)| strip_id_suffix(v) == cn.as_str())
-                        .map(|(k, _)| k.clone());
-                    if let Some(key) = remove_key {
-                        let _ = socket
-                            .send(ClientEvent::RemoveCharacterOnServerData(sn, key))
-                            .await;
-                    }
-                    return;
-                }
-                let key = if sel.is_empty() {
-                    pn.clone()
-                } else {
-                    format!("{}__sp{}", pn, extra_count + 1)
-                };
-                tracing::info!("SP: Adding {} under key {}", cn, key);
+
+        if is_selected() {
+            // Deselect: look up the exact key to remove
+            let remove_key = sd_signal
+                .peek()
+                .core_game_data
+                .heroes_chosen
+                .iter()
+                .find(|(k, v)| {
+                    (k.as_str() == pn.as_str() || k.starts_with(&format!("{}__sp", pn)))
+                        && strip_id_suffix(v) == cn.as_str()
+                })
+                .map(|(k, _)| k.clone());
+            if let Some(key) = remove_key {
+                spawn(async move {
+                    let _ = socket
+                        .send(ClientEvent::RemoveCharacterOnServerData(sn, key))
+                        .await;
+                });
+            }
+            return;
+        }
+
+        // Select
+        let hc = sd_signal.peek().core_game_data.heroes_chosen.clone();
+        if is_single_player {
+            let extra_count = hc
+                .keys()
+                .filter(|k| k.starts_with(&format!("{}__sp", pn)))
+                .count();
+            let key = if !hc.contains_key(pn.as_str()) {
+                pn.clone()
+            } else {
+                format!("{}__sp{}", pn, extra_count + 1)
+            };
+            spawn(async move {
                 let _ = socket
                     .send(ClientEvent::AddCharacterOnServerData(sn, key, cn))
                     .await;
-            } else {
-                if sel.contains(&cn) {
-                    // Deselect: remove the current character for this player
-                    let remove_key = sd_signal
-                        .peek()
-                        .core_game_data
-                        .heroes_chosen
-                        .iter()
-                        .find(|(_, v)| strip_id_suffix(v) == cn.as_str())
-                        .map(|(k, _)| k.clone());
-                    if let Some(key) = remove_key {
-                        let _ = socket
-                            .send(ClientEvent::RemoveCharacterOnServerData(sn, key))
-                            .await;
-                    }
-                    return;
-                }
-                tracing::info!("Selected character: {}", cn);
+            });
+        } else {
+            spawn(async move {
                 let _ = socket
                     .send(ClientEvent::AddCharacterOnServerData(sn, pn, cn))
                     .await;
-            }
-        });
+            });
+        }
     };
 
     rsx! {
         div {
-            class: if is_taken { "char-card char-card-taken" } else if is_selected { "char-card char-card-selected" } else { "char-card" },
+            class: if is_taken { "char-card char-card-taken" } else if is_selected() { "char-card char-card-selected" } else { "char-card" },
             onclick: onclick_handler,
             div { class: "char-card-portrait",
                 img {
@@ -282,8 +267,10 @@ fn CharCardItem(
                 if let Some(taker) = taken_by.clone() {
                     div { class: "char-card-taken-label", "🔒 {taker}" }
                 }
-            } else if is_selected {
-                div { class: "char-card-check", "✓" }
+            } else if is_selected() {
+                div { class: "char-card-action char-card-action-selected", "× Remove" }
+            } else {
+                div { class: "char-card-action char-card-action-unselected", "+ Select" }
             }
         }
     }
