@@ -61,8 +61,8 @@
             "Max": 100
         },
         "Magical power": {
-            "Current": 150,
-            "Max": 150
+            "Current": 110,
+            "Max": 110
         },
         "Mana": {
             "Current": 0,
@@ -77,8 +77,8 @@
             "Max": 350
         },
         "Physical power": {
-            "Current": 200,
-            "Max": 200
+            "Current": 110,
+            "Max": 110
         },
         "Speed": {
             "Current": 0,

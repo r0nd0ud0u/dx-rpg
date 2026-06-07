@@ -92,8 +92,11 @@ pub fn GameBoard() -> Element {
                             selected_atk_name,
                         }
                     } else if potion_menu_display() {
+                        // The potion menu acts for the hero whose turn it is, so show
+                        // that hero's potions (matching AttackList above) rather than the
+                        // session's first character.
                         PotionList {
-                            id_name: my_character.clone().unwrap_or_default(),
+                            id_name: server_data.read().core_game_data.game_manager.pm.current_player.id_name.clone(),
                             display_potionlist_sig: potion_menu_display,
                         }
                     } else if !selected_atk_name().is_empty() {
