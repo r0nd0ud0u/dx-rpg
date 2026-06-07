@@ -81,13 +81,15 @@ pub fn GameSheets() -> Element {
         is_saved.set(false);
     }
 
+    // Dead heroes can still be granted loot, but they should not light up the
+    // "new equipment" notification — only living heroes the player can act on do.
     let has_new_equipment = server_data()
         .core_game_data
         .game_manager
         .pm
         .active_heroes
         .iter()
-        .any(|h| h.inventory.has_unseen_equipment());
+        .any(|h| !h.stats.is_dead().unwrap_or(false) && h.inventory.has_unseen_equipment());
 
     rsx! {
         div { display: "flex", gap: "0.5rem",
@@ -218,7 +220,7 @@ fn InventorySheet(s: SheetSide) -> Element {
                                 onclick: move |_| active_tab.set(i),
                                 position: "relative",
                                 "{hero.db_full_name}"
-                                if hero.inventory.has_unseen_equipment() {
+                                if !hero.stats.is_dead().unwrap_or(false) && hero.inventory.has_unseen_equipment() {
                                     span {
                                         class: "equip-tab-new-badge",
                                         style: "position:absolute;top:2px;right:2px;",

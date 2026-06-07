@@ -12,17 +12,36 @@ pub async fn request_toggle_equip(
     character_id_name: &str,
     server_name: &str,
 ) {
+    use lib_rpg::character_mod::character::Character;
+
     let dm = DATA_MANAGER.lock().unwrap();
     let all_equipments = &dm.equipment_table;
     let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
-    if let Some(server_data) = sm.servers_data.get_mut(server_name)
-        && let Some(character) = server_data
-            .core_game_data
-            .game_manager
-            .pm
-            .get_mut_active_hero_character(character_id_name)
-    {
+
+    // Toggle the equipment and dismiss its "new" badge. Interacting with an item
+    // clears the notification, so the player can do it by clicking the item
+    // directly instead of having to switch equipment tabs.
+    let apply = |character: &mut Character| {
         character.toggle_equipment(equipment_unique_name, all_equipments);
+        for item in character.inventory.equipments.values_mut().flatten() {
+            if item.unique_name == equipment_unique_name {
+                item.is_new = false;
+            }
+        }
+    };
+
+    if let Some(server_data) = sm.servers_data.get_mut(server_name) {
+        let pm = &mut server_data.core_game_data.game_manager.pm;
+        if let Some(character) = pm.get_mut_active_hero_character(character_id_name) {
+            apply(character);
+        }
+        // `current_player` is a shadow working copy of the hero whose turn it is;
+        // an attack writes it back over `active_heroes` (modify_active_character).
+        // If we only mutate `active_heroes`, the next attack reverts the equip and
+        // the dismissed badge reappears, so keep the shadow copy in sync too.
+        if pm.current_player.id_name == character_id_name {
+            apply(&mut pm.current_player);
+        }
     }
     drop(sm);
     drop(dm);
