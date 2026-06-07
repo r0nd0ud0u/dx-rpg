@@ -190,8 +190,19 @@ pub fn GameBoard() -> Element {
 
 #[component]
 pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
+    // `all_dodging` holds one entry per attack effect, so a target that dodges an
+    // attack with several effects appears multiple times. Deduplicate by character
+    // name so each dodge/block is reported only once.
+    let mut seen_dodging = std::collections::HashSet::new();
+    let dodging: Vec<_> = ra
+        .all_dodging
+        .iter()
+        .filter(|d| (d.is_dodging || d.is_blocking) && seen_dodging.insert(d.name.clone()))
+        .cloned()
+        .collect();
+
     // Show "Last attack" block whenever there are effects OR at least one dodge/block to report.
-    let has_dodge_info = ra.all_dodging.iter().any(|d| d.is_dodging || d.is_blocking);
+    let has_dodge_info = !dodging.is_empty();
 
     // Group effects by target, preserving the order of first appearance.
     let mut ordered_groups: Vec<(String, Vec<GameAtkEffect>)> = Vec::new();
@@ -212,7 +223,7 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
                     "💥 Critical Strike!"
                 }
             }
-            for d in ra.all_dodging {
+            for d in dodging {
                 if d.is_dodging {
                     "{d.name} is dodging\n"
                 } else if d.is_blocking {
