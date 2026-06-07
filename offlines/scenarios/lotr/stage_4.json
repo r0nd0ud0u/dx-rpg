@@ -1,6 +1,6 @@
 {
-    "name": "Mixed Patrol",
-    "description": "An orc pillager leads a patrol alongside a goblin scout. Beware of combined attacks — the goblin harasses while the orc hits hard.",
+    "name": "Patrouille Mixte",
+    "description": "Un orc pillard mène une patrouille avec un gobelin. Attention aux attaques combinées : le gobelin harcèle pendant que l'orc frappe lourd.",
     "boss_patterns": {
         "Orc Pillard": [0],
         "Gobelin Eclaireur": [0]

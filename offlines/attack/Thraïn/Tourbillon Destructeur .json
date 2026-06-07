@@ -35,7 +35,7 @@
         {
             "Cible": "Self",
             "Portée": "Individual",
-            "Stat": "Taux rage",
+            "Stat": "Berserk rate",
             "Tours actifs": 4,
             "Type": "ChangeMaxStatByPercentage",
             "Valeur de l'effet": 0,
@@ -45,7 +45,7 @@
                 "kind": "ChangeMaxStatByPercentage",
                 "value": 100,
                 "is-percent": true,
-                "stats-name": "Taux rage",
+                "stats-name": "Berserk rate",
                 "passive-enabled": false
             }
         }
@@ -56,5 +56,6 @@
     "Photo": "Thraïn.png",
     "Portée": "Zone",
     "Sound": "",
-    "Description": "Destructive Whirlwind — spins the great hammer in a wide arc, dealing damage to all enemies."
+    "Description": "Destructive Whirlwind — spins the great hammer in a wide arc, dealing damage to all enemies.",
+    "DescriptionEffects": "Deals 60 physical damage to all enemies; +5 Aggro; +100% max Berserk rate for 4 turns."
 }

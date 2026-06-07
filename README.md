@@ -81,19 +81,24 @@ The "Create Server" page shows all save slots with:
 
 ### Attack Tooltips with Description
 
-Attacks can now include an optional `Description` field in their JSON:
+Attacks can include two optional text fields in their JSON:
 
 ```json
 {
-  "Name": "Griffure",
-  "Description": "A quick scratch dealing light physical damage.",
+  "Nom": "Razor Leaf",
+  "Description": "Fires sharp leaves in a barrage — high damage with a short cooldown.",
+  "DescriptionEffects": "Deals 60 magic damage to one enemy; 3-turn cooldown.",
   ...
 }
 ```
 
-When present, hovering over the attack button in the character sheet shows the description as a tooltip.
+When present, hovering over the attack button in the character sheet shows a tooltip with:
+- `Description` — the flavour text, in italics
+- `DescriptionEffects` — a structured **Effects** section summarising the mechanical effects (damage, buffs, cooldown…)
 
-This requires `lib-rpg` branch `feat/attack-description` (commit `08af5ad82d406aee8f452f05e7b763035fa2fd44`).
+The tooltip is shown only while the **Attack Tooltips** setting is enabled (see Settings below).
+
+> **Cooldown effects:** an attack is put on cooldown by a `CooldownTurnsNumber` effect. The number of turns the attack stays blocked is read from the effect's `Buffer.value` (and mirrored in `Value` / `Tours actifs`). These three must match — a `Buffer.value` of `0` means *no* cooldown, so the attack can be re-cast immediately.
 
 ### Scenarios Progress Sheet
 
@@ -126,7 +131,7 @@ In the game toolbar, a **Settings** sheet lets each user toggle options that are
 
 | Setting | Key | Default | Description |
 |---------|-----|---------|-------------|
-| Attack Tooltips | `show_atk_tooltips` | on | Show attack description on hover in the attack list |
+| Attack Tooltips | `show_atk_tooltips` | on | Show attack description and effects on hover in the attack list |
 | Boss Energy Bars | `show_boss_energy` | off | Show mana/vigor/berserk bars on boss panels |
 | Hero Aggro | `show_hero_aggro` | off | Show aggro value on hero panel headers |
 | Boss HP Bar | `show_boss_hp` | on | Show the HP bar on boss panels |

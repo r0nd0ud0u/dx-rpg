@@ -46,11 +46,11 @@
             "Tours actifs": 4,
             "Type": "CooldownTurnsNumber",
             "Valeur de l'effet": 0,
-            "Value": 0,
+            "Value": 4,
             "IsMagicEffect": false,
             "Buffer": {
                 "kind": "CooldownTurnsNumber",
-                "value": 0,
+                "value": 4,
                 "is-percent": false,
                 "stats-name": "",
                 "passive-enabled": false
@@ -62,5 +62,6 @@
     "Nom": "Dragon Rage",
     "Photo": "charmander.png",
     "Portée": "Individual",
-    "Description": "Channels draconic energy into a devastating strike that shreds enemy armour."
+    "Description": "Channels draconic energy into a devastating strike that shreds enemy armour.",
+    "DescriptionEffects": "Deals 85 physical damage to one enemy; -20% max Physical armor on enemy for 3 turns; 4-turn cooldown."
 }

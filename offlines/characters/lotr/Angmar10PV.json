@@ -77,8 +77,8 @@
             "Max": 800
         },
         "Physical power": {
-            "Current": 5,
-            "Max": 5
+            "Current": 180,
+            "Max": 180
         },
         "Speed": {
             "Current": 0,

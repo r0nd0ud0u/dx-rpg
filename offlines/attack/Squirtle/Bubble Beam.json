@@ -46,11 +46,11 @@
             "Tours actifs": 3,
             "Type": "CooldownTurnsNumber",
             "Valeur de l'effet": 0,
-            "Value": 0,
+            "Value": 3,
             "IsMagicEffect": false,
             "Buffer": {
                 "kind": "CooldownTurnsNumber",
-                "value": 0,
+                "value": 3,
                 "is-percent": false,
                 "stats-name": "",
                 "passive-enabled": false
@@ -62,5 +62,6 @@
     "Nom": "Bubble Beam",
     "Photo": "squirtle.png",
     "Portée": "Individual",
-    "Description": "Launches a stream of bubbles — deals damage and reduces enemy speed regeneration."
+    "Description": "Launches a stream of bubbles — deals damage and reduces enemy speed regeneration.",
+    "DescriptionEffects": "Deals 50 magic damage to one enemy; -25% max Speed regeneration on enemy for 3 turns; 3-turn cooldown."
 }

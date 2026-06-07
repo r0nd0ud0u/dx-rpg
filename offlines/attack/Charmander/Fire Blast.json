@@ -46,11 +46,11 @@
             "Tours actifs": 6,
             "Type": "CooldownTurnsNumber",
             "Valeur de l'effet": 0,
-            "Value": 0,
+            "Value": 6,
             "IsMagicEffect": false,
             "Buffer": {
                 "kind": "CooldownTurnsNumber",
-                "value": 0,
+                "value": 6,
                 "is-percent": false,
                 "stats-name": "",
                 "passive-enabled": false
@@ -62,5 +62,6 @@
     "Nom": "Fire Blast",
     "Photo": "charmander.png",
     "Portée": "Individual",
-    "Description": "Fires an enormous five-pointed flame. Costs high rage but deals massive fire damage."
+    "Description": "Fires an enormous five-pointed flame. Costs high rage but deals massive fire damage.",
+    "DescriptionEffects": "Deals 110 magic damage to one enemy; +10% max Berserk; 6-turn cooldown."
 }

@@ -46,11 +46,11 @@
             "Tours actifs": 3,
             "Type": "CooldownTurnsNumber",
             "Valeur de l'effet": 0,
-            "Value": 0,
+            "Value": 3,
             "IsMagicEffect": false,
             "Buffer": {
                 "kind": "CooldownTurnsNumber",
-                "value": 0,
+                "value": 3,
                 "is-percent": false,
                 "stats-name": "",
                 "passive-enabled": false
@@ -62,5 +62,6 @@
     "Nom": "Submission",
     "Photo": "Angmar.png",
     "Portée": "Individual",
-    "Description": "Grabs and slams — deals heavy damage but recoils from the impact."
+    "Description": "Grabs and slams — deals heavy damage but recoils from the impact.",
+    "DescriptionEffects": "Deals 75 physical damage to one enemy; deals 12 physical damage to self; 3-turn cooldown."
 }

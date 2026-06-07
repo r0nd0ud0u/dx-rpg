@@ -260,8 +260,13 @@ fn InventorySheet(s: SheetSide) -> Element {
 
                 Separator { horizontal: true, decorative: true }
 
-                // Equipment tabs
-                TabEquipment { c: character.clone() }
+                // Equipment tabs.
+                // Key by hero id so the component fully remounts when the active hero
+                // changes: this resets the selected category tab and re-runs the
+                // "mark category seen" effect for the newly shown hero. Without the
+                // key, the effect's captured hero id / category list stays stale and
+                // the "new equipment" badges never clear for other heroes.
+                TabEquipment { key: "{character.id_name}", c: character.clone() }
             }
 
             SheetFooter {
