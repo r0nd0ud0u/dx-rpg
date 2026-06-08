@@ -10,9 +10,6 @@
             "Cible": "Enemy",
             "Portée": "Individual",
             "Tours actifs": 1,
-            "Valeur de l'effet": 0,
-            "Value": -35,
-            "IsMagicEffect": false,
             "Buffer": {
                 "value": -35,
                 "is-percent": false,
@@ -23,8 +20,8 @@
     ],
     "Forme": "Standard",
     "Niveau": 1,
-    "Nom": "SimpleAtk",
-    "Photo": "SimpleAtk.png",
+    "Nom": "Charge",
+    "Photo": "Charge.png",
     "Portée": "Individual",
     "Description": "A basic strike dealing physical damage.",
     "DescriptionEffects": "Deals 35 physical damage to one enemy."

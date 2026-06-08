@@ -24,7 +24,7 @@
     "Forme": "Standard",
     "Niveau": 3,
     "Nom": "Charge Ecrasante",
-    "Photo": "SimpleAtk.png",
+    "Photo": "Charge.png",
     "Portée": "Zone",
     "Description": "Crushing Charge — a fierce charge that deals heavy damage on impact.",
     "DescriptionEffects": "Deals 40 physical damage to all enemies."
