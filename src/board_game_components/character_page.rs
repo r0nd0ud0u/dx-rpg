@@ -392,10 +392,8 @@ pub fn NewAtkButton(
                     }
                 }
                 if has_effects {
-                    div {
-                        style: "margin-top:6px; padding-top:6px; border-top:1px solid var(--rpg-border,#3a3f55);",
-                        span {
-                            style: "display:block; margin-bottom:2px; font-size:0.72rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--rpg-text-muted,#8a8fa8);",
+                    div { style: "margin-top:6px; padding-top:6px; border-top:1px solid var(--rpg-border,#3a3f55);",
+                        span { style: "display:block; margin-bottom:2px; font-size:0.72rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--rpg-text-muted,#8a8fa8);",
                             "Effects"
                         }
                         p { style: "margin:0; line-height:1.4;", "{effects_description}" }

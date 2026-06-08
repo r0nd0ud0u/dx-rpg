@@ -693,10 +693,11 @@ pub fn use_party_potion_handler(server_name: &str, player_name: &str, potion_nam
         {
             let consumable = pm.party_consumables.remove(idx);
             let launcher_stats = pm.current_player.stats.clone();
-            match pm
-                .current_player
-                .apply_consumable_effects(&consumable, &game_state, &launcher_stats)
-            {
+            match pm.current_player.apply_consumable_effects(
+                &consumable,
+                &game_state,
+                &launcher_stats,
+            ) {
                 Ok(_) => tracing::info!(
                     "Player {} used party potion {} on {} successfully",
                     player_name,

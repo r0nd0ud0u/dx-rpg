@@ -156,10 +156,7 @@ mod tests {
                 "Dragonite",
                 &["Charge", "Wing Attack", "Dragon Rage", "Hyper Beam"],
             ),
-            (
-                "Mewtwo",
-                &["Charge", "Psychic", "Aura Sphere", "Psystrike"],
-            ),
+            ("Mewtwo", &["Charge", "Psychic", "Aura Sphere", "Psystrike"]),
             (
                 "Mewtwo Armure",
                 &["Charge", "Psystrike", "Barrier", "Shadow Storm"],
