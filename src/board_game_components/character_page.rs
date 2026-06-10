@@ -657,7 +657,11 @@ fn CharacterTooltip(hots_bufs: HotsBufs, prefer_left: bool) -> Element {
                         p { style: "margin: 0;", "🔥 {txt}" }
                     }
                     for txt in hots_bufs.buf_txt {
-                        p { style: "margin: 0;", "⬆ {txt}" }
+                        if txt.contains(": cooldown (") {
+                            p { style: "margin: 0;", "⏳ {txt}" }
+                        } else {
+                            p { style: "margin: 0;", "⬆ {txt}" }
+                        }
                     }
                     for txt in hots_bufs.debuf_txt {
                         p { style: "margin: 0;", "⬇ {txt}" }

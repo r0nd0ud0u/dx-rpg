@@ -217,7 +217,7 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
 
     rsx! {
         if !ra.new_game_atk_effects.is_empty() || has_dodge_info {
-            "Last attack:\n"
+            "Last attack: {ra.atk_name}\n"
             if ra.is_crit {
                 div { style: "color: var(--secondary-color-2); font-weight: bold; font-size: 1.1em;",
                     "💥 Critical Strike!"
