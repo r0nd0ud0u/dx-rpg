@@ -8,7 +8,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.101"
 dioxus = { version = "0.7.9", features = ["router", "fullstack"] }
-lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "58525fb1c1e6dadce5c339371e362d4952e12c28" }
+lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "6018a6625ea7cc63e19105ebf5e15e3e1caa5c99" }
 serde = "1.0.228"
 dioxus-desktop = { version = "0.7.9", optional = true }
 dioxus-html = "0.7.9"
@@ -86,5 +86,3 @@ inherits = "dev"
 [profile.android-dev]
 inherits = "dev"
 
-[patch."https://github.com/r0nd0ud0u/lib-rpg.git"]
-lib-rpg = { path = "../lib-rpg" }
