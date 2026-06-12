@@ -14,11 +14,11 @@
             "classes": ["Standard"]
         },
         {
-            "name": "medium belt",
+            "name": "medium pants",
             "kind": "Equipment",
             "rank": "Intermediate",
             "level": 2,
-            "classes": ["Warrior", "Berserker"]
+            "classes": ["Healer", "Mage"]
         },
         {
             "name": "medium amulet",
