@@ -6,8 +6,7 @@
         "is_first_round": false,
         "is_heal_atk_blocked": false,
         "is_random_target": false,
-        "Buf-debuf": [
-        ]
+        "Buf-debuf": []
     },
     "Level": 5,
     "Name": "Champion Orc",
@@ -50,8 +49,8 @@
             "Max": 0
         },
         "Magical armor": {
-            "Current": 100,
-            "Max": 100
+            "Current": 10,
+            "Max": 10
         },
         "Magical power": {
             "Current": 70,
@@ -66,8 +65,8 @@
             "Max": 0
         },
         "Physical armor": {
-            "Current": 350,
-            "Max": 350
+            "Current": 35,
+            "Max": 35
         },
         "Physical power": {
             "Current": 70,

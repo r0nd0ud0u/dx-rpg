@@ -138,6 +138,25 @@ In the game toolbar, a **Settings** sheet lets each user toggle options that are
 
 Each setting is stored as an independent context in Dioxus using a distinct newtype wrapper (`CtxShowBossHp`, `CtxShowBossEnergy`, etc.) to prevent context-key collisions that would otherwise occur since all `Signal<bool>` share the same `TypeId`.
 
+### Damage Formula & Armor
+
+Combat damage is computed by `lib-rpg` using:
+
+```
+raw_damage  = atk_value − (launcher_power / nb_turns)
+effective   = round(raw_damage × 100 / (100 + target_armor))
+```
+
+The armor constant `100` means that:
+- A character with **100 armor** takes **half** of the raw hit
+- Hero armor (0–90 range) gives **16–47% damage reduction** — meaningful enough that armor upgrades and debuffs visibly affect outcomes
+- Boss armor is tuned in the same scale (e.g. Angmar 80, Nazgul 50) to preserve boss durability relative to hero attacks
+
+The combat log now shows **full** (pre-armor) and **real** (post-armor, post-cap) amounts when they differ:
+```
+Squirtle ← -43 HP (full: -75, real: -43)
+```
+
 ### Game Stats Sheet (improved)
 
 The 📊 Stats sheet now shows:
