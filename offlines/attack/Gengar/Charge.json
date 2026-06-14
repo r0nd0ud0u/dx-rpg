@@ -12,11 +12,11 @@
             "Tours actifs": 1,
             "Type": "ChangeCurrentStatByValue",
             "Valeur de l'effet": 0,
-            "Value": -32,
+            "Value": -35,
             "IsMagicEffect": true,
             "Buffer": {
                 "kind": "ChangeCurrentStatByValue",
-                "value": -32,
+                "value": -35,
                 "is-percent": false,
                 "stats-name": "HP",
                 "passive-enabled": false
@@ -24,9 +24,10 @@
         }
     ],
     "Forme": "Standard",
-    "Niveau": 7,
-    "Nom": "SimpleAtk",
+    "Niveau": 6,
+    "Nom": "Charge",
     "Photo": "Angmar.png",
     "Portée": "Individual",
-    "Description": "Ghostly lick."
+    "Description": "Shadow lick.",
+    "DescriptionEffects": "Deals 35 magic damage to one enemy."
 }

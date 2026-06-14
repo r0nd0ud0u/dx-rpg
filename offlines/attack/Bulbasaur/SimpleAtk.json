@@ -25,8 +25,9 @@
     ],
     "Forme": "Standard",
     "Niveau": 1,
-    "Nom": "SimpleAtk",
+    "Nom": "Charge",
     "Photo": "bulbasaur.png",
     "Portée": "Individual",
-    "Description": "A basic vine slap dealing light magical damage."
+    "Description": "A basic vine slap dealing light magical damage.",
+    "DescriptionEffects": "Deals 22 magic damage to one enemy."
 }

@@ -1,20 +1,22 @@
 {
-    "Aggro": 0,
     "Cible": "Enemy",
     "Coût de mana": 0,
-    "Coût de rage": 2,
-    "Coût de vigueur": 0,
+    "Coût de rage": 0,
+    "Coût de vigueur": 8,
     "Durée": 1,
     "Effet": [
         {
             "Cible": "Enemy",
             "Portée": "Individual",
+            "Stat": "HP",
             "Tours actifs": 1,
+            "Type": "ChangeCurrentStatByValue",
             "Valeur de l'effet": 0,
-            "IsMagicEffect": false,
+            "Value": -32,
+            "IsMagicEffect": true,
             "Buffer": {
                 "kind": "ChangeCurrentStatByValue",
-                "value": -35,
+                "value": -32,
                 "is-percent": false,
                 "stats-name": "HP",
                 "passive-enabled": false
@@ -22,9 +24,10 @@
         }
     ],
     "Forme": "Standard",
-    "Niveau": 1,
-    "Nom": "SimpleAtk",
-    "Photo": "SimpleAtk.png",
+    "Niveau": 7,
+    "Nom": "Charge",
+    "Photo": "Angmar.png",
     "Portée": "Individual",
-    "Description": "A basic strike dealing physical damage."
+    "Description": "Ghostly lick.",
+    "DescriptionEffects": "Deals 32 magic damage to one enemy."
 }

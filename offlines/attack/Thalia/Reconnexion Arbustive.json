@@ -45,11 +45,11 @@
             "Tours actifs": 6,
             "Type": "CooldownTurnsNumber",
             "Valeur de l'effet": 0,
-            "Value": 0,
+            "Value": 6,
             "IsMagicEffect": true,
             "Buffer": {
                 "kind": "CooldownTurnsNumber",
-                "value": 0,
+                "value": 6,
                 "is-percent": false,
                 "stats-name": "",
                 "passive-enabled": false
@@ -61,5 +61,6 @@
     "Nom": "Reconnexion Arbustive",
     "Photo": "Thalia.png",
     "Portée": "Individual",
-    "Description": "Nature Reconnection — re-establishes a bond with the earth to steadily restore HP."
+    "Description": "Nature Reconnection — re-establishes a bond with the earth to steadily restore HP.",
+    "DescriptionEffects": "+20% max Mana; converts part of the healing into damage; 6-turn cooldown."
 }

@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 8,
+    "Coût de vigueur": 15,
     "Durée": 1,
     "Effet": [
         {
@@ -12,11 +12,11 @@
             "Tours actifs": 1,
             "Type": "ChangeCurrentStatByValue",
             "Valeur de l'effet": 0,
-            "Value": -25,
+            "Value": -50,
             "IsMagicEffect": false,
             "Buffer": {
                 "kind": "ChangeCurrentStatByValue",
-                "value": -25,
+                "value": -50,
                 "is-percent": false,
                 "stats-name": "HP",
                 "passive-enabled": false
@@ -24,9 +24,10 @@
         }
     ],
     "Forme": "Standard",
-    "Niveau": 1,
-    "Nom": "SimpleAtk",
-    "Photo": "squirtle.png",
+    "Niveau": 8,
+    "Nom": "Charge",
+    "Photo": "Angmar.png",
     "Portée": "Individual",
-    "Description": "A sturdy tackle using its shell as a battering ram."
+    "Description": "Tail sweep.",
+    "DescriptionEffects": "Deals 50 physical damage to one enemy."
 }

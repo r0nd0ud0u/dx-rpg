@@ -348,9 +348,12 @@ pub fn NewAtkButton(
     let attack_name = attack_type.name.clone();
     let launcher_id_name = launcher.id_name.clone();
     let description = attack_type.description.clone();
+    let effects_description = attack_type.effects_description.clone();
     let has_description = !description.is_empty();
+    let has_effects = !effects_description.is_empty();
+    let has_tooltip = has_description || has_effects;
     rsx! {
-        Tooltip { disabled: !has_description || !show_tooltips(),
+        Tooltip { disabled: !has_tooltip || !show_tooltips(),
             TooltipTrigger {
                 Button {
                     variant: if can_be_launched { ButtonVariant::AtkName } else { ButtonVariant::AtkNameBlocked },
@@ -379,7 +382,24 @@ pub fn NewAtkButton(
                     "{attack_type.name}"
                 }
             }
-            TooltipContent { "{description}" }
+            TooltipContent {
+                p { style: "margin:0 0 4px 0; font-weight:600; color:var(--rpg-gold,#c9a227);",
+                    "{attack_type.name}"
+                }
+                if has_description {
+                    p { style: "margin:0; color:var(--primary-color); font-style:italic;",
+                        "{description}"
+                    }
+                }
+                if has_effects {
+                    div { style: "margin-top:6px; padding-top:6px; border-top:1px solid var(--rpg-border,#3a3f55);",
+                        span { style: "display:block; margin-bottom:2px; font-size:0.72rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--rpg-text-muted,#8a8fa8);",
+                            "Effects"
+                        }
+                        p { style: "margin:0; line-height:1.4;", "{effects_description}" }
+                    }
+                }
+            }
         }
     }
 }
@@ -637,7 +657,11 @@ fn CharacterTooltip(hots_bufs: HotsBufs, prefer_left: bool) -> Element {
                         p { style: "margin: 0;", "🔥 {txt}" }
                     }
                     for txt in hots_bufs.buf_txt {
-                        p { style: "margin: 0;", "⬆ {txt}" }
+                        if txt.contains(": cooldown (") {
+                            p { style: "margin: 0;", "⏳ {txt}" }
+                        } else {
+                            p { style: "margin: 0;", "⬆ {txt}" }
+                        }
                     }
                     for txt in hots_bufs.debuf_txt {
                         p { style: "margin: 0;", "⬇ {txt}" }

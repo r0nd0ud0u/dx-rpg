@@ -7,11 +7,15 @@
         {
             "Cible": "Ally",
             "Portée": "Individual",
+            "Stat": "HP",
             "Tours actifs": 4,
+            "Type": "DecreasingRateOnTurn",
+            "Valeur de l'effet": 3,
+            "Value": 32,
             "IsMagicEffect": true,
             "Buffer": {
                 "kind": "DecreasingRateOnTurn",
-                "value": 3,
+                "value": 32,
                 "is-percent": false,
                 "stats-name": "HP",
                 "passive-enabled": false
@@ -20,7 +24,9 @@
         {
             "Cible": "Ally",
             "Portée": "Individual",
+            "Stat": "Magic power",
             "Tours actifs": 4,
+            "Type": "ChangeMaxStatByPercentage",
             "Valeur de l'effet": 0,
             "Value": 10,
             "IsMagicEffect": true,
@@ -38,5 +44,6 @@
     "Nom": "Rameau Guérisseur ",
     "Photo": "Thalia.png",
     "Portée": "Individual",
-    "Description": "Healing Branch — a branch of the World Tree channeling nature's healing power."
+    "Description": "Healing Branch — a branch of the World Tree channeling nature's healing power.",
+    "DescriptionEffects": "Repeats with a decreasing success rate each turn; +10% max Magic power on one ally for 4 turns."
 }

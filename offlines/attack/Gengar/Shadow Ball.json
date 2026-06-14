@@ -25,7 +25,7 @@
         {
             "Cible": "Enemy",
             "Portée": "Individual",
-            "Stat": "Magical armor",
+            "Stat": "Magic armor",
             "Tours actifs": 2,
             "Type": "ChangeMaxStatByPercentage",
             "Valeur de l'effet": 0,
@@ -35,7 +35,7 @@
                 "kind": "ChangeMaxStatByPercentage",
                 "value": -20,
                 "is-percent": true,
-                "stats-name": "Magical armor",
+                "stats-name": "Magic armor",
                 "passive-enabled": false
             }
         }
@@ -45,5 +45,6 @@
     "Nom": "Shadow Ball",
     "Photo": "Angmar.png",
     "Portée": "Individual",
-    "Description": "Hurls a ball of shadowy energy that reduces magical armour."
+    "Description": "Hurls a ball of shadowy energy that reduces magical armour.",
+    "DescriptionEffects": "Deals 65 magic damage to one enemy; -20% max Magic armor on enemy for 2 turns."
 }

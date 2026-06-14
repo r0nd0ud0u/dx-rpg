@@ -25,7 +25,7 @@
         {
             "Cible": "Self",
             "Portée": "Individual",
-            "Stat": "Magical power",
+            "Stat": "Magic power",
             "Tours actifs": 2,
             "Type": "ChangeMaxStatByPercentage",
             "Valeur de l'effet": 0,
@@ -35,7 +35,7 @@
                 "kind": "ChangeMaxStatByPercentage",
                 "value": 20,
                 "is-percent": true,
-                "stats-name": "Magical power",
+                "stats-name": "Magic power",
                 "passive-enabled": false
             }
         },
@@ -46,11 +46,11 @@
             "Tours actifs": 5,
             "Type": "CooldownTurnsNumber",
             "Valeur de l'effet": 0,
-            "Value": 0,
+            "Value": 5,
             "IsMagicEffect": false,
             "Buffer": {
                 "kind": "CooldownTurnsNumber",
-                "value": 0,
+                "value": 5,
                 "is-percent": false,
                 "stats-name": "",
                 "passive-enabled": false
@@ -62,5 +62,6 @@
     "Nom": "Solar Beam",
     "Photo": "bulbasaur.png",
     "Portée": "Individual",
-    "Description": "Charges solar energy and unleashes a devastating beam — boosts own magical power afterward."
+    "Description": "Charges solar energy and unleashes a devastating beam — boosts own magical power afterward.",
+    "DescriptionEffects": "Deals 95 magic damage to one enemy; +20% max Magic power for 2 turns; 5-turn cooldown."
 }

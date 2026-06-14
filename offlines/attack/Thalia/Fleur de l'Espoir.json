@@ -24,7 +24,7 @@
         {
             "Cible": "All allies",
             "Portée": "Zone",
-            "Stat": "Regeneration Mana",
+            "Stat": "Mana regeneration",
             "Tours actifs": 5,
             "Type": "ChangeMaxStatByValue",
             "Valeur de l'effet": 0,
@@ -34,7 +34,7 @@
                 "kind": "ChangeMaxStatByValue",
                 "value": 2,
                 "is-percent": false,
-                "stats-name": "Regeneration Mana",
+                "stats-name": "Mana regeneration",
                 "passive-enabled": false
             }
         },
@@ -78,5 +78,6 @@
     "Nom": "Fleur de l'Espoir",
     "Photo": "Thalia.png",
     "Portée": "Zone",
-    "Description": "Flower of Hope — a delicate nature bloom that instantly restores HP."
+    "Description": "Flower of Hope — a delicate nature bloom that instantly restores HP.",
+    "DescriptionEffects": "Heals all allies for 25 HP per turn for 5 turns; +2 max Mana regeneration on all allies for 5 turns; -5 Dodge on all allies for 5 turns; +10% max Magic power on all allies for 5 turns."
 }

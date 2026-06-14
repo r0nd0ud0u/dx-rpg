@@ -25,7 +25,7 @@
         {
             "Cible": "Enemy",
             "Portée": "Individual",
-            "Stat": "Magical armor",
+            "Stat": "Magic armor",
             "Tours actifs": 3,
             "Type": "ChangeMaxStatByPercentage",
             "Valeur de l'effet": 0,
@@ -35,7 +35,7 @@
                 "kind": "ChangeMaxStatByPercentage",
                 "value": -25,
                 "is-percent": true,
-                "stats-name": "Magical armor",
+                "stats-name": "Magic armor",
                 "passive-enabled": false
             }
         }
@@ -45,5 +45,6 @@
     "Nom": "Psychic",
     "Photo": "Angmar.png",
     "Portée": "Individual",
-    "Description": "Levitates the enemy with telekinesis — deals psychic damage and reduces magical armour."
+    "Description": "Levitates the enemy with telekinesis — deals psychic damage and reduces magical armour.",
+    "DescriptionEffects": "Deals 75 magic damage to one enemy; -25% max Magic armor on enemy for 3 turns."
 }

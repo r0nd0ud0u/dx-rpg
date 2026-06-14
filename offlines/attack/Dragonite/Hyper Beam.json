@@ -29,11 +29,11 @@
             "Tours actifs": 4,
             "Type": "CooldownTurnsNumber",
             "Valeur de l'effet": 0,
-            "Value": 0,
+            "Value": 4,
             "IsMagicEffect": false,
             "Buffer": {
                 "kind": "CooldownTurnsNumber",
-                "value": 0,
+                "value": 4,
                 "is-percent": false,
                 "stats-name": "",
                 "passive-enabled": false
@@ -45,5 +45,6 @@
     "Nom": "Hyper Beam",
     "Photo": "Angmar.png",
     "Portée": "Individual",
-    "Description": "Fires an enormous beam of energy — requires recharge after use."
+    "Description": "Fires an enormous beam of energy — requires recharge after use.",
+    "DescriptionEffects": "Deals 110 physical damage to one enemy; 4-turn cooldown."
 }

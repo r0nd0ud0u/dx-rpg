@@ -29,11 +29,11 @@
             "Tours actifs": 4,
             "Type": "CooldownTurnsNumber",
             "Valeur de l'effet": 0,
-            "Value": 0,
+            "Value": 4,
             "IsMagicEffect": false,
             "Buffer": {
                 "kind": "CooldownTurnsNumber",
-                "value": 0,
+                "value": 4,
                 "is-percent": false,
                 "stats-name": "",
                 "passive-enabled": false
@@ -45,5 +45,6 @@
     "Nom": "Hex",
     "Photo": "Angmar.png",
     "Portée": "Individual",
-    "Description": "Curses the enemy with dark energy — deals damage over 3 turns."
+    "Description": "Curses the enemy with dark energy — deals damage over 3 turns.",
+    "DescriptionEffects": "Deals 25 magic damage to one enemy per turn for 3 turns; 4-turn cooldown."
 }

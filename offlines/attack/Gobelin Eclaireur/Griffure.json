@@ -14,7 +14,7 @@
             "IsMagicEffect": false,
             "Buffer": {
                 "kind": "ChangeCurrentStatByValue",
-                "value": -45,
+                "value": -35,
                 "is-percent": false,
                 "stats-name": "HP",
                 "passive-enabled": false
@@ -24,7 +24,8 @@
     "Forme": "Standard",
     "Niveau": 1,
     "Nom": "Griffure",
-    "Photo": "SimpleAtk.png",
+    "Photo": "Charge.png",
     "Portée": "Individual",
-    "Description": "Scratch — quick claws raking across flesh for minor damage."
+    "Description": "Scratch — quick claws raking across flesh for minor damage.",
+    "DescriptionEffects": "Deals 45 physical damage to one enemy."
 }

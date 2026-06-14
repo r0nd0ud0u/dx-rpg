@@ -1,6 +1,6 @@
 {
-    "name": "The Orc Pillager",
-    "description": "An orc pillager blocks the road to the village. Tougher and stronger than goblins, he hits hard and can strike the entire group.",
+    "name": "Le Pillard Orc",
+    "description": "Un orc pillard barre la route du village. Plus résistant et plus puissant que les gobelins, il frappe fort et peut toucher tout le groupe.",
     "boss_patterns": {
         "Orc Pillard": [0]
     },
@@ -12,20 +12,6 @@
             "rank": "Common",
             "level": 1,
             "classes": ["Standard"]
-        },
-        {
-            "name": "mana potion",
-            "kind": "Consumable",
-            "rank": "Common",
-            "level": 1,
-            "classes": ["Mage", "Healer"]
-        },
-        {
-            "name": "vigor potion",
-            "kind": "Consumable",
-            "rank": "Common",
-            "level": 1,
-            "classes": ["Warrior"]
         },
         {
             "name": "medium amulet",

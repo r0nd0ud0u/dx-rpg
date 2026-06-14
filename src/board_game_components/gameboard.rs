@@ -92,8 +92,11 @@ pub fn GameBoard() -> Element {
                             selected_atk_name,
                         }
                     } else if potion_menu_display() {
+                        // The potion menu acts for the hero whose turn it is, so show
+                        // that hero's potions (matching AttackList above) rather than the
+                        // session's first character.
                         PotionList {
-                            id_name: my_character.clone().unwrap_or_default(),
+                            id_name: server_data.read().core_game_data.game_manager.pm.current_player.id_name.clone(),
                             display_potionlist_sig: potion_menu_display,
                         }
                     } else if !selected_atk_name().is_empty() {
@@ -187,8 +190,19 @@ pub fn GameBoard() -> Element {
 
 #[component]
 pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
+    // `all_dodging` holds one entry per attack effect, so a target that dodges an
+    // attack with several effects appears multiple times. Deduplicate by character
+    // name so each dodge/block is reported only once.
+    let mut seen_dodging = std::collections::HashSet::new();
+    let dodging: Vec<_> = ra
+        .all_dodging
+        .iter()
+        .filter(|d| (d.is_dodging || d.is_blocking) && seen_dodging.insert(d.name.clone()))
+        .cloned()
+        .collect();
+
     // Show "Last attack" block whenever there are effects OR at least one dodge/block to report.
-    let has_dodge_info = ra.all_dodging.iter().any(|d| d.is_dodging || d.is_blocking);
+    let has_dodge_info = !dodging.is_empty();
 
     // Group effects by target, preserving the order of first appearance.
     let mut ordered_groups: Vec<(String, Vec<GameAtkEffect>)> = Vec::new();
@@ -203,13 +217,13 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
 
     rsx! {
         if !ra.new_game_atk_effects.is_empty() || has_dodge_info {
-            "Last attack:\n"
+            "Last attack: {ra.atk_name}\n"
             if ra.is_crit {
                 div { style: "color: var(--secondary-color-2); font-weight: bold; font-size: 1.1em;",
                     "💥 Critical Strike!"
                 }
             }
-            for d in ra.all_dodging {
+            for d in dodging {
                 if d.is_dodging {
                     "{d.name} is dodging\n"
                 } else if d.is_blocking {

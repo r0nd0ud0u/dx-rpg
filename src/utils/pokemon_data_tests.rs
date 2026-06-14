@@ -104,7 +104,7 @@ mod tests {
     #[test]
     fn bulbasaur_attacks_valid() {
         for atk in &[
-            "SimpleAtk",
+            "Charge",
             "Vine Whip",
             "Leech Seed",
             "Razor Leaf",
@@ -118,7 +118,7 @@ mod tests {
     #[test]
     fn charmander_attacks_valid() {
         for atk in &[
-            "SimpleAtk",
+            "Charge",
             "Ember",
             "Fire Spin",
             "Flamethrower",
@@ -132,7 +132,7 @@ mod tests {
     #[test]
     fn squirtle_attacks_valid() {
         for atk in &[
-            "SimpleAtk",
+            "Charge",
             "Water Gun",
             "Bubble Beam",
             "Withdraw",
@@ -146,23 +146,20 @@ mod tests {
     #[test]
     fn boss_attacks_valid() {
         let boss_attacks: &[(&str, &[&str])] = &[
-            ("Rattata", &["SimpleAtk", "Quick Attack"]),
-            ("Pidgey", &["SimpleAtk", "Gust"]),
-            ("Mankey", &["SimpleAtk", "Low Kick", "Cross Chop"]),
-            ("Machoke", &["SimpleAtk", "Karate Chop", "Submission"]),
-            ("Gengar", &["SimpleAtk", "Shadow Ball", "Hex"]),
-            ("Haunter", &["SimpleAtk", "Lick", "Night Shade"]),
+            ("Rattata", &["Charge", "Quick Attack"]),
+            ("Pidgey", &["Charge", "Gust"]),
+            ("Mankey", &["Charge", "Low Kick", "Cross Chop"]),
+            ("Machoke", &["Charge", "Karate Chop", "Submission"]),
+            ("Gengar", &["Charge", "Shadow Ball", "Hex"]),
+            ("Haunter", &["Charge", "Lick", "Night Shade"]),
             (
                 "Dragonite",
-                &["SimpleAtk", "Wing Attack", "Dragon Rage", "Hyper Beam"],
+                &["Charge", "Wing Attack", "Dragon Rage", "Hyper Beam"],
             ),
-            (
-                "Mewtwo",
-                &["SimpleAtk", "Psychic", "Aura Sphere", "Psystrike"],
-            ),
+            ("Mewtwo", &["Charge", "Psychic", "Aura Sphere", "Psystrike"]),
             (
                 "Mewtwo Armure",
-                &["SimpleAtk", "Psystrike", "Barrier", "Shadow Storm"],
+                &["Charge", "Psystrike", "Barrier", "Shadow Storm"],
             ),
         ];
         for (boss, atks) in boss_attacks {

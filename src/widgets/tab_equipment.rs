@@ -69,18 +69,16 @@ pub fn TabEquipment(c: Character) -> Element {
         if let Some(idx) = tab
             .strip_prefix("tab")
             .and_then(|n| n.parse::<usize>().ok())
+            && let Some(category) = ordered_categories_eff.get(idx.saturating_sub(1))
         {
-            if let Some(category) = ordered_categories_eff.get(idx.saturating_sub(1)) {
-                let cat = category.to_string();
-                let sock = socket.clone();
-                let srv = server_name.clone();
-                let cid = char_id_eff.clone();
-                spawn(async move {
-                    let _ = sock
-                        .send(ClientEvent::RequestMarkEquipSeen(cat, cid, srv))
-                        .await;
-                });
-            }
+            let cat = category.to_string();
+            let srv = server_name.clone();
+            let cid = char_id_eff.clone();
+            spawn(async move {
+                let _ = socket
+                    .send(ClientEvent::RequestMarkEquipSeen(cat, cid, srv))
+                    .await;
+            });
         }
     });
 

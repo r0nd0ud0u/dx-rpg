@@ -25,7 +25,7 @@
         {
             "Cible": "Enemy",
             "Portée": "Individual",
-            "Stat": "Magical armor",
+            "Stat": "Magic armor",
             "Tours actifs": 4,
             "Type": "ChangeMaxStatByPercentage",
             "Valeur de l'effet": 0,
@@ -35,7 +35,7 @@
                 "kind": "ChangeMaxStatByPercentage",
                 "value": -30,
                 "is-percent": true,
-                "stats-name": "Magical armor",
+                "stats-name": "Magic armor",
                 "passive-enabled": false
             }
         },
@@ -46,11 +46,11 @@
             "Tours actifs": 6,
             "Type": "CooldownTurnsNumber",
             "Valeur de l'effet": 0,
-            "Value": 0,
+            "Value": 6,
             "IsMagicEffect": false,
             "Buffer": {
                 "kind": "CooldownTurnsNumber",
-                "value": 0,
+                "value": 6,
                 "is-percent": false,
                 "stats-name": "",
                 "passive-enabled": false
@@ -62,5 +62,6 @@
     "Nom": "Shadow Storm",
     "Photo": "Angmar.png",
     "Portée": "Individual",
-    "Description": "Summons a psychic storm — persistent magical damage for 5 turns with armour reduction."
+    "Description": "Summons a psychic storm — persistent magical damage for 5 turns with armour reduction.",
+    "DescriptionEffects": "Deals 20 magic damage to one enemy per turn for 5 turns; -30% max Magic armor on enemy for 4 turns; 6-turn cooldown."
 }

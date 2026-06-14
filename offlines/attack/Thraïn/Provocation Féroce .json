@@ -79,11 +79,11 @@
             "Tours actifs": 5,
             "Type": "CooldownTurnsNumber",
             "Valeur de l'effet": 0,
-            "Value": 0,
+            "Value": 5,
             "IsMagicEffect": false,
             "Buffer": {
                 "kind": "CooldownTurnsNumber",
-                "value": 0,
+                "value": 5,
                 "is-percent": false,
                 "stats-name": "",
                 "passive-enabled": false
@@ -95,5 +95,6 @@
     "Nom": "Provocation Féroce ",
     "Photo": "Thraïn.png",
     "Portée": "Individual",
-    "Description": "Fierce Taunt — forces all enemies to target this character, protecting allies."
+    "Description": "Fierce Taunt — forces all enemies to target this character, protecting allies.",
+    "DescriptionEffects": "+12 Berserk; +10 Aggro; resets its active effects; +40 max Critical strike for 3 turns; 5-turn cooldown."
 }
