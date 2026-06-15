@@ -149,12 +149,24 @@ pub fn RunningGamePage() -> Element {
                         .game_state
                         .last_result_atk
                         .clone();
-                    if !last_atk.new_game_atk_effects.is_empty() {
+                    let show_blow = !last_atk.new_game_atk_effects.is_empty() || last_atk.is_dot_kill;
+                    if show_blow {
+                        let title = if last_atk.is_dot_kill {
+                            "⚔️ Finishing Blow (DOT)"
+                        } else {
+                            "⚔️ Finishing Blow"
+                        };
+                        let dying_last = last_atk.dying_char_last_atk.clone();
                         rsx! {
                             div { class: "scenario-section",
-                                h3 { class: "scenario-section-title", "⚔️ Finishing Blow" }
-                                div { class: "scenario-last-atk",
-                                    crate::board_game_components::gameboard::ResultAtkText { ra: last_atk }
+                                h3 { class: "scenario-section-title", "{title}" }
+                                if last_atk.is_dot_kill && !dying_last.is_empty() {
+                                    p { class: "dot-kill-info", "Enemy's last attack: {dying_last}" }
+                                }
+                                if !last_atk.new_game_atk_effects.is_empty() {
+                                    div { class: "scenario-last-atk",
+                                        crate::board_game_components::gameboard::ResultAtkText { ra: last_atk }
+                                    }
                                 }
                             }
                         }

@@ -52,6 +52,6 @@
     "Nom": "Essence Régénératrice",
     "Photo": "Essence regeneratrice.jpg",
     "Portée": "Individual",
-    "Description": "Essence Régénératrice — insuffle une essence vitale purifiée à un allié, accordant une régénération puissante et durable.",
-    "DescriptionEffects": "Soigne l'allié ciblé de 20 PV par tour pendant 5 tours ; +10 max Régénération de vitesse sur l'allié ciblé pendant 5 tours ; +10% max Puissance magique sur l'allié ciblé pendant 5 tours."
+    "Description": "Regenerative Essence — infuses a target ally with purified life essence, granting powerful and lasting regeneration.",
+    "DescriptionEffects": "Heals the targeted ally for 20 per turn for 5 turns; +10 max Speed regeneration on the targeted ally for 5 turns; +10% max Magic power on the targeted ally for 5 turns."
 }
