@@ -214,7 +214,7 @@ pub fn RunningGamePage() -> Element {
                 div { class: "game-toolbar",
                     GameSheets {}
                     div { class: "turn-badge",
-                        "⚔️ Turn {server_data().core_game_data.game_manager.game_state.current_turn_nb}"
+                        "⚔️ Turn {server_data().core_game_data.game_manager.game_state.current_turn_nb} - Round {server_data().core_game_data.game_manager.game_state.current_round}"
                     }
                 }
                 Separator {

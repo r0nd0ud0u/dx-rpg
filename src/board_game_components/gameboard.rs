@@ -246,8 +246,14 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
 
 #[component]
 fn AmountText(gae: GameAtkEffect) -> Element {
+    let kind_for_color = &gae.processed_effect_param.input_effect_param.buffer.kind;
     let mut colortext = "var(--secondary-success-color)";
     if gae.effect_outcome.real_amount_tx < 0 {
+        colortext = "var(--secondary-color-2)";
+    }
+    if *kind_for_color == BufKinds::ConditionDamagePrevTurn
+        && gae.processed_effect_param.number_of_applies == 0
+    {
         colortext = "var(--secondary-color-2)";
     }
     // Highlight critical hits
@@ -266,18 +272,29 @@ fn AmountText(gae: GameAtkEffect) -> Element {
     let amount = gae.effect_outcome.real_amount_tx;
     let full = gae.effect_outcome.full_amount_tx;
 
+    let number_of_applies = gae.processed_effect_param.number_of_applies;
+    let buf_value = gae.processed_effect_param.input_effect_param.buffer.value;
+
     rsx! {
-        if gae.processed_effect_param.input_effect_param.buffer.kind
-            == BufKinds::CooldownTurnsNumber
-        {
+        if *kind == BufKinds::CooldownTurnsNumber {
             div { color: colortext, style: crit_style,
                 "Cooldown on {target}: {gae.processed_effect_param.input_effect_param.nb_turns} turns"
             }
+        } else if *kind == BufKinds::ConditionDamagePrevTurn {
+            div { color: colortext, style: crit_style,
+                if number_of_applies > 0 {
+                    "{target} → ✓ Condition: damage last turn"
+                } else {
+                    "{target} → ✗ Condition: damage last turn (attack stopped)"
+                }
+            }
+        } else if *kind == BufKinds::MultiValue {
+            div { color: colortext, style: crit_style,
+                "{target} → Heal ×{buf_value}"
+            }
         } else if gae.processed_effect_param.input_effect_param.buffer.stats_name == HP
-            && gae.processed_effect_param.input_effect_param.buffer.kind
-                != BufKinds::ChangeMaxStatByPercentage
-            && gae.processed_effect_param.input_effect_param.buffer.kind
-                != BufKinds::ChangeMaxStatByValue
+            && *kind != BufKinds::ChangeMaxStatByPercentage
+            && *kind != BufKinds::ChangeMaxStatByValue
         {
             div { color: colortext, style: crit_style,
                 if full == amount {
