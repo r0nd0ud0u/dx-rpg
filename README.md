@@ -152,10 +152,23 @@ The armor constant `100` means that:
 - Hero armor (0–90 range) gives **16–47% damage reduction** — meaningful enough that armor upgrades and debuffs visibly affect outcomes
 - Boss armor is tuned in the same scale (e.g. Angmar 80, Nazgul 50) to preserve boss durability relative to hero attacks
 
-The combat log now shows **full** (pre-armor) and **real** (post-armor, post-cap) amounts when they differ:
+The combat log shows the actual HP change and, when the armor cap reduces the raw hit, a `(raw: N)` reminder:
 ```
-Squirtle ← -43 HP (full: -75, real: -43)
+Last attack: Charge
+Squirtle → -43 HP (raw: -75)
 ```
+
+Non-HP effects display descriptive text:
+```
+Thraïn_#1 → 40 HP (raw: 140)
+Thraïn_#1 → debuff removed
+Thraïn_#1 → HP effects reset
+Cooldown on Thalia_#1: 5 turns
+```
+
+`GameAtkEffect::log_text()` in lib-rpg centralises this rendering logic and returns `None` for
+no-op effects (e.g. `RemoveOneDebuf` when there is no debuff to remove) so they are silently
+skipped rather than showing a confusing `→ 0` line.
 
 ### Game Stats Sheet (improved)
 

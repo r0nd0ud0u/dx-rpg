@@ -4,7 +4,6 @@ use dioxus::{
 };
 use lib_rpg::{
     character_mod::buffers::BufKinds,
-    common::constants::stats_const::HP,
     server::{
         game_manager::ResultLaunchAttack, players_manager::GameAtkEffect,
         server_manager::ServerData,
@@ -246,65 +245,27 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
 
 #[component]
 fn AmountText(gae: GameAtkEffect) -> Element {
-    let kind_for_color = &gae.processed_effect_param.input_effect_param.buffer.kind;
+    let Some(text) = gae.log_text() else {
+        return rsx! {};
+    };
+
+    let kind = &gae.processed_effect_param.input_effect_param.buffer.kind;
     let mut colortext = "var(--secondary-success-color)";
     if gae.effect_outcome.real_amount_tx < 0 {
         colortext = "var(--secondary-color-2)";
     }
-    if *kind_for_color == BufKinds::ConditionDamagePrevTurn
+    if *kind == BufKinds::ConditionDamagePrevTurn
         && gae.processed_effect_param.number_of_applies == 0
     {
         colortext = "var(--secondary-color-2)";
     }
-    // Highlight critical hits
     let crit_style = if gae.effect_outcome.is_critical {
         "font-weight: bold; text-decoration: underline;"
     } else {
         ""
     };
-    let stat = &gae
-        .processed_effect_param
-        .input_effect_param
-        .buffer
-        .stats_name;
-    let kind = &gae.processed_effect_param.input_effect_param.buffer.kind;
-    let target = &gae.effect_outcome.target_id_name;
-    let amount = gae.effect_outcome.real_amount_tx;
-    let full = gae.effect_outcome.full_amount_tx;
-
-    let number_of_applies = gae.processed_effect_param.number_of_applies;
-    let buf_value = gae.processed_effect_param.input_effect_param.buffer.value;
 
     rsx! {
-        if *kind == BufKinds::CooldownTurnsNumber {
-            div { color: colortext, style: crit_style,
-                "Cooldown on {target}: {gae.processed_effect_param.input_effect_param.nb_turns} turns"
-            }
-        } else if *kind == BufKinds::ConditionDamagePrevTurn {
-            div { color: colortext, style: crit_style,
-                if number_of_applies > 0 {
-                    "{target} → ✓ Condition: damage last turn"
-                } else {
-                    "{target} → ✗ Condition: damage last turn (attack stopped)"
-                }
-            }
-        } else if *kind == BufKinds::MultiValue {
-            div { color: colortext, style: crit_style,
-                "{target} → Heal ×{buf_value}"
-            }
-        } else if gae.processed_effect_param.input_effect_param.buffer.stats_name == HP
-            && *kind != BufKinds::ChangeMaxStatByPercentage
-            && *kind != BufKinds::ChangeMaxStatByValue
-        {
-            div { color: colortext, style: crit_style,
-                if full == amount {
-                    "{target} → {amount} HP"
-                } else {
-                    "{target} → {amount} HP (raw: {full})"
-                }
-            }
-        } else {
-            div { color: colortext, style: crit_style, "{target} → {stat} {full} ({kind})" }
-        }
+        div { color: colortext, style: crit_style, "{text}" }
     }
 }
