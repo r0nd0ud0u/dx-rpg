@@ -104,7 +104,7 @@ mod tests {
     #[test]
     fn bulbasaur_attacks_valid() {
         for atk in &[
-            "SimpleAtk",
+            "Charge",
             "Vine Whip",
             "Leech Seed",
             "Razor Leaf",

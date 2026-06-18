@@ -149,7 +149,8 @@ pub fn RunningGamePage() -> Element {
                         .game_state
                         .last_result_atk
                         .clone();
-                    let show_blow = !last_atk.new_game_atk_effects.is_empty() || last_atk.is_dot_kill;
+                    let show_blow = !last_atk.new_game_atk_effects.is_empty()
+                        || last_atk.is_dot_kill;
                     if show_blow {
                         let title = if last_atk.is_dot_kill {
                             "⚔️ Finishing Blow (DOT)"
