@@ -46,8 +46,8 @@
             "Max": 135
         },
         "HP regeneration": {
-            "Current": 7,
-            "Max": 7
+            "Current": 10,
+            "Max": 10
         },
         "Magical armor": {
             "Current": 0,
@@ -62,8 +62,8 @@
             "Max": 160
         },
         "Mana regeneration": {
-            "Current": 7,
-            "Max": 7
+            "Current": 10,
+            "Max": 10
         },
         "Physical armor": {
             "Current": 0,
@@ -86,8 +86,8 @@
             "Max": 40
         },
         "Vigor regeneration": {
-            "Current": 5,
-            "Max": 5
+            "Current": 0,
+            "Max": 0
         }
     },
     "Tx-rx": [

@@ -7,6 +7,14 @@
         "is_heal_atk_blocked": false,
         "is_random_target": false,
         "Buf-debuf": [
+            {
+                "stats-name": "",
+                "is-percent": false,
+                "passive-enabled": true,
+                "passive": true,
+                "kind": "IsDamageTxHealNeedyAlly",
+                "value": 25
+            }
         ]
     },
     "Level": 1,
