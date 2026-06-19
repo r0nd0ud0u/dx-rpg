@@ -7,6 +7,14 @@
         "is_heal_atk_blocked": false,
         "is_random_target": true,
         "Buf-debuf": [
+            {
+                "stats-name": "Physical power",
+                "is-percent": false,
+                "passive-enabled": true,
+                "passive": true,
+                "kind": "OverHealBoostStat",
+                "value": 0
+            }
         ]
     },
     "Level": 1,
