@@ -377,7 +377,7 @@ fn GameStatsSheet(s: SheetSide) -> Element {
                                     class: "stats-progress-inner",
                                     style: format!(
                                         "width: {}%",
-                                        if total_scenarios > 0 { (completed * 100) / total_scenarios } else { 0 },
+                                        (completed * 100).checked_div(total_scenarios).unwrap_or(0),
                                     ),
                                 }
                             }
@@ -401,7 +401,7 @@ fn GameStatsSheet(s: SheetSide) -> Element {
                             {
                                 let hp_cur = hero.stats.all_stats.get(HP).map(|a| a.current).unwrap_or(0);
                                 let hp_max = hero.stats.all_stats.get(HP).map(|a| a.max).unwrap_or(1);
-                                let pct = if hp_max > 0 { (hp_cur * 100) / hp_max } else { 0 };
+                                let pct = (hp_cur * 100).checked_div(hp_max).unwrap_or(0);
                                 let is_dead = hero.stats.is_dead().unwrap_or(false);
                                 rsx! {
                                     div { class: "stats-hero-row",
