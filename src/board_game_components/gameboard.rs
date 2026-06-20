@@ -214,8 +214,10 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
         }
     }
 
+    let show_block =
+        !ra.new_game_atk_effects.is_empty() || has_dodge_info || !ra.passive_logs.is_empty();
     rsx! {
-        if !ra.new_game_atk_effects.is_empty() || has_dodge_info {
+        if show_block {
             "Last attack: {ra.atk_name}\n"
             if ra.is_crit {
                 div { style: "color: var(--secondary-color-2); font-weight: bold; font-size: 1.1em;",
@@ -235,6 +237,17 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
                 }
                 for gae in effects {
                     AmountText { gae: gae.clone() }
+                }
+            }
+            for log in ra.passive_logs.iter() {
+                {
+                    let msg = log.message.replace('\n', "<br/>");
+                    rsx! {
+                        div {
+                            style: "color: {log.color}; font-size: 0.85rem; padding: 1px 0;",
+                            dangerous_inner_html: "{msg}",
+                        }
+                    }
                 }
             }
         } else {
