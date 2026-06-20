@@ -86,6 +86,4 @@ inherits = "dev"
 [profile.android-dev]
 inherits = "dev"
 
-[patch."https://github.com/r0nd0ud0u/lib-rpg.git"]
-lib-rpg = { path = "../lib-rpg" }
 
