@@ -135,6 +135,7 @@ In the game toolbar, a **Settings** sheet lets each user toggle options that are
 | Boss Energy Bars | `show_boss_energy` | off | Show mana/vigor/berserk bars on boss panels |
 | Hero Aggro | `show_hero_aggro` | off | Show aggro value on hero panel headers |
 | Boss HP Bar | `show_boss_hp` | on | Show the HP bar on boss panels |
+| Auto-save on Scenario | `auto_save_on_scenario` | on | Automatically save the game at the start of each new scenario |
 
 Each setting is stored as an independent context in Dioxus using a distinct newtype wrapper (`CtxShowBossHp`, `CtxShowBossEnergy`, etc.) to prevent context-key collisions that would otherwise occur since all `Signal<bool>` share the same `TypeId`.
 

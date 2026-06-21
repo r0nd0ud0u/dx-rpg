@@ -80,7 +80,7 @@ pub enum ClientEvent {
     AddLog(String, Vec<LogData>), // `String`: server name, `Vec<LogData>`: log info to add (ex: ["Player1 used Fireball on Player2 for 30 damage", "Player2 is now burning and will take 5 damage for 3 turns"])
     RequestToggleEquip(String, String, String), // `String`: equipment unique name, `String`: character id_name, `String`: server name
     RequestMarkEquipSeen(String, String, String), // `String`: category key, `String`: character id_name, `String`: server name
-    LoadNextScenario(String),                     // `String`: server name
+    LoadNextScenario(String, bool), // `String`: server name, `bool`: auto-save on start
     UsePotion(String, String, String), // `String`: server name, `String`: player name, `String`: potion name
     UsePartyPotion(String, String, String), // server_name, player_name, potion_name
 }
@@ -260,9 +260,9 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("Client {} marking equip category {} as seen for character {} on server {}", client_id, category_key, character_id_name, server_name);
                                 request_mark_equip_seen(&category_key, &character_id_name, &server_name);
                             }
-                            Ok(ClientEvent::LoadNextScenario(server_name)) => {
-                                tracing::info!("Client {} requested to load next scenario for server {}", client_id, server_name);
-                                let _ = process_load_next_scenario(&server_name).await;
+                            Ok(ClientEvent::LoadNextScenario(server_name, auto_save)) => {
+                                tracing::info!("Client {} requested to load next scenario for server {} (auto_save={auto_save})", client_id, server_name);
+                                let _ = process_load_next_scenario(&server_name, auto_save).await;
                             }
                             Ok(ClientEvent::UsePotion(server_name, player_name, potion_name)) => {
                                 tracing::info!("Player {} using potion {} on server {}", player_name, potion_name, server_name);
@@ -1452,17 +1452,27 @@ pub async fn get_core_game_data_by_dir(
 }
 
 #[cfg(feature = "server")]
-pub async fn process_load_next_scenario(server_name: &str) -> Result<()> {
-    let mut sm = SERVER_MANAGER.lock().unwrap();
-    if let Some(server_data) = sm.servers_data.get_mut(server_name) {
+pub async fn process_load_next_scenario(server_name: &str, auto_save: bool) -> Result<()> {
+    let owner_player_name = {
+        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let Some(server_data) = sm.servers_data.get_mut(server_name) else {
+            tracing::error!(
+                "process_load_next_scenario: No server data found for server name: {}",
+                server_name
+            );
+            return Ok(());
+        };
         server_data.core_game_data.load_next_scenario()?;
-    } else {
-        tracing::error!(
-            "process_load_next_scenario: No server data found for server name: {}",
+        server_data.players_data.owner_player_name.clone()
+    };
+    update_clients_server_data(server_name);
+    if auto_save && !owner_player_name.is_empty() {
+        tracing::info!(
+            "Auto-saving game for {} on server {} after scenario load",
+            owner_player_name,
             server_name
         );
+        process_save_game(server_name, &owner_player_name).await;
     }
-    drop(sm);
-    update_clients_server_data(server_name);
     Ok(())
 }

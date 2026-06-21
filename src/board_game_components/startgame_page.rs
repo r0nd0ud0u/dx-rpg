@@ -1,6 +1,6 @@
 use crate::board_game_components::character_page::{BarComponent, CharacterPanel};
 use crate::board_game_components::game_sheets::GameSheets;
-use crate::common::{Route, SERVER_NAME, photo_src};
+use crate::common::{CtxAutoSaveScenario, Route, SERVER_NAME, photo_src};
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::websocket_handler::msg_from_client::send_disconnect_from_server_data;
 use crate::{
@@ -110,6 +110,7 @@ pub fn RunningGamePage() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
+    let auto_save_scenario = use_context::<CtxAutoSaveScenario>().0;
 
     let snap_server_data = server_data();
 
@@ -182,7 +183,12 @@ pub fn RunningGamePage() -> Element {
                         Button {
                             variant: ButtonVariant::GreenType,
                             onclick: move |_| async move {
-                                let _ = socket.send(ClientEvent::LoadNextScenario(SERVER_NAME())).await;
+                                let _ = socket
+                                    .send(ClientEvent::LoadNextScenario(
+                                        SERVER_NAME(),
+                                        auto_save_scenario(),
+                                    ))
+                                    .await;
                             },
                             "⚡ Load Next Scenario"
                         }
