@@ -64,6 +64,7 @@ enum SheetKind {
     Stats,
     Scenarios,
     Settings,
+    Store,
 }
 
 #[component]
@@ -72,6 +73,7 @@ pub fn GameSheets() -> Element {
     let mut sheet_kind: Signal<SheetKind> = use_signal(|| SheetKind::Menu);
     let mut is_saved: Signal<bool> = use_signal(|| false);
     let server_data = use_context::<Signal<ServerData>>();
+    let shop_enabled = use_context::<crate::common::CtxShopEnabled>().0;
 
     let open_sheet = move |kind: SheetKind| {
         move |_| {
@@ -133,11 +135,19 @@ pub fn GameSheets() -> Element {
                 onclick: open_sheet(SheetKind::Settings),
                 "⚙️ Settings"
             }
-            Button {
-                variant: ButtonVariant::Outline,
-                disabled: true,
-                title: "Shop is only available at end of scenario",
-                "🛒 Shop 🔒"
+            if shop_enabled() {
+                Button {
+                    variant: ButtonVariant::Outline,
+                    onclick: open_sheet(SheetKind::Store),
+                    "🛒 Store"
+                }
+            } else {
+                Button {
+                    variant: ButtonVariant::Outline,
+                    disabled: true,
+                    title: "Enable \"Shop During Scenario\" in ⚙️ Settings to access the store",
+                    "🛒 Store 🔒"
+                }
             }
         }
         Sheet { open: open(), on_open_change: move |v| open.set(v),
@@ -159,6 +169,9 @@ pub fn GameSheets() -> Element {
                 },
                 SheetKind::Settings => rsx! {
                     SettingsSheet { s: SheetSide::Left }
+                },
+                SheetKind::Store => rsx! {
+                    StoreSheet { s: SheetSide::Right }
                 },
             }
         }
@@ -1235,6 +1248,7 @@ const SETTING_BOSS_ENERGY: &str = "show_boss_energy";
 const SETTING_HERO_AGGRO: &str = "show_hero_aggro";
 const SETTING_BOSS_HP: &str = "show_boss_hp";
 const SETTING_AUTO_SAVE: &str = "auto_save_on_scenario";
+const SETTING_SHOP_ENABLED: &str = "shop_enabled";
 
 #[component]
 fn SettingsSheet(s: SheetSide) -> Element {
@@ -1243,6 +1257,7 @@ fn SettingsSheet(s: SheetSide) -> Element {
     let mut show_hero_aggro = use_context::<crate::common::CtxShowHeroAggro>().0;
     let mut show_boss_hp = use_context::<crate::common::CtxShowBossHp>().0;
     let mut auto_save_scenario = use_context::<crate::common::CtxAutoSaveScenario>().0;
+    let mut shop_enabled = use_context::<crate::common::CtxShopEnabled>().0;
     let mut save_msg: Signal<String> = use_signal(String::new);
 
     // Load saved settings on mount
@@ -1270,6 +1285,11 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 get_user_setting(SETTING_AUTO_SAVE.to_string(), "true".to_owned()).await
             {
                 auto_save_scenario.set(val == "true");
+            }
+            if let Ok(val) =
+                get_user_setting(SETTING_SHOP_ENABLED.to_string(), "false".to_owned()).await
+            {
+                shop_enabled.set(val == "true");
             }
         });
     });
@@ -1424,6 +1444,36 @@ fn SettingsSheet(s: SheetSide) -> Element {
                                 spawn(async move {
                                     let _ = save_user_setting(
                                             SETTING_AUTO_SAVE.to_string(),
+                                            if new_val { "true" } else { "false" }.to_string(),
+                                        )
+                                        .await;
+                                    save_msg.set("✅ Saved".to_owned());
+                                });
+                            },
+                        }
+                        span { class: "toggle-slider" }
+                    }
+                }
+
+                // ── Shop During Scenario ───────────────────────────────────────
+                div { class: "settings-row",
+                    div { class: "settings-label-group",
+                        span { class: "settings-label", "Shop During Scenario" }
+                        span { class: "settings-hint",
+                            "Allow opening the Store during an active scenario."
+                        }
+                    }
+                    label { class: "toggle-switch",
+                        input {
+                            r#type: "checkbox",
+                            checked: shop_enabled(),
+                            onchange: move |_| {
+                                let new_val = !shop_enabled();
+                                shop_enabled.set(new_val);
+                                save_msg.set("Saving…".to_owned());
+                                spawn(async move {
+                                    let _ = save_user_setting(
+                                            SETTING_SHOP_ENABLED.to_string(),
                                             if new_val { "true" } else { "false" }.to_string(),
                                         )
                                         .await;

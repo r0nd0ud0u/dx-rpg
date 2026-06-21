@@ -90,6 +90,10 @@ pub struct CtxShowBossHp(pub Signal<bool>);
 #[derive(Clone, Copy)]
 pub struct CtxAutoSaveScenario(pub Signal<bool>);
 
+/// Whether the Store is accessible during an active scenario (default: off)
+#[derive(Clone, Copy)]
+pub struct CtxShopEnabled(pub Signal<bool>);
+
 /// Returns the URL for serving a character photo via the dynamic image route.
 /// If `photo_name` already contains an extension (has a dot), the URL is used
 /// as-is; otherwise `.png` is appended for backward-compat with legacy entries
