@@ -7,12 +7,14 @@
         "is_heal_atk_blocked": false,
         "is_random_target": false,
         "Buf-debuf": [
+            {
                 "stats-name": "Dodge",
                 "is-percent": true,
                 "passive-enabled": true,
                 "passive": true,
                 "kind": "ChangeCurrentStatByValue",
                 "value": 10
+            }
         ]
     },
     "Level": 1,

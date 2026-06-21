@@ -114,8 +114,9 @@ pub fn buy_item_handler(
         }
     }
 
-    let id_name = hero.id_name.clone();
-    pm.modify_active_character(&id_name);
+    // Do NOT call pm.modify_active_character here — that copies current_player
+    // (the active combat player) back over the hero, erasing the purchase.
+    // We modified the hero directly via active_heroes.iter_mut(), which is enough.
 
     if let Some(entry) = purchase_log {
         server_data.core_game_data.game_manager.logs.push(entry);
@@ -200,9 +201,6 @@ pub fn sell_item_handler(
             Err(e) => tracing::warn!("sell_item_handler equipment: {}", e),
         }
     }
-
-    let id_name = hero.id_name.clone();
-    pm.modify_active_character(&id_name);
 
     if let Some(entry) = sale_log {
         server_data.core_game_data.game_manager.logs.push(entry);

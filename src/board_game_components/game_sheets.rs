@@ -64,7 +64,6 @@ enum SheetKind {
     Stats,
     Scenarios,
     Settings,
-    Store,
 }
 
 #[component]
@@ -136,8 +135,9 @@ pub fn GameSheets() -> Element {
             }
             Button {
                 variant: ButtonVariant::Outline,
-                onclick: open_sheet(SheetKind::Store),
-                "🛒 Store"
+                disabled: true,
+                title: "Shop is only available at end of scenario",
+                "🛒 Shop 🔒"
             }
         }
         Sheet { open: open(), on_open_change: move |v| open.set(v),
@@ -159,9 +159,6 @@ pub fn GameSheets() -> Element {
                 },
                 SheetKind::Settings => rsx! {
                     SettingsSheet { s: SheetSide::Left }
-                },
-                SheetKind::Store => rsx! {
-                    StoreSheet { s: SheetSide::Right }
                 },
             }
         }
@@ -773,8 +770,10 @@ fn rank_label(rank: &lib_rpg::character_mod::rank::Rank) -> &'static str {
 }
 
 /// The full Store sheet — browse items for sale, buy and sell.
+/// Available at end-of-scenario. Accessible from both `GameSheets` (disabled during
+/// combat) and the scenario-end screen.
 #[component]
-fn StoreSheet(s: SheetSide) -> Element {
+pub fn StoreSheet(s: SheetSide) -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
