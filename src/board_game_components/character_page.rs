@@ -311,7 +311,7 @@ pub fn CharacterTargetButton(
 
 #[component]
 pub fn BarComponent(max: u64, current: u64, name: String) -> Element {
-    let width_display = if max == 0 { 0 } else { current * 100 / max };
+    let width_display = (current * 100).checked_div(max).unwrap_or(0);
     rsx! {
         div { class: "bar-row",
             div { class: "bar-header",

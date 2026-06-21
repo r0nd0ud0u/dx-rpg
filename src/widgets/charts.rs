@@ -88,7 +88,7 @@ fn AtkUsageChart(atks_info: Vec<AtksInfo>) -> Element {
 
     // sort descending by usage
     let mut sorted = atks_info.clone();
-    sorted.sort_by(|a, b| b.nb_use.cmp(&a.nb_use));
+    sorted.sort_by_key(|b| std::cmp::Reverse(b.nb_use));
     let colors = [
         "var(--rpg-gold)",
         "var(--rpg-teal)",

@@ -9,12 +9,9 @@
             "Portée": "Individual",
             "Stat": "",
             "Tours actifs": 1,
-            "Type": "Dégâts au tour précédent",
-            "Valeur de l'effet": 0,
-            "Value": 0,
             "IsMagicEffect": true,
             "Buffer": {
-                "kind": "IsDamageTxHealNeedyAlly",
+                "kind": "ConditionDamagePrevTurn",
                 "value": 0,
                 "is-percent": false,
                 "stats-name": "",
@@ -62,6 +59,6 @@
     "Photo": "default.png",
     "Portée": "Individual",
     "Sound": "",
-    "Description": "Healing Light — a gentle beam of light that restores HP to an ally.",
-    "DescriptionEffects": "Heals the most wounded ally for the damage dealt; heals all allies for 130 HP; 5-turn cooldown."
+    "Description": "Healing Light — a gentle beam of light that restores vitality to an ally.",
+    "DescriptionEffects": "Heals the most wounded ally for the damage dealt; heals the targeted ally for 130; 5-turn cooldown."
 }

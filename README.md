@@ -138,6 +138,38 @@ In the game toolbar, a **Settings** sheet lets each user toggle options that are
 
 Each setting is stored as an independent context in Dioxus using a distinct newtype wrapper (`CtxShowBossHp`, `CtxShowBossEnergy`, etc.) to prevent context-key collisions that would otherwise occur since all `Signal<bool>` share the same `TypeId`.
 
+### Damage Formula & Armor
+
+Combat damage is computed by `lib-rpg` using:
+
+```
+raw_damage  = atk_value − (launcher_power / nb_turns)
+effective   = round(raw_damage × 100 / (100 + target_armor))
+```
+
+The armor constant `100` means that:
+- A character with **100 armor** takes **half** of the raw hit
+- Hero armor (0–90 range) gives **16–47% damage reduction** — meaningful enough that armor upgrades and debuffs visibly affect outcomes
+- Boss armor is tuned in the same scale (e.g. Angmar 80, Nazgul 50) to preserve boss durability relative to hero attacks
+
+The combat log shows the actual HP change and, when the armor cap reduces the raw hit, a `(raw: N)` reminder:
+```
+Last attack: Charge
+Squirtle → -43 HP (raw: -75)
+```
+
+Non-HP effects display descriptive text:
+```
+Thraïn_#1 → 40 HP (raw: 140)
+Thraïn_#1 → debuff removed
+Thraïn_#1 → HP effects reset
+Cooldown on Thalia_#1: 5 turns
+```
+
+`GameAtkEffect::log_text()` in lib-rpg centralises this rendering logic and returns `None` for
+no-op effects (e.g. `RemoveOneDebuf` when there is no debuff to remove) so they are silently
+skipped rather than showing a confusing `→ 0` line.
+
 ### Game Stats Sheet (improved)
 
 The 📊 Stats sheet now shows:

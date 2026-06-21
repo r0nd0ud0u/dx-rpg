@@ -7,6 +7,12 @@
         "is_heal_atk_blocked": false,
         "is_random_target": true,
         "Buf-debuf": [
+                "stats-name": "Physical power",
+                "is-percent": false,
+                "passive-enabled": true,
+                "passive": true,
+                "kind": "OverHealBoostStat",
+                "value": 0
         ]
     },
     "Level": 1,
@@ -46,8 +52,8 @@
             "Max": 145
         },
         "HP regeneration": {
-            "Current": 7,
-            "Max": 7
+            "Current": 0,
+            "Max": 0
         },
         "Magical armor": {
             "Current": 0,
@@ -62,8 +68,8 @@
             "Max": 70
         },
         "Mana regeneration": {
-            "Current": 7,
-            "Max": 7
+            "Current": 0,
+            "Max": 0
         },
         "Physical armor": {
             "Current": 0,
@@ -86,8 +92,8 @@
             "Max": 130
         },
         "Vigor regeneration": {
-            "Current": 5,
-            "Max": 5
+            "Current": 0,
+            "Max": 0
         }
     },
     "Tx-rx": [

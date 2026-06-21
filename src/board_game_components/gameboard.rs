@@ -4,7 +4,6 @@ use dioxus::{
 };
 use lib_rpg::{
     character_mod::buffers::BufKinds,
-    common::constants::stats_const::HP,
     server::{
         game_manager::ResultLaunchAttack, players_manager::GameAtkEffect,
         server_manager::ServerData,
@@ -215,8 +214,10 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
         }
     }
 
+    let show_block =
+        !ra.new_game_atk_effects.is_empty() || has_dodge_info || !ra.passive_logs.is_empty();
     rsx! {
-        if !ra.new_game_atk_effects.is_empty() || has_dodge_info {
+        if show_block {
             "Last attack: {ra.atk_name}\n"
             if ra.is_crit {
                 div { style: "color: var(--secondary-color-2); font-weight: bold; font-size: 1.1em;",
@@ -238,6 +239,17 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
                     AmountText { gae: gae.clone() }
                 }
             }
+            for log in ra.passive_logs.iter() {
+                {
+                    let msg = log.message.replace('\n', "<br/>");
+                    rsx! {
+                        div {
+                            style: "color: {log.color}; font-size: 0.85rem; padding: 1px 0;",
+                            dangerous_inner_html: "{msg}",
+                        }
+                    }
+                }
+            }
         } else {
             ""
         }
@@ -246,48 +258,27 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
 
 #[component]
 fn AmountText(gae: GameAtkEffect) -> Element {
+    let Some(text) = gae.log_text() else {
+        return rsx! {};
+    };
+
+    let kind = &gae.processed_effect_param.input_effect_param.buffer.kind;
     let mut colortext = "var(--secondary-success-color)";
     if gae.effect_outcome.real_amount_tx < 0 {
         colortext = "var(--secondary-color-2)";
     }
-    // Highlight critical hits
+    if *kind == BufKinds::ConditionDamagePrevTurn
+        && gae.processed_effect_param.number_of_applies == 0
+    {
+        colortext = "var(--secondary-color-2)";
+    }
     let crit_style = if gae.effect_outcome.is_critical {
         "font-weight: bold; text-decoration: underline;"
     } else {
         ""
     };
-    let stat = &gae
-        .processed_effect_param
-        .input_effect_param
-        .buffer
-        .stats_name;
-    let kind = &gae.processed_effect_param.input_effect_param.buffer.kind;
-    let target = &gae.effect_outcome.target_id_name;
-    let amount = gae.effect_outcome.real_amount_tx;
-    let full = gae.effect_outcome.full_amount_tx;
 
     rsx! {
-        if gae.processed_effect_param.input_effect_param.buffer.kind
-            == BufKinds::CooldownTurnsNumber
-        {
-            div { color: colortext, style: crit_style,
-                "Cooldown on {target}: {gae.processed_effect_param.input_effect_param.nb_turns} turns"
-            }
-        } else if gae.processed_effect_param.input_effect_param.buffer.stats_name == HP
-            && gae.processed_effect_param.input_effect_param.buffer.kind
-                != BufKinds::ChangeMaxStatByPercentage
-            && gae.processed_effect_param.input_effect_param.buffer.kind
-                != BufKinds::ChangeMaxStatByValue
-        {
-            div { color: colortext, style: crit_style,
-                if full == amount {
-                    "{target} → {amount} HP"
-                } else {
-                    "{target} → {amount} HP (raw: {full})"
-                }
-            }
-        } else {
-            div { color: colortext, style: crit_style, "{target} → {stat} {full} ({kind})" }
-        }
+        div { color: colortext, style: crit_style, "{text}" }
     }
 }
