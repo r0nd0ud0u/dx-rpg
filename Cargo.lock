@@ -4000,7 +4000,7 @@ checksum = "7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8"
 [[package]]
 name = "lib-rpg"
 version = "1.5.0"
-source = "git+https://github.com/r0nd0ud0u/lib-rpg.git?rev=a3976d879ea7555d00cd5f3290872171fab332ac#a3976d879ea7555d00cd5f3290872171fab332ac"
+source = "git+https://github.com/r0nd0ud0u/lib-rpg.git?rev=843baab55adfb2ff33e544af07246ed2dfd6892d#843baab55adfb2ff33e544af07246ed2dfd6892d"
 dependencies = [
  "anyhow",
  "chrono",

@@ -135,19 +135,12 @@ pub fn GameSheets() -> Element {
                 onclick: open_sheet(SheetKind::Settings),
                 "⚙️ Settings"
             }
-            if shop_enabled() {
-                Button {
-                    variant: ButtonVariant::Outline,
-                    onclick: open_sheet(SheetKind::Store),
-                    "🛒 Store"
-                }
-            } else {
-                Button {
-                    variant: ButtonVariant::Outline,
-                    disabled: true,
-                    title: "Enable \"Shop During Scenario\" in ⚙️ Settings to access the store",
-                    "🛒 Store 🔒"
-                }
+            Button {
+                variant: ButtonVariant::Outline,
+                disabled: !shop_enabled(),
+                title: if shop_enabled() { "" } else { "Enable \"Shop During Scenario\" in ⚙️ Settings" },
+                onclick: open_sheet(SheetKind::Store),
+                "🛒 Store"
             }
         }
         Sheet { open: open(), on_open_change: move |v| open.set(v),
@@ -821,7 +814,9 @@ pub fn StoreSheet(s: SheetSide) -> Element {
 
     let char_id = character.id_name.clone();
     let gold = character.inventory.money;
-    // Sub-tab for the Shop section: 0 = Equipment, 1 = Consumables
+    // 0 = Shop, 1 = Bag  (signal-driven; never unmounts children)
+    let mut main_tab: Signal<u8> = use_signal(|| 0);
+    // 0 = Equipment, 1 = Consumables
     let mut shop_sub_tab: Signal<u8> = use_signal(|| 0);
 
     rsx! {
@@ -856,34 +851,38 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                     }
                 }
 
-                // Main tabs: Shop | Bag
-                Tabs { default_value: "shop".to_owned(),
-                    TabList {
-                        TabTrigger { value: "shop".to_owned(), index: 0_usize, "🏪 Shop" }
-                        TabTrigger { value: "bag".to_owned(), index: 1_usize, "🎒 Bag" }
+                // Main tab row: Shop | Bag
+                div { display: "flex", gap: "0.4rem",
+                    button {
+                        class: if main_tab() == 0 { "inv-tab inv-tab--active" } else { "inv-tab" },
+                        onclick: move |_| main_tab.set(0),
+                        "🏪 Shop"
                     }
+                    button {
+                        class: if main_tab() == 1 { "inv-tab inv-tab--active" } else { "inv-tab" },
+                        onclick: move |_| main_tab.set(1),
+                        "🎒 Bag"
+                    }
+                }
 
-                    // ── Shop tab ──────────────────────────────────────────────
-                    TabContent { value: "shop".to_owned(), index: 0_usize,
-                        div {
-                            display: "flex",
-                            flex_direction: "column",
-                            gap: "0.5rem",
-                            padding_top: "0.5rem",
+                // ── Shop panel (always mounted) ────────────────────────────
+                div { display: if main_tab() == 0 { "flex" } else { "none" },
+                    flex_direction: "column",
+                    gap: "0.5rem",
 
-                            // Sub-tab buttons (signal-driven to avoid nested Tabs context collision)
-                            div { display: "flex", gap: "0.4rem",
-                                button {
-                                    class: if shop_sub_tab() == 0 { "inv-tab inv-tab--active" } else { "inv-tab" },
-                                    onclick: move |_| shop_sub_tab.set(0),
-                                    "⚔️ Equipment"
-                                }
-                                button {
-                                    class: if shop_sub_tab() == 1 { "inv-tab inv-tab--active" } else { "inv-tab" },
-                                    onclick: move |_| shop_sub_tab.set(1),
-                                    "💊 Consumables"
-                                }
-                            }
+                    // Sub-tab buttons: Equipment | Consumables
+                    div { display: "flex", gap: "0.4rem",
+                        button {
+                            class: if shop_sub_tab() == 0 { "inv-tab inv-tab--active" } else { "inv-tab" },
+                            onclick: move |_| shop_sub_tab.set(0),
+                            "⚔️ Equipment"
+                        }
+                        button {
+                            class: if shop_sub_tab() == 1 { "inv-tab inv-tab--active" } else { "inv-tab" },
+                            onclick: move |_| shop_sub_tab.set(1),
+                            "💊 Consumables"
+                        }
+                    }
 
                             // Equipment sub-panel — always mounted, hidden via display
                             div { display: if shop_sub_tab() == 0 { "block" } else { "none" },
@@ -1059,15 +1058,11 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                 }
                             }
                         }
-                    }
 
-                    // ── Bag tab ───────────────────────────────────────────────
-                    TabContent { value: "bag".to_owned(), index: 1_usize,
-                        div {
-                            display: "flex",
-                            flex_direction: "column",
-                            gap: "0.75rem",
-                            padding_top: "0.5rem",
+                // ── Bag panel (always mounted) ─────────────────────────────
+                div { display: if main_tab() == 1 { "flex" } else { "none" },
+                    flex_direction: "column",
+                    gap: "0.75rem",
 
                             {
                                 // Collect unequipped equipment items
@@ -1247,8 +1242,6 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                             }
                         }
                     }
-                }
-            }
 
             SheetFooter {
                 SheetClose {
