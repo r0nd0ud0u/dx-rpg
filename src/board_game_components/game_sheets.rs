@@ -796,6 +796,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
     let is_single_player = server_data_snap.core_game_data.is_single_player;
 
     let shop_catalog = server_data_snap.core_game_data.shop_catalog.clone();
+    let party_consumables = gm.pm.party_consumables.clone();
 
     let heroes_to_show: Vec<lib_rpg::character_mod::character::Character> = if is_single_player {
         gm.pm.active_heroes.clone()
@@ -1003,7 +1004,11 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                             .consumables
                                             .iter()
                                             .filter(|c| c.name == item.name)
-                                            .count();
+                                            .count()
+                                            + party_consumables
+                                                .iter()
+                                                .filter(|c| c.name == item.name)
+                                                .count();
                                         let rank_col = rank_color(&item.rank);
                                         let rank_lbl = rank_label(&item.rank);
                                         rsx! {
@@ -1086,7 +1091,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                             })
                             .collect();
                         let bag_consumables = character.inventory.consumables.clone();
-                        let is_empty = unequipped.is_empty() && bag_consumables.is_empty();
+                        let is_empty = unequipped.is_empty() && bag_consumables.is_empty() && party_consumables.is_empty();
                         rsx! {
                             ScrollArea {
                                 width: "100%",
@@ -1161,7 +1166,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                             }
                                         }
 
-                                        // Consumables section
+                                        // Consumables section (personal — from shop purchases, sellable)
                                         if !bag_consumables.is_empty() {
                                             span { style: "font-size:0.8rem;font-weight:700;color:var(--rpg-text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0.25rem 0;margin-top:0.25rem;",
                                                 "💊 Consumables"
@@ -1212,6 +1217,31 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                                     },
                                                                     "Sell"
                                                                 }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Party loot consumables (shared pool — use in combat, cannot be sold)
+                                        if !party_consumables.is_empty() {
+                                            span { style: "font-size:0.8rem;font-weight:700;color:var(--rpg-text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0.25rem 0;margin-top:0.25rem;",
+                                                "🎒 Party loot"
+                                            }
+                                            for consumable in party_consumables.iter() {
+                                                {
+                                                    let consumable_name = consumable.name.clone();
+                                                    let rank_col = rank_color(&consumable.rank);
+                                                    let rank_lbl = rank_label(&consumable.rank);
+                                                    rsx! {
+                                                        div { style: "border:1px solid var(--rpg-border);border-radius:8px;padding:0.6rem 0.75rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;",
+                                                            div { display: "flex", flex_direction: "column", gap: "0.15rem",
+                                                                span { style: "font-weight:600;font-size:0.85rem;", "{consumable_name}" }
+                                                                span { style: "font-size:0.72rem;font-weight:600;color:{rank_col};", "{rank_lbl}" }
+                                                            }
+                                                            span { style: "font-size:0.75rem;color:var(--rpg-text-muted);font-style:italic;",
+                                                                "Use in combat"
                                                             }
                                                         }
                                                     }
