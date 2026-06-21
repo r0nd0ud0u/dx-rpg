@@ -821,6 +821,8 @@ pub fn StoreSheet(s: SheetSide) -> Element {
 
     let char_id = character.id_name.clone();
     let gold = character.inventory.money;
+    // Sub-tab for the Shop section: 0 = Equipment, 1 = Consumables
+    let mut shop_sub_tab: Signal<u8> = use_signal(|| 0);
 
     rsx! {
         SheetContent { side: s,
@@ -869,96 +871,98 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                             gap: "0.5rem",
                             padding_top: "0.5rem",
 
-                            // Sub-tabs: Equipment | Consumables
-                            Tabs { default_value: "equip".to_owned(),
-                                TabList {
-                                    TabTrigger { value: "equip".to_owned(), index: 0_usize, "⚔️ Equipment" }
-                                    TabTrigger { value: "cons".to_owned(), index: 1_usize, "💊 Consumables" }
+                            // Sub-tab buttons (signal-driven to avoid nested Tabs context collision)
+                            div { display: "flex", gap: "0.4rem",
+                                button {
+                                    class: if shop_sub_tab() == 0 { "inv-tab inv-tab--active" } else { "inv-tab" },
+                                    onclick: move |_| shop_sub_tab.set(0),
+                                    "⚔️ Equipment"
                                 }
+                                button {
+                                    class: if shop_sub_tab() == 1 { "inv-tab inv-tab--active" } else { "inv-tab" },
+                                    onclick: move |_| shop_sub_tab.set(1),
+                                    "💊 Consumables"
+                                }
+                            }
 
-                                // Equipment sub-tab
-                                TabContent { value: "equip".to_owned(), index: 0_usize,
-                                    ScrollArea {
-                                        width: "100%",
-                                        height: "calc(100vh - 22rem)",
-                                        direction: ScrollDirection::Vertical,
-                                        div {
-                                            display: "flex",
-                                            flex_direction: "column",
-                                            gap: "0.5rem",
-                                            padding: "0.5rem 0",
-                                            for item in shop_catalog.iter().filter(|i| i.kind == LootType::Equipment) {
-                                                {
-                                                    let item = item.clone();
-                                                    let char_id_clone = char_id.clone();
+                            // Equipment sub-panel
+                            if shop_sub_tab() == 0 {
+                                ScrollArea {
+                                    width: "100%",
+                                    height: "calc(100vh - 24rem)",
+                                    direction: ScrollDirection::Vertical,
+                                    div {
+                                        display: "flex",
+                                        flex_direction: "column",
+                                        gap: "0.5rem",
+                                        padding: "0.5rem 0",
+                                        for item in shop_catalog.iter().filter(|i| i.kind == LootType::Equipment) {
+                                            {
+                                                let item = item.clone();
+                                                let char_id_clone = char_id.clone();
 
-                                                    let can_afford = gold >= item.price;
-                                                    let bag_count = character.inventory.equipments
-                                                        .values()
-                                                        .flatten()
-                                                        .filter(|e| e.unique_name == item.name)
-                                                        .count();
-                                                    let category_label = item.category.as_ref()
-                                                        .map(|c| c.to_string())
-                                                        .unwrap_or_default();
-                                                    let rank_col = rank_color(&item.rank);
-                                                    let rank_lbl = rank_label(&item.rank);
-                                                    rsx! {
+                                                let can_afford = gold >= item.price;
+                                                let bag_count = character.inventory.equipments
+                                                    .values()
+                                                    .flatten()
+                                                    .filter(|e| e.unique_name == item.name)
+                                                    .count();
+                                                let category_label = item.category.as_ref()
+                                                    .map(|c| c.to_string())
+                                                    .unwrap_or_default();
+                                                let rank_col = rank_color(&item.rank);
+                                                let rank_lbl = rank_label(&item.rank);
+                                                rsx! {
+                                                    div {
+                                                        style: "border:1px solid var(--rpg-border);border-radius:8px;padding:0.75rem;display:flex;flex-direction:column;gap:0.4rem;",
                                                         div {
-                                                            style: "border:1px solid var(--rpg-border);border-radius:8px;padding:0.75rem;display:flex;flex-direction:column;gap:0.4rem;",
-                                                            // Header row
-                                                            div {
-                                                                style: "display:flex;justify-content:space-between;align-items:center;",
-                                                                span {
-                                                                    style: "font-weight:700;font-size:0.9rem;",
-                                                                    "{item.name}"
-                                                                }
-                                                                span {
-                                                                    style: "font-size:0.72rem;font-weight:600;color:{rank_col};border:1px solid {rank_col};border-radius:4px;padding:1px 6px;",
-                                                                    "{rank_lbl}"
-                                                                }
-                                                            }
-                                                            // Category
+                                                            style: "display:flex;justify-content:space-between;align-items:center;",
                                                             span {
-                                                                style: "font-size:0.75rem;color:var(--rpg-text-muted);",
-                                                                "Slot: {category_label}"
+                                                                style: "font-weight:700;font-size:0.9rem;",
+                                                                "{item.name}"
                                                             }
-                                                            // Description / stats
                                                             span {
-                                                                style: "font-size:0.78rem;color:var(--rpg-text-secondary,var(--rpg-text-muted));",
-                                                                "{item.description}"
+                                                                style: "font-size:0.72rem;font-weight:600;color:{rank_col};border:1px solid {rank_col};border-radius:4px;padding:1px 6px;",
+                                                                "{rank_lbl}"
                                                             }
-                                                            // Price + buy
-                                                            div {
-                                                                style: "display:flex;align-items:center;justify-content:space-between;margin-top:0.25rem;",
-                                                                span {
-                                                                    style: "color:var(--rpg-gold,#c9a227);font-weight:600;font-size:0.85rem;",
-                                                                    "💰 {item.price} gold"
-                                                                    if bag_count > 0 {
-                                                                        span {
-                                                                            style: "margin-left:0.4rem;font-size:0.75rem;color:var(--rpg-text-muted);",
-                                                                            "(×{bag_count} in bag)"
-                                                                        }
+                                                        }
+                                                        span {
+                                                            style: "font-size:0.75rem;color:var(--rpg-text-muted);",
+                                                            "Slot: {category_label}"
+                                                        }
+                                                        span {
+                                                            style: "font-size:0.78rem;color:var(--rpg-text-secondary,var(--rpg-text-muted));",
+                                                            "{item.description}"
+                                                        }
+                                                        div {
+                                                            style: "display:flex;align-items:center;justify-content:space-between;margin-top:0.25rem;",
+                                                            span {
+                                                                style: "color:var(--rpg-gold,#c9a227);font-weight:600;font-size:0.85rem;",
+                                                                "💰 {item.price} gold"
+                                                                if bag_count > 0 {
+                                                                    span {
+                                                                        style: "margin-left:0.4rem;font-size:0.75rem;color:var(--rpg-text-muted);",
+                                                                        "(×{bag_count} in bag)"
                                                                     }
                                                                 }
-                                                                Button {
-                                                                    variant: if can_afford { ButtonVariant::Primary } else { ButtonVariant::Secondary },
-                                                                    disabled: !can_afford,
-                                                                    onclick: move |_| {
-                                                                        let item_name = item.name.clone();
-                                                                        let cid = char_id_clone.clone();
-                                                                        let s = socket;
-                                                                        spawn(async move {
-                                                                            let _ = s.send(ClientEvent::BuyItem(
-                                                                                crate::common::SERVER_NAME(),
-                                                                                cid,
-                                                                                item_name,
-                                                                                "Equipment".to_owned(),
-                                                                            )).await;
-                                                                        });
-                                                                    },
-                                                                    if can_afford { "Buy" } else { "No gold" }
-                                                                }
+                                                            }
+                                                            Button {
+                                                                variant: if can_afford { ButtonVariant::Primary } else { ButtonVariant::Secondary },
+                                                                disabled: !can_afford,
+                                                                onclick: move |_| {
+                                                                    let item_name = item.name.clone();
+                                                                    let cid = char_id_clone.clone();
+                                                                    let s = socket;
+                                                                    spawn(async move {
+                                                                        let _ = s.send(ClientEvent::BuyItem(
+                                                                            crate::common::SERVER_NAME(),
+                                                                            cid,
+                                                                            item_name,
+                                                                            "Equipment".to_owned(),
+                                                                        )).await;
+                                                                    });
+                                                                },
+                                                                if can_afford { "Buy" } else { "No gold" }
                                                             }
                                                         }
                                                     }
@@ -967,78 +971,78 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                         }
                                     }
                                 }
+                            }
 
-                                // Consumables sub-tab
-                                TabContent { value: "cons".to_owned(), index: 1_usize,
-                                    ScrollArea {
-                                        width: "100%",
-                                        height: "calc(100vh - 22rem)",
-                                        direction: ScrollDirection::Vertical,
-                                        div {
-                                            display: "flex",
-                                            flex_direction: "column",
-                                            gap: "0.5rem",
-                                            padding: "0.5rem 0",
-                                            for item in shop_catalog.iter().filter(|i| i.kind == LootType::Consumable) {
-                                                {
-                                                    let item = item.clone();
-                                                    let char_id_clone = char_id.clone();
+                            // Consumables sub-panel
+                            if shop_sub_tab() == 1 {
+                                ScrollArea {
+                                    width: "100%",
+                                    height: "calc(100vh - 24rem)",
+                                    direction: ScrollDirection::Vertical,
+                                    div {
+                                        display: "flex",
+                                        flex_direction: "column",
+                                        gap: "0.5rem",
+                                        padding: "0.5rem 0",
+                                        for item in shop_catalog.iter().filter(|i| i.kind == LootType::Consumable) {
+                                            {
+                                                let item = item.clone();
+                                                let char_id_clone = char_id.clone();
 
-                                                    let can_afford = gold >= item.price;
-                                                    let bag_count = character.inventory.consumables
-                                                        .iter()
-                                                        .filter(|c| c.name == item.name)
-                                                        .count();
-                                                    let rank_col = rank_color(&item.rank);
-                                                    let rank_lbl = rank_label(&item.rank);
-                                                    rsx! {
+                                                let can_afford = gold >= item.price;
+                                                let bag_count = character.inventory.consumables
+                                                    .iter()
+                                                    .filter(|c| c.name == item.name)
+                                                    .count();
+                                                let rank_col = rank_color(&item.rank);
+                                                let rank_lbl = rank_label(&item.rank);
+                                                rsx! {
+                                                    div {
+                                                        style: "border:1px solid var(--rpg-border);border-radius:8px;padding:0.75rem;display:flex;flex-direction:column;gap:0.4rem;",
                                                         div {
-                                                            style: "border:1px solid var(--rpg-border);border-radius:8px;padding:0.75rem;display:flex;flex-direction:column;gap:0.4rem;",
-                                                            div {
-                                                                style: "display:flex;justify-content:space-between;align-items:center;",
-                                                                span {
-                                                                    style: "font-weight:700;font-size:0.9rem;",
-                                                                    "{item.name}"
-                                                                }
-                                                                span {
-                                                                    style: "font-size:0.72rem;font-weight:600;color:{rank_col};border:1px solid {rank_col};border-radius:4px;padding:1px 6px;",
-                                                                    "{rank_lbl}"
-                                                                }
+                                                            style: "display:flex;justify-content:space-between;align-items:center;",
+                                                            span {
+                                                                style: "font-weight:700;font-size:0.9rem;",
+                                                                "{item.name}"
                                                             }
                                                             span {
-                                                                style: "font-size:0.78rem;color:var(--rpg-text-secondary,var(--rpg-text-muted));",
-                                                                "{item.description}"
+                                                                style: "font-size:0.72rem;font-weight:600;color:{rank_col};border:1px solid {rank_col};border-radius:4px;padding:1px 6px;",
+                                                                "{rank_lbl}"
                                                             }
-                                                            div {
-                                                                style: "display:flex;align-items:center;justify-content:space-between;margin-top:0.25rem;",
-                                                                span {
-                                                                    style: "color:var(--rpg-gold,#c9a227);font-weight:600;font-size:0.85rem;",
-                                                                    "💰 {item.price} gold"
-                                                                    if bag_count > 0 {
-                                                                        span {
-                                                                            style: "margin-left:0.4rem;font-size:0.75rem;color:var(--rpg-text-muted);",
-                                                                            "(×{bag_count} in bag)"
-                                                                        }
+                                                        }
+                                                        span {
+                                                            style: "font-size:0.78rem;color:var(--rpg-text-secondary,var(--rpg-text-muted));",
+                                                            "{item.description}"
+                                                        }
+                                                        div {
+                                                            style: "display:flex;align-items:center;justify-content:space-between;margin-top:0.25rem;",
+                                                            span {
+                                                                style: "color:var(--rpg-gold,#c9a227);font-weight:600;font-size:0.85rem;",
+                                                                "💰 {item.price} gold"
+                                                                if bag_count > 0 {
+                                                                    span {
+                                                                        style: "margin-left:0.4rem;font-size:0.75rem;color:var(--rpg-text-muted);",
+                                                                        "(×{bag_count} in bag)"
                                                                     }
                                                                 }
-                                                                Button {
-                                                                    variant: if can_afford { ButtonVariant::Primary } else { ButtonVariant::Secondary },
-                                                                    disabled: !can_afford,
-                                                                    onclick: move |_| {
-                                                                        let item_name = item.name.clone();
-                                                                        let cid = char_id_clone.clone();
-                                                                        let s = socket;
-                                                                        spawn(async move {
-                                                                            let _ = s.send(ClientEvent::BuyItem(
-                                                                                crate::common::SERVER_NAME(),
-                                                                                cid,
-                                                                                item_name,
-                                                                                "Consumable".to_owned(),
-                                                                            )).await;
-                                                                        });
-                                                                    },
-                                                                    if can_afford { "Buy" } else { "No gold" }
-                                                                }
+                                                            }
+                                                            Button {
+                                                                variant: if can_afford { ButtonVariant::Primary } else { ButtonVariant::Secondary },
+                                                                disabled: !can_afford,
+                                                                onclick: move |_| {
+                                                                    let item_name = item.name.clone();
+                                                                    let cid = char_id_clone.clone();
+                                                                    let s = socket;
+                                                                    spawn(async move {
+                                                                        let _ = s.send(ClientEvent::BuyItem(
+                                                                            crate::common::SERVER_NAME(),
+                                                                            cid,
+                                                                            item_name,
+                                                                            "Consumable".to_owned(),
+                                                                        )).await;
+                                                                    });
+                                                                },
+                                                                if can_afford { "Buy" } else { "No gold" }
                                                             }
                                                         }
                                                     }
