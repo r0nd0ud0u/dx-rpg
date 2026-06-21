@@ -949,18 +949,21 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                             Button {
                                                                 variant: if can_afford { ButtonVariant::Primary } else { ButtonVariant::Secondary },
                                                                 disabled: !can_afford,
-                                                                onclick: move |_| {
+                                                                onclick: {
                                                                     let item_name = item.name.clone();
                                                                     let cid = char_id_clone.clone();
-                                                                    let s = socket;
-                                                                    spawn(async move {
-                                                                        let _ = s.send(ClientEvent::BuyItem(
-                                                                            crate::common::SERVER_NAME(),
-                                                                            cid,
-                                                                            item_name,
-                                                                            "Equipment".to_owned(),
-                                                                        )).await;
-                                                                    });
+                                                                    move |_| {
+                                                                        let item_name = item_name.clone();
+                                                                        let cid = cid.clone();
+                                                                        async move {
+                                                                            let _ = socket.send(ClientEvent::BuyItem(
+                                                                                crate::common::SERVER_NAME(),
+                                                                                cid,
+                                                                                item_name,
+                                                                                "Equipment".to_owned(),
+                                                                            )).await;
+                                                                        }
+                                                                    }
                                                                 },
                                                                 if can_afford { "Buy" } else { "No gold" }
                                                             }
@@ -1029,18 +1032,21 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                             Button {
                                                                 variant: if can_afford { ButtonVariant::Primary } else { ButtonVariant::Secondary },
                                                                 disabled: !can_afford,
-                                                                onclick: move |_| {
+                                                                onclick: {
                                                                     let item_name = item.name.clone();
                                                                     let cid = char_id_clone.clone();
-                                                                    let s = socket;
-                                                                    spawn(async move {
-                                                                        let _ = s.send(ClientEvent::BuyItem(
-                                                                            crate::common::SERVER_NAME(),
-                                                                            cid,
-                                                                            item_name,
-                                                                            "Consumable".to_owned(),
-                                                                        )).await;
-                                                                    });
+                                                                    move |_| {
+                                                                        let item_name = item_name.clone();
+                                                                        let cid = cid.clone();
+                                                                        async move {
+                                                                            let _ = socket.send(ClientEvent::BuyItem(
+                                                                                crate::common::SERVER_NAME(),
+                                                                                cid,
+                                                                                item_name,
+                                                                                "Consumable".to_owned(),
+                                                                            )).await;
+                                                                        }
+                                                                    }
                                                                 },
                                                                 if can_afford { "Buy" } else { "No gold" }
                                                             }
@@ -1138,18 +1144,23 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                                         }
                                                                         Button {
                                                                             variant: ButtonVariant::Destructive,
-                                                                            onclick: move |_| {
+                                                                            onclick: {
                                                                                 let name = unique_name.clone();
                                                                                 let cid = char_id_clone.clone();
-                                                                                let s = socket;
-                                                                                spawn(async move {
-                                                                                    let _ = s.send(ClientEvent::SellItem(
-                                                                                        crate::common::SERVER_NAME(),
-                                                                                        cid,
-                                                                                        name,
-                                                                                        "Equipment".to_owned(),
-                                                                                    )).await;
-                                                                                });
+                                                                                move |_| {
+                                                                                    let name = name.clone();
+                                                                                    let cid = cid.clone();
+                                                                                    async move {
+                                                                                        let _ = socket
+                                                                                            .send(ClientEvent::SellItem(
+                                                                                                crate::common::SERVER_NAME(),
+                                                                                                cid,
+                                                                                                name,
+                                                                                                "Equipment".to_owned(),
+                                                                                            ))
+                                                                                            .await;
+                                                                                    }
+                                                                                }
                                                                             },
                                                                             "Sell"
                                                                         }
@@ -1203,18 +1214,23 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                                         }
                                                                         Button {
                                                                             variant: ButtonVariant::Destructive,
-                                                                            onclick: move |_| {
+                                                                            onclick: {
                                                                                 let name = consumable_name.clone();
                                                                                 let cid = char_id_clone.clone();
-                                                                                let s = socket;
-                                                                                spawn(async move {
-                                                                                    let _ = s.send(ClientEvent::SellItem(
-                                                                                        crate::common::SERVER_NAME(),
-                                                                                        cid,
-                                                                                        name,
-                                                                                        "Consumable".to_owned(),
-                                                                                    )).await;
-                                                                                });
+                                                                                move |_| {
+                                                                                    let name = name.clone();
+                                                                                    let cid = cid.clone();
+                                                                                    async move {
+                                                                                        let _ = socket
+                                                                                            .send(ClientEvent::SellItem(
+                                                                                                crate::common::SERVER_NAME(),
+                                                                                                cid,
+                                                                                                name,
+                                                                                                "Consumable".to_owned(),
+                                                                                            ))
+                                                                                            .await;
+                                                                                    }
+                                                                                }
                                                                             },
                                                                             "Sell"
                                                                         }
