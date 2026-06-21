@@ -1091,7 +1091,16 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                             })
                             .collect();
                         let bag_consumables = character.inventory.consumables.clone();
-                        let is_empty = unequipped.is_empty() && bag_consumables.is_empty() && party_consumables.is_empty();
+                        // Group party consumables by name for compact display
+                        let mut party_grouped: Vec<(String, usize, lib_rpg::character_mod::rank::Rank)> = Vec::new();
+                        for c in party_consumables.iter() {
+                            if let Some(g) = party_grouped.iter_mut().find(|(n, _, _)| *n == c.name) {
+                                g.1 += 1;
+                            } else {
+                                party_grouped.push((c.name.clone(), 1, c.rank.clone()));
+                            }
+                        }
+                        let is_empty = unequipped.is_empty() && bag_consumables.is_empty() && party_grouped.is_empty();
                         rsx! {
                             ScrollArea {
                                 width: "100%",
@@ -1224,24 +1233,63 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                             }
                                         }
 
-                                        // Party loot consumables (shared pool — use in combat, cannot be sold)
-                                        if !party_consumables.is_empty() {
+                                        // Party loot consumables (shared pool, grouped, sellable)
+                                        if !party_grouped.is_empty() {
                                             span { style: "font-size:0.8rem;font-weight:700;color:var(--rpg-text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0.25rem 0;margin-top:0.25rem;",
                                                 "🎒 Party loot"
                                             }
-                                            for consumable in party_consumables.iter() {
+                                            for (consumable_name, count, rank) in party_grouped.iter() {
                                                 {
-                                                    let consumable_name = consumable.name.clone();
-                                                    let rank_col = rank_color(&consumable.rank);
-                                                    let rank_lbl = rank_label(&consumable.rank);
+                                                    let consumable_name = consumable_name.clone();
+                                                    let count = *count;
+                                                    let char_id_clone = char_id.clone();
+                                                    let rank_col = rank_color(rank);
+                                                    let rank_lbl = rank_label(rank);
+                                                    let refund = shop_catalog
+                                                        .iter()
+                                                        .find(|i| i.name == consumable_name)
+                                                        .map(|i| sell_price(i.price))
+                                                        .unwrap_or(0);
                                                     rsx! {
                                                         div { style: "border:1px solid var(--rpg-border);border-radius:8px;padding:0.6rem 0.75rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;",
                                                             div { display: "flex", flex_direction: "column", gap: "0.15rem",
-                                                                span { style: "font-weight:600;font-size:0.85rem;", "{consumable_name}" }
+                                                                span { style: "font-weight:600;font-size:0.85rem;",
+                                                                    if count > 1 {
+                                                                        "{consumable_name} ×{count}"
+                                                                    } else {
+                                                                        "{consumable_name}"
+                                                                    }
+                                                                }
                                                                 span { style: "font-size:0.72rem;font-weight:600;color:{rank_col};", "{rank_lbl}" }
                                                             }
-                                                            span { style: "font-size:0.75rem;color:var(--rpg-text-muted);font-style:italic;",
-                                                                "Use in combat"
+                                                            div { display: "flex", align_items: "center", gap: "0.5rem",
+                                                                span { style: "color:var(--rpg-gold,#c9a227);font-size:0.8rem;font-weight:600;white-space:nowrap;",
+                                                                    "💰 {refund} gold"
+                                                                }
+                                                                Button {
+                                                                    variant: ButtonVariant::Destructive,
+                                                                    onclick: {
+                                                                        let name = consumable_name.clone();
+                                                                        let cid = char_id_clone.clone();
+                                                                        move |_| {
+                                                                            let name = name.clone();
+                                                                            let cid = cid.clone();
+                                                                            async move {
+                                                                                let _ = socket
+                                                                                    .send(
+                                                                                        ClientEvent::SellItem(
+                                                                                            crate::common::SERVER_NAME(),
+                                                                                            cid,
+                                                                                            name,
+                                                                                            "Consumable".to_owned(),
+                                                                                        ),
+                                                                                    )
+                                                                                    .await;
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "Sell"
+                                                                }
                                                             }
                                                         }
                                                     }

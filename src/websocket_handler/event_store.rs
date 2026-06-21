@@ -148,10 +148,10 @@ pub fn sell_item_handler(
         return;
     };
     let pm = &mut server_data.core_game_data.game_manager.pm;
-    let Some(hero) = pm
+    let Some(hero_idx) = pm
         .active_heroes
-        .iter_mut()
-        .find(|h| h.id_name == character_id_name)
+        .iter()
+        .position(|h| h.id_name == character_id_name)
     else {
         tracing::error!(
             "sell_item_handler: character '{}' not found",
@@ -163,7 +163,12 @@ pub fn sell_item_handler(
     let mut sale_log: Option<LogData> = None;
 
     if item_kind == "Consumable" {
-        match hero.inventory.sell_consumable(item_name, refund) {
+        // Try personal inventory first; on miss, fall back to shared party pool.
+        let personal_result = {
+            let hero = &mut pm.active_heroes[hero_idx];
+            hero.inventory.sell_consumable(item_name, refund)
+        };
+        match personal_result {
             Ok(()) => {
                 tracing::info!(
                     "{} sold consumable '{}' for {} gold",
@@ -179,9 +184,37 @@ pub fn sell_item_handler(
                     color: String::new(),
                 });
             }
-            Err(e) => tracing::warn!("sell_item_handler consumable: {}", e),
+            Err(_) => {
+                if let Some(idx) = pm
+                    .party_consumables
+                    .iter()
+                    .position(|c| c.name == item_name)
+                {
+                    pm.party_consumables.remove(idx);
+                    pm.active_heroes[hero_idx].inventory.money += refund;
+                    tracing::info!(
+                        "{} sold party consumable '{}' for {} gold",
+                        character_id_name,
+                        item_name,
+                        refund
+                    );
+                    sale_log = Some(LogData {
+                        message: utils::format_string_with_timestamp(&format!(
+                            "💰 {} sold {} for {} gold",
+                            character_id_name, item_name, refund
+                        )),
+                        color: String::new(),
+                    });
+                } else {
+                    tracing::warn!(
+                        "sell_item_handler: '{}' not found in personal or party inventory",
+                        item_name
+                    );
+                }
+            }
         }
     } else if item_kind == "Equipment" {
+        let hero = &mut pm.active_heroes[hero_idx];
         match hero.inventory.sell_equipment(item_name, refund) {
             Ok(()) => {
                 tracing::info!(
