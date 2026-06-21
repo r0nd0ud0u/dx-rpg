@@ -73,7 +73,7 @@ pub fn GameSheets() -> Element {
     let mut sheet_kind: Signal<SheetKind> = use_signal(|| SheetKind::Menu);
     let mut is_saved: Signal<bool> = use_signal(|| false);
     let server_data = use_context::<Signal<ServerData>>();
-    let shop_enabled = use_context::<crate::common::CtxShopEnabled>().0;
+    let mut shop_enabled = use_context::<crate::common::CtxShopEnabled>().0;
 
     // Load shop_enabled from DB on mount so the button reflects the saved
     // setting without the user having to open Settings first.
