@@ -74,6 +74,9 @@ server = [
 web = ["dioxus/web"]
 desktop = ["dioxus/desktop"]
 
+[patch."https://github.com/r0nd0ud0u/lib-rpg.git"]
+lib-rpg = { path = "../lib-rpg" }
+
 [profile]
 
 [profile.wasm-dev]
