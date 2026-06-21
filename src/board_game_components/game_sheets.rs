@@ -4,6 +4,7 @@ use dioxus::{
 };
 use dioxus_primitives::scroll_area::ScrollDirection;
 use lib_rpg::{
+    character_mod::loot::LootType,
     common::{
         constants::stats_const::HP,
         log_data::{
@@ -12,6 +13,7 @@ use lib_rpg::{
         },
     },
     server::{scenario::ScenarioState, server_manager::ServerData},
+    shop::sell_price,
 };
 
 use crate::{
@@ -62,6 +64,7 @@ enum SheetKind {
     Stats,
     Scenarios,
     Settings,
+    Store,
 }
 
 #[component]
@@ -131,6 +134,11 @@ pub fn GameSheets() -> Element {
                 onclick: open_sheet(SheetKind::Settings),
                 "⚙️ Settings"
             }
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: open_sheet(SheetKind::Store),
+                "🛒 Store"
+            }
         }
         Sheet { open: open(), on_open_change: move |v| open.set(v),
             match sheet_kind() {
@@ -151,6 +159,9 @@ pub fn GameSheets() -> Element {
                 },
                 SheetKind::Settings => rsx! {
                     SettingsSheet { s: SheetSide::Left }
+                },
+                SheetKind::Store => rsx! {
+                    StoreSheet { s: SheetSide::Right }
                 },
             }
         }
@@ -724,6 +735,481 @@ fn ScenariosSheet(s: SheetSide) -> Element {
                                         span { class: "scenario-history-level", "{scenario.level}" }
                                         div { class: "scenario-history-name", "{scenario.name}" }
                                         span { class: chip_class, "{status_text}" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            SheetFooter {
+                SheetClose {
+                    r#as: |attributes| rsx! {
+                        Button { variant: ButtonVariant::Outline, attributes, "Close" }
+                    },
+                }
+            }
+        }
+    }
+}
+
+// ─── Store Sheet ─────────────────────────────────────────────────────────────
+
+fn rank_color(rank: &lib_rpg::character_mod::rank::Rank) -> &'static str {
+    match rank {
+        lib_rpg::character_mod::rank::Rank::Common => "var(--rpg-text-muted)",
+        lib_rpg::character_mod::rank::Rank::Intermediate => "#4a9eff",
+        lib_rpg::character_mod::rank::Rank::Advanced => "#a855f7",
+    }
+}
+
+fn rank_label(rank: &lib_rpg::character_mod::rank::Rank) -> &'static str {
+    match rank {
+        lib_rpg::character_mod::rank::Rank::Common => "Common",
+        lib_rpg::character_mod::rank::Rank::Intermediate => "Intermediate",
+        lib_rpg::character_mod::rank::Rank::Advanced => "Advanced",
+    }
+}
+
+/// The full Store sheet — browse items for sale, buy and sell.
+#[component]
+fn StoreSheet(s: SheetSide) -> Element {
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let server_data = use_context::<Signal<ServerData>>();
+    let local_login_name_session = use_context::<Signal<String>>();
+
+    let server_data_snap = server_data();
+    let gm = &server_data_snap.core_game_data.game_manager;
+    let is_single_player = server_data_snap.core_game_data.is_single_player;
+
+    let shop_catalog = server_data_snap.core_game_data.shop_catalog.clone();
+
+    let heroes_to_show: Vec<lib_rpg::character_mod::character::Character> = if is_single_player {
+        gm.pm.active_heroes.clone()
+    } else {
+        let Some(character_name) = server_data_snap
+            .players_data
+            .get_first_character_name(&local_login_name_session())
+        else {
+            return rsx! {};
+        };
+        match gm.pm.get_active_hero_character(&character_name) {
+            Some(c) => vec![c.clone()],
+            None => return rsx! {},
+        }
+    };
+
+    let mut active_tab: Signal<usize> = use_signal(|| 0);
+    let active_tab_idx = active_tab().min(heroes_to_show.len().saturating_sub(1));
+    let character = heroes_to_show
+        .get(active_tab_idx)
+        .cloned()
+        .unwrap_or_default();
+
+    let char_id = character.id_name.clone();
+    let gold = character.inventory.money;
+
+    rsx! {
+        SheetContent { side: s,
+            SheetHeader {
+                SheetTitle { "🛒 Store — {character.db_full_name}" }
+                SheetDescription {
+                    "Level {character.level} · "
+                    span {
+                        style: "color: var(--rpg-gold, #c9a227); font-weight: 700;",
+                        "💰 {gold} gold"
+                    }
+                }
+            }
+
+            div {
+                display: "flex",
+                flex_direction: "column",
+                gap: "1rem",
+                padding: "0 1rem",
+
+                // Hero selector (single-player with multiple heroes)
+                if heroes_to_show.len() > 1 {
+                    div { display: "flex", gap: "0.4rem", flex_wrap: "wrap",
+                        for (i, hero) in heroes_to_show.iter().enumerate() {
+                            button {
+                                class: if i == active_tab_idx { "inv-tab inv-tab--active" } else { "inv-tab" },
+                                onclick: move |_| active_tab.set(i),
+                                "{hero.db_full_name}"
+                            }
+                        }
+                    }
+                }
+
+                // Main tabs: Shop | Bag
+                Tabs { default_value: "shop".to_owned(),
+                    TabList {
+                        TabTrigger { value: "shop".to_owned(), index: 0_usize, "🏪 Shop" }
+                        TabTrigger { value: "bag".to_owned(), index: 1_usize, "🎒 Bag" }
+                    }
+
+                    // ── Shop tab ──────────────────────────────────────────────
+                    TabContent { value: "shop".to_owned(), index: 0_usize,
+                        div {
+                            display: "flex",
+                            flex_direction: "column",
+                            gap: "0.5rem",
+                            padding_top: "0.5rem",
+
+                            // Sub-tabs: Equipment | Consumables
+                            Tabs { default_value: "equip".to_owned(),
+                                TabList {
+                                    TabTrigger { value: "equip".to_owned(), index: 0_usize, "⚔️ Equipment" }
+                                    TabTrigger { value: "cons".to_owned(), index: 1_usize, "💊 Consumables" }
+                                }
+
+                                // Equipment sub-tab
+                                TabContent { value: "equip".to_owned(), index: 0_usize,
+                                    ScrollArea {
+                                        width: "100%",
+                                        height: "calc(100vh - 22rem)",
+                                        direction: ScrollDirection::Vertical,
+                                        div {
+                                            display: "flex",
+                                            flex_direction: "column",
+                                            gap: "0.5rem",
+                                            padding: "0.5rem 0",
+                                            for item in shop_catalog.iter().filter(|i| i.kind == LootType::Equipment) {
+                                                {
+                                                    let item = item.clone();
+                                                    let char_id_clone = char_id.clone();
+
+                                                    let can_afford = gold >= item.price;
+                                                    let bag_count = character.inventory.equipments
+                                                        .values()
+                                                        .flatten()
+                                                        .filter(|e| e.unique_name == item.name)
+                                                        .count();
+                                                    let category_label = item.category.as_ref()
+                                                        .map(|c| c.to_string())
+                                                        .unwrap_or_default();
+                                                    let rank_col = rank_color(&item.rank);
+                                                    let rank_lbl = rank_label(&item.rank);
+                                                    rsx! {
+                                                        div {
+                                                            style: "border:1px solid var(--rpg-border);border-radius:8px;padding:0.75rem;display:flex;flex-direction:column;gap:0.4rem;",
+                                                            // Header row
+                                                            div {
+                                                                style: "display:flex;justify-content:space-between;align-items:center;",
+                                                                span {
+                                                                    style: "font-weight:700;font-size:0.9rem;",
+                                                                    "{item.name}"
+                                                                }
+                                                                span {
+                                                                    style: "font-size:0.72rem;font-weight:600;color:{rank_col};border:1px solid {rank_col};border-radius:4px;padding:1px 6px;",
+                                                                    "{rank_lbl}"
+                                                                }
+                                                            }
+                                                            // Category
+                                                            span {
+                                                                style: "font-size:0.75rem;color:var(--rpg-text-muted);",
+                                                                "Slot: {category_label}"
+                                                            }
+                                                            // Description / stats
+                                                            span {
+                                                                style: "font-size:0.78rem;color:var(--rpg-text-secondary,var(--rpg-text-muted));",
+                                                                "{item.description}"
+                                                            }
+                                                            // Price + buy
+                                                            div {
+                                                                style: "display:flex;align-items:center;justify-content:space-between;margin-top:0.25rem;",
+                                                                span {
+                                                                    style: "color:var(--rpg-gold,#c9a227);font-weight:600;font-size:0.85rem;",
+                                                                    "💰 {item.price} gold"
+                                                                    if bag_count > 0 {
+                                                                        span {
+                                                                            style: "margin-left:0.4rem;font-size:0.75rem;color:var(--rpg-text-muted);",
+                                                                            "(×{bag_count} in bag)"
+                                                                        }
+                                                                    }
+                                                                }
+                                                                Button {
+                                                                    variant: if can_afford { ButtonVariant::Primary } else { ButtonVariant::Secondary },
+                                                                    disabled: !can_afford,
+                                                                    onclick: move |_| {
+                                                                        let item_name = item.name.clone();
+                                                                        let cid = char_id_clone.clone();
+                                                                        let s = socket;
+                                                                        spawn(async move {
+                                                                            let _ = s.send(ClientEvent::BuyItem(
+                                                                                crate::common::SERVER_NAME(),
+                                                                                cid,
+                                                                                item_name,
+                                                                                "Equipment".to_owned(),
+                                                                            )).await;
+                                                                        });
+                                                                    },
+                                                                    if can_afford { "Buy" } else { "No gold" }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Consumables sub-tab
+                                TabContent { value: "cons".to_owned(), index: 1_usize,
+                                    ScrollArea {
+                                        width: "100%",
+                                        height: "calc(100vh - 22rem)",
+                                        direction: ScrollDirection::Vertical,
+                                        div {
+                                            display: "flex",
+                                            flex_direction: "column",
+                                            gap: "0.5rem",
+                                            padding: "0.5rem 0",
+                                            for item in shop_catalog.iter().filter(|i| i.kind == LootType::Consumable) {
+                                                {
+                                                    let item = item.clone();
+                                                    let char_id_clone = char_id.clone();
+
+                                                    let can_afford = gold >= item.price;
+                                                    let bag_count = character.inventory.consumables
+                                                        .iter()
+                                                        .filter(|c| c.name == item.name)
+                                                        .count();
+                                                    let rank_col = rank_color(&item.rank);
+                                                    let rank_lbl = rank_label(&item.rank);
+                                                    rsx! {
+                                                        div {
+                                                            style: "border:1px solid var(--rpg-border);border-radius:8px;padding:0.75rem;display:flex;flex-direction:column;gap:0.4rem;",
+                                                            div {
+                                                                style: "display:flex;justify-content:space-between;align-items:center;",
+                                                                span {
+                                                                    style: "font-weight:700;font-size:0.9rem;",
+                                                                    "{item.name}"
+                                                                }
+                                                                span {
+                                                                    style: "font-size:0.72rem;font-weight:600;color:{rank_col};border:1px solid {rank_col};border-radius:4px;padding:1px 6px;",
+                                                                    "{rank_lbl}"
+                                                                }
+                                                            }
+                                                            span {
+                                                                style: "font-size:0.78rem;color:var(--rpg-text-secondary,var(--rpg-text-muted));",
+                                                                "{item.description}"
+                                                            }
+                                                            div {
+                                                                style: "display:flex;align-items:center;justify-content:space-between;margin-top:0.25rem;",
+                                                                span {
+                                                                    style: "color:var(--rpg-gold,#c9a227);font-weight:600;font-size:0.85rem;",
+                                                                    "💰 {item.price} gold"
+                                                                    if bag_count > 0 {
+                                                                        span {
+                                                                            style: "margin-left:0.4rem;font-size:0.75rem;color:var(--rpg-text-muted);",
+                                                                            "(×{bag_count} in bag)"
+                                                                        }
+                                                                    }
+                                                                }
+                                                                Button {
+                                                                    variant: if can_afford { ButtonVariant::Primary } else { ButtonVariant::Secondary },
+                                                                    disabled: !can_afford,
+                                                                    onclick: move |_| {
+                                                                        let item_name = item.name.clone();
+                                                                        let cid = char_id_clone.clone();
+                                                                        let s = socket;
+                                                                        spawn(async move {
+                                                                            let _ = s.send(ClientEvent::BuyItem(
+                                                                                crate::common::SERVER_NAME(),
+                                                                                cid,
+                                                                                item_name,
+                                                                                "Consumable".to_owned(),
+                                                                            )).await;
+                                                                        });
+                                                                    },
+                                                                    if can_afford { "Buy" } else { "No gold" }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── Bag tab ───────────────────────────────────────────────
+                    TabContent { value: "bag".to_owned(), index: 1_usize,
+                        div {
+                            display: "flex",
+                            flex_direction: "column",
+                            gap: "0.75rem",
+                            padding_top: "0.5rem",
+
+                            {
+                                // Collect unequipped equipment items
+                                let unequipped: Vec<(String, String)> = character.inventory.equipments
+                                    .iter()
+                                    .flat_map(|(cat, items)| {
+                                        items.iter()
+                                            .filter(|e| !e.is_equipped)
+                                            .map(|e| (e.unique_name.clone(), cat.to_string()))
+                                            .collect::<Vec<_>>()
+                                    })
+                                    .collect();
+
+                                let bag_consumables = character.inventory.consumables.clone();
+
+                                let is_empty = unequipped.is_empty() && bag_consumables.is_empty();
+
+                                rsx! {
+                                    ScrollArea {
+                                        width: "100%",
+                                        height: "calc(100vh - 18rem)",
+                                        direction: ScrollDirection::Vertical,
+
+                                        if is_empty {
+                                            div {
+                                                style: "color:var(--rpg-text-muted);text-align:center;padding:2rem;font-size:0.85rem;",
+                                                "Your bag is empty."
+                                            }
+                                        } else {
+                                            div {
+                                                display: "flex",
+                                                flex_direction: "column",
+                                                gap: "0.5rem",
+                                                padding: "0.25rem 0",
+
+                                                // Equipment section
+                                                if !unequipped.is_empty() {
+                                                    span {
+                                                        style: "font-size:0.8rem;font-weight:700;color:var(--rpg-text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0.25rem 0;",
+                                                        "⚔️ Equipment"
+                                                    }
+                                                    for (unique_name, cat_label) in unequipped.iter() {
+                                                        {
+                                                            let unique_name = unique_name.clone();
+                                                            let cat_label = cat_label.clone();
+                                                            let char_id_clone = char_id.clone();
+
+                                                            let refund = shop_catalog.iter()
+                                                                .find(|i| i.name == unique_name)
+                                                                .map(|i| sell_price(i.price))
+                                                                .unwrap_or(0);
+                                                            rsx! {
+                                                                div {
+                                                                    style: "border:1px solid var(--rpg-border);border-radius:8px;padding:0.6rem 0.75rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;",
+                                                                    div {
+                                                                        display: "flex",
+                                                                        flex_direction: "column",
+                                                                        span {
+                                                                            style: "font-weight:600;font-size:0.85rem;",
+                                                                            "{unique_name}"
+                                                                        }
+                                                                        span {
+                                                                            style: "font-size:0.75rem;color:var(--rpg-text-muted);",
+                                                                            "Slot: {cat_label}"
+                                                                        }
+                                                                    }
+                                                                    div {
+                                                                        display: "flex",
+                                                                        align_items: "center",
+                                                                        gap: "0.5rem",
+                                                                        span {
+                                                                            style: "color:var(--rpg-gold,#c9a227);font-size:0.8rem;font-weight:600;white-space:nowrap;",
+                                                                            "💰 {refund} gold"
+                                                                        }
+                                                                        Button {
+                                                                            variant: ButtonVariant::Destructive,
+                                                                            onclick: move |_| {
+                                                                                let name = unique_name.clone();
+                                                                                let cid = char_id_clone.clone();
+                                                                                let s = socket;
+                                                                                spawn(async move {
+                                                                                    let _ = s.send(ClientEvent::SellItem(
+                                                                                        crate::common::SERVER_NAME(),
+                                                                                        cid,
+                                                                                        name,
+                                                                                        "Equipment".to_owned(),
+                                                                                    )).await;
+                                                                                });
+                                                                            },
+                                                                            "Sell"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                // Consumables section
+                                                if !bag_consumables.is_empty() {
+                                                    span {
+                                                        style: "font-size:0.8rem;font-weight:700;color:var(--rpg-text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0.25rem 0;margin-top:0.25rem;",
+                                                        "💊 Consumables"
+                                                    }
+                                                    for consumable in bag_consumables.iter() {
+                                                        {
+                                                            let consumable_name = consumable.name.clone();
+                                                            let char_id_clone = char_id.clone();
+
+                                                            let refund = shop_catalog.iter()
+                                                                .find(|i| i.name == consumable_name)
+                                                                .map(|i| sell_price(i.price))
+                                                                .unwrap_or(0);
+                                                            let rank_col = rank_color(&consumable.rank);
+                                                            let rank_lbl = rank_label(&consumable.rank);
+                                                            rsx! {
+                                                                div {
+                                                                    style: "border:1px solid var(--rpg-border);border-radius:8px;padding:0.6rem 0.75rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;",
+                                                                    div {
+                                                                        display: "flex",
+                                                                        flex_direction: "column",
+                                                                        gap: "0.15rem",
+                                                                        span {
+                                                                            style: "font-weight:600;font-size:0.85rem;",
+                                                                            "{consumable_name}"
+                                                                        }
+                                                                        span {
+                                                                            style: "font-size:0.72rem;font-weight:600;color:{rank_col};",
+                                                                            "{rank_lbl}"
+                                                                        }
+                                                                    }
+                                                                    div {
+                                                                        display: "flex",
+                                                                        align_items: "center",
+                                                                        gap: "0.5rem",
+                                                                        span {
+                                                                            style: "color:var(--rpg-gold,#c9a227);font-size:0.8rem;font-weight:600;white-space:nowrap;",
+                                                                            "💰 {refund} gold"
+                                                                        }
+                                                                        Button {
+                                                                            variant: ButtonVariant::Destructive,
+                                                                            onclick: move |_| {
+                                                                                let name = consumable_name.clone();
+                                                                                let cid = char_id_clone.clone();
+                                                                                let s = socket;
+                                                                                spawn(async move {
+                                                                                    let _ = s.send(ClientEvent::SellItem(
+                                                                                        crate::common::SERVER_NAME(),
+                                                                                        cid,
+                                                                                        name,
+                                                                                        "Consumable".to_owned(),
+                                                                                    )).await;
+                                                                                });
+                                                                            },
+                                                                            "Sell"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }

@@ -1,5 +1,6 @@
 pub mod event;
 pub mod event_inventory;
+pub mod event_store;
 pub mod msg_from_client;
 // Not public outside of this module
 #[cfg(feature = "server")]
