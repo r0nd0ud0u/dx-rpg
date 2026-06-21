@@ -139,6 +139,61 @@ In the game toolbar, a **Settings** sheet lets each user toggle options that are
 
 Each setting is stored as an independent context in Dioxus using a distinct newtype wrapper (`CtxShowBossHp`, `CtxShowBossEnergy`, etc.) to prevent context-key collisions that would otherwise occur since all `Signal<bool>` share the same `TypeId`.
 
+### Store (🛒)
+
+The store is available **between scenarios** (end-of-scenario screen). Click the **🛒 Shop** button in the action bar that appears alongside "Load Next Scenario". The shop panel slides in from the right.
+
+During active combat the Store button in the toolbar is locked (🛒 Shop 🔒) — purchasing is only possible while reviewing scenario results.
+
+**Currency — Gold**
+
+Gold is earned as loot at the end of each scenario. The current balance is displayed in the store header (`💰 N gold`) and in the Scenarios sheet.
+
+**Buying items**
+
+The store catalog is split into two sub-tabs:
+
+| Sub-tab | Contents |
+|---------|----------|
+| Equipment | All generic equipment pieces (weapons, armour, rings, etc.) loaded from `offlines/equipment/`. Tattoos are excluded — they are character-specific and cannot be traded. |
+| Consumables | Potions and buffs (see table below). |
+
+Each item card shows:
+- Name and rank badge (Common / Intermediate / Advanced)
+- Category (for equipment) or description (for consumables)
+- Key stat bonuses in a compact grid (equipment only)
+- Price in gold
+
+The **Buy** button is disabled when the character cannot afford the item. When one or more copies already sit in the bag the button label includes `(×N in bag)`.
+
+Bought items land in the **bag** (unequipped). To use equipment you must equip it from the **Inventory** sheet.
+
+**Consumable catalog**
+
+| Item | Price |
+|------|-------|
+| potion | 50 gold |
+| super potion | 150 gold |
+| hyper potion | 300 gold |
+| potion of resurrection | 500 gold |
+| mana potion | 80 gold |
+| vigor potion | 80 gold |
+| berserk potion | 80 gold |
+
+Consumables have no purchase limit — you can buy as many as you can afford.
+
+**Equipment price tiers**
+
+| Tier | Condition | Price |
+|------|-----------|-------|
+| Starter | `unique_name` starts with `"starting"` | 100 gold |
+| Advanced | `unique_name` starts with `"medium"` | 300 gold |
+| Standard | all other equipment | 200 gold |
+
+**Selling items (Bag tab)**
+
+Switch to the **Bag** tab to see everything you own but have not yet equipped. Each item has a **Sell** button showing the refund amount (50 % of the catalog buy price). Equipped items cannot be sold — unequip them first from the Inventory sheet.
+
 ### Damage Formula & Armor
 
 Combat damage is computed by `lib-rpg` using:

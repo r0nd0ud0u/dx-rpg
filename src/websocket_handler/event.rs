@@ -83,6 +83,8 @@ pub enum ClientEvent {
     LoadNextScenario(String, bool), // `String`: server name, `bool`: auto-save on start
     UsePotion(String, String, String), // `String`: server name, `String`: player name, `String`: potion name
     UsePartyPotion(String, String, String), // server_name, player_name, potion_name
+    BuyItem(String, String, String, String), // server_name, character_id_name, item_name, item_kind ("Equipment"|"Consumable")
+    SellItem(String, String, String, String), // server_name, character_id_name, item_name_or_unique_name, item_kind
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -139,7 +141,10 @@ pub async fn on_rcv_client_event(
 
             // Main loop: handle incoming socket messages and outgoing queued messages
             loop {
-                use crate::websocket_handler::event_inventory::{request_toggle_equip, request_mark_equip_seen};
+                use crate::websocket_handler::event_inventory::{
+                    request_mark_equip_seen, request_toggle_equip,
+                };
+                use crate::websocket_handler::event_store::{buy_item_handler, sell_item_handler};
 
                 tokio::select! {
                     // Outgoing messages destined for this client
@@ -276,6 +281,16 @@ pub async fn on_rcv_client_event(
                                 use_party_potion_handler(&server_name, &player_name, &potion_name);
                                 update_core_game_data_after_atk(&server_name, None, tx_server.clone()).await;
                                 process_ennemy_atk(&server_name, tx_server.clone()).await;
+                            }
+                            Ok(ClientEvent::BuyItem(server_name, character_id_name, item_name, item_kind)) => {
+                                tracing::info!("Character {} buying '{}' ({}) on server {}", character_id_name, item_name, item_kind, server_name);
+                                buy_item_handler(&server_name, &character_id_name, &item_name, &item_kind);
+                                update_clients_server_data(&server_name);
+                            }
+                            Ok(ClientEvent::SellItem(server_name, character_id_name, item_name, item_kind)) => {
+                                tracing::info!("Character {} selling '{}' ({}) on server {}", character_id_name, item_name, item_kind, server_name);
+                                sell_item_handler(&server_name, &character_id_name, &item_name, &item_kind);
+                                update_clients_server_data(&server_name);
                             }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
@@ -557,6 +572,23 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
         // not for loaded
         if !is_replay && server_data.core_game_data.game_phase == GamePhase::InitGame {
             server_data.core_game_data.game_manager.start_game();
+            // states_scenarios was reset to all-NotStarted when the universe was
+            // picked in the lobby (set_universe_on_server_data clears the map).
+            // start_game() never marks anything InProgress, so do it here.
+            let current_name = server_data
+                .core_game_data
+                .game_manager
+                .current_scenario
+                .name
+                .clone();
+            if let Some(state) = server_data
+                .core_game_data
+                .game_manager
+                .states_scenarios
+                .get_mut(&current_name)
+            {
+                *state = lib_rpg::server::scenario::ScenarioState::InProgress;
+            }
         }
 
         server_data.core_game_data.game_phase = GamePhase::Running;

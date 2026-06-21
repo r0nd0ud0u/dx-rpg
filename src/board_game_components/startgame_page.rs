@@ -1,5 +1,5 @@
 use crate::board_game_components::character_page::{BarComponent, CharacterPanel};
-use crate::board_game_components::game_sheets::GameSheets;
+use crate::board_game_components::game_sheets::{GameSheets, StoreSheet};
 use crate::common::{CtxAutoSaveScenario, Route, SERVER_NAME, photo_src};
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::websocket_handler::msg_from_client::send_disconnect_from_server_data;
@@ -8,6 +8,7 @@ use crate::{
     components::{
         button::{Button, ButtonVariant},
         separator::Separator,
+        sheet::{Sheet, SheetSide},
     },
 };
 use dioxus::fullstack::{CborEncoding, UseWebsocket};
@@ -111,6 +112,8 @@ pub fn RunningGamePage() -> Element {
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
     let auto_save_scenario = use_context::<CtxAutoSaveScenario>().0;
+    // Shop panel — only open at end-of-scenario
+    let mut shop_open = use_signal(|| false);
 
     let snap_server_data = server_data();
 
@@ -179,21 +182,28 @@ pub fn RunningGamePage() -> Element {
 
                 EndStatePanels {}
                 div { class: "scenario-actions",
+                    Button {
+                        variant: ButtonVariant::Outline,
+                        onclick: move |_| shop_open.set(true),
+                        "🛒 Shop"
+                    }
                     if server_data().players_data.owner_player_name == local_login_name_session() {
                         Button {
                             variant: ButtonVariant::GreenType,
                             onclick: move |_| async move {
                                 let _ = socket
-                                    .send(ClientEvent::LoadNextScenario(
-                                        SERVER_NAME(),
-                                        auto_save_scenario(),
-                                    ))
+                                    .send(ClientEvent::LoadNextScenario(SERVER_NAME(), auto_save_scenario()))
                                     .await;
                             },
                             "⚡ Load Next Scenario"
                         }
                     }
                     QuitGameButton {}
+                }
+                Sheet {
+                    open: shop_open(),
+                    on_open_change: move |v| shop_open.set(v),
+                    StoreSheet { s: SheetSide::Right }
                 }
                 div { class: "scenario-section",
                     h3 { class: "scenario-section-title", "🎁 Loots" }

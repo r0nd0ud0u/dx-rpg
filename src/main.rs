@@ -7,7 +7,7 @@ use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use dotenv::dotenv;
 use dx_rpg::{
     common::{
-        CtxAutoSaveScenario, CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp,
+        CtxAutoSaveScenario, CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp,
         CtxShowHeroAggro, CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS, Route,
         SERVER_NAME,
     },
@@ -339,6 +339,9 @@ fn App() -> Element {
     // Auto-save at the start of each scenario — default enabled
     let auto_save_scenario: Signal<bool> = use_signal(|| true);
     use_context_provider(|| CtxAutoSaveScenario(auto_save_scenario));
+    // Shop access during an active scenario — default disabled
+    let shop_enabled: Signal<bool> = use_signal(|| false);
+    use_context_provider(|| CtxShopEnabled(shop_enabled));
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
