@@ -749,6 +749,7 @@ const SETTING_TOOLTIPS: &str = "show_atk_tooltips";
 const SETTING_BOSS_ENERGY: &str = "show_boss_energy";
 const SETTING_HERO_AGGRO: &str = "show_hero_aggro";
 const SETTING_BOSS_HP: &str = "show_boss_hp";
+const SETTING_AUTO_SAVE: &str = "auto_save_on_scenario";
 
 #[component]
 fn SettingsSheet(s: SheetSide) -> Element {
@@ -756,6 +757,7 @@ fn SettingsSheet(s: SheetSide) -> Element {
     let mut show_boss_energy = use_context::<crate::common::CtxShowBossEnergy>().0;
     let mut show_hero_aggro = use_context::<crate::common::CtxShowHeroAggro>().0;
     let mut show_boss_hp = use_context::<crate::common::CtxShowBossHp>().0;
+    let mut auto_save_scenario = use_context::<crate::common::CtxAutoSaveScenario>().0;
     let mut save_msg: Signal<String> = use_signal(String::new);
 
     // Load saved settings on mount
@@ -778,6 +780,11 @@ fn SettingsSheet(s: SheetSide) -> Element {
             if let Ok(val) = get_user_setting(SETTING_BOSS_HP.to_string(), "true".to_owned()).await
             {
                 show_boss_hp.set(val == "true");
+            }
+            if let Ok(val) =
+                get_user_setting(SETTING_AUTO_SAVE.to_string(), "true".to_owned()).await
+            {
+                auto_save_scenario.set(val == "true");
             }
         });
     });
@@ -902,6 +909,36 @@ fn SettingsSheet(s: SheetSide) -> Element {
                                 spawn(async move {
                                     let _ = save_user_setting(
                                             SETTING_BOSS_HP.to_string(),
+                                            if new_val { "true" } else { "false" }.to_string(),
+                                        )
+                                        .await;
+                                    save_msg.set("✅ Saved".to_owned());
+                                });
+                            },
+                        }
+                        span { class: "toggle-slider" }
+                    }
+                }
+
+                // ── Auto-save on scenario start ────────────────────────────────
+                div { class: "settings-row",
+                    div { class: "settings-label-group",
+                        span { class: "settings-label", "Auto-save on Scenario" }
+                        span { class: "settings-hint",
+                            "Automatically save at the start of each new scenario."
+                        }
+                    }
+                    label { class: "toggle-switch",
+                        input {
+                            r#type: "checkbox",
+                            checked: auto_save_scenario(),
+                            onchange: move |_| {
+                                let new_val = !auto_save_scenario();
+                                auto_save_scenario.set(new_val);
+                                save_msg.set("Saving…".to_owned());
+                                spawn(async move {
+                                    let _ = save_user_setting(
+                                            SETTING_AUTO_SAVE.to_string(),
                                             if new_val { "true" } else { "false" }.to_string(),
                                         )
                                         .await;

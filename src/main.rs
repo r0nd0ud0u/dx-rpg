@@ -7,8 +7,9 @@ use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use dotenv::dotenv;
 use dx_rpg::{
     common::{
-        CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
-        CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS, Route, SERVER_NAME,
+        CtxAutoSaveScenario, CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp,
+        CtxShowHeroAggro, CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS, Route,
+        SERVER_NAME,
     },
     websocket_handler::{
         NO_CLIENT_ID,
@@ -335,6 +336,9 @@ fn App() -> Element {
     // Show boss HP bar — default visible
     let show_boss_hp: Signal<bool> = use_signal(|| true);
     use_context_provider(|| CtxShowBossHp(show_boss_hp));
+    // Auto-save at the start of each scenario — default enabled
+    let auto_save_scenario: Signal<bool> = use_signal(|| true);
+    use_context_provider(|| CtxAutoSaveScenario(auto_save_scenario));
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
