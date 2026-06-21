@@ -885,8 +885,8 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                 }
                             }
 
-                            // Equipment sub-panel
-                            if shop_sub_tab() == 0 {
+                            // Equipment sub-panel — always mounted, hidden via display
+                            div { display: if shop_sub_tab() == 0 { "block" } else { "none" },
                                 ScrollArea {
                                     width: "100%",
                                     height: "calc(100vh - 24rem)",
@@ -976,8 +976,8 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                 }
                             }
 
-                            // Consumables sub-panel
-                            if shop_sub_tab() == 1 {
+                            // Consumables sub-panel — always mounted, hidden via display
+                            div { display: if shop_sub_tab() == 1 { "block" } else { "none" },
                                 ScrollArea {
                                     width: "100%",
                                     height: "calc(100vh - 24rem)",
