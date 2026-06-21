@@ -572,6 +572,23 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
         // not for loaded
         if !is_replay && server_data.core_game_data.game_phase == GamePhase::InitGame {
             server_data.core_game_data.game_manager.start_game();
+            // states_scenarios was reset to all-NotStarted when the universe was
+            // picked in the lobby (set_universe_on_server_data clears the map).
+            // start_game() never marks anything InProgress, so do it here.
+            let current_name = server_data
+                .core_game_data
+                .game_manager
+                .current_scenario
+                .name
+                .clone();
+            if let Some(state) = server_data
+                .core_game_data
+                .game_manager
+                .states_scenarios
+                .get_mut(&current_name)
+            {
+                *state = lib_rpg::server::scenario::ScenarioState::InProgress;
+            }
         }
 
         server_data.core_game_data.game_phase = GamePhase::Running;
