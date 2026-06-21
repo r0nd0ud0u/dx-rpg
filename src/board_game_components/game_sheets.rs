@@ -75,6 +75,18 @@ pub fn GameSheets() -> Element {
     let server_data = use_context::<Signal<ServerData>>();
     let shop_enabled = use_context::<crate::common::CtxShopEnabled>().0;
 
+    // Load shop_enabled from DB on mount so the button reflects the saved
+    // setting without the user having to open Settings first.
+    use_effect(move || {
+        spawn(async move {
+            if let Ok(val) =
+                get_user_setting("shop_enabled".to_owned(), "false".to_owned()).await
+            {
+                shop_enabled.set(val == "true");
+            }
+        });
+    });
+
     let open_sheet = move |kind: SheetKind| {
         move |_| {
             sheet_kind.set(kind.clone());
