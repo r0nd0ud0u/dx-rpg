@@ -192,10 +192,7 @@ pub fn RunningGamePage() -> Element {
                             variant: ButtonVariant::GreenType,
                             onclick: move |_| async move {
                                 let _ = socket
-                                    .send(ClientEvent::LoadNextScenario(
-                                        SERVER_NAME(),
-                                        auto_save_scenario(),
-                                    ))
+                                    .send(ClientEvent::LoadNextScenario(SERVER_NAME(), auto_save_scenario()))
                                     .await;
                             },
                             "⚡ Load Next Scenario"
