@@ -6,7 +6,16 @@
         "is_first_round": false,
         "is_heal_atk_blocked": false,
         "is_random_target": false,
-        "Buf-debuf": []
+        "Buf-debuf": [
+            {
+                "stats-name": "Magic power",
+                "is-percent": true,
+                "passive-enabled": true,
+                "passive": true,
+                "kind": "ChangeMaxStatByPercentage",
+                "value": 5
+            }
+        ]
     },
     "Level": 1,
     "Name": "Thalia",
