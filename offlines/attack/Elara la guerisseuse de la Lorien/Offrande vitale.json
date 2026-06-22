@@ -97,5 +97,5 @@
     "Portée": "Individual",
     "Sound": "",
     "Description": "Vital Offering — drains own vitality to deliver a massive heal to an ally.",
-    "DescriptionEffects": "Deals 15% magic damage to himself; heals all allies for 85; +50% max Magic armor on all allies for 2 turns; +50% max Physical armor on all allies for 2 turns; 3-turn cooldown."
+    "DescriptionEffects": "Deals 15% magic damage to himself; heals one targeted ally for 85; +50% max Magic armor on on that targeted ally for 2 turns; 3-turn cooldown."
 }

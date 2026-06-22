@@ -688,6 +688,12 @@ pub fn use_potion_handler(server_name: &str, player_name: &str, potion_name: &st
             .cloned();
         if let Some(c) = consumable {
             let id_name = pm.current_player.id_name.clone();
+            let stat_name = c
+                .effects
+                .first()
+                .map(|e| e.buffer.stats_name.clone())
+                .filter(|s| !s.is_empty())
+                .unwrap_or_else(|| "HP".to_owned());
             let mut potion_log: Option<LogData> = None;
             match pm
                 .current_player
@@ -700,9 +706,12 @@ pub fn use_potion_handler(server_name: &str, player_name: &str, potion_name: &st
                         potion_name,
                         id_name
                     );
-                    let hp_delta: i64 = effects.iter().map(|e| e.real_amount_tx).sum();
-                    let msg = if hp_delta != 0 {
-                        format!("💊 {} uses {} ({:+} HP)", id_name, potion_name, hp_delta)
+                    let stat_delta: i64 = effects.iter().map(|e| e.real_amount_tx).sum();
+                    let msg = if stat_delta != 0 {
+                        format!(
+                            "💊 {} uses {} ({:+} {})",
+                            id_name, potion_name, stat_delta, stat_name
+                        )
                     } else {
                         format!("💊 {} uses {}", id_name, potion_name)
                     };
@@ -756,11 +765,17 @@ pub fn use_party_potion_handler(server_name: &str, player_name: &str, potion_nam
                         potion_name,
                         id_name
                     );
-                    let hp_delta: i64 = effects.iter().map(|e| e.real_amount_tx).sum();
-                    let msg = if hp_delta != 0 {
+                    let stat_delta: i64 = effects.iter().map(|e| e.real_amount_tx).sum();
+                    let stat_name = consumable
+                        .effects
+                        .first()
+                        .map(|e| e.buffer.stats_name.as_str())
+                        .filter(|s| !s.is_empty())
+                        .unwrap_or("HP");
+                    let msg = if stat_delta != 0 {
                         format!(
-                            "💊 {} uses {} (party) ({:+} HP)",
-                            id_name, potion_name, hp_delta
+                            "💊 {} uses {} (party) ({:+} {})",
+                            id_name, potion_name, stat_delta, stat_name
                         )
                     } else {
                         format!("💊 {} uses {} (party)", id_name, potion_name)
