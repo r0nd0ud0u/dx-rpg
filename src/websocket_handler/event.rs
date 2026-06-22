@@ -81,8 +81,9 @@ pub enum ClientEvent {
     RequestToggleEquip(String, String, String), // `String`: equipment unique name, `String`: character id_name, `String`: server name
     RequestMarkEquipSeen(String, String, String), // `String`: category key, `String`: character id_name, `String`: server name
     LoadNextScenario(String, bool), // `String`: server name, `bool`: auto-save on start
-    UsePotion(String, String, String), // `String`: server name, `String`: player name, `String`: potion name
-    UsePartyPotion(String, String, String), // server_name, player_name, potion_name
+    RequestTargetForConsumable(String, String, String, bool), // server_name, player_name, consumable_name, is_party
+    UsePotion(String, String, String, String), // server_name, player_name, potion_name, target_id_name
+    UsePartyPotion(String, String, String, String), // server_name, player_name, potion_name, target_id_name
     BuyItem(String, String, String, String), // server_name, character_id_name, item_name, item_kind ("Equipment"|"Consumable")
     SellItem(String, String, String, String), // server_name, character_id_name, item_name_or_unique_name, item_kind
 }
@@ -269,16 +270,21 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("Client {} requested to load next scenario for server {} (auto_save={auto_save})", client_id, server_name);
                                 let _ = process_load_next_scenario(&server_name, auto_save).await;
                             }
-                            Ok(ClientEvent::UsePotion(server_name, player_name, potion_name)) => {
-                                tracing::info!("Player {} using potion {} on server {}", player_name, potion_name, server_name);
-                                use_potion_handler(&server_name, &player_name, &potion_name);
+                            Ok(ClientEvent::RequestTargetForConsumable(server_name, player_name, consumable_name, is_party)) => {
+                                tracing::info!("Player {} requesting targets for consumable {} (party={}) on server {}", player_name, consumable_name, is_party, server_name);
+                                request_target_for_consumable_handler(&server_name, &player_name, &consumable_name, is_party);
+                                update_clients_server_data(&server_name);
+                            }
+                            Ok(ClientEvent::UsePotion(server_name, player_name, potion_name, target_id_name)) => {
+                                tracing::info!("Player {} using potion {} on target {} on server {}", player_name, potion_name, target_id_name, server_name);
+                                use_potion_handler(&server_name, &player_name, &potion_name, &target_id_name);
                                 // Using a potion counts as the turn action — advance the turn
                                 update_core_game_data_after_atk(&server_name, None, tx_server.clone()).await;
                                 process_ennemy_atk(&server_name, tx_server.clone()).await;
                             }
-                            Ok(ClientEvent::UsePartyPotion(server_name, player_name, potion_name)) => {
-                                tracing::info!("Player {} using party potion {} on server {}", player_name, potion_name, server_name);
-                                use_party_potion_handler(&server_name, &player_name, &potion_name);
+                            Ok(ClientEvent::UsePartyPotion(server_name, player_name, potion_name, target_id_name)) => {
+                                tracing::info!("Player {} using party potion {} on target {} on server {}", player_name, potion_name, target_id_name, server_name);
+                                use_party_potion_handler(&server_name, &player_name, &potion_name, &target_id_name);
                                 update_core_game_data_after_atk(&server_name, None, tx_server.clone()).await;
                                 process_ennemy_atk(&server_name, tx_server.clone()).await;
                             }
@@ -667,132 +673,161 @@ fn get_current_game_path(player_name: &str, current_game_dir: &str) -> PathBuf {
 }
 
 #[cfg(feature = "server")]
-pub fn use_potion_handler(server_name: &str, player_name: &str, potion_name: &str) {
+fn request_target_for_consumable_handler(
+    server_name: &str,
+    player_name: &str,
+    consumable_name: &str,
+    is_party: bool,
+) {
     use lib_rpg::character_mod::inventory::Consumable;
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let Some(server_data) = sm.servers_data.get_mut(server_name) else {
+        tracing::error!("request_target_for_consumable_handler: server {} not found", server_name);
+        return;
+    };
+    let pm = &mut server_data.core_game_data.game_manager.pm;
+    let launcher_id = pm.current_player.id_name.clone();
+
+    let consumable: Option<Consumable> = if is_party {
+        pm.party_consumables
+            .iter()
+            .find(|c| c.name == consumable_name)
+            .cloned()
+    } else {
+        pm.current_player
+            .inventory
+            .consumables
+            .iter()
+            .find(|c| c.name == consumable_name)
+            .cloned()
+    };
+
+    if let Some(c) = consumable {
+        pm.set_targeted_characters_for_consumable(&launcher_id, &c);
+    } else {
+        tracing::warn!(
+            "request_target_for_consumable_handler: consumable {} not found for player {}",
+            consumable_name,
+            player_name
+        );
+    }
+}
+
+#[cfg(feature = "server")]
+pub fn use_potion_handler(
+    server_name: &str,
+    player_name: &str,
+    potion_name: &str,
+    target_id_name: &str,
+) {
     let mut sm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         let game_state = server_data.core_game_data.game_manager.game_state.clone();
         let pm = &mut server_data.core_game_data.game_manager.pm;
-        // Using a potion is the turn action of the hero whose turn it is, so the
-        // launcher — the one who consumes the potion and receives its effect — is
-        // `current_player`, not the session's first hero. (In single-player one
-        // player controls several heroes, so resolving by player name picked the
-        // wrong hero.)
-        let launcher_stats = pm.current_player.stats.clone();
-        let consumable: Option<Consumable> = pm
+        let launcher_id = pm.current_player.id_name.clone();
+
+        // Extract stat_name for the log before moving anything
+        let stat_name = pm
             .current_player
             .inventory
             .consumables
             .iter()
             .find(|c| c.name == potion_name)
-            .cloned();
-        if let Some(c) = consumable {
-            let id_name = pm.current_player.id_name.clone();
-            let stat_name = c
-                .effects
-                .first()
-                .map(|e| e.buffer.stats_name.clone())
-                .filter(|s| !s.is_empty())
-                .unwrap_or_else(|| "HP".to_owned());
-            let mut potion_log: Option<LogData> = None;
-            match pm
-                .current_player
-                .use_consumable(c, &game_state, &launcher_stats)
-            {
-                Ok(effects) => {
-                    tracing::info!(
-                        "Player {} used potion {} on {} successfully",
-                        player_name,
-                        potion_name,
-                        id_name
-                    );
-                    let stat_delta: i64 = effects.iter().map(|e| e.real_amount_tx).sum();
-                    let msg = if stat_delta != 0 {
-                        format!(
-                            "💊 {} uses {} ({:+} {})",
-                            id_name, potion_name, stat_delta, stat_name
-                        )
-                    } else {
-                        format!("💊 {} uses {}", id_name, potion_name)
-                    };
-                    potion_log = Some(LogData {
-                        message: utils::format_string_with_timestamp(&msg),
-                        color: String::new(),
-                    });
-                }
-                Err(e) => {
-                    tracing::error!("Failed to use potion {}: {}", potion_name, e)
-                }
+            .and_then(|c| c.effects.first())
+            .map(|e| e.buffer.stats_name.clone())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| "HP".to_owned());
+
+        let mut potion_log: Option<LogData> = None;
+        match pm.use_consumable_on_target(potion_name, target_id_name, &game_state) {
+            Ok(effects) => {
+                tracing::info!(
+                    "Player {} used potion {} on {} successfully",
+                    player_name,
+                    potion_name,
+                    target_id_name
+                );
+                let stat_delta: i64 = effects.iter().map(|e| e.real_amount_tx).sum();
+                let msg = if stat_delta != 0 {
+                    format!(
+                        "💊 {} uses {} on {} ({:+} {})",
+                        launcher_id, potion_name, target_id_name, stat_delta, stat_name
+                    )
+                } else {
+                    format!("💊 {} uses {} on {}", launcher_id, potion_name, target_id_name)
+                };
+                potion_log = Some(LogData {
+                    message: utils::format_string_with_timestamp(&msg),
+                    color: String::new(),
+                });
             }
-            // Sync the shadow `current_player` back into `active_heroes` so the
-            // effect persists (a following attack also writes it back).
-            pm.modify_active_character(&id_name);
-            // pm borrow ends here; now safe to access other fields of game_manager
-            if let Some(entry) = potion_log {
-                server_data.core_game_data.game_manager.logs.push(entry);
+            Err(e) => {
+                tracing::error!("Failed to use potion {}: {}", potion_name, e);
             }
         }
+        // Sync current_player (potion removed from inventory) back to active_heroes.
+        pm.modify_active_character(&launcher_id);
+        if let Some(entry) = potion_log {
+            server_data.core_game_data.game_manager.logs.push(entry);
+        }
     }
-    // Note: caller is responsible for broadcasting updated state and advancing the turn
 }
 
 #[cfg(feature = "server")]
-pub fn use_party_potion_handler(server_name: &str, player_name: &str, potion_name: &str) {
+pub fn use_party_potion_handler(
+    server_name: &str,
+    player_name: &str,
+    potion_name: &str,
+    target_id_name: &str,
+) {
     let mut sm = SERVER_MANAGER.lock().unwrap();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         let game_state = server_data.core_game_data.game_manager.game_state.clone();
         let pm = &mut server_data.core_game_data.game_manager.pm;
-        // A party potion is taken from the shared bag but applied to the hero whose
-        // turn it is (the launcher = `current_player`), so the right hero is healed.
-        if let Some(idx) = pm
+        let launcher_id = pm.current_player.id_name.clone();
+
+        // Extract stat_name for the log
+        let stat_name = pm
             .party_consumables
             .iter()
-            .position(|c| c.name == potion_name)
-        {
-            let consumable = pm.party_consumables.remove(idx);
-            let launcher_stats = pm.current_player.stats.clone();
-            let id_name = pm.current_player.id_name.clone();
-            let mut potion_log: Option<LogData> = None;
-            match pm.current_player.apply_consumable_effects(
-                &consumable,
-                &game_state,
-                &launcher_stats,
-            ) {
-                Ok(effects) => {
-                    tracing::info!(
-                        "Player {} used party potion {} on {} successfully",
-                        player_name,
-                        potion_name,
-                        id_name
-                    );
-                    let stat_delta: i64 = effects.iter().map(|e| e.real_amount_tx).sum();
-                    let stat_name = consumable
-                        .effects
-                        .first()
-                        .map(|e| e.buffer.stats_name.as_str())
-                        .filter(|s| !s.is_empty())
-                        .unwrap_or("HP");
-                    let msg = if stat_delta != 0 {
-                        format!(
-                            "💊 {} uses {} (party) ({:+} {})",
-                            id_name, potion_name, stat_delta, stat_name
-                        )
-                    } else {
-                        format!("💊 {} uses {} (party)", id_name, potion_name)
-                    };
-                    potion_log = Some(LogData {
-                        message: utils::format_string_with_timestamp(&msg),
-                        color: String::new(),
-                    });
-                }
-                Err(e) => tracing::error!("Failed to use party potion {}: {}", potion_name, e),
+            .find(|c| c.name == potion_name)
+            .and_then(|c| c.effects.first())
+            .map(|e| e.buffer.stats_name.clone())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| "HP".to_owned());
+
+        let mut potion_log: Option<LogData> = None;
+        match pm.use_party_consumable_on_target(potion_name, target_id_name, &game_state) {
+            Ok(effects) => {
+                tracing::info!(
+                    "Player {} used party potion {} on {} successfully",
+                    player_name,
+                    potion_name,
+                    target_id_name
+                );
+                let stat_delta: i64 = effects.iter().map(|e| e.real_amount_tx).sum();
+                let msg = if stat_delta != 0 {
+                    format!(
+                        "💊 {} uses {} (party) on {} ({:+} {})",
+                        launcher_id, potion_name, target_id_name, stat_delta, stat_name
+                    )
+                } else {
+                    format!(
+                        "💊 {} uses {} (party) on {}",
+                        launcher_id, potion_name, target_id_name
+                    )
+                };
+                potion_log = Some(LogData {
+                    message: utils::format_string_with_timestamp(&msg),
+                    color: String::new(),
+                });
             }
-            // Keep `active_heroes` in sync with the shadow `current_player`.
-            pm.modify_active_character(&id_name);
-            // pm borrow ends here; now safe to access other fields of game_manager
-            if let Some(entry) = potion_log {
-                server_data.core_game_data.game_manager.logs.push(entry);
-            }
+            Err(e) => tracing::error!("Failed to use party potion {}: {}", potion_name, e),
+        }
+        // Sync current_player back to active_heroes
+        pm.modify_active_character(&launcher_id);
+        if let Some(entry) = potion_log {
+            server_data.core_game_data.game_manager.logs.push(entry);
         }
     }
 }

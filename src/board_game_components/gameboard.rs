@@ -40,6 +40,8 @@ pub fn GameBoard() -> Element {
     let atk_menu_display = use_signal(|| false);
     let potion_menu_display = use_signal(|| false);
     let mut selected_atk_name = use_signal(|| "".to_owned());
+    // "personal:{name}" or "party:{name}" when waiting for a consumable target, "" otherwise
+    let mut selected_consumable = use_signal(|| "".to_owned());
 
     // spectator: player has no character in active heroes
     let local_session_player_name = use_context::<Signal<String>>();
@@ -76,6 +78,7 @@ pub fn GameBoard() -> Element {
                         c: c.clone(),
                         current_player_id_name: server_data.read().core_game_data.game_manager.pm.current_player.id_name.clone(),
                         selected_atk_name,
+                        selected_consumable,
                         atk_menu_display,
                         potion_menu_display,
                         is_auto_atk: false,
@@ -97,6 +100,15 @@ pub fn GameBoard() -> Element {
                         PotionList {
                             id_name: server_data.read().core_game_data.game_manager.pm.current_player.id_name.clone(),
                             display_potionlist_sig: potion_menu_display,
+                            selected_consumable,
+                        }
+                    } else if !selected_consumable().is_empty() {
+                        Button {
+                            variant: ButtonVariant::Secondary,
+                            onclick: move |_| async move {
+                                selected_consumable.set("".to_owned());
+                            },
+                            "❌ Cancel potion"
                         }
                     } else if !selected_atk_name().is_empty() {
                         Button {
@@ -176,6 +188,7 @@ pub fn GameBoard() -> Element {
                         c: c.clone(),
                         current_player_id_name: server_data.read().core_game_data.game_manager.pm.current_player.id_name.clone(),
                         selected_atk_name,
+                        selected_consumable,
                         atk_menu_display,
                         potion_menu_display,
                         is_auto_atk: server_data.read().core_game_data.game_manager.pm.current_player.id_name

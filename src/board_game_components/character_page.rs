@@ -63,6 +63,7 @@ pub fn CharacterPanel(
     c: Character,
     current_player_id_name: String,
     selected_atk_name: Signal<String>,
+    selected_consumable: Signal<String>,
     atk_menu_display: Signal<bool>,
     potion_menu_display: Signal<bool>,
     is_auto_atk: ReadSignal<bool>,
@@ -252,6 +253,14 @@ pub fn CharacterPanel(
                     launcher_id_name: current_player_id_name,
                     c: c.clone(),
                     selected_atk_name,
+                    selected_consumable,
+                }
+            } else if !selected_consumable().is_empty() {
+                CharacterTargetButton {
+                    launcher_id_name: current_player_id_name,
+                    c: c.clone(),
+                    selected_atk_name,
+                    selected_consumable,
                 }
             }
         }
@@ -263,9 +272,11 @@ pub fn CharacterTargetButton(
     launcher_id_name: String,
     c: Character,
     selected_atk_name: Signal<String>,
+    selected_consumable: Signal<String>,
 ) -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let local_session_player_name = use_context::<Signal<String>>();
 
     let mut kind_str = "hero";
     if c.kind == CharacterKind::Boss {
@@ -286,21 +297,53 @@ pub fn CharacterTargetButton(
                 onclick: move |_| {
                     let async_target_name = c.id_name.clone();
                     let async_launcher_name = launcher_id_name.clone();
+                    let async_player = local_session_player_name();
+                    let consumable_val = selected_consumable.read().clone();
                     async move {
-                        tracing::info!(
-                            "l:{} t:{}, a:{}", async_launcher_name.clone(), async_target_name
-                            .clone(), selected_atk_name.read().clone()
-                        );
-                        let _ = socket
-                            .send(
-                                ClientEvent::RequestSetOneTarget(
-                                    SERVER_NAME(),
-                                    async_launcher_name.clone(),
-                                    selected_atk_name.read().clone(),
-                                    async_target_name.clone(),
-                                ),
-                            )
-                            .await;
+                        if !consumable_val.is_empty() {
+                            // Consumable targeting: fire the potion directly on this target
+                            let (is_party, name) = if let Some(n) = consumable_val.strip_prefix("party:") {
+                                (true, n.to_owned())
+                            } else {
+                                (false, consumable_val.trim_start_matches("personal:").to_owned())
+                            };
+                            if is_party {
+                                let _ = socket
+                                    .send(ClientEvent::UsePartyPotion(
+                                        SERVER_NAME(),
+                                        async_player,
+                                        name,
+                                        async_target_name,
+                                    ))
+                                    .await;
+                            } else {
+                                let _ = socket
+                                    .send(ClientEvent::UsePotion(
+                                        SERVER_NAME(),
+                                        async_player,
+                                        name,
+                                        async_target_name,
+                                    ))
+                                    .await;
+                            }
+                            selected_consumable.set("".to_owned());
+                        } else {
+                            // Attack targeting: set the selected target
+                            tracing::info!(
+                                "l:{} t:{}, a:{}", async_launcher_name.clone(), async_target_name
+                                .clone(), selected_atk_name.read().clone()
+                            );
+                            let _ = socket
+                                .send(
+                                    ClientEvent::RequestSetOneTarget(
+                                        SERVER_NAME(),
+                                        async_launcher_name.clone(),
+                                        selected_atk_name.read().clone(),
+                                        async_target_name.clone(),
+                                    ),
+                                )
+                                .await;
+                        }
                     }
                 },
                 ""
@@ -450,7 +493,11 @@ fn get_color(value: i32) -> String {
 }
 
 #[component]
-pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Element {
+pub fn PotionList(
+    id_name: String,
+    display_potionlist_sig: Signal<bool>,
+    selected_consumable: Signal<String>,
+) -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_session_player_name = use_context::<Signal<String>>();
@@ -534,10 +581,15 @@ pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Elem
                                         let async_player = player.clone();
                                         async move {
                                             let _ = socket
-                                                .send(
-                                                    ClientEvent::UsePotion(SERVER_NAME(), async_player, async_potion),
-                                                )
+                                                .send(ClientEvent::RequestTargetForConsumable(
+                                                    SERVER_NAME(),
+                                                    async_player,
+                                                    async_potion.clone(),
+                                                    false,
+                                                ))
                                                 .await;
+                                            selected_consumable
+                                                .set(format!("personal:{}", async_potion));
                                             display_potionlist_sig.set(false);
                                         }
                                     }
@@ -570,14 +622,15 @@ pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Elem
                                         let async_player = player.clone();
                                         async move {
                                             let _ = socket
-                                                .send(
-                                                    ClientEvent::UsePartyPotion(
-                                                        SERVER_NAME(),
-                                                        async_player,
-                                                        async_potion,
-                                                    ),
-                                                )
+                                                .send(ClientEvent::RequestTargetForConsumable(
+                                                    SERVER_NAME(),
+                                                    async_player,
+                                                    async_potion.clone(),
+                                                    true,
+                                                ))
                                                 .await;
+                                            selected_consumable
+                                                .set(format!("party:{}", async_potion));
                                             display_potionlist_sig.set(false);
                                         }
                                     }
