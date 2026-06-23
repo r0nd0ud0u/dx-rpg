@@ -26,10 +26,6 @@
             "Portée": "Individual",
             "Stat": "",
             "Tours actifs": 4,
-            "Type": "DamageRxPercent",
-            "Valeur de l'effet": 0,
-            "Value": 25,
-            "IsMagicEffect": true,
             "Buffer": {
                 "kind": "DamageRxPercent",
                 "value": 25,
