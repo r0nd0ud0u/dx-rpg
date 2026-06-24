@@ -2,42 +2,31 @@
     "name": "Colere du Champion",
     "description": "Le champion orc revient accompagné d'un gobelin éclaireur. Gérer la priorité des cibles est essentiel : éliminez le gobelin rapidement ou risquez d'être débordé.",
     "boss_patterns": {
-        "Champion Orc": [
-            0
-        ],
-        "Gobelin Eclaireur": [
-            0
-        ]
+        "Champion Orc": [0],
+        "Gobelin Eclaireur": [0]
     },
     "level": 6,
     "loots": [
         {
-            "name": "super potion",
+            "name": "Super potion",
             "kind": "Consumable",
             "rank": "Intermediate",
             "level": 2,
-            "classes": [
-                "Standard"
-            ]
+            "classes": ["Standard"]
         },
         {
             "name": "medium shoes",
             "kind": "Equipment",
             "rank": "Intermediate",
             "level": 3,
-            "classes": [
-                "Warrior",
-                "Berserker"
-            ]
+            "classes": ["Standard"]
         },
         {
             "name": "gold",
             "kind": "Currency",
             "rank": "Common",
             "level": 200,
-            "classes": [
-                "Standard"
-            ]
+            "classes": ["Standard"]
         }
     ]
 }

@@ -63,6 +63,8 @@ pub fn CharacterPanel(
     c: Character,
     current_player_id_name: String,
     selected_atk_name: Signal<String>,
+    selected_consumable: Signal<String>,
+    selected_consumable_target: Signal<String>,
     atk_menu_display: Signal<bool>,
     potion_menu_display: Signal<bool>,
     is_auto_atk: ReadSignal<bool>,
@@ -252,6 +254,16 @@ pub fn CharacterPanel(
                     launcher_id_name: current_player_id_name,
                     c: c.clone(),
                     selected_atk_name,
+                    selected_consumable,
+                    selected_consumable_target,
+                }
+            } else if !selected_consumable().is_empty() {
+                CharacterTargetButton {
+                    launcher_id_name: current_player_id_name,
+                    c: c.clone(),
+                    selected_atk_name,
+                    selected_consumable,
+                    selected_consumable_target,
                 }
             }
         }
@@ -263,46 +275,79 @@ pub fn CharacterTargetButton(
     launcher_id_name: String,
     c: Character,
     selected_atk_name: Signal<String>,
+    selected_consumable: Signal<String>,
+    selected_consumable_target: Signal<String>,
 ) -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let local_session_player_name = use_context::<Signal<String>>();
 
     let mut kind_str = "hero";
     if c.kind == CharacterKind::Boss {
         kind_str = "boss";
     }
+
+    // In consumable mode: clicking only selects the target (fires on "Use" button).
+    // In attack mode: clicking sets the attack target via RequestSetOneTarget.
+    let is_consumable_mode = !selected_consumable().is_empty();
+
+    // Active = this character is the current target.
+    // For consumables, the local signal overrides the server flag.
+    let is_active = if is_consumable_mode {
+        if !selected_consumable_target().is_empty() {
+            selected_consumable_target() == c.id_name
+        } else {
+            c.character_rounds_info.is_current_target
+        }
+    } else {
+        c.character_rounds_info.is_current_target
+    };
+
+    let onclick = {
+        let target_name = c.id_name.clone();
+        let launcher_name = launcher_id_name.clone();
+        move |_| {
+            let target_name = target_name.clone();
+            let launcher_name = launcher_name.clone();
+            let async_player = local_session_player_name();
+            async move {
+                if is_consumable_mode {
+                    // Just update the local selection — no server call until "Use" is clicked.
+                    selected_consumable_target.set(target_name);
+                } else {
+                    tracing::info!(
+                        "l:{} t:{}, a:{}",
+                        launcher_name,
+                        target_name,
+                        selected_atk_name.read().clone()
+                    );
+                    let _ = socket
+                        .send(ClientEvent::RequestSetOneTarget(
+                            SERVER_NAME(),
+                            launcher_name,
+                            selected_atk_name.read().clone(),
+                            target_name,
+                        ))
+                        .await;
+                    let _ = async_player; // suppress unused warning
+                }
+            }
+        }
+    };
+
     rsx! {
-        if c.character_rounds_info.is_current_target {
+        if is_active && c.character_rounds_info.is_potential_target {
             Button {
                 variant: ButtonVariant::Primary,
                 class: format!("{}-target-button-active", kind_str),
-                onclick: move |_| async move {},
+                onclick,
                 ""
             }
         } else if c.character_rounds_info.is_potential_target {
             Button {
                 variant: ButtonVariant::Primary,
                 class: format!("{}-target-button", kind_str),
-                onclick: move |_| {
-                    let async_target_name = c.id_name.clone();
-                    let async_launcher_name = launcher_id_name.clone();
-                    async move {
-                        tracing::info!(
-                            "l:{} t:{}, a:{}", async_launcher_name.clone(), async_target_name
-                            .clone(), selected_atk_name.read().clone()
-                        );
-                        let _ = socket
-                            .send(
-                                ClientEvent::RequestSetOneTarget(
-                                    SERVER_NAME(),
-                                    async_launcher_name.clone(),
-                                    selected_atk_name.read().clone(),
-                                    async_target_name.clone(),
-                                ),
-                            )
-                            .await;
-                    }
-                },
+                onclick,
                 ""
             }
         }
@@ -450,7 +495,11 @@ fn get_color(value: i32) -> String {
 }
 
 #[component]
-pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Element {
+pub fn PotionList(
+    id_name: String,
+    display_potionlist_sig: Signal<bool>,
+    selected_consumable: Signal<String>,
+) -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_session_player_name = use_context::<Signal<String>>();
@@ -535,9 +584,15 @@ pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Elem
                                         async move {
                                             let _ = socket
                                                 .send(
-                                                    ClientEvent::UsePotion(SERVER_NAME(), async_player, async_potion),
+                                                    ClientEvent::RequestTargetForConsumable(
+                                                        SERVER_NAME(),
+                                                        async_player,
+                                                        async_potion.clone(),
+                                                        false,
+                                                    ),
                                                 )
                                                 .await;
+                                            selected_consumable.set(format!("personal:{}", async_potion));
                                             display_potionlist_sig.set(false);
                                         }
                                     }
@@ -571,13 +626,15 @@ pub fn PotionList(id_name: String, display_potionlist_sig: Signal<bool>) -> Elem
                                         async move {
                                             let _ = socket
                                                 .send(
-                                                    ClientEvent::UsePartyPotion(
+                                                    ClientEvent::RequestTargetForConsumable(
                                                         SERVER_NAME(),
                                                         async_player,
-                                                        async_potion,
+                                                        async_potion.clone(),
+                                                        true,
                                                     ),
                                                 )
                                                 .await;
+                                            selected_consumable.set(format!("party:{}", async_potion));
                                             display_potionlist_sig.set(false);
                                         }
                                     }

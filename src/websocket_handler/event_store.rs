@@ -118,6 +118,23 @@ pub fn buy_item_handler(
     // (the active combat player) back over the hero, erasing the purchase.
     // We modified the hero directly via active_heroes.iter_mut(), which is enough.
 
+    // If the purchase is for the current active character, also sync it to
+    // current_player. current_player is a snapshot taken at turn start; without
+    // this sync, use_potion_handler won't find the item (it reads current_player).
+    // We call buy_consumable (not just push) so that the gold deduction is
+    // reflected in current_player too — modify_active_character copies
+    // current_player back to active_heroes at turn end, which would otherwise
+    // restore the spent gold.
+    if pm.current_player.id_name == character_id_name
+        && item_kind == "Consumable"
+        && let Some(consumable) = build_consumable_by_name(item_name)
+    {
+        let _ = pm
+            .current_player
+            .inventory
+            .buy_consumable(consumable, price);
+    }
+
     if let Some(entry) = purchase_log {
         server_data.core_game_data.game_manager.logs.push(entry);
     }

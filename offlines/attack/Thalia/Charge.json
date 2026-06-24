@@ -11,11 +11,11 @@
             "Portée": "Individual",
             "Tours actifs": 1,
             "Buffer": {
-                "value": -35,
+                "kind": "ChangeCurrentStatByValue",
+                "value": -41,
                 "is-percent": false,
                 "stats-name": "HP",
-                "passive-enabled": false,
-                "kind": "ChangeCurrentStatByValue"
+                "passive-enabled": false
             }
         }
     ],

@@ -41,8 +41,8 @@
             "Max": 10
         },
         "HP": {
-            "Current": 5000,
-            "Max": 5000
+            "Current": 3800,
+            "Max": 3800
         },
         "HP regeneration": {
             "Current": 0,
