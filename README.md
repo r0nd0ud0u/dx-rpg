@@ -226,6 +226,15 @@ Cooldown on Thalia_#1: 5 turns
 no-op effects (e.g. `RemoveOneDebuf` when there is no debuff to remove) so they are silently
 skipped rather than showing a confusing `→ 0` line.
 
+### Action Banner
+
+The gameboard shows a contextual banner above the combat log for every action:
+
+- **Attack** — `⚔️ {launcher} attacks!` for both heroes and bosses. The banner uses `boss-atk-banner` CSS class for boss actions and `hero-atk-banner` for hero actions.
+- **Consumable use** — the potion log message (e.g. `Thraïn used a potion`) displayed with the `action-banner` CSS class. The consumable header is cleared on the next attack so the banner switches back to the attack message.
+
+`CoreGameData.last_action_header` carries the consumable display text from the server to clients. It is set in the potion WebSocket handlers and cleared whenever a real attack is processed.
+
 ### Game Stats Sheet (improved)
 
 The 📊 Stats sheet now shows:

@@ -179,12 +179,19 @@ pub fn GameBoard() -> Element {
                                 .active_bosses
                                 .iter()
                                 .any(|b| b.id_name == ra.launcher_id_name);
+                            let last_action_header = snap.core_game_data.last_action_header.clone();
                             drop(snap);
+                            let banner_class = if is_boss_atk { "boss-atk-banner" } else { "hero-atk-banner" };
                             rsx! {
-                                if is_boss_atk && !ra.atk_name.is_empty() {
+                                if !ra.atk_name.is_empty() {
                                     div {
-                                        class: "boss-atk-banner {output_text_css_class}",
+                                        class: "{banner_class} {output_text_css_class}",
                                         "⚔️ {ra.launcher_id_name} attacks!"
+                                    }
+                                } else if !last_action_header.is_empty() {
+                                    div {
+                                        class: "action-banner {output_text_css_class}",
+                                        "{last_action_header}"
                                     }
                                 }
                                 if !ra.logs_end_of_round.is_empty() {
@@ -236,12 +243,19 @@ pub fn GameBoard() -> Element {
                             .active_bosses
                             .iter()
                             .any(|b| b.id_name == ra.launcher_id_name);
+                        let last_action_header = snap.core_game_data.last_action_header.clone();
                         drop(snap);
+                        let banner_class = if is_boss_atk { "boss-atk-banner" } else { "hero-atk-banner" };
                         rsx! {
-                            if is_boss_atk && !ra.atk_name.is_empty() {
+                            if !ra.atk_name.is_empty() {
                                 div {
-                                    class: "boss-atk-banner {output_text_css_class}",
+                                    class: "{banner_class} {output_text_css_class}",
                                     "⚔️ {ra.launcher_id_name} attacks!"
+                                }
+                            } else if !last_action_header.is_empty() {
+                                div {
+                                    class: "action-banner {output_text_css_class}",
+                                    "{last_action_header}"
                                 }
                             }
                         }

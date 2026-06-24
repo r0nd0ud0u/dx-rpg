@@ -774,7 +774,9 @@ pub fn use_potion_handler(
         // Sync current_player (potion removed from inventory) back to active_heroes.
         pm.modify_active_character(&launcher_id);
         if let Some(entry) = potion_log {
+            let header = entry.message.clone();
             server_data.core_game_data.game_manager.logs.push(entry);
+            server_data.core_game_data.last_action_header = header;
         }
     }
 }
@@ -833,7 +835,9 @@ pub fn use_party_potion_handler(
         // Sync current_player back to active_heroes
         pm.modify_active_character(&launcher_id);
         if let Some(entry) = potion_log {
+            let header = entry.message.clone();
             server_data.core_game_data.game_manager.logs.push(entry);
+            server_data.core_game_data.last_action_header = header;
         }
     }
 }
@@ -945,6 +949,11 @@ pub async fn update_core_game_data_after_atk(
             .core_game_data
             .game_manager
             .launch_attack(selected_atk_name);
+        // Clear the consumable header when a real attack was launched so the
+        // gameboard banner switches back to the attack banner.
+        if selected_atk_name.is_some() {
+            server_data.core_game_data.last_action_header = String::new();
+        }
         logs = server_data
             .core_game_data
             .game_manager
