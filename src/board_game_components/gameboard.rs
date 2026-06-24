@@ -140,9 +140,13 @@ pub fn GameBoard() -> Element {
                                                     (false, cval.trim_start_matches("personal:").to_owned())
                                                 };
                                                 if is_party {
-                                                    let _ = socket.send(ClientEvent::UsePartyPotion(SERVER_NAME(), player, name, tid)).await;
+                                                    let _ = socket
+                                                        .send(ClientEvent::UsePartyPotion(SERVER_NAME(), player, name, tid))
+                                                        .await;
                                                 } else {
-                                                    let _ = socket.send(ClientEvent::UsePotion(SERVER_NAME(), player, name, tid)).await;
+                                                    let _ = socket
+                                                        .send(ClientEvent::UsePotion(SERVER_NAME(), player, name, tid))
+                                                        .await;
                                                 }
                                                 selected_consumable.set("".to_owned());
                                                 selected_consumable_target.set("".to_owned());
@@ -181,18 +185,16 @@ pub fn GameBoard() -> Element {
                                 .any(|b| b.id_name == ra.launcher_id_name);
                             let last_action_header = snap.core_game_data.last_action_header.clone();
                             drop(snap);
-                            let banner_class = if is_boss_atk { "boss-atk-banner" } else { "hero-atk-banner" };
+                            let banner_class = if is_boss_atk {
+                                "boss-atk-banner"
+                            } else {
+                                "hero-atk-banner"
+                            };
                             rsx! {
                                 if !ra.atk_name.is_empty() {
-                                    div {
-                                        class: "{banner_class} {output_text_css_class}",
-                                        "⚔️ {ra.launcher_id_name} attacks!"
-                                    }
+                                    div { class: "{banner_class} {output_text_css_class}", "⚔️ {ra.launcher_id_name} attacks!" }
                                 } else if !last_action_header.is_empty() {
-                                    div {
-                                        class: "action-banner {output_text_css_class}",
-                                        "{last_action_header}"
-                                    }
+                                    div { class: "action-banner {output_text_css_class}", "{last_action_header}" }
                                 }
                                 if !ra.logs_end_of_round.is_empty() {
                                     div { class: "round-log-header", "🔄 Turn {ra.turn_nb} — Round {ra.round_nb}" }
@@ -245,18 +247,16 @@ pub fn GameBoard() -> Element {
                             .any(|b| b.id_name == ra.launcher_id_name);
                         let last_action_header = snap.core_game_data.last_action_header.clone();
                         drop(snap);
-                        let banner_class = if is_boss_atk { "boss-atk-banner" } else { "hero-atk-banner" };
+                        let banner_class = if is_boss_atk {
+                            "boss-atk-banner"
+                        } else {
+                            "hero-atk-banner"
+                        };
                         rsx! {
                             if !ra.atk_name.is_empty() {
-                                div {
-                                    class: "{banner_class} {output_text_css_class}",
-                                    "⚔️ {ra.launcher_id_name} attacks!"
-                                }
+                                div { class: "{banner_class} {output_text_css_class}", "⚔️ {ra.launcher_id_name} attacks!" }
                             } else if !last_action_header.is_empty() {
-                                div {
-                                    class: "action-banner {output_text_css_class}",
-                                    "{last_action_header}"
-                                }
+                                div { class: "action-banner {output_text_css_class}", "{last_action_header}" }
                             }
                         }
                     }

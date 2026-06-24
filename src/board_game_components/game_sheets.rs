@@ -1105,7 +1105,9 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                             .collect();
                         let bag_consumables = character.inventory.consumables.clone();
                         // Group party consumables by name for compact display
-                        let mut party_grouped: Vec<(String, usize, lib_rpg::character_mod::rank::Rank)> = Vec::new();
+                        let mut party_grouped: Vec<
+                            (String, usize, lib_rpg::character_mod::rank::Rank),
+                        > = Vec::new();
                         for c in party_consumables.iter() {
                             if let Some(g) = party_grouped.iter_mut().find(|(n, _, _)| *n == c.name) {
                                 g.1 += 1;
@@ -1113,7 +1115,8 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                 party_grouped.push((c.name.clone(), 1, c.rank.clone()));
                             }
                         }
-                        let is_empty = unequipped.is_empty() && bag_consumables.is_empty() && party_grouped.is_empty();
+                        let is_empty = unequipped.is_empty() && bag_consumables.is_empty()
+                            && party_grouped.is_empty();
                         rsx! {
                             ScrollArea {
                                 width: "100%",

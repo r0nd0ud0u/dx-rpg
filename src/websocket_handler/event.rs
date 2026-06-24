@@ -779,7 +779,10 @@ pub fn use_potion_handler(
                 "💊 {} uses {} on {}",
                 launcher_id, potion_name, target_id_name
             );
-            tracing::info!("use_potion_handler: setting last_action_header={:?}", header);
+            tracing::info!(
+                "use_potion_handler: setting last_action_header={:?}",
+                header
+            );
             server_data.core_game_data.game_manager.logs.push(entry);
             server_data.core_game_data.last_action_header = header;
         } else {
@@ -846,7 +849,10 @@ pub fn use_party_potion_handler(
                 "💊 {} uses {} (party) on {}",
                 launcher_id, potion_name, target_id_name
             );
-            tracing::info!("use_party_potion_handler: setting last_action_header={:?}", header);
+            tracing::info!(
+                "use_party_potion_handler: setting last_action_header={:?}",
+                header
+            );
             server_data.core_game_data.game_manager.logs.push(entry);
             server_data.core_game_data.last_action_header = header;
         }

@@ -583,15 +583,16 @@ pub fn PotionList(
                                         let async_player = player.clone();
                                         async move {
                                             let _ = socket
-                                                .send(ClientEvent::RequestTargetForConsumable(
-                                                    SERVER_NAME(),
-                                                    async_player,
-                                                    async_potion.clone(),
-                                                    false,
-                                                ))
+                                                .send(
+                                                    ClientEvent::RequestTargetForConsumable(
+                                                        SERVER_NAME(),
+                                                        async_player,
+                                                        async_potion.clone(),
+                                                        false,
+                                                    ),
+                                                )
                                                 .await;
-                                            selected_consumable
-                                                .set(format!("personal:{}", async_potion));
+                                            selected_consumable.set(format!("personal:{}", async_potion));
                                             display_potionlist_sig.set(false);
                                         }
                                     }
@@ -624,15 +625,16 @@ pub fn PotionList(
                                         let async_player = player.clone();
                                         async move {
                                             let _ = socket
-                                                .send(ClientEvent::RequestTargetForConsumable(
-                                                    SERVER_NAME(),
-                                                    async_player,
-                                                    async_potion.clone(),
-                                                    true,
-                                                ))
+                                                .send(
+                                                    ClientEvent::RequestTargetForConsumable(
+                                                        SERVER_NAME(),
+                                                        async_player,
+                                                        async_potion.clone(),
+                                                        true,
+                                                    ),
+                                                )
                                                 .await;
-                                            selected_consumable
-                                                .set(format!("party:{}", async_potion));
+                                            selected_consumable.set(format!("party:{}", async_potion));
                                             display_potionlist_sig.set(false);
                                         }
                                     }
