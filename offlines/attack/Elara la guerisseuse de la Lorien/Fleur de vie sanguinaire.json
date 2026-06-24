@@ -83,7 +83,7 @@
             "IsMagicEffect": true,
             "Buffer": {
                 "kind": "ChangeCurrentStatByValue",
-                "value": -35,
+                "value": -38,
                 "is-percent": false,
                 "stats-name": "HP",
                 "passive-enabled": false
@@ -91,7 +91,7 @@
         }
     ],
     "Forme": "Standard",
-    "Niveau": 1,
+    "Niveau": 4,
     "Nom": "Fleur de vie sanguinaire",
     "Photo": "default.png",
     "Portée": "Individual",
