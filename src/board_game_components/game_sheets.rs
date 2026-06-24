@@ -73,6 +73,7 @@ pub fn GameSheets() -> Element {
     let mut sheet_kind: Signal<SheetKind> = use_signal(|| SheetKind::Menu);
     let mut is_saved: Signal<bool> = use_signal(|| false);
     let server_data = use_context::<Signal<ServerData>>();
+    let local_login_name_session = use_context::<Signal<String>>();
     let mut shop_enabled = use_context::<crate::common::CtxShopEnabled>().0;
 
     // Load shop_enabled from DB on mount so the button reflects the saved
@@ -97,12 +98,24 @@ pub fn GameSheets() -> Element {
 
     // Dead heroes can still be granted loot, but they should not light up the
     // "new equipment" notification — only living heroes the player can act on do.
-    let has_new_equipment = server_data()
+    // In multiplayer, restrict to the current player's own character.
+    let snap = server_data();
+    let is_single_player = snap.core_game_data.is_single_player;
+    let has_new_equipment = snap
         .core_game_data
         .game_manager
         .pm
         .active_heroes
         .iter()
+        .filter(|h| {
+            if is_single_player {
+                return true;
+            }
+            snap.players_data
+                .get_first_character_name(&local_login_name_session())
+                .as_deref()
+                == Some(h.id_name.as_str())
+        })
         .any(|h| !h.stats.is_dead().unwrap_or(false) && h.inventory.has_unseen_equipment());
 
     rsx! {

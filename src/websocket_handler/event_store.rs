@@ -129,7 +129,10 @@ pub fn buy_item_handler(
         && item_kind == "Consumable"
         && let Some(consumable) = build_consumable_by_name(item_name)
     {
-        let _ = pm.current_player.inventory.buy_consumable(consumable, price);
+        let _ = pm
+            .current_player
+            .inventory
+            .buy_consumable(consumable, price);
     }
 
     if let Some(entry) = purchase_log {

@@ -13,6 +13,8 @@
   z-index: 1000;
   width: 400px;
   max-width: 400px;
+  max-height: 60vh;
+  overflow-y: auto;
   padding: 8px 12px;
   border-radius: 0.5rem;
   animation: tooltip-fade-in 0.2s ease-in-out;

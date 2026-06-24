@@ -42,6 +42,8 @@ pub fn GameBoard() -> Element {
     let mut selected_atk_name = use_signal(|| "".to_owned());
     // "personal:{name}" or "party:{name}" when waiting for a consumable target, "" otherwise
     let mut selected_consumable = use_signal(|| "".to_owned());
+    // id_name of the character currently selected as the consumable target (empty = use server default)
+    let mut selected_consumable_target = use_signal(|| "".to_owned());
 
     // spectator: player has no character in active heroes
     let local_session_player_name = use_context::<Signal<String>>();
@@ -79,6 +81,7 @@ pub fn GameBoard() -> Element {
                         current_player_id_name: server_data.read().core_game_data.game_manager.pm.current_player.id_name.clone(),
                         selected_atk_name,
                         selected_consumable,
+                        selected_consumable_target,
                         atk_menu_display,
                         potion_menu_display,
                         is_auto_atk: false,
@@ -103,12 +106,52 @@ pub fn GameBoard() -> Element {
                             selected_consumable,
                         }
                     } else if !selected_consumable().is_empty() {
-                        Button {
-                            variant: ButtonVariant::Secondary,
-                            onclick: move |_| async move {
-                                selected_consumable.set("".to_owned());
-                            },
-                            "❌ Cancel potion"
+                        {
+                            // Resolve target: prefer the locally-selected one, fall back
+                            // to the server's default is_current_target.
+                            let snap = server_data.read();
+                            let pm = &snap.core_game_data.game_manager.pm;
+                            let server_default = pm
+                                .active_heroes
+                                .iter()
+                                .chain(pm.active_bosses.iter())
+                                .find(|c| c.character_rounds_info.is_current_target)
+                                .map(|c| c.id_name.clone());
+                            drop(snap);
+                            let resolved_target = if !selected_consumable_target().is_empty() {
+                                Some(selected_consumable_target())
+                            } else {
+                                server_default
+                            };
+                            let local_player = use_context::<Signal<String>>()();
+                            let consumable_val = selected_consumable();
+                            rsx! {
+                                if let Some(target_id) = resolved_target {
+                                    Button {
+                                        variant: ButtonVariant::Primary,
+                                        onclick: move |_| {
+                                            let tid = target_id.clone();
+                                            let cval = consumable_val.clone();
+                                            let player = local_player.clone();
+                                            async move {
+                                                let (is_party, name) = if let Some(n) = cval.strip_prefix("party:") {
+                                                    (true, n.to_owned())
+                                                } else {
+                                                    (false, cval.trim_start_matches("personal:").to_owned())
+                                                };
+                                                if is_party {
+                                                    let _ = socket.send(ClientEvent::UsePartyPotion(SERVER_NAME(), player, name, tid)).await;
+                                                } else {
+                                                    let _ = socket.send(ClientEvent::UsePotion(SERVER_NAME(), player, name, tid)).await;
+                                                }
+                                                selected_consumable.set("".to_owned());
+                                                selected_consumable_target.set("".to_owned());
+                                            }
+                                        },
+                                        "✅ Use"
+                                    }
+                                }
+                            }
                         }
                     } else if !selected_atk_name().is_empty() {
                         Button {
@@ -127,19 +170,26 @@ pub fn GameBoard() -> Element {
                         }
                     } else {
                         {
-                            let ra = server_data
-                                .read()
+                            let snap = server_data.read();
+                            let ra = snap.core_game_data.game_manager.game_state.last_result_atk.clone();
+                            let is_boss_atk = snap
                                 .core_game_data
                                 .game_manager
-                                .game_state
-                                .last_result_atk
-                                .clone();
-                            if !ra.logs_end_of_round.is_empty() {
-                                rsx! {
+                                .pm
+                                .active_bosses
+                                .iter()
+                                .any(|b| b.id_name == ra.launcher_id_name);
+                            drop(snap);
+                            rsx! {
+                                if is_boss_atk && !ra.atk_name.is_empty() {
+                                    div {
+                                        class: "boss-atk-banner {output_text_css_class}",
+                                        "⚔️ {ra.launcher_id_name} attacks!"
+                                    }
+                                }
+                                if !ra.logs_end_of_round.is_empty() {
                                     div { class: "round-log-header", "🔄 Turn {ra.turn_nb} — Round {ra.round_nb}" }
                                 }
-                            } else {
-                                rsx! {}
                             }
                         }
                         div { class: "{output_text_css_class}",
@@ -176,6 +226,26 @@ pub fn GameBoard() -> Element {
                         }
                     }
                 } else {
+                    {
+                        let snap = server_data.read();
+                        let ra = snap.core_game_data.game_manager.game_state.last_result_atk.clone();
+                        let is_boss_atk = snap
+                            .core_game_data
+                            .game_manager
+                            .pm
+                            .active_bosses
+                            .iter()
+                            .any(|b| b.id_name == ra.launcher_id_name);
+                        drop(snap);
+                        rsx! {
+                            if is_boss_atk && !ra.atk_name.is_empty() {
+                                div {
+                                    class: "boss-atk-banner {output_text_css_class}",
+                                    "⚔️ {ra.launcher_id_name} attacks!"
+                                }
+                            }
+                        }
+                    }
                     div { class: "{output_text_css_class}",
                         ResultAtkText { ra: server_data.read().core_game_data.game_manager.game_state.last_result_atk.clone() }
                     }
@@ -189,6 +259,7 @@ pub fn GameBoard() -> Element {
                         current_player_id_name: server_data.read().core_game_data.game_manager.pm.current_player.id_name.clone(),
                         selected_atk_name,
                         selected_consumable,
+                        selected_consumable_target,
                         atk_menu_display,
                         potion_menu_display,
                         is_auto_atk: server_data.read().core_game_data.game_manager.pm.current_player.id_name

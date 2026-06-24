@@ -27,6 +27,7 @@ fn EndStatePanels() -> Element {
     let potion_menu = use_signal(|| false);
     let selected_atk = use_signal(|| "".to_owned());
     let selected_consumable = use_signal(|| "".to_owned());
+    let selected_consumable_target = use_signal(|| "".to_owned());
 
     rsx! {
         div { class: "grid-board",
@@ -37,6 +38,7 @@ fn EndStatePanels() -> Element {
                         current_player_id_name: "".to_owned(),
                         selected_atk_name: selected_atk,
                         selected_consumable,
+                        selected_consumable_target,
                         atk_menu_display: atk_menu,
                         potion_menu_display: potion_menu,
                         is_auto_atk: false,

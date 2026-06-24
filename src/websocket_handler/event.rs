@@ -682,7 +682,10 @@ fn request_target_for_consumable_handler(
     use lib_rpg::character_mod::inventory::Consumable;
     let mut sm = SERVER_MANAGER.lock().unwrap();
     let Some(server_data) = sm.servers_data.get_mut(server_name) else {
-        tracing::error!("request_target_for_consumable_handler: server {} not found", server_name);
+        tracing::error!(
+            "request_target_for_consumable_handler: server {} not found",
+            server_name
+        );
         return;
     };
     let pm = &mut server_data.core_game_data.game_manager.pm;
@@ -754,7 +757,10 @@ pub fn use_potion_handler(
                         launcher_id, potion_name, target_id_name, stat_delta, stat_name
                     )
                 } else {
-                    format!("💊 {} uses {} on {}", launcher_id, potion_name, target_id_name)
+                    format!(
+                        "💊 {} uses {} on {}",
+                        launcher_id, potion_name, target_id_name
+                    )
                 };
                 potion_log = Some(LogData {
                     message: utils::format_string_with_timestamp(&msg),

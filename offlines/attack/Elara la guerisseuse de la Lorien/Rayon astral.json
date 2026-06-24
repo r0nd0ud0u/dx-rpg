@@ -24,13 +24,17 @@
         {
             "Cible": "Enemy",
             "Portée": "Individual",
-            "Stat": "",
+            "Stat": "Magic armor",
             "Tours actifs": 4,
+            "Type": "ChangeMaxStatByPercentage",
+            "Valeur de l'effet": 0,
+            "Value": -20,
+            "IsMagicEffect": true,
             "Buffer": {
-                "kind": "DamageRxPercent",
-                "value": 25,
+                "kind": "ChangeMaxStatByPercentage",
+                "value": -20,
                 "is-percent": true,
-                "stats-name": "",
+                "stats-name": "Magic armor",
                 "passive-enabled": false
             }
         },
@@ -58,6 +62,6 @@
     "Photo": "default.png",
     "Portée": "Individual",
     "Sound": "",
-    "Description": "Astral Ray — fires a beam of starlight that weakens the target's resistance with each hit.",
-    "DescriptionEffects": "Deals 70 magic damage to one enemy; enemy takes +25% more damage for 4 turns (stacks each cast); 2-turn cooldown."
+    "Description": "Astral Ray — fires a beam of starlight that shatters the target's magical defences.",
+    "DescriptionEffects": "Deals 70 magic damage to one enemy; -20% max Magic armor on enemy for 4 turns (stacks each cast); 2-turn cooldown."
 }

@@ -64,6 +64,7 @@ pub fn CharacterPanel(
     current_player_id_name: String,
     selected_atk_name: Signal<String>,
     selected_consumable: Signal<String>,
+    selected_consumable_target: Signal<String>,
     atk_menu_display: Signal<bool>,
     potion_menu_display: Signal<bool>,
     is_auto_atk: ReadSignal<bool>,
@@ -254,6 +255,7 @@ pub fn CharacterPanel(
                     c: c.clone(),
                     selected_atk_name,
                     selected_consumable,
+                    selected_consumable_target,
                 }
             } else if !selected_consumable().is_empty() {
                 CharacterTargetButton {
@@ -261,6 +263,7 @@ pub fn CharacterPanel(
                     c: c.clone(),
                     selected_atk_name,
                     selected_consumable,
+                    selected_consumable_target,
                 }
             }
         }
@@ -273,6 +276,7 @@ pub fn CharacterTargetButton(
     c: Character,
     selected_atk_name: Signal<String>,
     selected_consumable: Signal<String>,
+    selected_consumable_target: Signal<String>,
 ) -> Element {
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
@@ -282,70 +286,68 @@ pub fn CharacterTargetButton(
     if c.kind == CharacterKind::Boss {
         kind_str = "boss";
     }
+
+    // In consumable mode: clicking only selects the target (fires on "Use" button).
+    // In attack mode: clicking sets the attack target via RequestSetOneTarget.
+    let is_consumable_mode = !selected_consumable().is_empty();
+
+    // Active = this character is the current target.
+    // For consumables, the local signal overrides the server flag.
+    let is_active = if is_consumable_mode {
+        if !selected_consumable_target().is_empty() {
+            selected_consumable_target() == c.id_name
+        } else {
+            c.character_rounds_info.is_current_target
+        }
+    } else {
+        c.character_rounds_info.is_current_target
+    };
+
+    let onclick = {
+        let target_name = c.id_name.clone();
+        let launcher_name = launcher_id_name.clone();
+        move |_| {
+            let target_name = target_name.clone();
+            let launcher_name = launcher_name.clone();
+            let async_player = local_session_player_name();
+            async move {
+                if is_consumable_mode {
+                    // Just update the local selection — no server call until "Use" is clicked.
+                    selected_consumable_target.set(target_name);
+                } else {
+                    tracing::info!(
+                        "l:{} t:{}, a:{}",
+                        launcher_name,
+                        target_name,
+                        selected_atk_name.read().clone()
+                    );
+                    let _ = socket
+                        .send(ClientEvent::RequestSetOneTarget(
+                            SERVER_NAME(),
+                            launcher_name,
+                            selected_atk_name.read().clone(),
+                            target_name,
+                        ))
+                        .await;
+                    let _ = async_player; // suppress unused warning
+                }
+            }
+        }
+    };
+
     rsx! {
-        if c.character_rounds_info.is_current_target {
+        if is_active && c.character_rounds_info.is_potential_target {
             Button {
                 variant: ButtonVariant::Primary,
                 class: format!("{}-target-button-active", kind_str),
-                onclick: move |_| async move {},
+                onclick,
                 ""
             }
         } else if c.character_rounds_info.is_potential_target {
             Button {
                 variant: ButtonVariant::Primary,
                 class: format!("{}-target-button", kind_str),
-                onclick: move |_| {
-                    let async_target_name = c.id_name.clone();
-                    let async_launcher_name = launcher_id_name.clone();
-                    let async_player = local_session_player_name();
-                    let consumable_val = selected_consumable.read().clone();
-                    async move {
-                        if !consumable_val.is_empty() {
-                            // Consumable targeting: fire the potion directly on this target
-                            let (is_party, name) = if let Some(n) = consumable_val.strip_prefix("party:") {
-                                (true, n.to_owned())
-                            } else {
-                                (false, consumable_val.trim_start_matches("personal:").to_owned())
-                            };
-                            if is_party {
-                                let _ = socket
-                                    .send(ClientEvent::UsePartyPotion(
-                                        SERVER_NAME(),
-                                        async_player,
-                                        name,
-                                        async_target_name,
-                                    ))
-                                    .await;
-                            } else {
-                                let _ = socket
-                                    .send(ClientEvent::UsePotion(
-                                        SERVER_NAME(),
-                                        async_player,
-                                        name,
-                                        async_target_name,
-                                    ))
-                                    .await;
-                            }
-                            selected_consumable.set("".to_owned());
-                        } else {
-                            // Attack targeting: set the selected target
-                            tracing::info!(
-                                "l:{} t:{}, a:{}", async_launcher_name.clone(), async_target_name
-                                .clone(), selected_atk_name.read().clone()
-                            );
-                            let _ = socket
-                                .send(
-                                    ClientEvent::RequestSetOneTarget(
-                                        SERVER_NAME(),
-                                        async_launcher_name.clone(),
-                                        selected_atk_name.read().clone(),
-                                        async_target_name.clone(),
-                                    ),
-                                )
-                                .await;
-                        }
-                    }
-                },
+                onclick,
                 ""
             }
         }
