@@ -774,7 +774,11 @@ pub fn use_potion_handler(
         // Sync current_player (potion removed from inventory) back to active_heroes.
         pm.modify_active_character(&launcher_id);
         if let Some(entry) = potion_log {
-            let header = entry.message.clone();
+            // header uses the clean msg (no timestamp); log entry keeps the full timestamped text
+            let header = format!(
+                "💊 {} uses {} on {}",
+                launcher_id, potion_name, target_id_name
+            );
             server_data.core_game_data.game_manager.logs.push(entry);
             server_data.core_game_data.last_action_header = header;
         }
@@ -835,7 +839,10 @@ pub fn use_party_potion_handler(
         // Sync current_player back to active_heroes
         pm.modify_active_character(&launcher_id);
         if let Some(entry) = potion_log {
-            let header = entry.message.clone();
+            let header = format!(
+                "💊 {} uses {} (party) on {}",
+                launcher_id, potion_name, target_id_name
+            );
             server_data.core_game_data.game_manager.logs.push(entry);
             server_data.core_game_data.last_action_header = header;
         }
