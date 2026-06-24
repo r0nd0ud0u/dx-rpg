@@ -20,6 +20,13 @@
             "level": 1,
             "classes": ["Healer", "Mage"]
         },
+                {
+            "name": "medium gloves",
+            "kind": "Equipment",
+            "rank": "Common",
+            "level": 1,
+            "classes": ["Warrior", "Berserker"]
+        },
         {
             "name": "gold",
             "kind": "Currency",

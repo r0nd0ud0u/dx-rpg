@@ -1,7 +1,7 @@
 {
-    "Categorie": "Belt",
-    "Nom": "medium belt",
-    "Nom unique": "medium belt",
+    "Categorie": "Cape",
+    "Nom": "medium cape",
+    "Nom unique": "medium cape",
     "Stats": {
         "Aggro": {
             "equip_percent": 0,
@@ -25,7 +25,7 @@
         },
         "Dodge": {
             "equip_percent": 0,
-            "equip_value": 0
+            "equip_value": 20
         },
         "HP": {
             "equip_percent": 0,
@@ -53,11 +53,11 @@
         },
         "Physical armor": {
             "equip_percent": 0,
-            "equip_value": 0
+            "equip_value": 30
         },
         "Physical power": {
             "equip_percent": 0,
-            "equip_value": 50
+            "equip_value": 0
         },
         "Speed": {
             "equip_percent": 0,

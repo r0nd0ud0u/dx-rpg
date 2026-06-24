@@ -779,8 +779,11 @@ pub fn use_potion_handler(
                 "💊 {} uses {} on {}",
                 launcher_id, potion_name, target_id_name
             );
+            tracing::info!("use_potion_handler: setting last_action_header={:?}", header);
             server_data.core_game_data.game_manager.logs.push(entry);
             server_data.core_game_data.last_action_header = header;
+        } else {
+            tracing::warn!("use_potion_handler: potion_log is None, last_action_header NOT set");
         }
     }
 }
@@ -843,6 +846,7 @@ pub fn use_party_potion_handler(
                 "💊 {} uses {} (party) on {}",
                 launcher_id, potion_name, target_id_name
             );
+            tracing::info!("use_party_potion_handler: setting last_action_header={:?}", header);
             server_data.core_game_data.game_manager.logs.push(entry);
             server_data.core_game_data.last_action_header = header;
         }
@@ -968,11 +972,21 @@ pub async fn update_core_game_data_after_atk(
             .last_result_atk
             .logs_atk
             .clone();
+        let last_atk_name_sent = server_data
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_result_atk
+            .atk_name
+            .clone();
+        let header_sent = server_data.core_game_data.last_action_header.clone();
         tracing::info!(
-            "Attack has been launched for server: {},  atk: {:?}, logs.len: {}",
+            "update_core_game_data_after_atk server={} atk={:?} logs={} last_atk_name={:?} header={:?}",
             server_name,
             selected_atk_name,
-            logs.len()
+            logs.len(),
+            last_atk_name_sent,
+            header_sent,
         );
     } else {
         tracing::error!(

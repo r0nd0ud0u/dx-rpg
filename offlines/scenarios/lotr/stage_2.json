@@ -19,13 +19,20 @@
             "kind": "Equipment",
             "rank": "Common",
             "level": 1,
-            "classes": ["Warrior", "Berserker"]
+            "classes": ["Standard"]
+        },
+                {
+            "name": "medium shoes",
+            "kind": "Equipment",
+            "rank": "Common",
+            "level": 1,
+            "classes": ["Standard"]
         },
         {
             "name": "gold",
             "kind": "Currency",
             "rank": "Common",
-            "level": 50,
+            "level": 100,
             "classes": ["Standard"]
         }
     ]

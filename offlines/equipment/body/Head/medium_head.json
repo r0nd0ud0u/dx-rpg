@@ -1,7 +1,7 @@
 {
-    "Categorie": "Belt",
-    "Nom": "medium belt",
-    "Nom unique": "medium belt",
+    "Categorie": "Head",
+    "Nom": "medium head",
+    "Nom unique": "medium head",
     "Stats": {
         "Aggro": {
             "equip_percent": 0,
@@ -53,11 +53,11 @@
         },
         "Physical armor": {
             "equip_percent": 0,
-            "equip_value": 0
+            "equip_value": 50
         },
         "Physical power": {
             "equip_percent": 0,
-            "equip_value": 50
+            "equip_value": 0
         },
         "Speed": {
             "equip_percent": 0,

@@ -19,7 +19,7 @@
             "kind": "Equipment",
             "rank": "Intermediate",
             "level": 3,
-            "classes": ["Warrior", "Berserker"]
+            "classes": ["Standard"]
         },
         {
             "name": "gold",
