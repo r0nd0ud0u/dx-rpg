@@ -462,6 +462,27 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     letter-spacing: 0.02em;
 }
 
+.hero-atk-banner {
+    background: var(--rpg-hero, #1a73e8);
+    color: white;
+    font-weight: bold;
+    font-size: 0.95rem;
+    padding: 4px 8px;
+    border-radius: var(--r-sm);
+    margin-bottom: 4px;
+    letter-spacing: 0.02em;
+}
+
+.action-banner {
+    background: var(--rpg-surface-2, #374151);
+    color: var(--rpg-text, #f9fafb);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 4px 8px;
+    border-radius: var(--r-sm);
+    margin-bottom: 4px;
+}
+
 /* END OF SCENARIO */
 .scenario-end-page {
     display:flex; flex-direction:column; gap: var(--sp-lg);
