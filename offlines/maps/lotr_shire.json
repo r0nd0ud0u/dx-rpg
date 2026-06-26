@@ -4,14 +4,14 @@
   "height": 10,
   "tiles": [
     ["wall","wall","wall","wall","wall","wall","wall",{"door":{"target_map":"lotr_misty_mountains","spawn":{"x":7,"y":8}}},"wall","wall","wall","wall","wall","wall"],
-    ["wall","floor","floor","floor","wall","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
-    ["wall","floor","floor","floor","floor","wall","floor","floor","floor","floor","floor","floor","floor","wall"],
-    ["wall","floor","floor","floor","floor","floor","wall","floor","floor","floor","floor","floor","floor","wall"],
-    ["wall","floor","floor","floor","floor","floor","floor","wall","floor","floor","floor","floor","floor","wall"],
-    ["wall","floor","floor","floor","floor","floor","floor","floor","wall","floor","floor","floor","floor","wall"],
-    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","wall","floor","floor","floor","wall"],
-    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
-    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","wall","floor","floor","wall","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","wall","floor","floor","floor","wall","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","wall","floor","floor","floor","floor","wall","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","wall","floor","floor","floor","floor","floor","wall","floor","floor","floor","floor","floor","wall"],
+    ["wall","wall","floor","floor","floor","floor","floor","floor","wall","floor","floor","floor","floor","wall"],
+    ["wall","wall","floor","floor","floor","floor","floor","floor","floor","wall","floor","floor","floor","wall"],
+    ["wall","wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
     ["wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall"]
   ],
   "npcs": [
