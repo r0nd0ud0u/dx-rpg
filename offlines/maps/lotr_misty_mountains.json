@@ -12,7 +12,7 @@
     ["wall","wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall","wall"],
     ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
     ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
-    ["wall","wall","wall","wall","wall","wall","wall",{"kind":"door","target_map":"lotr_shire","target_spawn":{"x":7,"y":1}},"wall","wall","wall","wall","wall","wall"]
+    ["wall","wall","wall","wall","wall","wall","wall",{"door":{"target_map":"lotr_shire","spawn":{"x":7,"y":1}}},"wall","wall","wall","wall","wall","wall"]
   ],
   "npcs": [
     {

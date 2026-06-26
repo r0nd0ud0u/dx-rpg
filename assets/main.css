@@ -1980,8 +1980,8 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     height: 48px;
 }
 
-.ow-floor  { background: #6aaf3d; }
-.ow-wall   { background: #7a6250; border: 1px solid #5a4838; }
+.ow-floor  { background: #c8b887; }                                /* stone/earth path — clearly passable */
+.ow-wall   { background: #1a1008; border: 1px solid #000; }        /* near-black — clearly impassable */
 .ow-grass  { background: #3aaa3a; border: 1px solid #2a8a2a; }
 .ow-water  { background: #3a8fd0; border: 1px solid #2870a8; }
 .ow-door   { background: #c88a30; border: 1px solid #a06820; }

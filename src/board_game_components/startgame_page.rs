@@ -126,9 +126,41 @@ pub fn RunningGamePage() -> Element {
     let snap_server_data = server_data();
 
     // Use the server's game_phase as the single source of truth for the overworld view.
-    // This ensures that when a grass encounter triggers a fight, the view switches
-    // automatically without relying on a local flag.
     let in_overworld = server_data().core_game_data.game_phase == GamePhase::Overworld;
+
+    // Map the universe to its starting overworld map id.
+    let universe_map = |universe: &str| -> Option<&'static str> {
+        match universe {
+            "lotr" => Some("lotr_shire"),
+            "pokemon" => Some("pallet_town"),
+            _ => None,
+        }
+    };
+
+    // Auto-enter overworld the first time the game reaches Running phase for
+    // universes that have an overworld map, and no saved overworld state exists yet.
+    let mut auto_entered = use_signal(|| false);
+    use_effect(move || {
+        if auto_entered() {
+            return;
+        }
+        let phase = server_data().core_game_data.game_phase.clone();
+        let no_overworld = server_data().core_game_data.overworld.is_none();
+        let universe = server_data().core_game_data.universe.clone();
+        if phase == GamePhase::Running && no_overworld {
+            if let Some(map_id) = universe_map(&universe) {
+                auto_entered.set(true);
+                let server_name = SERVER_NAME();
+                let map_id = map_id.to_owned();
+                let socket = socket;
+                spawn(async move {
+                    let _ = socket
+                        .send(ClientEvent::EnterOverworld(server_name, map_id))
+                        .await;
+                });
+            }
+        }
+    });
 
     rsx! {
         if in_overworld {
@@ -214,17 +246,19 @@ pub fn RunningGamePage() -> Element {
                             },
                             "⚡ Load Next Scenario"
                         }
-                        Button {
-                            variant: ButtonVariant::GreenType,
-                            onclick: move |_| async move {
-                                let _ = socket
-                                    .send(ClientEvent::EnterOverworld(
-                                        SERVER_NAME(),
-                                        "pallet_town".to_owned(),
-                                    ))
-                                    .await;
-                            },
-                            "🗺 Explore Overworld"
+                        if let Some(map_id) = universe_map(&server_data().core_game_data.universe) {
+                            Button {
+                                variant: ButtonVariant::GreenType,
+                                onclick: move |_| async move {
+                                    let _ = socket
+                                        .send(ClientEvent::EnterOverworld(
+                                            SERVER_NAME(),
+                                            map_id.to_owned(),
+                                        ))
+                                        .await;
+                                },
+                                "🗺 Explore Overworld"
+                            }
                         }
                     }
                     QuitGameButton {}
@@ -263,17 +297,19 @@ pub fn RunningGamePage() -> Element {
                         "⚔️ Turn {server_data().core_game_data.game_manager.game_state.current_turn_nb} - Round {server_data().core_game_data.game_manager.game_state.current_round}"
                     }
                     if server_data().players_data.owner_player_name == local_login_name_session() {
-                        Button {
-                            variant: ButtonVariant::Outline,
-                            onclick: move |_| async move {
-                                let _ = socket
-                                    .send(ClientEvent::EnterOverworld(
-                                        SERVER_NAME(),
-                                        "pallet_town".to_owned(),
-                                    ))
-                                    .await;
-                            },
-                            "🗺 Overworld"
+                        if let Some(map_id) = universe_map(&server_data().core_game_data.universe) {
+                            Button {
+                                variant: ButtonVariant::Outline,
+                                onclick: move |_| async move {
+                                    let _ = socket
+                                        .send(ClientEvent::EnterOverworld(
+                                            SERVER_NAME(),
+                                            map_id.to_owned(),
+                                        ))
+                                        .await;
+                                },
+                                "🗺 Overworld"
+                            }
                         }
                     }
                 }
