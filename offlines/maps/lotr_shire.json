@@ -1,0 +1,34 @@
+{
+  "id": "lotr_shire",
+  "width": 14,
+  "height": 10,
+  "tiles": [
+    ["wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall"]
+  ],
+  "npcs": [
+    {
+      "id": "gobelin_eclaireur",
+      "x": 7,
+      "y": 4,
+      "dialog": ["Un Gobelin Éclaireur vous barre la route !", "Préparez-vous au combat !"],
+      "fight_scenario_id": "Patrouille Gobeline"
+    },
+    {
+      "id": "gandalf",
+      "x": 2,
+      "y": 2,
+      "dialog": ["Un gobelin rôde dans les parages.", "Approchez-vous de lui et appuyez sur Entrée pour engager le combat."]
+    }
+  ],
+  "spawn": {"x":5,"y":7},
+  "encounters": []
+}

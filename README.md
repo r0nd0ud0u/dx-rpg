@@ -226,6 +226,50 @@ Cooldown on Thalia_#1: 5 turns
 no-op effects (e.g. `RemoveOneDebuf` when there is no debuff to remove) so they are silently
 skipped rather than showing a confusing `→ 0` line.
 
+### Overworld Exploration
+
+Between (or during) fights the owner can click **🗺 Overworld** / **🗺 Explore Overworld** to switch to a top-down map view.
+
+**Controls**
+
+| Key | Action |
+|-----|--------|
+| Arrow keys | Move hero |
+| Enter / Space | Interact with adjacent NPC |
+| ⚔️ Back to Fight | Return to the active fight |
+
+**Map tiles — emoji legend**
+
+| Tile | Emoji | Description |
+|------|-------|-------------|
+| Floor | *(empty)* | Walkable path |
+| Wall | 🧱 | Impassable |
+| Grass | *(green)* | Walkable; may trigger a random encounter |
+| Water | 💧 | Impassable |
+| Door | 🚪 | Transitions to another map |
+
+**Map files** live in `offlines/maps/<map_id>.json`.  Each map specifies:
+- `tiles` — 2-D grid of `"floor"`, `"wall"`, `"grass"`, `"water"`, or a door object `{"door":{"target_map":"…","spawn":{…}}}`
+- `npcs` — list of NPCs with `id`, `x`, `y`, `dialog`, and optional `fight_scenario_id` (triggers a fight on interact)
+- `spawn` — default spawn position for heroes entering this map
+- `encounters` — list of scenario IDs that can be randomly triggered by walking on grass tiles
+
+**Available maps**
+
+| Map | Universe | Notes |
+|-----|----------|-------|
+| `pallet_town` | Pokémon | Starting hub; door to Route 1; Professor Oak NPC |
+| `route_1` | Pokémon | Tall grass with random Rattata / Double Attaque encounters; door back to Pallet Town |
+| `lotr_shire` | LOTR | Goblin enemy NPC triggers *Patrouille Gobeline* (stage 1 fight) |
+
+**Random encounters** are driven by the `encounters` list in the map JSON — the field accepts any scenario ID, keeping the mechanism universe-agnostic. The encounter probability per grass step is 50 %.
+
+**NPC-triggered fights** are configured via `fight_scenario_id` in the NPC definition:
+```json
+{"id":"goblin","x":3,"y":4,"dialog":[],"fight_scenario_id":"Patrouille Gobeline"}
+```
+Pressing Enter/Space adjacent to this NPC starts the named scenario immediately.
+
 ### Action Banner
 
 The gameboard shows a contextual banner above the combat log for every action:

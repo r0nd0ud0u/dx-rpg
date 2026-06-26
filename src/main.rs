@@ -186,6 +186,8 @@ fn App() -> Element {
     let mut saved_game_list = use_signal(Vec::new);
     let mut all_characters_names = use_signal(Vec::new);
     let mut toggle_atk_animation = use_signal(|| false);
+    // Set to Some(map_id) by the lightweight OverworldEntered event.
+    let mut overworld_map_id: Signal<Option<String>> = use_signal(|| None);
 
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
@@ -210,7 +212,9 @@ fn App() -> Element {
     use_future(move || {
         let mut socket = socket;
         async move {
+            tracing::info!("[client] ws-loop starting");
             while let Ok(event) = socket.recv().await {
+                tracing::debug!("[client] ws-loop: received an event");
                 match event {
                     ServerEvent::NewClientOnExistingPlayer(msg, client_id) => {
                         message.set(msg);
@@ -308,8 +312,13 @@ fn App() -> Element {
                         tracing::debug!("Received SetAtkAnimation event");
                         toggle_atk_animation.set(is_animated);
                     }
+                    ServerEvent::OverworldEntered(map_id) => {
+                        tracing::info!("[client] OverworldEntered: {}", map_id);
+                        overworld_map_id.set(Some(map_id));
+                    }
                 }
             }
+            tracing::warn!("[client] ws-loop EXITED — deserialization error or socket closed");
         }
     });
 
@@ -318,6 +327,7 @@ fn App() -> Element {
     use_context_provider(|| login_name_session_local_sync);
     use_context_provider(|| login_id_session_local_sync);
     use_context_provider(|| server_data);
+    use_context_provider(|| overworld_map_id);
     use_context_provider(|| ongoing_games);
     use_context_provider(|| saved_game_list);
     use_context_provider(|| all_characters_names);

@@ -1,5 +1,6 @@
 use crate::board_game_components::character_page::{BarComponent, CharacterPanel};
 use crate::board_game_components::game_sheets::{GameSheets, StoreSheet};
+use crate::board_game_components::overworld::OverworldMap;
 use crate::common::{CtxAutoSaveScenario, Route, SERVER_NAME, photo_src};
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::websocket_handler::msg_from_client::send_disconnect_from_server_data;
@@ -16,7 +17,10 @@ use dioxus::prelude::*;
 use lib_rpg::{
     character_mod::character::CharacterKind,
     common::constants::stats_const::HP,
-    server::{game_state::GameStatus, server_manager::ServerData},
+    server::{
+        game_state::GameStatus,
+        server_manager::{GamePhase, ServerData},
+    },
 };
 
 /// Read-only character panels shown at end of scenario / game.
@@ -121,7 +125,16 @@ pub fn RunningGamePage() -> Element {
 
     let snap_server_data = server_data();
 
+    // Use the server's game_phase as the single source of truth for the overworld view.
+    // This ensures that when a grass encounter triggers a fight, the view switches
+    // automatically without relying on a local flag.
+    let in_overworld = server_data().core_game_data.game_phase == GamePhase::Overworld;
+
     rsx! {
+        if in_overworld {
+            OverworldMap {}
+        }
+        if !in_overworld {
         if server_data().core_game_data.game_manager.game_state.status == GameStatus::EndOfGame {
             div { class: "gameover-page",
                 h1 { class: "gameover-title", "💀 Game Over" }
@@ -201,6 +214,18 @@ pub fn RunningGamePage() -> Element {
                             },
                             "⚡ Load Next Scenario"
                         }
+                        Button {
+                            variant: ButtonVariant::GreenType,
+                            onclick: move |_| async move {
+                                let _ = socket
+                                    .send(ClientEvent::EnterOverworld(
+                                        SERVER_NAME(),
+                                        "pallet_town".to_owned(),
+                                    ))
+                                    .await;
+                            },
+                            "🗺 Explore Overworld"
+                        }
                     }
                     QuitGameButton {}
                 }
@@ -237,6 +262,20 @@ pub fn RunningGamePage() -> Element {
                     div { class: "turn-badge",
                         "⚔️ Turn {server_data().core_game_data.game_manager.game_state.current_turn_nb} - Round {server_data().core_game_data.game_manager.game_state.current_round}"
                     }
+                    if server_data().players_data.owner_player_name == local_login_name_session() {
+                        Button {
+                            variant: ButtonVariant::Outline,
+                            onclick: move |_| async move {
+                                let _ = socket
+                                    .send(ClientEvent::EnterOverworld(
+                                        SERVER_NAME(),
+                                        "pallet_town".to_owned(),
+                                    ))
+                                    .await;
+                            },
+                            "🗺 Overworld"
+                        }
+                    }
                 }
                 Separator {
                     style: "margin: 10px 0;",
@@ -246,6 +285,7 @@ pub fn RunningGamePage() -> Element {
                 GameBoard {}
             }
         }
+        } // end if !in_overworld
 
     }
 }
