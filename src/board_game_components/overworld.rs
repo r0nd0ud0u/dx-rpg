@@ -52,6 +52,22 @@ pub fn OverworldMap() -> Element {
         };
     };
 
+    // The set of hero id_names that belong to the current session player.
+    // Only these sprites are rendered to avoid ghost replicas for other heroes
+    // that share the same spawn tile.
+    let my_hero_ids: std::collections::HashSet<String> = server_data()
+        .players_data
+        .players_info
+        .iter()
+        .filter(|(player_key, _)| {
+            // Match the base player name and any single-player extra slots
+            // (stored as "<name>__sp1", "<name>__sp2", …).
+            let base = local_login_name_session();
+            *player_key == &base || player_key.starts_with(&format!("{base}__sp"))
+        })
+        .flat_map(|(_, info)| info.character_id_names.iter().cloned())
+        .collect();
+
     rsx! {
         div {
             class: "ow-container",
@@ -126,8 +142,8 @@ pub fn OverworldMap() -> Element {
                     }
                 }
 
-                // Hero sprites
-                for (hero_id , pos) in ow.player_positions.iter() {
+                // Hero sprites — only render heroes belonging to this session player.
+                for (hero_id , pos) in ow.player_positions.iter().filter(|(id, _)| my_hero_ids.contains(*id)) {
                     div {
                         key: "{hero_id}",
                         class: "ow-sprite ow-hero",

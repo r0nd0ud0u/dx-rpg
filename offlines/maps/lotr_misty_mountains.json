@@ -1,0 +1,41 @@
+{
+  "id": "lotr_misty_mountains",
+  "width": 14,
+  "height": 10,
+  "tiles": [
+    ["wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall","wall"],
+    ["wall","wall","wall","floor","floor","floor","floor","floor","floor","floor","floor","wall","wall","wall"],
+    ["wall","wall","wall","floor","wall","floor","floor","floor","wall","floor","floor","wall","wall","wall"],
+    ["wall","wall","wall","floor","floor","floor","floor","floor","floor","floor","floor","wall","wall","wall"],
+    ["wall","wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","wall","wall","wall","wall","wall","wall",{"kind":"door","target_map":"lotr_shire","target_spawn":{"x":7,"y":1}},"wall","wall","wall","wall","wall","wall"]
+  ],
+  "npcs": [
+    {
+      "id": "angmar_warrior",
+      "x": 6,
+      "y": 2,
+      "dialog": ["Un guerrier d'Angmar se dresse devant vous !", "Il n'y a pas d'autre chemin..."],
+      "fight_scenario_id": "Embuscade Gobeline"
+    },
+    {
+      "id": "orc_pillard",
+      "x": 10,
+      "y": 4,
+      "dialog": ["Un Orc Pillard monte la garde !", "Vos os feront de bonnes décorations."],
+      "fight_scenario_id": "Embuscade Gobeline"
+    },
+    {
+      "id": "radagast",
+      "x": 2,
+      "y": 7,
+      "dialog": ["Ces montagnes sont plus dangereuses que jamais.", "Les forces de Sauron se renforcent. Soyez prudent, aventurier."]
+    }
+  ],
+  "spawn": {"x": 7, "y": 1},
+  "encounters": []
+}

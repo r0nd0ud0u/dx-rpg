@@ -1040,8 +1040,7 @@ fn overworld_exit_handler(server_name: &str) {
         let mut sm = SERVER_MANAGER.lock().unwrap();
         if let Some(server_data) = sm.servers_data.get_mut(server_name) {
             server_data.core_game_data.game_phase = GamePhase::Running;
-            // Clear overworld state so re-entering creates a fresh map.
-            server_data.core_game_data.overworld = None;
+            // Keep overworld state so re-entering the same map restores positions.
         }
     }
     update_clients_server_data(server_name);
