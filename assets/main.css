@@ -1971,6 +1971,8 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     overflow: hidden;
     image-rendering: pixelated;
     background: #1a1a2e; /* visible fallback when grid dimensions are computed */
+    /* content-box so width: N*48px targets the tile area, not total incl. border */
+    box-sizing: content-box;
 }
 
 /* Tiles have explicit size; flex-wrap handles row breaks at the container width */
