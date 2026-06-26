@@ -899,13 +899,19 @@ fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction) 
             tracing::error!("overworld_move: no server data for {}", server_name);
             return;
         };
+        // Only the server owner controls the party sprite.
+        let owner_name = server_data.players_data.owner_player_name.clone();
+        if player_name != owner_name {
+            return;
+        }
+        // Party position is tracked via the owner's first character.
         let Some(hero_id) = server_data
             .players_data
             .players_info
-            .get(player_name)
+            .get(&owner_name)
             .and_then(|info| info.character_id_names.first().cloned())
         else {
-            tracing::warn!("overworld_move: no hero for player {}", player_name);
+            tracing::warn!("overworld_move: no hero for owner {}", owner_name);
             return;
         };
         let Some(ow_state) = server_data.core_game_data.overworld.as_mut() else {
@@ -916,7 +922,11 @@ fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction) 
         let mut manager = OverworldManager::from_state(ow_state.clone());
         let result = manager.move_player(&hero_id, dir);
         match result {
-            MoveResult::Blocked => PostAction::Broadcast,
+            MoveResult::Blocked => {
+                // Persist state so active_dialog (locked-door hint) reaches clients.
+                server_data.core_game_data.overworld = Some(manager.state);
+                PostAction::Broadcast
+            }
             MoveResult::Moved => {
                 server_data.core_game_data.overworld = Some(manager.state);
                 PostAction::Broadcast
@@ -950,13 +960,18 @@ fn overworld_interact_handler(server_name: &str, player_name: &str) {
             tracing::error!("overworld_interact: no server data for {}", server_name);
             return;
         };
+        // Only the server owner interacts on behalf of the party.
+        let owner_name = server_data.players_data.owner_player_name.clone();
+        if player_name != owner_name {
+            return;
+        }
         let Some(hero_id) = server_data
             .players_data
             .players_info
-            .get(player_name)
+            .get(&owner_name)
             .and_then(|info| info.character_id_names.first().cloned())
         else {
-            tracing::warn!("overworld_interact: no hero for player {}", player_name);
+            tracing::warn!("overworld_interact: no hero for owner {}", owner_name);
             return;
         };
         let Some(ow_state) = server_data.core_game_data.overworld.as_mut() else {
@@ -992,6 +1007,7 @@ fn overworld_interact_handler(server_name: &str, player_name: &str) {
 #[cfg(feature = "server")]
 fn overworld_enter_handler(server_name: &str, map_id: &str, spawn_override: Option<Position>) {
     use crate::common::OFFLINE_PATH;
+    use lib_rpg::server::game_state::GameStatus;
 
     let offline_root = std::path::Path::new(OFFLINE_PATH);
     {
@@ -1013,17 +1029,44 @@ fn overworld_enter_handler(server_name: &str, map_id: &str, spawn_override: Opti
             tracing::error!("overworld_enter: failed to load map '{}': {}", map_id, e);
             return;
         }
-        let hero_count = server_data
-            .core_game_data
-            .game_manager
-            .pm
-            .active_heroes
-            .len();
+
+        // Derive the owner's first hero id and current game state before the mutable borrow.
+        let owner_name = server_data.players_data.owner_player_name.clone();
+        let owner_hero = server_data
+            .players_data
+            .players_info
+            .get(&owner_name)
+            .and_then(|i| i.character_id_names.first())
+            .cloned();
+        let stage1_active = server_data.core_game_data.game_manager.current_scenario.level == 1
+            && server_data.core_game_data.game_manager.game_state.status
+                != GameStatus::EndOfScenario;
+
+        if let Some(ow) = server_data.core_game_data.overworld.as_mut() {
+            // Keep only the owner's hero position — one party sprite for the whole group.
+            if let Some(ref hero_id) = owner_hero {
+                let pos = ow
+                    .player_positions
+                    .get(hero_id)
+                    .cloned()
+                    .or_else(|| ow.player_positions.values().next().cloned())
+                    .unwrap_or_default();
+                ow.player_positions.clear();
+                ow.player_positions.insert(hero_id.clone(), pos);
+            }
+            // Lock the passage to the next map until the current stage is beaten.
+            if ow.map_id == "lotr_shire" {
+                ow.locked_doors.clear();
+                if stage1_active {
+                    ow.locked_doors.insert("7_0".to_string());
+                }
+            }
+        }
         tracing::info!(
-            "Entered overworld map '{}' on server {} with {} heroes",
+            "Entered overworld map '{}' on server {} (owner: {})",
             map_id,
             server_name,
-            hero_count
+            owner_name
         );
     }
     // Lightweight signal first — guaranteed CBOR-safe.

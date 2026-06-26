@@ -24,14 +24,41 @@ fn tile_css(kind: &TileKind) -> &'static str {
     }
 }
 
-/// Emoji shown inside each tile so the map is readable at a glance.
-fn tile_emoji(kind: &TileKind) -> &'static str {
+/// Emoji shown inside a tile. `locked` is only meaningful for Door tiles.
+fn tile_emoji(kind: &TileKind, locked: bool) -> &'static str {
     match kind {
         TileKind::Floor => "",
         TileKind::Wall => "🧱",
         TileKind::Grass => "",
         TileKind::Water => "💧",
-        TileKind::Door { .. } => "🚪",
+        TileKind::Door { .. } => {
+            if locked {
+                "🔒"
+            } else {
+                "🚪"
+            }
+        }
+    }
+}
+
+fn is_door(kind: &TileKind) -> bool {
+    matches!(kind, TileKind::Door { .. })
+}
+
+fn tile_emoji_at(
+    kind: &TileKind,
+    x: usize,
+    y: usize,
+    locked_doors: &std::collections::HashSet<String>,
+) -> &'static str {
+    tile_emoji(kind, is_door(kind) && locked_doors.contains(&format!("{}_{}", x, y)))
+}
+
+fn npc_emoji(npc: &lib_rpg::server::overworld_manager::NpcState) -> &'static str {
+    if npc.fight_scenario_id.is_some() {
+        "👹" // enemy / demon boss
+    } else {
+        "🧓" // friendly NPC
     }
 }
 
@@ -40,6 +67,7 @@ pub fn OverworldMap() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
+    // Used only in the keydown handler for the Interact / MovePlayer events.
 
     let ow_state = server_data().core_game_data.overworld.clone();
     let Some(ow) = ow_state else {
@@ -51,22 +79,6 @@ pub fn OverworldMap() -> Element {
             }
         };
     };
-
-    // The set of hero id_names that belong to the current session player.
-    // Only these sprites are rendered to avoid ghost replicas for other heroes
-    // that share the same spawn tile.
-    let my_hero_ids: std::collections::HashSet<String> = server_data()
-        .players_data
-        .players_info
-        .iter()
-        .filter(|(player_key, _)| {
-            // Match the base player name and any single-player extra slots
-            // (stored as "<name>__sp1", "<name>__sp2", …).
-            let base = local_login_name_session();
-            *player_key == &base || player_key.starts_with(&format!("{base}__sp"))
-        })
-        .flat_map(|(_, info)| info.character_id_names.iter().cloned())
-        .collect();
 
     rsx! {
         div {
@@ -124,26 +136,29 @@ pub fn OverworldMap() -> Element {
                 // width constrains how many 48px tiles fit per row — height grows naturally
                 style: "width: {ow.width * TILE_PX}px;",
 
-                // Tiles in row-major order (flex-wrap breaks at the container width)
-                for tile_kind in ow.tiles.iter().flatten() {
-                    div {
-                        class: "{tile_css(tile_kind)}",
-                        style: "display:flex; align-items:center; justify-content:center; font-size:1.4rem; user-select:none;",
-                        "{tile_emoji(tile_kind)}"
+                // Tiles in row-major order (flex-wrap breaks at the container width).
+                // Use tile_emoji_at so locked doors show 🔒 instead of 🚪.
+                for (y, row) in ow.tiles.iter().enumerate() {
+                    for (x, tile_kind) in row.iter().enumerate() {
+                        div {
+                            class: "{tile_css(tile_kind)}",
+                            style: "display:flex; align-items:center; justify-content:center; font-size:1.4rem; user-select:none;",
+                            "{tile_emoji_at(tile_kind, x, y, &ow.locked_doors)}"
+                        }
                     }
                 }
 
-                // NPC sprites
+                // NPC sprites: enemy NPCs (fight_scenario_id set) show a demon; friendlies show an elder.
                 for npc in ow.npcs.iter() {
                     div {
                         class: "ow-sprite ow-npc",
                         style: "left:{npc.pos.x * TILE_PX}px; top:{npc.pos.y * TILE_PX}px; width:{TILE_PX}px; height:{TILE_PX}px;",
-                        "🧓"
+                        "{npc_emoji(npc)}"
                     }
                 }
 
-                // Hero sprites — only render heroes belonging to this session player.
-                for (hero_id , pos) in ow.player_positions.iter().filter(|(id, _)| my_hero_ids.contains(*id)) {
+                // Hero sprites — player_positions is reduced to the owner's single party sprite.
+                for (hero_id , pos) in ow.player_positions.iter() {
                     div {
                         key: "{hero_id}",
                         class: "ow-sprite ow-hero",
