@@ -141,7 +141,8 @@ pub fn OverworldMap() -> Element {
                 }
             },
 
-            // Scrollable wrapper so the map stays at full resolution on small screens.
+            // Map area: scroll wrapper + zoom overlay anchored to its corner.
+            div { class: "ow-map-area",
             div { class: "ow-grid-scroll",
                 div {
                     class: "ow-grid",
@@ -178,6 +179,23 @@ pub fn OverworldMap() -> Element {
                     }
                 }
             }
+            // Zoom overlay — floats over the top-right corner of the map.
+            div { class: "ow-zoom-overlay",
+                button {
+                    class: "ow-zoom-btn",
+                    tabindex: "-1",
+                    onclick: move |_| tile_zoom.set((tile_zoom() - 0.1).max(0.4)),
+                    "−"
+                }
+                span { class: "ow-zoom-label", "{(tile_zoom() * 100.0) as u32}%" }
+                button {
+                    class: "ow-zoom-btn",
+                    tabindex: "-1",
+                    onclick: move |_| tile_zoom.set((tile_zoom() + 0.1).min(1.5)),
+                    "+"
+                }
+            }
+            } // ow-map-area
 
             if !ow.active_dialog.is_empty() {
                 div { class: "ow-dialog",
@@ -309,21 +327,6 @@ pub fn OverworldMap() -> Element {
             div { class: "ow-hud",
                 span { class: "ow-map-name", "📍 {ow.map_id}" }
                 span { class: "ow-controls", "Arrows: move  |  Enter/⚔: interact" }
-                div { class: "ow-zoom-controls",
-                    button {
-                        class: "ow-zoom-btn",
-                        tabindex: "-1",
-                        onclick: move |_| tile_zoom.set((tile_zoom() - 0.1).max(0.4)),
-                        "−"
-                    }
-                    span { class: "ow-zoom-label", "{(tile_zoom() * 100.0) as u32}%" }
-                    button {
-                        class: "ow-zoom-btn",
-                        tabindex: "-1",
-                        onclick: move |_| tile_zoom.set((tile_zoom() + 0.1).min(1.5)),
-                        "+"
-                    }
-                }
                 Button {
                     variant: ButtonVariant::Outline,
                     onclick: move |_| async move {

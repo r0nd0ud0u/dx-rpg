@@ -1973,7 +1973,7 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     overflow: hidden;
 }
 
-/* Scrollable wrapper — fills remaining space in .ow-container; map scrolls inside. */
+/* Scrollable wrapper — fills the .ow-map-area; map scrolls inside. */
 .ow-grid-scroll {
     flex: 1 1 auto;
     min-height: 0;
@@ -2141,30 +2141,49 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     .ow-container { padding: 4px 2px; gap: 4px; }
 }
 
-/* ── Zoom controls ─────────────────────────────────────────────────── */
-.ow-zoom-controls {
+/* ── Map area wrapper (holds scroll + zoom overlay) ────────────────── */
+.ow-map-area {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Zoom overlay — always visible in the top-right corner of the map. */
+.ow-zoom-overlay {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 10;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
+    background: rgba(10, 14, 28, 0.78);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 8px;
+    padding: 3px 6px;
+    pointer-events: auto;
 }
 .ow-zoom-btn {
     width: 28px;
     height: 28px;
-    border: 1px solid var(--rpg-border-light, #4a4f72);
-    border-radius: 6px;
-    background: rgba(255,255,255,0.08);
+    border: none;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.12);
     color: var(--rpg-text, #e2e8f0);
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 700;
     cursor: pointer;
     line-height: 1;
     touch-action: manipulation;
     user-select: none;
 }
-.ow-zoom-btn:active { background: rgba(255,255,255,0.2); }
+.ow-zoom-btn:active { background: rgba(255,255,255,0.28); }
 .ow-zoom-label {
     font-size: 0.75rem;
     color: var(--rpg-text-muted, #8a8fa8);
-    min-width: 34px;
+    min-width: 32px;
     text-align: center;
 }
