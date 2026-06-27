@@ -1065,15 +1065,6 @@ fn overworld_enter_handler(server_name: &str, map_id: &str, spawn_override: Opti
             .get(&owner_name)
             .and_then(|i| i.character_id_names.first())
             .cloned();
-        let stage1_active = server_data
-            .core_game_data
-            .game_manager
-            .current_scenario
-            .level
-            == 1
-            && server_data.core_game_data.game_manager.game_state.status
-                != GameStatus::EndOfScenario;
-
         if let Some(ow) = server_data.core_game_data.overworld.as_mut() {
             // Keep only the owner's hero position — one party sprite for the whole group.
             if let Some(ref hero_id) = owner_hero {
@@ -1085,13 +1076,6 @@ fn overworld_enter_handler(server_name: &str, map_id: &str, spawn_override: Opti
                     .unwrap_or_default();
                 ow.player_positions.clear();
                 ow.player_positions.insert(hero_id.clone(), pos);
-            }
-            // Lock the passage to the next map until the current stage is beaten.
-            if ow.map_id == "lotr_shire" {
-                ow.locked_doors.clear();
-                if stage1_active {
-                    ow.locked_doors.insert("7_0".to_string());
-                }
             }
         }
         tracing::info!(

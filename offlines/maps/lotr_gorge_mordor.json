@@ -1,5 +1,5 @@
 {
-  "id": "lotr_shire",
+  "id": "lotr_gorge_mordor",
   "width": 14,
   "height": 10,
   "tiles": [
@@ -13,7 +13,7 @@
       "wall",
       {
         "door": {
-          "target_map": "lotr_foret_ancienne",
+          "target_map": "lotr_plaine_desespoir",
           "spawn": {
             "x": 7,
             "y": 8
@@ -29,16 +29,33 @@
     ],
     [
       "wall",
+      "wall",
+      "wall",
+      "floor",
+      "wall",
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "wall",
+      "floor",
+      "wall",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "wall",
       "floor",
       "floor",
       "wall",
       "floor",
       "floor",
+      "wall",
       "floor",
       "floor",
-      "floor",
-      "floor",
-      "floor",
+      "wall",
       "floor",
       "wall"
     ],
@@ -52,7 +69,7 @@
       "floor",
       "floor",
       "floor",
-      "floor",
+      "wall",
       "floor",
       "floor",
       "floor",
@@ -60,8 +77,22 @@
     ],
     [
       "wall",
+      "wall",
       "floor",
       "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
       "floor",
       "floor",
       "wall",
@@ -69,6 +100,8 @@
       "floor",
       "floor",
       "floor",
+      "floor",
+      "wall",
       "floor",
       "floor",
       "floor",
@@ -76,37 +109,23 @@
     ],
     [
       "wall",
-      "floor",
-      "floor",
+      "wall",
       "floor",
       "floor",
       "floor",
       "wall",
       "floor",
       "floor",
+      "wall",
       "floor",
       "floor",
       "floor",
-      "floor",
+      "wall",
       "wall"
     ],
     [
       "wall",
       "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
       "wall",
       "floor",
       "floor",
@@ -116,24 +135,6 @@
       "floor",
       "floor",
       "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall",
-      "floor",
       "floor",
       "floor",
       "wall"
@@ -162,7 +163,15 @@
       "wall",
       "wall",
       "wall",
-      "wall",
+      {
+        "door": {
+          "target_map": "lotr_foret_mordor",
+          "spawn": {
+            "x": 7,
+            "y": 1
+          }
+        }
+      },
       "wall",
       "wall",
       "wall",
@@ -173,30 +182,28 @@
   ],
   "npcs": [
     {
-      "id": "gandalf",
-      "x": 2,
-      "y": 2,
+      "id": "legolas",
+      "x": 11,
+      "y": 3,
       "dialog": [
-        "La Comté est menacée, ami !",
-        "Un ennemi se cache derrière la crête de pierre.",
-        "Contournez le col par le sud pour l'atteindre.",
-        "La porte du nord sera ouverte une fois la menace écartée."
+        "Cette gorge résonne de magie noire.",
+        "Le nécromancien prépare un rituel. Interrompez-le !"
       ]
     },
     {
-      "id": "gobelin_eclaireur",
-      "x": 10,
+      "id": "necromancien_2",
+      "x": 6,
       "y": 3,
       "dialog": [
-        "Un Gobelin Éclaireur vous barre la route !",
-        "Préparez-vous au combat !"
+        "Le Rituel des Ténèbres commence !",
+        "Vous ne pouvez pas arrêter Sauron !"
       ],
-      "fight_scenario_id": "Patrouille Gobeline"
+      "fight_scenario_id": "Rituel des Tenebres"
     }
   ],
   "spawn": {
-    "x": 2,
-    "y": 7
+    "x": 7,
+    "y": 8
   },
   "encounters": [],
   "locked_doors": [

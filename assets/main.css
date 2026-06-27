@@ -2135,13 +2135,36 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     .ow-container { padding: 6px 4px; gap: 6px; }
     .ow-controls { display: none; }
     .ow-hud { gap: 8px; font-size: 0.75rem; }
-    /* Scale down the grid so a 14-tile map fits the viewport width.
-       zoom also scales absolute-positioned sprites correctly. */
-    .ow-grid { zoom: 0.65; }
 }
 
-/* Very small phones (≤ 400 px wide, e.g. iPhone SE 1st gen). */
 @media (max-width: 400px) {
     .ow-container { padding: 4px 2px; gap: 4px; }
-    .ow-grid { zoom: 0.5; }
+}
+
+/* ── Zoom controls ─────────────────────────────────────────────────── */
+.ow-zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.ow-zoom-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--rpg-border-light, #4a4f72);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.08);
+    color: var(--rpg-text, #e2e8f0);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+    touch-action: manipulation;
+    user-select: none;
+}
+.ow-zoom-btn:active { background: rgba(255,255,255,0.2); }
+.ow-zoom-label {
+    font-size: 0.75rem;
+    color: var(--rpg-text-muted, #8a8fa8);
+    min-width: 34px;
+    text-align: center;
 }

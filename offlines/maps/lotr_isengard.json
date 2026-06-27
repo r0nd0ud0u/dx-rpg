@@ -1,5 +1,5 @@
 {
-  "id": "lotr_shire",
+  "id": "lotr_isengard",
   "width": 14,
   "height": 10,
   "tiles": [
@@ -13,7 +13,7 @@
       "wall",
       {
         "door": {
-          "target_map": "lotr_foret_ancienne",
+          "target_map": "lotr_moria",
           "spawn": {
             "x": 7,
             "y": 8
@@ -30,15 +30,16 @@
     [
       "wall",
       "floor",
+      "wall",
+      "floor",
       "floor",
       "wall",
       "floor",
       "floor",
+      "wall",
       "floor",
       "floor",
-      "floor",
-      "floor",
-      "floor",
+      "wall",
       "floor",
       "wall"
     ],
@@ -52,7 +53,7 @@
       "floor",
       "floor",
       "floor",
-      "floor",
+      "wall",
       "floor",
       "floor",
       "floor",
@@ -60,10 +61,6 @@
     ],
     [
       "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
       "wall",
       "floor",
       "floor",
@@ -72,61 +69,17 @@
       "floor",
       "floor",
       "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
       "wall"
     ],
     [
       "wall",
       "floor",
       "floor",
-      "floor",
-      "floor",
-      "floor",
       "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
-      "wall",
-      "floor",
-      "floor",
-      "floor",
       "floor",
       "floor",
       "floor",
@@ -145,12 +98,60 @@
       "floor",
       "floor",
       "floor",
+      "wall",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
       "floor",
       "floor",
       "floor",
       "floor",
       "floor",
       "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
       "floor",
       "wall"
     ],
@@ -162,7 +163,15 @@
       "wall",
       "wall",
       "wall",
-      "wall",
+      {
+        "door": {
+          "target_map": "lotr_plaines_rohan",
+          "spawn": {
+            "x": 7,
+            "y": 1
+          }
+        }
+      },
       "wall",
       "wall",
       "wall",
@@ -173,30 +182,28 @@
   ],
   "npcs": [
     {
-      "id": "gandalf",
+      "id": "saruman_captif",
       "x": 2,
-      "y": 2,
+      "y": 7,
       "dialog": [
-        "La Comté est menacée, ami !",
-        "Un ennemi se cache derrière la crête de pierre.",
-        "Contournez le col par le sud pour l'atteindre.",
-        "La porte du nord sera ouverte une fois la menace écartée."
+        "Isengard est tombé... mais des orcs résistent encore.",
+        "Battez leur champion et la route de la Moria s'ouvrira."
       ]
     },
     {
-      "id": "gobelin_eclaireur",
-      "x": 10,
+      "id": "champion_orc",
+      "x": 7,
       "y": 3,
       "dialog": [
-        "Un Gobelin Éclaireur vous barre la route !",
-        "Préparez-vous au combat !"
+        "Le Champion Orc rugit de fureur !",
+        "Vous ne franchirez pas Isengard !"
       ],
-      "fight_scenario_id": "Patrouille Gobeline"
+      "fight_scenario_id": "Le Champion des Orcs"
     }
   ],
   "spawn": {
-    "x": 2,
-    "y": 7
+    "x": 7,
+    "y": 8
   },
   "encounters": [],
   "locked_doors": [

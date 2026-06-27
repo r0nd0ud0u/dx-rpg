@@ -1,0 +1,212 @@
+{
+  "id": "lotr_foret_ancienne",
+  "width": 14,
+  "height": 10,
+  "tiles": [
+    [
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      {
+        "door": {
+          "target_map": "lotr_col_brumeux",
+          "spawn": {
+            "x": 7,
+            "y": 8
+          }
+        }
+      },
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      {
+        "door": {
+          "target_map": "lotr_shire",
+          "spawn": {
+            "x": 7,
+            "y": 1
+          }
+        }
+      },
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall"
+    ]
+  ],
+  "npcs": [
+    {
+      "id": "sylvain_le_forestier",
+      "x": 2,
+      "y": 2,
+      "dialog": [
+        "La forêt ancienne cache bien des dangers.",
+        "Des gobelins en embuscade gardent le passage vers les montagnes."
+      ]
+    },
+    {
+      "id": "gobelin_embuscade",
+      "x": 7,
+      "y": 4,
+      "dialog": [
+        "Deux Gobelins sortent de l'ombre !",
+        "Il n'y a pas d'issue !"
+      ],
+      "fight_scenario_id": "Embuscade Gobeline"
+    }
+  ],
+  "spawn": {
+    "x": 7,
+    "y": 8
+  },
+  "encounters": [],
+  "locked_doors": [
+    "7_0"
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "id": "lotr_shire",
+  "id": "lotr_col_brumeux",
   "width": 14,
   "height": 10,
   "tiles": [
@@ -13,7 +13,7 @@
       "wall",
       {
         "door": {
-          "target_map": "lotr_foret_ancienne",
+          "target_map": "lotr_plaines_rohan",
           "spawn": {
             "x": 7,
             "y": 8
@@ -32,12 +32,77 @@
       "floor",
       "floor",
       "wall",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "wall",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "wall",
       "floor",
       "floor",
       "floor",
       "floor",
       "floor",
       "floor",
+      "floor",
+      "wall",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
       "floor",
       "floor",
       "wall"
@@ -48,86 +113,6 @@
       "floor",
       "floor",
       "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
       "floor",
       "floor",
       "floor",
@@ -145,6 +130,22 @@
       "floor",
       "floor",
       "floor",
+      "wall",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
       "floor",
       "floor",
       "floor",
@@ -162,7 +163,15 @@
       "wall",
       "wall",
       "wall",
-      "wall",
+      {
+        "door": {
+          "target_map": "lotr_foret_ancienne",
+          "spawn": {
+            "x": 7,
+            "y": 1
+          }
+        }
+      },
       "wall",
       "wall",
       "wall",
@@ -173,30 +182,28 @@
   ],
   "npcs": [
     {
-      "id": "gandalf",
-      "x": 2,
-      "y": 2,
+      "id": "nain_errant",
+      "x": 11,
+      "y": 7,
       "dialog": [
-        "La Comté est menacée, ami !",
-        "Un ennemi se cache derrière la crête de pierre.",
-        "Contournez le col par le sud pour l'atteindre.",
-        "La porte du nord sera ouverte une fois la menace écartée."
+        "Ces montagnes sont traîtresses.",
+        "L'Orc gardien du col est redoutable, mais pas invincible."
       ]
     },
     {
-      "id": "gobelin_eclaireur",
-      "x": 10,
+      "id": "orc_pillard",
+      "x": 8,
       "y": 3,
       "dialog": [
-        "Un Gobelin Éclaireur vous barre la route !",
-        "Préparez-vous au combat !"
+        "Un Orc Pillard barre le col !",
+        "Vos os orneront ma ceinture."
       ],
-      "fight_scenario_id": "Patrouille Gobeline"
+      "fight_scenario_id": "Le Pillard Orc"
     }
   ],
   "spawn": {
-    "x": 2,
-    "y": 7
+    "x": 7,
+    "y": 8
   },
   "encounters": [],
   "locked_doors": [

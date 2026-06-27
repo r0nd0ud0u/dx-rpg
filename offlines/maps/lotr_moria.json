@@ -1,5 +1,5 @@
 {
-  "id": "lotr_shire",
+  "id": "lotr_moria",
   "width": 14,
   "height": 10,
   "tiles": [
@@ -13,7 +13,7 @@
       "wall",
       {
         "door": {
-          "target_map": "lotr_foret_ancienne",
+          "target_map": "lotr_foret_mordor",
           "spawn": {
             "x": 7,
             "y": 8
@@ -29,7 +29,7 @@
     ],
     [
       "wall",
-      "floor",
+      "wall",
       "floor",
       "wall",
       "floor",
@@ -38,8 +38,9 @@
       "floor",
       "floor",
       "floor",
+      "wall",
       "floor",
-      "floor",
+      "wall",
       "wall"
     ],
     [
@@ -52,7 +53,7 @@
       "floor",
       "floor",
       "floor",
-      "floor",
+      "wall",
       "floor",
       "floor",
       "floor",
@@ -61,80 +62,16 @@
     [
       "wall",
       "floor",
+      "wall",
       "floor",
       "floor",
       "floor",
       "wall",
       "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
       "wall",
       "floor",
       "floor",
-      "floor",
-      "floor",
-      "floor",
       "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall"
-    ],
-    [
-      "wall",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "floor",
-      "wall",
-      "floor",
-      "floor",
       "floor",
       "wall"
     ],
@@ -157,12 +94,84 @@
     [
       "wall",
       "wall",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
       "wall",
       "wall",
       "wall",
       "wall",
       "wall",
       "wall",
+      "wall",
+      {
+        "door": {
+          "target_map": "lotr_isengard",
+          "spawn": {
+            "x": 7,
+            "y": 1
+          }
+        }
+      },
       "wall",
       "wall",
       "wall",
@@ -173,30 +182,28 @@
   ],
   "npcs": [
     {
-      "id": "gandalf",
+      "id": "gimli",
       "x": 2,
       "y": 2,
       "dialog": [
-        "La Comté est menacée, ami !",
-        "Un ennemi se cache derrière la crête de pierre.",
-        "Contournez le col par le sud pour l'atteindre.",
-        "La porte du nord sera ouverte une fois la menace écartée."
+        "Les mines de la Moria... sombres et profondes.",
+        "Méfiez-vous : le champion n'est pas seul dans ces couloirs."
       ]
     },
     {
-      "id": "gobelin_eclaireur",
-      "x": 10,
-      "y": 3,
+      "id": "champion_orc_2",
+      "x": 8,
+      "y": 4,
       "dialog": [
-        "Un Gobelin Éclaireur vous barre la route !",
-        "Préparez-vous au combat !"
+        "Le Champion revient, encore plus furieux !",
+        "Cette fois vous ne vous en sortirez pas !"
       ],
-      "fight_scenario_id": "Patrouille Gobeline"
+      "fight_scenario_id": "Colere du Champion"
     }
   ],
   "spawn": {
-    "x": 2,
-    "y": 7
+    "x": 7,
+    "y": 8
   },
   "encounters": [],
   "locked_doors": [

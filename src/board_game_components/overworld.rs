@@ -90,6 +90,8 @@ pub fn OverworldMap() -> Element {
     let socket_confirm_fight = socket.clone();
     let socket_dismiss = socket.clone();
 
+    let mut tile_zoom: Signal<f32> = use_signal(|| 0.85_f32);
+
     rsx! {
         div {
             class: "ow-container",
@@ -143,7 +145,7 @@ pub fn OverworldMap() -> Element {
             div { class: "ow-grid-scroll",
                 div {
                     class: "ow-grid",
-                    style: "width: {ow.width * TILE_PX}px;",
+                    style: "width: {ow.width * TILE_PX}px; zoom: {tile_zoom()};",
 
                     for (y, row) in ow.tiles.iter().enumerate() {
                         for (x, tile_kind) in row.iter().enumerate() {
@@ -306,7 +308,22 @@ pub fn OverworldMap() -> Element {
 
             div { class: "ow-hud",
                 span { class: "ow-map-name", "📍 {ow.map_id}" }
-                span { class: "ow-controls", "Arrow keys / D-pad: move  |  Enter / ⚔: interact" }
+                span { class: "ow-controls", "Arrows: move  |  Enter/⚔: interact" }
+                div { class: "ow-zoom-controls",
+                    button {
+                        class: "ow-zoom-btn",
+                        tabindex: "-1",
+                        onclick: move |_| tile_zoom.set((tile_zoom() - 0.1).max(0.4)),
+                        "−"
+                    }
+                    span { class: "ow-zoom-label", "{(tile_zoom() * 100.0) as u32}%" }
+                    button {
+                        class: "ow-zoom-btn",
+                        tabindex: "-1",
+                        onclick: move |_| tile_zoom.set((tile_zoom() + 0.1).min(1.5)),
+                        "+"
+                    }
+                }
                 Button {
                     variant: ButtonVariant::Outline,
                     onclick: move |_| async move {
