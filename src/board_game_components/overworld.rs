@@ -24,7 +24,6 @@ fn tile_css(kind: &TileKind) -> &'static str {
     }
 }
 
-/// Emoji shown inside a tile. `locked` is only meaningful for Door tiles.
 fn tile_emoji(kind: &TileKind, locked: bool) -> &'static str {
     match kind {
         TileKind::Floor => "",
@@ -51,14 +50,17 @@ fn tile_emoji_at(
     y: usize,
     locked_doors: &std::collections::HashSet<String>,
 ) -> &'static str {
-    tile_emoji(kind, is_door(kind) && locked_doors.contains(&format!("{}_{}", x, y)))
+    tile_emoji(
+        kind,
+        is_door(kind) && locked_doors.contains(&format!("{}_{}", x, y)),
+    )
 }
 
 fn npc_emoji(npc: &lib_rpg::server::overworld_manager::NpcState) -> &'static str {
     if npc.fight_scenario_id.is_some() {
-        "👹" // enemy / demon boss
+        "👹"
     } else {
-        "🧓" // friendly NPC
+        "🧓"
     }
 }
 
@@ -67,7 +69,6 @@ pub fn OverworldMap() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
-    // Used only in the keydown handler for the Interact / MovePlayer events.
 
     let ow_state = server_data().core_game_data.overworld.clone();
     let Some(ow) = ow_state else {
@@ -80,6 +81,13 @@ pub fn OverworldMap() -> Element {
         };
     };
 
+    // Clone socket + context values for the D-pad closures (each needs its own copy).
+    let socket_up = socket.clone();
+    let socket_down = socket.clone();
+    let socket_left = socket.clone();
+    let socket_right = socket.clone();
+    let socket_interact = socket.clone();
+
     rsx! {
         div {
             class: "ow-container",
@@ -88,7 +96,6 @@ pub fn OverworldMap() -> Element {
                 let _ = e.set_focus(true).await;
             },
             onkeydown: move |e: KeyboardEvent| async move {
-                // Compute strings fresh each invocation so the outer closure stays FnMut.
                 let server_name = SERVER_NAME();
                 let player_name = local_login_name_session();
                 match e.key() {
@@ -130,45 +137,41 @@ pub fn OverworldMap() -> Element {
                 }
             },
 
-            // CSS Grid: tiles in normal flow (left→right, top→bottom); sprites overlay via position:absolute
-            div {
-                class: "ow-grid",
-                // width constrains how many 48px tiles fit per row — height grows naturally
-                style: "width: {ow.width * TILE_PX}px;",
+            // Scrollable wrapper so the map stays at full resolution on small screens.
+            div { class: "ow-grid-scroll",
+                div {
+                    class: "ow-grid",
+                    style: "width: {ow.width * TILE_PX}px;",
 
-                // Tiles in row-major order (flex-wrap breaks at the container width).
-                // Use tile_emoji_at so locked doors show 🔒 instead of 🚪.
-                for (y, row) in ow.tiles.iter().enumerate() {
-                    for (x, tile_kind) in row.iter().enumerate() {
-                        div {
-                            class: "{tile_css(tile_kind)}",
-                            style: "display:flex; align-items:center; justify-content:center; font-size:1.4rem; user-select:none;",
-                            "{tile_emoji_at(tile_kind, x, y, &ow.locked_doors)}"
+                    for (y, row) in ow.tiles.iter().enumerate() {
+                        for (x, tile_kind) in row.iter().enumerate() {
+                            div {
+                                class: "{tile_css(tile_kind)}",
+                                style: "display:flex; align-items:center; justify-content:center; font-size:1.4rem; user-select:none;",
+                                "{tile_emoji_at(tile_kind, x, y, &ow.locked_doors)}"
+                            }
                         }
                     }
-                }
 
-                // NPC sprites: enemy NPCs (fight_scenario_id set) show a demon; friendlies show an elder.
-                for npc in ow.npcs.iter() {
-                    div {
-                        class: "ow-sprite ow-npc",
-                        style: "left:{npc.pos.x * TILE_PX}px; top:{npc.pos.y * TILE_PX}px; width:{TILE_PX}px; height:{TILE_PX}px;",
-                        "{npc_emoji(npc)}"
+                    for npc in ow.npcs.iter() {
+                        div {
+                            class: "ow-sprite ow-npc",
+                            style: "left:{npc.pos.x * TILE_PX}px; top:{npc.pos.y * TILE_PX}px; width:{TILE_PX}px; height:{TILE_PX}px;",
+                            "{npc_emoji(npc)}"
+                        }
                     }
-                }
 
-                // Hero sprites — player_positions is reduced to the owner's single party sprite.
-                for (hero_id , pos) in ow.player_positions.iter() {
-                    div {
-                        key: "{hero_id}",
-                        class: "ow-sprite ow-hero",
-                        style: "left:{pos.x * TILE_PX}px; top:{pos.y * TILE_PX}px; width:{TILE_PX}px; height:{TILE_PX}px;",
-                        "🧑"
+                    for (hero_id , pos) in ow.player_positions.iter() {
+                        div {
+                            key: "{hero_id}",
+                            class: "ow-sprite ow-hero",
+                            style: "left:{pos.x * TILE_PX}px; top:{pos.y * TILE_PX}px; width:{TILE_PX}px; height:{TILE_PX}px;",
+                            "🧑"
+                        }
                     }
                 }
             }
 
-            // NPC dialog box
             if !ow.active_dialog.is_empty() {
                 div { class: "ow-dialog",
                     for line in ow.active_dialog.iter() {
@@ -177,10 +180,99 @@ pub fn OverworldMap() -> Element {
                 }
             }
 
-            // Map name + controls hint
+            // Virtual D-pad — visible on touch screens, hidden on desktop (CSS media query).
+            {
+                let sn_up = SERVER_NAME();
+                let pn_up = local_login_name_session();
+                let sn_down = SERVER_NAME();
+                let pn_down = local_login_name_session();
+                let sn_left = SERVER_NAME();
+                let pn_left = local_login_name_session();
+                let sn_right = SERVER_NAME();
+                let pn_right = local_login_name_session();
+                let sn_int = SERVER_NAME();
+                let pn_int = local_login_name_session();
+                rsx! {
+                    div { class: "ow-dpad",
+                        // Row 1: only Up button (column 2)
+                        div { class: "ow-dpad-empty" }
+                        button {
+                            class: "ow-dpad-btn",
+                            tabindex: "-1",
+                            onclick: move |_| {
+                                let sn = sn_up.clone();
+                                let pn = pn_up.clone();
+                                let sock = socket_up.clone();
+                                async move {
+                                    let _ = sock.send(ClientEvent::MovePlayer(sn, pn, Direction::Up)).await;
+                                }
+                            },
+                            "▲"
+                        }
+                        div { class: "ow-dpad-empty" }
+                        // Row 2: Left, Interact, Right
+                        button {
+                            class: "ow-dpad-btn",
+                            tabindex: "-1",
+                            onclick: move |_| {
+                                let sn = sn_left.clone();
+                                let pn = pn_left.clone();
+                                let sock = socket_left.clone();
+                                async move {
+                                    let _ = sock.send(ClientEvent::MovePlayer(sn, pn, Direction::Left)).await;
+                                }
+                            },
+                            "◀"
+                        }
+                        button {
+                            class: "ow-dpad-btn ow-dpad-center",
+                            tabindex: "-1",
+                            onclick: move |_| {
+                                let sn = sn_int.clone();
+                                let pn = pn_int.clone();
+                                let sock = socket_interact.clone();
+                                async move {
+                                    let _ = sock.send(ClientEvent::Interact(sn, pn)).await;
+                                }
+                            },
+                            "⚔"
+                        }
+                        button {
+                            class: "ow-dpad-btn",
+                            tabindex: "-1",
+                            onclick: move |_| {
+                                let sn = sn_right.clone();
+                                let pn = pn_right.clone();
+                                let sock = socket_right.clone();
+                                async move {
+                                    let _ = sock.send(ClientEvent::MovePlayer(sn, pn, Direction::Right)).await;
+                                }
+                            },
+                            "▶"
+                        }
+                        // Row 3: only Down button (column 2)
+                        div { class: "ow-dpad-empty" }
+                        button {
+                            class: "ow-dpad-btn",
+                            tabindex: "-1",
+                            onclick: move |_| {
+                                let sn = sn_down.clone();
+                                let pn = pn_down.clone();
+                                let sock = socket_down.clone();
+                                async move {
+                                    let _ = sock.send(ClientEvent::MovePlayer(sn, pn, Direction::Down)).await;
+                                }
+                            },
+                            "▼"
+                        }
+                        div { class: "ow-dpad-empty" }
+                    }
+                }
+            }
+
             div { class: "ow-hud",
                 span { class: "ow-map-name", "📍 {ow.map_id}" }
-                span { class: "ow-controls", "Arrow keys: move  |  Enter / Space: interact" }
+                span { class: "ow-controls", "Arrow keys / D-pad: move  |  Enter / ⚔: interact" }
                 Button {
                     variant: ButtonVariant::Outline,
                     onclick: move |_| async move {

@@ -1038,7 +1038,12 @@ fn overworld_enter_handler(server_name: &str, map_id: &str, spawn_override: Opti
             .get(&owner_name)
             .and_then(|i| i.character_id_names.first())
             .cloned();
-        let stage1_active = server_data.core_game_data.game_manager.current_scenario.level == 1
+        let stage1_active = server_data
+            .core_game_data
+            .game_manager
+            .current_scenario
+            .level
+            == 1
             && server_data.core_game_data.game_manager.game_state.status
                 != GameStatus::EndOfScenario;
 

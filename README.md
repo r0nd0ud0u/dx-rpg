@@ -232,11 +232,15 @@ Between (or during) fights the owner can click **🗺 Overworld** / **🗺 Explo
 
 **Controls**
 
-| Key | Action |
-|-----|--------|
+| Input | Action |
+|-------|--------|
 | Arrow keys | Move hero |
 | Enter / Space | Interact with adjacent NPC |
+| Virtual D-pad (touch) | Move hero — appears automatically on touch screens |
+| D-pad ⚔ center button | Interact with adjacent NPC |
 | ⚔️ Back to Fight | Return to the active fight |
+
+Movement is blocked onto tiles occupied by another hero or an NPC; interact with NPCs from an adjacent tile.
 
 **Map tiles — emoji legend**
 
@@ -514,6 +518,12 @@ stacked on top of the existing desktop-first styles.
 - All interactive buttons are `≥ 44 px` tall in their default (desktop) state.
 - Attack target buttons use absolute positioning and remain tappable as circular hit-areas.
 - Sheet overlays (Dioxus `Sheet` component) occupy the full screen width on narrow viewports.
+
+### Overworld on mobile / tablet
+
+The overworld map keeps its 48 px tile grid at full resolution and becomes scrollable (`overflow: auto`) inside a dedicated wrapper, so sprites and tile positions always align.
+
+A **virtual D-pad** (3 × 3 button grid — ▲ ◀ ⚔ ▶ ▼) is shown below the map on touch screens and hidden on pointer-device (mouse) screens via the `@media (hover: hover) and (pointer: fine)` media query. The centre ⚔ button sends an Interact event, matching the Enter/Space keyboard shortcut. D-pad buttons carry `tabindex="-1"` so they never steal keyboard focus from the map container.
 
 ---
 

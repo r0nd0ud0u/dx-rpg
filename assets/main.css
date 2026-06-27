@@ -1958,20 +1958,27 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     gap: 12px;
     padding: 16px;
     outline: none;
-    background: #0d1f0d; /* dark-green tint — visible even if tiles fail to paint */
+    background: #0d1f0d;
     min-height: 100px;
+}
+
+/* Scrollable wrapper — on small screens the map scrolls rather than shrinking. */
+.ow-grid-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .ow-grid {
     display: flex;
     flex-wrap: wrap;
-    position: relative; /* sprites are position:absolute relative to this */
+    position: relative;
     border: 2px solid var(--rpg-border, #2d3250);
     border-radius: 4px;
     overflow: hidden;
     image-rendering: pixelated;
-    background: #1a1a2e; /* visible fallback when grid dimensions are computed */
-    /* content-box so width: N*48px targets the tile area, not total incl. border */
+    background: #1a1a2e;
     box-sizing: content-box;
 }
 
@@ -1982,8 +1989,8 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     height: 48px;
 }
 
-.ow-floor  { background: #c8b887; }                                /* stone/earth path — clearly passable */
-.ow-wall   { background: #1a1008; border: 1px solid #000; }        /* near-black — clearly impassable */
+.ow-floor  { background: #c8b887; }
+.ow-wall   { background: #1a1008; border: 1px solid #000; }
 .ow-grass  { background: #3aaa3a; border: 1px solid #2a8a2a; }
 .ow-water  { background: #3a8fd0; border: 1px solid #2870a8; }
 .ow-door   { background: #c88a30; border: 1px solid #a06820; }
@@ -2022,9 +2029,59 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 /* HUD bar below the map */
 .ow-hud {
     display: flex;
-    gap: 24px;
+    gap: 12px;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
     font-size: 0.8rem;
     color: var(--rpg-text-muted, #8a8fa8);
 }
 .ow-map-name { font-weight: 600; color: var(--rpg-text, #e2e8f0); text-transform: capitalize; }
+
+/* ── Virtual D-pad ──────────────────────────────────────────────── */
+.ow-dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 56px);
+    grid-template-rows: repeat(3, 56px);
+    gap: 6px;
+}
+
+.ow-dpad-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+    color: var(--rpg-text, #e2e8f0);
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+    transition: background 0.1s;
+}
+
+.ow-dpad-btn:active {
+    background: rgba(255, 255, 255, 0.28);
+    transform: scale(0.94);
+}
+
+.ow-dpad-center {
+    background: rgba(124, 111, 255, 0.2);
+    border-color: var(--rpg-accent, #7c6fff);
+}
+
+.ow-dpad-empty {
+    /* placeholder cells to form the cross shape */
+}
+
+/* On pointer devices (desktop/laptop with mouse), hide the D-pad. */
+@media (hover: hover) and (pointer: fine) {
+    .ow-dpad { display: none; }
+}
+
+/* On small screens, reduce the HUD controls hint to save space. */
+@media (max-width: 600px) {
+    .ow-controls { display: none; }
+    .ow-hud { gap: 8px; font-size: 0.75rem; }
+}
