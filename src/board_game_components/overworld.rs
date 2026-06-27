@@ -153,11 +153,14 @@ pub fn OverworldMap() -> Element {
                         }
                     }
 
+                    // Defeated boss NPCs are hidden.
                     for npc in ow.npcs.iter() {
-                        div {
-                            class: "ow-sprite ow-npc",
-                            style: "left:{npc.pos.x * TILE_PX}px; top:{npc.pos.y * TILE_PX}px; width:{TILE_PX}px; height:{TILE_PX}px;",
-                            "{npc_emoji(npc)}"
+                        if !npc.defeated {
+                            div {
+                                class: "ow-sprite ow-npc",
+                                style: "left:{npc.pos.x * TILE_PX}px; top:{npc.pos.y * TILE_PX}px; width:{TILE_PX}px; height:{TILE_PX}px;",
+                                "{npc_emoji(npc)}"
+                            }
                         }
                     }
 

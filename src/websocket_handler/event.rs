@@ -622,7 +622,10 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
             }
         }
 
-        server_data.core_game_data.game_phase = GamePhase::Running;
+        // Don't downgrade Overworld → Running for games loaded from a save in overworld mode.
+        if server_data.core_game_data.game_phase != GamePhase::Overworld {
+            server_data.core_game_data.game_phase = GamePhase::Running;
+        }
         tracing::info!("Game started for server: {}", server_name);
 
         (
@@ -977,12 +980,12 @@ fn overworld_interact_handler(server_name: &str, player_name: &str) {
         let Some(ow_state) = server_data.core_game_data.overworld.as_mut() else {
             return;
         };
-        let manager = OverworldManager::from_state(ow_state.clone());
-        match manager.interact(&hero_id) {
-            Some(InteractResult::Dialog(dialog)) => {
-                ow_state.active_dialog = dialog;
-                None
-            }
+        let mut manager = OverworldManager::from_state(ow_state.clone());
+        let result = manager.interact(&hero_id);
+        // Write back mutations (active_dialog, pending_fight).
+        *ow_state = manager.state;
+        match result {
+            Some(InteractResult::Dialog(_)) => None,
             Some(InteractResult::Fight(scenario_id)) => Some(scenario_id),
             None => None,
         }
@@ -1597,6 +1600,10 @@ async fn load_game_by_player(
 
     app.game_phase = if is_replay {
         GamePhase::Running
+    } else if app.game_phase == GamePhase::Overworld {
+        // Preserve overworld phase so the lobby shows "Continue" and the client
+        // re-opens in overworld mode without needing a separate EnterOverworld event.
+        GamePhase::Overworld
     } else {
         GamePhase::Loading
     };

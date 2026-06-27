@@ -232,15 +232,12 @@ Between (or during) fights the owner can click **🗺 Overworld** / **🗺 Explo
 
 **Controls**
 
-| Input | Action |
-|-------|--------|
+| Key / Control | Action |
+|---------------|--------|
 | Arrow keys | Move hero |
 | Enter / Space | Interact with adjacent NPC |
-| Virtual D-pad (touch) | Move hero — appears automatically on touch screens |
-| D-pad ⚔ center button | Interact with adjacent NPC |
+| Virtual D-pad (touch) | Move + interact on mobile / tablet |
 | ⚔️ Back to Fight | Return to the active fight |
-
-Movement is blocked onto tiles occupied by another hero or an NPC; interact with NPCs from an adjacent tile.
 
 **Map tiles — emoji legend**
 
@@ -272,7 +269,27 @@ Movement is blocked onto tiles occupied by another hero or an NPC; interact with
 ```json
 {"id":"goblin","x":3,"y":4,"dialog":[],"fight_scenario_id":"Patrouille Gobeline"}
 ```
-Pressing Enter/Space adjacent to this NPC starts the named scenario immediately.
+If the NPC has a non-empty `dialog` array, the dialog is shown first; pressing interact a second time (or pressing the center D-pad button) starts the fight. With an empty `dialog` the fight starts on the first interact.
+
+**Boss NPC lifecycle**
+
+Once a boss-fight scenario (linked via `fight_scenario_id`) is won, the NPC is marked `defeated` in the overworld state and removed from the map. This is independent of random grass encounters, which can re-trigger at any time.
+
+**Toolbar in overworld mode**
+
+All standard toolbar sheets (Save, Inventory, Stats, Scenarios, Logs, Store, Settings) are available while exploring the overworld via the toolbar above the map.
+
+**Position persistence across fights**
+
+When a fight is triggered from the overworld (either via NPC interact or a random grass encounter) and later won, clicking **🗺 Explore Overworld** returns the party to the same map and position they were at before the fight — no reset to the map spawn point.
+
+**Save / Load in overworld mode**
+
+If the game is saved while `game_phase == Overworld`, loading that save re-opens the game directly in overworld mode (same map, same party position, same NPC states). The lobby "Continue" button replaces "Start Game" for these saves.
+
+**Mobile / tablet layout**
+
+The overworld map is wrapped in a scrollable container so it never overflows on narrow screens. A virtual D-pad grid (3 × 3, 56 px buttons) is shown below the map on touch devices and hidden on mouse/pointer devices via `@media (hover: hover) and (pointer: fine)`. The standard keyboard controls (`ArrowUp/Down/Left/Right`, `Enter`, `Space`) remain available on desktop.
 
 ### Action Banner
 
@@ -518,12 +535,6 @@ stacked on top of the existing desktop-first styles.
 - All interactive buttons are `≥ 44 px` tall in their default (desktop) state.
 - Attack target buttons use absolute positioning and remain tappable as circular hit-areas.
 - Sheet overlays (Dioxus `Sheet` component) occupy the full screen width on narrow viewports.
-
-### Overworld on mobile / tablet
-
-The overworld map keeps its 48 px tile grid at full resolution and becomes scrollable (`overflow: auto`) inside a dedicated wrapper, so sprites and tile positions always align.
-
-A **virtual D-pad** (3 × 3 button grid — ▲ ◀ ⚔ ▶ ▼) is shown below the map on touch screens and hidden on pointer-device (mouse) screens via the `@media (hover: hover) and (pointer: fine)` media query. The centre ⚔ button sends an Interact event, matching the Enter/Space keyboard shortcut. D-pad buttons carry `tabindex="-1"` so they never steal keyboard focus from the map container.
 
 ---
 
