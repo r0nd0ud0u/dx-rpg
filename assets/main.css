@@ -1951,6 +1951,14 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 /* ── Overworld ────────────────────────────────────────────────── */
 .ow-loading { padding: 2rem; text-align: center; color: var(--rpg-text-muted, #8a8fa8); }
 
+/* Viewport-filling wrapper for the overworld view (toolbar + map). */
+.ow-page {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 56px);
+    overflow: hidden;
+}
+
 .ow-container {
     display: flex;
     flex-direction: column;
@@ -1959,11 +1967,16 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     padding: 16px;
     outline: none;
     background: #0d1f0d;
-    min-height: 100px;
+    /* Grow to fill .ow-page space below the toolbar. */
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
 }
 
-/* Scrollable wrapper — on small screens the map scrolls rather than shrinking. */
+/* Scrollable wrapper — fills remaining space in .ow-container; map scrolls inside. */
 .ow-grid-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
     max-width: 100%;
     overflow-x: auto;
     overflow-y: auto;
@@ -2109,13 +2122,26 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     /* placeholder cells to form the cross shape */
 }
 
-/* On pointer devices (desktop/laptop with mouse), hide the D-pad. */
-@media (hover: hover) and (pointer: fine) {
+/* Hide D-pad only on wide screens with a mouse (not tablets/phones). */
+@media (hover: hover) and (pointer: fine) and (min-width: 769px) {
     .ow-dpad { display: none; }
 }
 
-/* On small screens, reduce the HUD controls hint to save space. */
+/* ── Mobile overworld layout ──────────────────────────────────────── */
+
+/* Narrow mobile navbar is 52px. */
 @media (max-width: 600px) {
+    .ow-page { height: calc(100dvh - 52px); }
+    .ow-container { padding: 6px 4px; gap: 6px; }
     .ow-controls { display: none; }
     .ow-hud { gap: 8px; font-size: 0.75rem; }
+    /* Scale down the grid so a 14-tile map fits the viewport width.
+       zoom also scales absolute-positioned sprites correctly. */
+    .ow-grid { zoom: 0.65; }
+}
+
+/* Very small phones (≤ 400 px wide, e.g. iPhone SE 1st gen). */
+@media (max-width: 400px) {
+    .ow-container { padding: 4px 2px; gap: 4px; }
+    .ow-grid { zoom: 0.5; }
 }

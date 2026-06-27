@@ -174,10 +174,12 @@ pub fn RunningGamePage() -> Element {
 
     rsx! {
         if in_overworld {
-            div { class: "game-toolbar",
-                GameSheets {}
+            div { class: "ow-page",
+                div { class: "game-toolbar",
+                    GameSheets {}
+                }
+                OverworldMap {}
             }
-            OverworldMap {}
         }
         if !in_overworld {
         if server_data().core_game_data.game_manager.game_state.status == GameStatus::EndOfGame {
