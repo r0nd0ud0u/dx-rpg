@@ -2025,6 +2025,40 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     line-height: 1.4;
 }
 .ow-dialog-line:last-child { margin-bottom: 0; }
+.ow-dialog-question {
+    margin: 10px 0 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--rpg-accent, #7c6fff);
+}
+.ow-dialog-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 4px;
+}
+.ow-dialog-btn {
+    flex: 1 1 120px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 44px;
+    transition: filter 0.15s;
+}
+.ow-dialog-btn:active { filter: brightness(0.85); }
+.ow-dialog-btn-yes {
+    background: var(--rpg-accent, #7c6fff);
+    color: #fff;
+}
+.ow-dialog-btn-no {
+    background: #2d3148;
+    color: var(--rpg-text, #e2e8f0);
+    border: 1px solid #4a4f72;
+}
 
 /* HUD bar below the map */
 .ow-hud {

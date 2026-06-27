@@ -87,6 +87,8 @@ pub fn OverworldMap() -> Element {
     let socket_left = socket.clone();
     let socket_right = socket.clone();
     let socket_interact = socket.clone();
+    let socket_confirm_fight = socket.clone();
+    let socket_dismiss = socket.clone();
 
     rsx! {
         div {
@@ -179,6 +181,35 @@ pub fn OverworldMap() -> Element {
                 div { class: "ow-dialog",
                     for line in ow.active_dialog.iter() {
                         p { class: "ow-dialog-line", "{line}" }
+                    }
+                    if ow.pending_fight.is_some() {
+                        p { class: "ow-dialog-question", "Do you want to start the fight?" }
+                        div { class: "ow-dialog-actions",
+                            button {
+                                class: "ow-dialog-btn ow-dialog-btn-yes",
+                                onclick: move |_| {
+                                    let sn = SERVER_NAME();
+                                    let pn = local_login_name_session();
+                                    let sock = socket_confirm_fight.clone();
+                                    async move {
+                                        let _ = sock.send(ClientEvent::Interact(sn, pn)).await;
+                                    }
+                                },
+                                "⚔️ Yes, fight!"
+                            }
+                            button {
+                                class: "ow-dialog-btn ow-dialog-btn-no",
+                                onclick: move |_| {
+                                    let sn = SERVER_NAME();
+                                    let pn = local_login_name_session();
+                                    let sock = socket_dismiss.clone();
+                                    async move {
+                                        let _ = sock.send(ClientEvent::DismissDialog(sn, pn)).await;
+                                    }
+                                },
+                                "🚪 No, not yet"
+                            }
+                        }
                     }
                 }
             }

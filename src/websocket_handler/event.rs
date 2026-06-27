@@ -90,6 +90,7 @@ pub enum ClientEvent {
     SellItem(String, String, String, String), // server_name, character_id_name, item_name_or_unique_name, item_kind
     MovePlayer(String, String, Direction),    // server_name, player_name, direction
     Interact(String, String),                 // server_name, player_name
+    DismissDialog(String, String),            // server_name, player_name
     EnterOverworld(String, String),           // server_name, map_id
     ExitOverworld(String),                    // server_name
 }
@@ -314,6 +315,10 @@ pub async fn on_rcv_client_event(
                             Ok(ClientEvent::Interact(server_name, player_name)) => {
                                 tracing::debug!("Player {} interacting on server {}", player_name, server_name);
                                 overworld_interact_handler(&server_name, &player_name);
+                            }
+                            Ok(ClientEvent::DismissDialog(server_name, player_name)) => {
+                                tracing::debug!("Player {} dismissing dialog on server {}", player_name, server_name);
+                                overworld_dismiss_dialog_handler(&server_name, &player_name);
                             }
                             Ok(ClientEvent::EnterOverworld(server_name, map_id)) => {
                                 tracing::info!("Entering overworld map '{}' on server {}", map_id, server_name);
@@ -922,6 +927,7 @@ fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction) 
             return;
         };
         ow_state.active_dialog.clear();
+        ow_state.pending_fight = None;
         let mut manager = OverworldManager::from_state(ow_state.clone());
         let result = manager.move_player(&hero_id, dir);
         match result {
@@ -1004,6 +1010,24 @@ fn overworld_interact_handler(server_name: &str, player_name: &str) {
             );
         }
     }
+    update_clients_server_data(server_name);
+}
+
+#[cfg(feature = "server")]
+fn overworld_dismiss_dialog_handler(server_name: &str, player_name: &str) {
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let Some(server_data) = sm.servers_data.get_mut(server_name) else {
+        return;
+    };
+    let owner_name = &server_data.players_data.owner_player_name.clone();
+    if player_name != owner_name {
+        return;
+    }
+    if let Some(ow_state) = server_data.core_game_data.overworld.as_mut() {
+        ow_state.active_dialog.clear();
+        ow_state.pending_fight = None;
+    }
+    drop(sm);
     update_clients_server_data(server_name);
 }
 
