@@ -7,34 +7,24 @@ use lib_rpg::{
 };
 
 use crate::{
-    common::SERVER_NAME,
+    common::{PATH_IMG, SERVER_NAME},
     components::button::{Button, ButtonVariant},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
 const TILE_PX: i32 = 48;
 
-fn tile_css(kind: &TileKind) -> &'static str {
+fn tile_css(kind: &TileKind, locked: bool) -> &'static str {
     match kind {
         TileKind::Floor => "ow-tile ow-floor",
         TileKind::Wall => "ow-tile ow-wall",
         TileKind::Grass => "ow-tile ow-grass",
         TileKind::Water => "ow-tile ow-water",
-        TileKind::Door { .. } => "ow-tile ow-door",
-    }
-}
-
-fn tile_emoji(kind: &TileKind, locked: bool) -> &'static str {
-    match kind {
-        TileKind::Floor => "",
-        TileKind::Wall => "🧱",
-        TileKind::Grass => "",
-        TileKind::Water => "💧",
         TileKind::Door { .. } => {
             if locked {
-                "🔒"
+                "ow-tile ow-door ow-locked"
             } else {
-                "🚪"
+                "ow-tile ow-door"
             }
         }
     }
@@ -44,23 +34,21 @@ fn is_door(kind: &TileKind) -> bool {
     matches!(kind, TileKind::Door { .. })
 }
 
-fn tile_emoji_at(
-    kind: &TileKind,
-    x: usize,
-    y: usize,
-    locked_doors: &std::collections::HashSet<String>,
-) -> &'static str {
-    tile_emoji(
-        kind,
-        is_door(kind) && locked_doors.contains(&format!("{}_{}", x, y)),
-    )
+fn tile_img(kind: &TileKind) -> &'static str {
+    match kind {
+        TileKind::Floor => "tile_floor.svg",
+        TileKind::Wall => "tile_wall.svg",
+        TileKind::Grass => "tile_grass.svg",
+        TileKind::Water => "tile_water.svg",
+        TileKind::Door { .. } => "tile_door.svg",
+    }
 }
 
-fn npc_emoji(npc: &lib_rpg::server::overworld_manager::NpcState) -> &'static str {
+fn npc_sprite_file(npc: &lib_rpg::server::overworld_manager::NpcState) -> &'static str {
     if npc.fight_scenario_id.is_some() {
-        "👹"
+        "sprite_boss.svg"
     } else {
-        "🧓"
+        "sprite_npc.svg"
     }
 }
 
@@ -106,25 +94,45 @@ pub fn OverworldMap() -> Element {
                     Key::ArrowUp => {
                         e.prevent_default();
                         let _ = socket
-                            .send(ClientEvent::MovePlayer(server_name, player_name, Direction::Up))
+                            .send(
+                                ClientEvent::MovePlayer(server_name, player_name, Direction::Up),
+                            )
                             .await;
                     }
                     Key::ArrowDown => {
                         e.prevent_default();
                         let _ = socket
-                            .send(ClientEvent::MovePlayer(server_name, player_name, Direction::Down))
+                            .send(
+                                ClientEvent::MovePlayer(
+                                    server_name,
+                                    player_name,
+                                    Direction::Down,
+                                ),
+                            )
                             .await;
                     }
                     Key::ArrowLeft => {
                         e.prevent_default();
                         let _ = socket
-                            .send(ClientEvent::MovePlayer(server_name, player_name, Direction::Left))
+                            .send(
+                                ClientEvent::MovePlayer(
+                                    server_name,
+                                    player_name,
+                                    Direction::Left,
+                                ),
+                            )
                             .await;
                     }
                     Key::ArrowRight => {
                         e.prevent_default();
                         let _ = socket
-                            .send(ClientEvent::MovePlayer(server_name, player_name, Direction::Right))
+                            .send(
+                                ClientEvent::MovePlayer(
+                                    server_name,
+                                    player_name,
+                                    Direction::Right,
+                                ),
+                            )
                             .await;
                     }
                     Key::Enter => {
@@ -143,96 +151,104 @@ pub fn OverworldMap() -> Element {
 
             // Map area: scroll wrapper + zoom overlay anchored to its corner.
             div { class: "ow-map-area",
-            div { class: "ow-grid-scroll",
-                div {
-                    class: "ow-grid",
-                    style: "width: {ow.width * TILE_PX}px; zoom: {tile_zoom()};",
+                div { class: "ow-grid-scroll",
+                    div {
+                        class: "ow-grid",
+                        style: "width: {ow.width * TILE_PX}px; zoom: {tile_zoom()};",
 
-                    for (y, row) in ow.tiles.iter().enumerate() {
-                        for (x, tile_kind) in row.iter().enumerate() {
-                            div {
-                                class: "{tile_css(tile_kind)}",
-                                style: "display:flex; align-items:center; justify-content:center; font-size:1.4rem; user-select:none;",
-                                "{tile_emoji_at(tile_kind, x, y, &ow.locked_doors)}"
+                        for (y, row) in ow.tiles.iter().enumerate() {
+                            for (x, tile_kind) in row.iter().enumerate() {
+                                div {
+                                    class: tile_css(
+                                        tile_kind,
+                                        is_door(tile_kind)
+                                            && ow
+                                                .locked_doors
+                                                .contains(&format!("{}_{}", x, y)),
+                                    ),
+                                    style: "background-image: url('{PATH_IMG}/{tile_img(tile_kind)}');",
+                                }
+                            }
+                        }
+
+                        // Defeated boss NPCs are hidden.
+                        for npc in ow.npcs.iter() {
+                            if !npc.defeated {
+                                img {
+                                    src: "{PATH_IMG}/{npc_sprite_file(npc)}",
+                                    class: "ow-sprite ow-npc",
+                                    style: "left:{npc.pos.x * TILE_PX}px; top:{npc.pos.y * TILE_PX}px; width:{TILE_PX}px; height:{TILE_PX}px;",
+                                    alt: "{npc.id}",
+                                }
+                            }
+                        }
+
+                        for (hero_id, pos) in ow.player_positions.iter() {
+                            img {
+                                key: "{hero_id}",
+                                src: "{PATH_IMG}/sprite_hero.svg",
+                                class: "ow-sprite ow-hero",
+                                style: "left:{pos.x * TILE_PX}px; top:{pos.y * TILE_PX}px; width:{TILE_PX}px; height:{TILE_PX}px;",
+                                alt: "hero",
                             }
                         }
                     }
+                }
+                // Zoom overlay — floats over the top-right corner of the map.
+                div { class: "ow-zoom-overlay",
+                    button {
+                        class: "ow-zoom-btn",
+                        tabindex: "-1",
+                        onclick: move |_| tile_zoom.set((tile_zoom() - 0.1).max(0.4)),
+                        "−"
+                    }
+                    span { class: "ow-zoom-label", "{(tile_zoom() * 100.0) as u32}%" }
+                    button {
+                        class: "ow-zoom-btn",
+                        tabindex: "-1",
+                        onclick: move |_| tile_zoom.set((tile_zoom() + 0.1).min(1.5)),
+                        "+"
+                    }
+                }
 
-                    // Defeated boss NPCs are hidden.
-                    for npc in ow.npcs.iter() {
-                        if !npc.defeated {
-                            div {
-                                class: "ow-sprite ow-npc",
-                                style: "left:{npc.pos.x * TILE_PX}px; top:{npc.pos.y * TILE_PX}px; width:{TILE_PX}px; height:{TILE_PX}px;",
-                                "{npc_emoji(npc)}"
+                // Dialog overlays the bottom of the map — no layout shift.
+                if !ow.active_dialog.is_empty() {
+                    div { class: "ow-dialog",
+                        for line in ow.active_dialog.iter() {
+                            p { class: "ow-dialog-line", "{line}" }
+                        }
+                        if ow.pending_fight.is_some() {
+                            p { class: "ow-dialog-question", "Do you want to start the fight?" }
+                            div { class: "ow-dialog-actions",
+                                button {
+                                    class: "ow-dialog-btn ow-dialog-btn-yes",
+                                    onclick: move |_| {
+                                        let sn = SERVER_NAME();
+                                        let pn = local_login_name_session();
+                                        let sock = socket_confirm_fight.clone();
+                                        async move {
+                                            let _ = sock.send(ClientEvent::Interact(sn, pn)).await;
+                                        }
+                                    },
+                                    "⚔️ Yes, fight!"
+                                }
+                                button {
+                                    class: "ow-dialog-btn ow-dialog-btn-no",
+                                    onclick: move |_| {
+                                        let sn = SERVER_NAME();
+                                        let pn = local_login_name_session();
+                                        let sock = socket_dismiss.clone();
+                                        async move {
+                                            let _ = sock.send(ClientEvent::DismissDialog(sn, pn)).await;
+                                        }
+                                    },
+                                    "🚪 No, not yet"
+                                }
                             }
                         }
                     }
-
-                    for (hero_id , pos) in ow.player_positions.iter() {
-                        div {
-                            key: "{hero_id}",
-                            class: "ow-sprite ow-hero",
-                            style: "left:{pos.x * TILE_PX}px; top:{pos.y * TILE_PX}px; width:{TILE_PX}px; height:{TILE_PX}px;",
-                            "🧑"
-                        }
-                    }
                 }
-            }
-            // Zoom overlay — floats over the top-right corner of the map.
-            div { class: "ow-zoom-overlay",
-                button {
-                    class: "ow-zoom-btn",
-                    tabindex: "-1",
-                    onclick: move |_| tile_zoom.set((tile_zoom() - 0.1).max(0.4)),
-                    "−"
-                }
-                span { class: "ow-zoom-label", "{(tile_zoom() * 100.0) as u32}%" }
-                button {
-                    class: "ow-zoom-btn",
-                    tabindex: "-1",
-                    onclick: move |_| tile_zoom.set((tile_zoom() + 0.1).min(1.5)),
-                    "+"
-                }
-            }
             } // ow-map-area
-
-            if !ow.active_dialog.is_empty() {
-                div { class: "ow-dialog",
-                    for line in ow.active_dialog.iter() {
-                        p { class: "ow-dialog-line", "{line}" }
-                    }
-                    if ow.pending_fight.is_some() {
-                        p { class: "ow-dialog-question", "Do you want to start the fight?" }
-                        div { class: "ow-dialog-actions",
-                            button {
-                                class: "ow-dialog-btn ow-dialog-btn-yes",
-                                onclick: move |_| {
-                                    let sn = SERVER_NAME();
-                                    let pn = local_login_name_session();
-                                    let sock = socket_confirm_fight.clone();
-                                    async move {
-                                        let _ = sock.send(ClientEvent::Interact(sn, pn)).await;
-                                    }
-                                },
-                                "⚔️ Yes, fight!"
-                            }
-                            button {
-                                class: "ow-dialog-btn ow-dialog-btn-no",
-                                onclick: move |_| {
-                                    let sn = SERVER_NAME();
-                                    let pn = local_login_name_session();
-                                    let sock = socket_dismiss.clone();
-                                    async move {
-                                        let _ = sock.send(ClientEvent::DismissDialog(sn, pn)).await;
-                                    }
-                                },
-                                "🚪 No, not yet"
-                            }
-                        }
-                    }
-                }
-            }
 
             // Virtual D-pad — visible on touch screens, hidden on desktop (CSS media query).
             {
