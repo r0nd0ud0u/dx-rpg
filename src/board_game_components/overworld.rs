@@ -46,9 +46,9 @@ fn tile_img(kind: &TileKind) -> &'static str {
 
 fn npc_sprite_file(npc: &lib_rpg::server::overworld_manager::NpcState) -> &'static str {
     if npc.fight_scenario_id.is_some() {
-        "sprite_boss.svg"
+        "sprite_boss.png"
     } else {
-        "sprite_npc.svg"
+        "sprite_npc.png"
     }
 }
 
@@ -186,7 +186,7 @@ pub fn OverworldMap() -> Element {
                         for (hero_id, pos) in ow.player_positions.iter() {
                             img {
                                 key: "{hero_id}",
-                                src: "{PATH_IMG}/sprite_hero.svg",
+                                src: "{PATH_IMG}/sprite_hero.png",
                                 class: "ow-sprite ow-hero",
                                 style: "left:{pos.x * TILE_PX}px; top:{pos.y * TILE_PX}px; width:{TILE_PX}px; height:{TILE_PX}px;",
                                 alt: "hero",
@@ -211,44 +211,45 @@ pub fn OverworldMap() -> Element {
                     }
                 }
 
-                // Dialog overlays the bottom of the map — no layout shift.
-                if !ow.active_dialog.is_empty() {
-                    div { class: "ow-dialog",
-                        for line in ow.active_dialog.iter() {
-                            p { class: "ow-dialog-line", "{line}" }
-                        }
-                        if ow.pending_fight.is_some() {
-                            p { class: "ow-dialog-question", "Do you want to start the fight?" }
-                            div { class: "ow-dialog-actions",
-                                button {
-                                    class: "ow-dialog-btn ow-dialog-btn-yes",
-                                    onclick: move |_| {
-                                        let sn = SERVER_NAME();
-                                        let pn = local_login_name_session();
-                                        let sock = socket_confirm_fight.clone();
-                                        async move {
-                                            let _ = sock.send(ClientEvent::Interact(sn, pn)).await;
-                                        }
-                                    },
-                                    "⚔️ Yes, fight!"
-                                }
-                                button {
-                                    class: "ow-dialog-btn ow-dialog-btn-no",
-                                    onclick: move |_| {
-                                        let sn = SERVER_NAME();
-                                        let pn = local_login_name_session();
-                                        let sock = socket_dismiss.clone();
-                                        async move {
-                                            let _ = sock.send(ClientEvent::DismissDialog(sn, pn)).await;
-                                        }
-                                    },
-                                    "🚪 No, not yet"
-                                }
+            } // ow-map-area
+
+            // Dialog sits directly below the map.
+            if !ow.active_dialog.is_empty() {
+                div { class: "ow-dialog",
+                    for line in ow.active_dialog.iter() {
+                        p { class: "ow-dialog-line", "{line}" }
+                    }
+                    if ow.pending_fight.is_some() {
+                        p { class: "ow-dialog-question", "Do you want to start the fight?" }
+                        div { class: "ow-dialog-actions",
+                            button {
+                                class: "ow-dialog-btn ow-dialog-btn-yes",
+                                onclick: move |_| {
+                                    let sn = SERVER_NAME();
+                                    let pn = local_login_name_session();
+                                    let sock = socket_confirm_fight.clone();
+                                    async move {
+                                        let _ = sock.send(ClientEvent::Interact(sn, pn)).await;
+                                    }
+                                },
+                                "⚔️ Yes, fight!"
+                            }
+                            button {
+                                class: "ow-dialog-btn ow-dialog-btn-no",
+                                onclick: move |_| {
+                                    let sn = SERVER_NAME();
+                                    let pn = local_login_name_session();
+                                    let sock = socket_dismiss.clone();
+                                    async move {
+                                        let _ = sock.send(ClientEvent::DismissDialog(sn, pn)).await;
+                                    }
+                                },
+                                "🚪 No, not yet"
                             }
                         }
                     }
                 }
-            } // ow-map-area
+            }
 
             // Virtual D-pad — visible on touch screens, hidden on desktop (CSS media query).
             {
