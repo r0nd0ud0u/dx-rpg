@@ -1,0 +1,212 @@
+{
+  "id": "lotr_plaine_desespoir",
+  "width": 14,
+  "height": 10,
+  "tiles": [
+    [
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      {
+        "door": {
+          "target_map": "lotr_mont_doom",
+          "spawn": {
+            "x": 7,
+            "y": 8
+          }
+        }
+      },
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "wall",
+      "grass",
+      "grass",
+      "wall",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      {
+        "door": {
+          "target_map": "lotr_gorge_mordor",
+          "spawn": {
+            "x": 7,
+            "y": 1
+          }
+        }
+      },
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall"
+    ]
+  ],
+  "npcs": [
+    {
+      "id": "frodo",
+      "x": 2,
+      "y": 6,
+      "dialog": [
+        "La plaine du Désespoir... même le soleil semble s'y éteindre.",
+        "Le Nazgûl rôde. Il ne doit pas passer."
+      ]
+    },
+    {
+      "id": "nazgul",
+      "x": 7,
+      "y": 3,
+      "dialog": [
+        "Un Nazgûl fond sur vous depuis les cieux !",
+        "L'Anneau... donnez-moi l'Anneau !"
+      ],
+      "fight_scenario_id": "Le Cavalier Sans Visage"
+    }
+  ],
+  "spawn": {
+    "x": 7,
+    "y": 8
+  },
+  "encounters": [],
+  "locked_doors": [
+    "7_0"
+  ]
+}

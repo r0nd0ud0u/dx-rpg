@@ -1947,3 +1947,263 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 .equip-btn-label { display: inline-flex; align-items: center; gap: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; }
 .equip-new-dot { font-size: 0.8em; flex-shrink: 0; }
 .equip-equipped-check { color: var(--rpg-teal, #2dd4bf); font-weight: 700; flex-shrink: 0; }
+
+/* ── Overworld ────────────────────────────────────────────────── */
+.ow-loading { padding: 2rem; text-align: center; color: var(--rpg-text-muted, #8a8fa8); }
+
+/* Viewport-filling wrapper for the overworld view (toolbar + map). */
+.ow-page {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 56px);
+    overflow: hidden;
+}
+
+.ow-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    outline: none;
+    background: #0d1f0d;
+    /* Grow to fill .ow-page space below the toolbar. */
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Scrollable wrapper — fills the .ow-map-area; map scrolls inside. */
+.ow-grid-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.ow-grid {
+    display: flex;
+    flex-wrap: wrap;
+    position: relative;
+    border: 2px solid var(--rpg-border, #2d3250);
+    border-radius: 4px;
+    overflow: hidden;
+    image-rendering: pixelated;
+    background: #1a1a2e;
+    box-sizing: content-box;
+}
+
+/* Tiles have explicit size; flex-wrap handles row breaks at the container width */
+.ow-tile {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    position: relative;
+    background-size: cover;
+    image-rendering: pixelated;
+    user-select: none;
+}
+
+/* background-image is set via inline style in overworld.rs using PATH_IMG (hashed asset path) */
+.ow-water { animation: water-shimmer 1.8s ease-in-out infinite; }
+
+/* Locked door overlay */
+.ow-door.ow-locked::after {
+    content: "🔒";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.2rem;
+    line-height: 1;
+    pointer-events: none;
+}
+
+@keyframes water-shimmer {
+    0%, 100% { filter: brightness(1.0); }
+    50%       { filter: brightness(1.3); }
+}
+
+/* Sprites sit on top of tiles */
+.ow-sprite {
+    position: absolute;
+    pointer-events: none;
+    z-index: 2;
+    transition: left 0.1s linear, top 0.1s linear;
+    image-rendering: pixelated;
+    object-fit: contain;
+}
+
+.ow-hero { z-index: 3; }
+
+/* NPC dialog box — absolute overlay at the bottom of .ow-map-area, no layout shift */
+.ow-dialog {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background: rgba(18, 20, 42, 0.97);
+    border-top: 2px solid var(--rpg-accent, #7c6fff);
+    border-radius: 0 0 4px 4px;
+    padding: 10px 16px 12px;
+    backdrop-filter: blur(4px);
+}
+.ow-dialog-line {
+    margin: 0 0 4px;
+    font-size: 0.9rem;
+    color: var(--rpg-text, #e2e8f0);
+    line-height: 1.4;
+}
+.ow-dialog-line:last-child { margin-bottom: 0; }
+.ow-dialog-question {
+    margin: 10px 0 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--rpg-accent, #7c6fff);
+}
+.ow-dialog-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 4px;
+}
+.ow-dialog-btn {
+    flex: 1 1 120px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 44px;
+    transition: filter 0.15s;
+}
+.ow-dialog-btn:active { filter: brightness(0.85); }
+.ow-dialog-btn-yes {
+    background: var(--rpg-accent, #7c6fff);
+    color: #fff;
+}
+.ow-dialog-btn-no {
+    background: #2d3148;
+    color: var(--rpg-text, #e2e8f0);
+    border: 1px solid #4a4f72;
+}
+
+/* HUD bar below the map */
+.ow-hud {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 0.8rem;
+    color: var(--rpg-text-muted, #8a8fa8);
+}
+.ow-map-name { font-weight: 600; color: var(--rpg-text, #e2e8f0); text-transform: capitalize; }
+
+/* ── Virtual D-pad ──────────────────────────────────────────────── */
+.ow-dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 56px);
+    grid-template-rows: repeat(3, 56px);
+    gap: 6px;
+}
+
+.ow-dpad-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+    color: var(--rpg-text, #e2e8f0);
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+    transition: background 0.1s;
+}
+
+.ow-dpad-btn:active {
+    background: rgba(255, 255, 255, 0.28);
+    transform: scale(0.94);
+}
+
+.ow-dpad-center {
+    background: rgba(124, 111, 255, 0.2);
+    border-color: var(--rpg-accent, #7c6fff);
+}
+
+.ow-dpad-empty {
+    /* placeholder cells to form the cross shape */
+}
+
+/* Hide D-pad only on wide screens with a mouse (not tablets/phones). */
+@media (hover: hover) and (pointer: fine) and (min-width: 769px) {
+    .ow-dpad { display: none; }
+}
+
+/* ── Mobile overworld layout ──────────────────────────────────────── */
+
+/* Narrow mobile navbar is 52px. */
+@media (max-width: 600px) {
+    .ow-page { height: calc(100dvh - 52px); }
+    .ow-container { padding: 6px 4px; gap: 6px; }
+    .ow-controls { display: none; }
+    .ow-hud { gap: 8px; font-size: 0.75rem; }
+}
+
+@media (max-width: 400px) {
+    .ow-container { padding: 4px 2px; gap: 4px; }
+}
+
+/* ── Map area wrapper (holds scroll + zoom overlay) ────────────────── */
+.ow-map-area {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Zoom overlay — always visible in the top-right corner of the map. */
+.ow-zoom-overlay {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(10, 14, 28, 0.78);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 8px;
+    padding: 3px 6px;
+    pointer-events: auto;
+}
+.ow-zoom-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.12);
+    color: var(--rpg-text, #e2e8f0);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+    touch-action: manipulation;
+    user-select: none;
+}
+.ow-zoom-btn:active { background: rgba(255,255,255,0.28); }
+.ow-zoom-label {
+    font-size: 0.75rem;
+    color: var(--rpg-text-muted, #8a8fa8);
+    min-width: 32px;
+    text-align: center;
+}

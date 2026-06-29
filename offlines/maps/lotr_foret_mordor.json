@@ -1,0 +1,212 @@
+{
+  "id": "lotr_foret_mordor",
+  "width": 14,
+  "height": 10,
+  "tiles": [
+    [
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      {
+        "door": {
+          "target_map": "lotr_gorge_mordor",
+          "spawn": {
+            "x": 7,
+            "y": 8
+          }
+        }
+      },
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "grass",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "grass",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      {
+        "door": {
+          "target_map": "lotr_moria",
+          "spawn": {
+            "x": 7,
+            "y": 1
+          }
+        }
+      },
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall"
+    ]
+  ],
+  "npcs": [
+    {
+      "id": "aragorn",
+      "x": 2,
+      "y": 7,
+      "dialog": [
+        "Les terres du Mordor commencent ici.",
+        "Le Nécromancien commande les ombres. Soyez prudents."
+      ]
+    },
+    {
+      "id": "necromancien",
+      "x": 7,
+      "y": 3,
+      "dialog": [
+        "Un Nécromancien du Mordor surgit de l'obscurité !",
+        "Vos âmes appartiendront à Sauron !"
+      ],
+      "fight_scenario_id": "L'Ombre du Mordor"
+    }
+  ],
+  "spawn": {
+    "x": 7,
+    "y": 8
+  },
+  "encounters": [],
+  "locked_doors": [
+    "7_0"
+  ]
+}

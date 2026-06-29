@@ -1,0 +1,212 @@
+{
+  "id": "lotr_gorge_mordor",
+  "width": 14,
+  "height": 10,
+  "tiles": [
+    [
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      {
+        "door": {
+          "target_map": "lotr_plaine_desespoir",
+          "spawn": {
+            "x": 7,
+            "y": 8
+          }
+        }
+      },
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "wall",
+      "floor",
+      "wall",
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "wall",
+      "floor",
+      "wall",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      {
+        "door": {
+          "target_map": "lotr_foret_mordor",
+          "spawn": {
+            "x": 7,
+            "y": 1
+          }
+        }
+      },
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall"
+    ]
+  ],
+  "npcs": [
+    {
+      "id": "legolas",
+      "x": 11,
+      "y": 3,
+      "dialog": [
+        "Cette gorge résonne de magie noire.",
+        "Le nécromancien prépare un rituel. Interrompez-le !"
+      ]
+    },
+    {
+      "id": "necromancien_2",
+      "x": 6,
+      "y": 3,
+      "dialog": [
+        "Le Rituel des Ténèbres commence !",
+        "Vous ne pouvez pas arrêter Sauron !"
+      ],
+      "fight_scenario_id": "Rituel des Tenebres"
+    }
+  ],
+  "spawn": {
+    "x": 7,
+    "y": 8
+  },
+  "encounters": [],
+  "locked_doors": [
+    "7_0"
+  ]
+}

@@ -179,7 +179,9 @@ pub fn LobbyPage() -> Element {
                     CharacterSelect { universe: selected_universe() }
                 }
             }
-        } else if server_data_snap.core_game_data.game_phase == GamePhase::Running {
+        } else if server_data_snap.core_game_data.game_phase == GamePhase::Running
+            || server_data_snap.core_game_data.game_phase == GamePhase::Overworld
+        {
             // check if there is more characters in game than users (skip in single-player mode)
             if server_data_snap.core_game_data.is_single_player
                 || server_data_snap.core_game_data.game_manager.pm.active_heroes.len()

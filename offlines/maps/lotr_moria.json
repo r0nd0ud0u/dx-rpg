@@ -1,0 +1,212 @@
+{
+  "id": "lotr_moria",
+  "width": 14,
+  "height": 10,
+  "tiles": [
+    [
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      {
+        "door": {
+          "target_map": "lotr_foret_mordor",
+          "spawn": {
+            "x": 7,
+            "y": 8
+          }
+        }
+      },
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "floor",
+      "wall"
+    ],
+    [
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      {
+        "door": {
+          "target_map": "lotr_isengard",
+          "spawn": {
+            "x": 7,
+            "y": 1
+          }
+        }
+      },
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall",
+      "wall"
+    ]
+  ],
+  "npcs": [
+    {
+      "id": "gimli",
+      "x": 2,
+      "y": 2,
+      "dialog": [
+        "Les mines de la Moria... sombres et profondes.",
+        "Méfiez-vous : le champion n'est pas seul dans ces couloirs."
+      ]
+    },
+    {
+      "id": "champion_orc_2",
+      "x": 8,
+      "y": 4,
+      "dialog": [
+        "Le Champion revient, encore plus furieux !",
+        "Cette fois vous ne vous en sortirez pas !"
+      ],
+      "fight_scenario_id": "Colere du Champion"
+    }
+  ],
+  "spawn": {
+    "x": 7,
+    "y": 8
+  },
+  "encounters": [],
+  "locked_doors": [
+    "7_0"
+  ]
+}

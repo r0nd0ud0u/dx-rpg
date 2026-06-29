@@ -1,0 +1,22 @@
+{
+  "id": "pallet_town",
+  "width": 12,
+  "height": 10,
+  "tiles": [
+    ["wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","floor","grass","grass","grass","floor","floor","grass","grass","grass","floor","wall"],
+    ["wall","floor","grass","grass","grass","floor","floor","grass","grass","grass","floor","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","floor","floor","water","water","water","floor","floor","floor",{"door":{"target_map":"route_1","spawn":{"x":1,"y":1}}},"floor","wall"],
+    ["wall","floor","floor","floor","floor","floor","floor","floor","floor","floor","floor","wall"],
+    ["wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall"]
+  ],
+  "npcs": [
+    {"id":"professor_oak","x":5,"y":2,"dialog":["Welcome to Pallet Town!","I am Professor Oak.","Step into the tall grass to encounter wild Pokemon!","The door to the east leads to Route 1."]}
+  ],
+  "spawn": {"x":5,"y":6},
+  "encounters": ["Patrouille Rattata", "Double Attaque"]
+}

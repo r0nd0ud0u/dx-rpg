@@ -18,6 +18,8 @@ use lib_rpg::common::constants::core_game_data_const::{
 #[cfg(feature = "server")]
 use lib_rpg::common::constants::paths_const::GAMES_DIR;
 use lib_rpg::common::log_data::LogData;
+use lib_rpg::common::overworld::Direction;
+use lib_rpg::common::overworld::Position;
 use lib_rpg::server::core_game_data::CoreGameData;
 use lib_rpg::server::server_manager::OnGoingGame;
 use lib_rpg::server::server_manager::ServerData;
@@ -86,6 +88,11 @@ pub enum ClientEvent {
     UsePartyPotion(String, String, String, String), // server_name, player_name, potion_name, target_id_name
     BuyItem(String, String, String, String), // server_name, character_id_name, item_name, item_kind ("Equipment"|"Consumable")
     SellItem(String, String, String, String), // server_name, character_id_name, item_name_or_unique_name, item_kind
+    MovePlayer(String, String, Direction),    // server_name, player_name, direction
+    Interact(String, String),                 // server_name, player_name
+    DismissDialog(String, String),            // server_name, player_name
+    EnterOverworld(String, String),           // server_name, map_id
+    ExitOverworld(String),                    // server_name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -98,7 +105,8 @@ pub enum ServerEvent {
     AnswerSavedGameList(Vec<PathBuf>), // list of saved games paths
     ResetClientFromServerData,         // server name
     LogOut,
-    SetAtkAnimation(bool), // true to set atk animation, false to reset it
+    SetAtkAnimation(bool),    // true to set atk animation, false to reset it
+    OverworldEntered(String), // map_id — lightweight trigger; no complex types
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -151,7 +159,9 @@ pub async fn on_rcv_client_event(
                     // Outgoing messages destined for this client
                     maybe_msg = rx.recv() => {
                         if let Some(msg) = maybe_msg {
-                            let _ = socket.send(msg).await;
+                            if socket.send(msg).await.is_err() {
+                                tracing::error!("[server] socket.send to client {} FAILED", client_id);
+                            }
                         } else {
                             break;
                         }
@@ -297,6 +307,26 @@ pub async fn on_rcv_client_event(
                                 tracing::info!("Character {} selling '{}' ({}) on server {}", character_id_name, item_name, item_kind, server_name);
                                 sell_item_handler(&server_name, &character_id_name, &item_name, &item_kind);
                                 update_clients_server_data(&server_name);
+                            }
+                            Ok(ClientEvent::MovePlayer(server_name, player_name, dir)) => {
+                                tracing::debug!("Player {} moving {:?} on server {}", player_name, dir, server_name);
+                                overworld_move_handler(&server_name, &player_name, dir);
+                            }
+                            Ok(ClientEvent::Interact(server_name, player_name)) => {
+                                tracing::debug!("Player {} interacting on server {}", player_name, server_name);
+                                overworld_interact_handler(&server_name, &player_name);
+                            }
+                            Ok(ClientEvent::DismissDialog(server_name, player_name)) => {
+                                tracing::debug!("Player {} dismissing dialog on server {}", player_name, server_name);
+                                overworld_dismiss_dialog_handler(&server_name, &player_name);
+                            }
+                            Ok(ClientEvent::EnterOverworld(server_name, map_id)) => {
+                                tracing::info!("Entering overworld map '{}' on server {}", map_id, server_name);
+                                overworld_enter_handler(&server_name, &map_id, None);
+                            }
+                            Ok(ClientEvent::ExitOverworld(server_name)) => {
+                                tracing::info!("Exiting overworld on server {}", server_name);
+                                overworld_exit_handler(&server_name);
                             }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
@@ -597,7 +627,10 @@ pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
             }
         }
 
-        server_data.core_game_data.game_phase = GamePhase::Running;
+        // Don't downgrade Overworld → Running for games loaded from a save in overworld mode.
+        if server_data.core_game_data.game_phase != GamePhase::Overworld {
+            server_data.core_game_data.game_phase = GamePhase::Running;
+        }
         tracing::info!("Game started for server: {}", server_name);
 
         (
@@ -860,6 +893,219 @@ pub fn use_party_potion_handler(
 }
 
 #[cfg(feature = "server")]
+fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction) {
+    use lib_rpg::server::overworld_manager::{MoveResult, OverworldManager};
+
+    enum PostAction {
+        Broadcast,
+        EnterMap(String, Position),
+    }
+
+    let action = {
+        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let Some(server_data) = sm.servers_data.get_mut(server_name) else {
+            tracing::error!("overworld_move: no server data for {}", server_name);
+            return;
+        };
+        // Only the server owner controls the party sprite.
+        let owner_name = server_data.players_data.owner_player_name.clone();
+        if player_name != owner_name {
+            return;
+        }
+        // Party position is tracked via the owner's first character.
+        let Some(hero_id) = server_data
+            .players_data
+            .players_info
+            .get(&owner_name)
+            .and_then(|info| info.character_id_names.first().cloned())
+        else {
+            tracing::warn!("overworld_move: no hero for owner {}", owner_name);
+            return;
+        };
+        let Some(ow_state) = server_data.core_game_data.overworld.as_mut() else {
+            tracing::warn!("overworld_move: no overworld state on {}", server_name);
+            return;
+        };
+        ow_state.active_dialog.clear();
+        ow_state.pending_fight = None;
+        let mut manager = OverworldManager::from_state(ow_state.clone());
+        let result = manager.move_player(&hero_id, dir);
+        match result {
+            MoveResult::Blocked => {
+                // Persist state so active_dialog (locked-door hint) reaches clients.
+                server_data.core_game_data.overworld = Some(manager.state);
+                PostAction::Broadcast
+            }
+            MoveResult::Moved => {
+                server_data.core_game_data.overworld = Some(manager.state);
+                PostAction::Broadcast
+            }
+            MoveResult::Encounter(scenario_id) => {
+                server_data.core_game_data.overworld = Some(manager.state);
+                server_data
+                    .core_game_data
+                    .exit_overworld_to_fight(&scenario_id);
+                PostAction::Broadcast
+            }
+            MoveResult::MapTransition(target_map, spawn) => PostAction::EnterMap(target_map, spawn),
+        }
+    }; // SERVER_MANAGER lock released here
+
+    match action {
+        PostAction::Broadcast => update_clients_server_data(server_name),
+        PostAction::EnterMap(map_id, spawn) => {
+            overworld_enter_handler(server_name, &map_id, Some(spawn))
+        }
+    }
+}
+
+#[cfg(feature = "server")]
+fn overworld_interact_handler(server_name: &str, player_name: &str) {
+    use lib_rpg::server::overworld_manager::{InteractResult, OverworldManager};
+
+    let fight_scenario = {
+        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let Some(server_data) = sm.servers_data.get_mut(server_name) else {
+            tracing::error!("overworld_interact: no server data for {}", server_name);
+            return;
+        };
+        // Only the server owner interacts on behalf of the party.
+        let owner_name = server_data.players_data.owner_player_name.clone();
+        if player_name != owner_name {
+            return;
+        }
+        let Some(hero_id) = server_data
+            .players_data
+            .players_info
+            .get(&owner_name)
+            .and_then(|info| info.character_id_names.first().cloned())
+        else {
+            tracing::warn!("overworld_interact: no hero for owner {}", owner_name);
+            return;
+        };
+        let Some(ow_state) = server_data.core_game_data.overworld.as_mut() else {
+            return;
+        };
+        let mut manager = OverworldManager::from_state(ow_state.clone());
+        let result = manager.interact(&hero_id);
+        // Write back mutations (active_dialog, pending_fight).
+        *ow_state = manager.state;
+        match result {
+            Some(InteractResult::Dialog(_)) => None,
+            Some(InteractResult::Fight(scenario_id)) => Some(scenario_id),
+            None => None,
+        }
+    };
+
+    if let Some(scenario_id) = fight_scenario {
+        let mut sm = SERVER_MANAGER.lock().unwrap();
+        if let Some(server_data) = sm.servers_data.get_mut(server_name) {
+            server_data
+                .core_game_data
+                .exit_overworld_to_fight(&scenario_id);
+            tracing::info!(
+                "overworld_interact: fight triggered '{}' on server {}",
+                scenario_id,
+                server_name
+            );
+        }
+    }
+    update_clients_server_data(server_name);
+}
+
+#[cfg(feature = "server")]
+fn overworld_dismiss_dialog_handler(server_name: &str, player_name: &str) {
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let Some(server_data) = sm.servers_data.get_mut(server_name) else {
+        return;
+    };
+    let owner_name = &server_data.players_data.owner_player_name.clone();
+    if player_name != owner_name {
+        return;
+    }
+    if let Some(ow_state) = server_data.core_game_data.overworld.as_mut() {
+        ow_state.active_dialog.clear();
+        ow_state.pending_fight = None;
+    }
+    drop(sm);
+    update_clients_server_data(server_name);
+}
+
+#[cfg(feature = "server")]
+fn overworld_enter_handler(server_name: &str, map_id: &str, spawn_override: Option<Position>) {
+    use crate::common::OFFLINE_PATH;
+    use lib_rpg::server::game_state::GameStatus;
+
+    let offline_root = std::path::Path::new(OFFLINE_PATH);
+    {
+        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let Some(server_data) = sm.servers_data.get_mut(server_name) else {
+            tracing::error!("overworld_enter: no server data for {}", server_name);
+            return;
+        };
+        let result = if let Some(spawn) = spawn_override {
+            server_data
+                .core_game_data
+                .enter_overworld_at(map_id, spawn, offline_root)
+        } else {
+            server_data
+                .core_game_data
+                .enter_overworld(map_id, offline_root)
+        };
+        if let Err(e) = result {
+            tracing::error!("overworld_enter: failed to load map '{}': {}", map_id, e);
+            return;
+        }
+
+        // Derive the owner's first hero id and current game state before the mutable borrow.
+        let owner_name = server_data.players_data.owner_player_name.clone();
+        let owner_hero = server_data
+            .players_data
+            .players_info
+            .get(&owner_name)
+            .and_then(|i| i.character_id_names.first())
+            .cloned();
+        if let Some(ow) = server_data.core_game_data.overworld.as_mut() {
+            // Keep only the owner's hero position — one party sprite for the whole group.
+            if let Some(ref hero_id) = owner_hero {
+                let pos = ow
+                    .player_positions
+                    .get(hero_id)
+                    .cloned()
+                    .or_else(|| ow.player_positions.values().next().cloned())
+                    .unwrap_or_default();
+                ow.player_positions.clear();
+                ow.player_positions.insert(hero_id.clone(), pos);
+            }
+        }
+        tracing::info!(
+            "Entered overworld map '{}' on server {} (owner: {})",
+            map_id,
+            server_name,
+            owner_name
+        );
+    }
+    // Lightweight signal first — guaranteed CBOR-safe.
+    send_server_event_to_clients(
+        server_name,
+        &ServerEvent::OverworldEntered(map_id.to_owned()),
+    );
+    update_clients_server_data(server_name);
+}
+
+#[cfg(feature = "server")]
+fn overworld_exit_handler(server_name: &str) {
+    {
+        let mut sm = SERVER_MANAGER.lock().unwrap();
+        if let Some(server_data) = sm.servers_data.get_mut(server_name) {
+            server_data.core_game_data.game_phase = GamePhase::Running;
+            // Keep overworld state so re-entering the same map restores positions.
+        }
+    }
+    update_clients_server_data(server_name);
+}
+
+#[cfg(feature = "server")]
 pub fn update_clients_server_data(server_name: &str) {
     let Some(server_data) = get_server_data_by_server_name(server_name) else {
         tracing::error!(
@@ -889,6 +1135,7 @@ fn send_server_event_to_clients(server_name: &str, server_event: &ServerEvent) {
         return;
     };
     let clients = CLIENTS.lock().unwrap();
+    let mut sent_count = 0usize;
     for (&other_id, sender) in clients.iter() {
         if server_data
             .players_data
@@ -896,9 +1143,20 @@ fn send_server_event_to_clients(server_name: &str, server_event: &ServerEvent) {
             .values()
             .any(|player_info| player_info.player_ids.contains(&(other_id as u32)))
         {
-            let _ = sender.send(server_event.clone());
+            if sender.send(server_event.clone()).is_ok() {
+                sent_count += 1;
+            } else {
+                tracing::error!(
+                    "[server] mpsc send to client {} FAILED (channel closed?)",
+                    other_id
+                );
+            }
         }
     }
+    tracing::info!(
+        "[server] send_server_event_to_clients: queued event for {} client(s)",
+        sent_count
+    );
 }
 
 #[cfg(feature = "server")]
@@ -1350,6 +1608,10 @@ async fn load_game_by_player(
 
     app.game_phase = if is_replay {
         GamePhase::Running
+    } else if app.game_phase == GamePhase::Overworld {
+        // Preserve overworld phase so the lobby shows "Continue" and the client
+        // re-opens in overworld mode without needing a separate EnterOverworld event.
+        GamePhase::Overworld
     } else {
         GamePhase::Loading
     };

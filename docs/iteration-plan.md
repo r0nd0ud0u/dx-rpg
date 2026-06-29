@@ -1,5 +1,29 @@
 # Iteration Plan
 
+## Completed ✅ — Overworld iteration (2026-06-26)
+
+### Overworld v1 — done
+- **route_1.json** map created (Pokémon universe, tall-grass encounters, door back to Pallet Town)
+- **lotr_shire.json** map created (LOTR universe, Goblin enemy NPC triggers stage-1 fight)
+- **Emoji tiles**: 🧱 wall, 🚪 door, 💧 water; floor and grass stay plain
+- **"⚔️ Back to Fight" button** in overworld HUD — sends `ExitOverworld` event
+- **`ExitOverworld` client event** — server sets `game_phase = Running` and clears overworld state
+- **Door spawn fix**: the `_spawn` from `MoveResult::MapTransition` is now passed through `PostAction::EnterMap(map_id, spawn)` and applied via `enter_overworld_at()`
+- **Single-hero spawn**: `enter_overworld` now places only the first active hero to prevent ghost replicas
+- **NPC fight trigger**: `InteractResult::Fight(scenario_id)` in lib-rpg; `fight_scenario_id` field on NPC JSON
+- **`show_overworld` removed** from UI — `game_phase == Overworld` is the single source of truth; random grass encounters now immediately switch view to fight
+- **lib-rpg rev** updated in Cargo.toml (local path while branch not pushed to GitHub)
+
+### Next steps for overworld
+- [ ] Push `prepare-overworld` branch to GitHub and restore `rev = "..."` in Cargo.toml
+- [ ] Add map for LOTR stage 2 and beyond
+- [ ] Player sprite differentiation per hero (different emoji per character)
+- [ ] Multiplayer: each player's hero spawns independently when they enter the overworld
+- [ ] Smooth CSS transitions on sprite movement
+- [ ] Save/restore overworld position when re-entering (persist last known position per map)
+
+---
+
 ## P0 — Engine correctness
 
 ### 1. MultiValue ×3 multiplier doesn't reach cross-character heals

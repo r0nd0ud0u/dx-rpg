@@ -226,6 +226,89 @@ Cooldown on Thalia_#1: 5 turns
 no-op effects (e.g. `RemoveOneDebuf` when there is no debuff to remove) so they are silently
 skipped rather than showing a confusing `→ 0` line.
 
+### Overworld Exploration
+
+Between (or during) fights the owner can click **🗺 Overworld** / **🗺 Explore Overworld** to switch to a top-down map view.
+
+**Controls**
+
+| Key / Control | Action |
+|---------------|--------|
+| Arrow keys | Move hero |
+| Enter / Space | Interact with adjacent NPC |
+| Virtual D-pad (touch) | Move + interact on mobile / tablet |
+| ⚔️ Back to Fight | Return to the active fight |
+
+**Map tiles — emoji legend**
+
+| Tile | Emoji | Description |
+|------|-------|-------------|
+| Floor | *(empty)* | Walkable path |
+| Wall | 🧱 | Impassable |
+| Grass | *(green)* | Walkable; may trigger a random encounter |
+| Water | 💧 | Impassable |
+| Door | 🚪 | Transitions to another map |
+
+**Map files** live in `offlines/maps/<map_id>.json`.  Each map specifies:
+- `tiles` — 2-D grid of `"floor"`, `"wall"`, `"grass"`, `"water"`, or a door object `{"door":{"target_map":"…","spawn":{…}}}`
+- `npcs` — list of NPCs with `id`, `x`, `y`, `dialog`, and optional `fight_scenario_id` (triggers a fight on interact)
+- `spawn` — default spawn position for heroes entering this map
+- `encounters` — list of scenario IDs that can be randomly triggered by walking on grass tiles
+
+**Available maps**
+
+#### Pokémon maps
+
+| Map | Notes |
+|-----|-------|
+| `pallet_town` | Starting hub; door to Route 1; Professor Oak NPC; grass encounters |
+| `route_1` | Tall grass with random Rattata / Double Attaque encounters; door back to Pallet Town |
+
+#### LOTR maps (linear chain — each map connects north → south)
+
+| Map | Friendly NPC | Enemy NPC | Fight scenario | Connects to |
+|-----|-------------|-----------|----------------|-------------|
+| `lotr_shire` | Gandalf | Gobelin Eclaireur | *Patrouille Gobeline* (stage 1) | → Forêt Ancienne (north, locked until boss beaten) |
+| `lotr_foret_ancienne` | Sylvain le Forestier | Gobelin Embuscade | *Embuscade Gobeline* (stage 2) | ↑ Col Brumeux · ↓ La Comté |
+| `lotr_col_brumeux` | Nain Errant | Orc Pillard | *Le Pillard Orc* (stage 3) | ↑ Plaines de Rohan · ↓ Forêt Ancienne |
+| `lotr_plaines_rohan` | Cavalier Rohan | Patrouille Mixte | *Patrouille Mixte* (stage 4) | ↑ Isengard · ↓ Col Brumeux |
+| `lotr_isengard` | Saruman Captif | Champion Orc | *Le Champion des Orcs* (stage 5) | ↑ Moria · ↓ Plaines de Rohan |
+| `lotr_moria` | Gimli | Champion Orc 2 | *Colère du Champion* (stage 6) | ↑ Forêt du Mordor · ↓ Isengard |
+| `lotr_foret_mordor` | Aragorn | Nécromancien | *L'Ombre du Mordor* (stage 7) | ↑ Gorge du Mordor · ↓ Moria |
+| `lotr_gorge_mordor` | Legolas | Nécromancien 2 | *Rituel des Ténèbres* (stage 8) | ↑ Plaine du Désespoir · ↓ Forêt du Mordor |
+| `lotr_plaine_desespoir` | Frodon | Nazgul | *Le Cavalier Sans Visage* (stage 9) | ↑ Mont Doom · ↓ Gorge du Mordor |
+| `lotr_mont_doom` | Gandalf Blanc | Sauron | *L'Œil de Sauron* (stage 10) | ↓ Plaine du Désespoir |
+
+The north door of each LOTR map is **locked** (`locked_doors` in the JSON) until the enemy NPC on that map is defeated.
+
+**Random encounters** are driven by the `encounters` list in the map JSON — the field accepts any scenario ID, keeping the mechanism universe-agnostic. The encounter probability per grass step is 50 %.
+
+**NPC-triggered fights** are configured via `fight_scenario_id` in the NPC definition:
+```json
+{"id":"goblin","x":3,"y":4,"dialog":[],"fight_scenario_id":"Patrouille Gobeline"}
+```
+If the NPC has a non-empty `dialog` array, the dialog is shown first; pressing interact a second time (or pressing the center D-pad button) starts the fight. With an empty `dialog` the fight starts on the first interact.
+
+**Boss NPC lifecycle**
+
+Once a boss-fight scenario (linked via `fight_scenario_id`) is won, the NPC is marked `defeated` in the overworld state and removed from the map. This is independent of random grass encounters, which can re-trigger at any time.
+
+**Toolbar in overworld mode**
+
+All standard toolbar sheets (Save, Inventory, Stats, Scenarios, Logs, Store, Settings) are available while exploring the overworld via the toolbar above the map.
+
+**Position persistence across fights**
+
+When a fight is triggered from the overworld (either via NPC interact or a random grass encounter) and later won, clicking **🗺 Explore Overworld** returns the party to the same map and position they were at before the fight — no reset to the map spawn point.
+
+**Save / Load in overworld mode**
+
+If the game is saved while `game_phase == Overworld`, loading that save re-opens the game directly in overworld mode (same map, same party position, same NPC states). The lobby "Continue" button replaces "Start Game" for these saves.
+
+**Mobile / tablet layout**
+
+The overworld map is wrapped in a scrollable container so it never overflows on narrow screens. A virtual D-pad grid (3 × 3, 56 px buttons) is shown below the map on touch devices and hidden on mouse/pointer devices via `@media (hover: hover) and (pointer: fine)`. The standard keyboard controls (`ArrowUp/Down/Left/Right`, `Enter`, `Space`) remain available on desktop.
+
 ### Action Banner
 
 The gameboard shows a contextual banner above the combat log for every action:
