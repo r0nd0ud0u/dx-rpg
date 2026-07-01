@@ -136,11 +136,13 @@ pub fn OverworldMap() -> Element {
                             .await;
                     }
                     Key::Enter => {
+                        e.prevent_default();
                         let _ = socket
                             .send(ClientEvent::Interact(server_name, player_name))
                             .await;
                     }
                     Key::Character(s) if s == " " => {
+                        e.prevent_default();
                         let _ = socket
                             .send(ClientEvent::Interact(server_name, player_name))
                             .await;
@@ -211,45 +213,47 @@ pub fn OverworldMap() -> Element {
                     }
                 }
 
-            } // ow-map-area
-
-            // Dialog sits directly below the map.
-            if !ow.active_dialog.is_empty() {
-                div { class: "ow-dialog",
-                    for line in ow.active_dialog.iter() {
-                        p { class: "ow-dialog-line", "{line}" }
-                    }
-                    if ow.pending_fight.is_some() {
-                        p { class: "ow-dialog-question", "Do you want to start the fight?" }
-                        div { class: "ow-dialog-actions",
-                            button {
-                                class: "ow-dialog-btn ow-dialog-btn-yes",
-                                onclick: move |_| {
-                                    let sn = SERVER_NAME();
-                                    let pn = local_login_name_session();
-                                    let sock = socket_confirm_fight.clone();
-                                    async move {
-                                        let _ = sock.send(ClientEvent::Interact(sn, pn)).await;
-                                    }
-                                },
-                                "⚔️ Yes, fight!"
-                            }
-                            button {
-                                class: "ow-dialog-btn ow-dialog-btn-no",
-                                onclick: move |_| {
-                                    let sn = SERVER_NAME();
-                                    let pn = local_login_name_session();
-                                    let sock = socket_dismiss.clone();
-                                    async move {
-                                        let _ = sock.send(ClientEvent::DismissDialog(sn, pn)).await;
-                                    }
-                                },
-                                "🚪 No, not yet"
+                // Dialog overlays the bottom of the map.
+                if !ow.active_dialog.is_empty() {
+                    div { class: "ow-dialog",
+                        for line in ow.active_dialog.iter() {
+                            p { class: "ow-dialog-line", "{line}" }
+                        }
+                        if ow.pending_fight.is_some() {
+                            p { class: "ow-dialog-question", "Do you want to start the fight?" }
+                            div { class: "ow-dialog-actions",
+                                button {
+                                    class: "ow-dialog-btn ow-dialog-btn-yes",
+                                    tabindex: "-1",
+                                    onclick: move |_| {
+                                        let sn = SERVER_NAME();
+                                        let pn = local_login_name_session();
+                                        let sock = socket_confirm_fight.clone();
+                                        async move {
+                                            let _ = sock.send(ClientEvent::Interact(sn, pn)).await;
+                                        }
+                                    },
+                                    "⚔️ Yes, fight!"
+                                }
+                                button {
+                                    class: "ow-dialog-btn ow-dialog-btn-no",
+                                    tabindex: "-1",
+                                    onclick: move |_| {
+                                        let sn = SERVER_NAME();
+                                        let pn = local_login_name_session();
+                                        let sock = socket_dismiss.clone();
+                                        async move {
+                                            let _ = sock.send(ClientEvent::DismissDialog(sn, pn)).await;
+                                        }
+                                    },
+                                    "🚪 No, not yet"
+                                }
                             }
                         }
                     }
                 }
-            }
+
+            } // ow-map-area
 
             // Virtual D-pad — visible on touch screens, hidden on desktop (CSS media query).
             {
