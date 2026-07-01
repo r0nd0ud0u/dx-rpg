@@ -14,6 +14,38 @@ use crate::{
 
 const TILE_PX: i32 = 48;
 
+const HERO_SPRITES: &[&str] = &[
+    "heroes/tile_0084.png",
+    "heroes/tile_0085.png",
+    "heroes/tile_0087.png",
+    "heroes/tile_0096.png",
+    "heroes/tile_0097.png",
+    "heroes/tile_0098.png",
+];
+
+const NPC_SPRITES: &[&str] = &[
+    "npc/tile_0086.png",
+    "npc/tile_0088.png",
+    "npc/tile_0099.png",
+    "npc/tile_0100.png",
+];
+
+const BOSS_SPRITES: &[&str] = &[
+    "bosses/tile_0108.png",
+    "bosses/tile_0109.png",
+    "bosses/tile_0110.png",
+    "bosses/tile_0111.png",
+];
+
+// Picks a stable sprite index from an ID by summing its bytes mod count.
+fn sprite_idx(id: &str, count: usize) -> usize {
+    id.bytes().fold(0usize, |acc, b| acc.wrapping_add(b as usize)) % count
+}
+
+fn hero_sprite(id: &str) -> &'static str {
+    HERO_SPRITES[sprite_idx(id, HERO_SPRITES.len())]
+}
+
 fn tile_css(kind: &TileKind, locked: bool) -> &'static str {
     match kind {
         TileKind::Floor => "ow-tile ow-floor",
@@ -46,9 +78,9 @@ fn tile_img(kind: &TileKind) -> &'static str {
 
 fn npc_sprite_file(npc: &lib_rpg::server::overworld_manager::NpcState) -> &'static str {
     if npc.fight_scenario_id.is_some() {
-        "sprite_boss.png"
+        BOSS_SPRITES[sprite_idx(&npc.id, BOSS_SPRITES.len())]
     } else {
-        "sprite_npc.png"
+        NPC_SPRITES[sprite_idx(&npc.id, NPC_SPRITES.len())]
     }
 }
 
@@ -188,7 +220,7 @@ pub fn OverworldMap() -> Element {
                         for (hero_id, pos) in ow.player_positions.iter() {
                             img {
                                 key: "{hero_id}",
-                                src: "{PATH_IMG}/sprite_hero.png",
+                                src: "{PATH_IMG}/{hero_sprite(hero_id)}",
                                 class: "ow-sprite ow-hero",
                                 style: "left:{pos.x * TILE_PX}px; top:{pos.y * TILE_PX}px; width:{TILE_PX}px; height:{TILE_PX}px;",
                                 alt: "hero",
@@ -348,15 +380,6 @@ pub fn OverworldMap() -> Element {
             div { class: "ow-hud",
                 span { class: "ow-map-name", "📍 {ow.map_id}" }
                 span { class: "ow-controls", "Arrows: move  |  Enter/⚔: interact" }
-                Button {
-                    variant: ButtonVariant::Outline,
-                    onclick: move |_| async move {
-                        let _ = socket
-                            .send(ClientEvent::ExitOverworld(SERVER_NAME()))
-                            .await;
-                    },
-                    "⚔️ Back to Fight"
-                }
             }
         }
     }

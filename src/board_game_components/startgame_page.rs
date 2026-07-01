@@ -321,7 +321,7 @@ pub fn RunningGamePage() -> Element {
                                                 .await;
                                         }
                                     },
-                                    "🗺 Overworld"
+                                    "🗺 Run away"
                                 }
                             }
                         }
