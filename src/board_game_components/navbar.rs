@@ -180,23 +180,62 @@ pub fn Navbar() -> Element {
                                 "12. ⚙️ Settings — toggle 'Attack Tooltips' to show/hide attack descriptions on hover."
                             }
 
+                            // Overworld
+                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
+                                "🗺️ Overworld exploration"
+                            }
+                            p {
+                                "13. The host clicks '🗺 Overworld' to enter the tile-map exploration mode."
+                            }
+                            p { "    • Arrow keys / D-pad — move your hero." }
+                            p { "    • Enter or Space — interact with adjacent NPCs." }
+                            p {
+                                "    • Walking on grass may trigger a random encounter (50 % chance per step)."
+                            }
+                            p {
+                                "    • Interact with a boss NPC to start its pre-fight dialog, then confirm to begin the fight."
+                            }
+                            p {
+                                "    • Defeating a boss NPC unlocks the next door and removes the NPC from the map."
+                            }
+                            p { "    • '⚔️ Back to Fight' returns to the active fight at any time." }
+
+                            // Store
+                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
+                                "🛒 Store"
+                            }
+                            p {
+                                "14. The store opens between scenarios (end-of-scenario screen) via the '🛒 Shop' button."
+                            }
+                            p {
+                                "    • Equipment tab — weapons, armour, rings and more; bought items go to your Bag."
+                            }
+                            p { "    • Consumables tab — potions (HP / Mana / Vigor / Berserk / Resurrection)." }
+                            p {
+                                "    • Bag tab — sell unequipped items for 50 % of their price; equip them from the Inventory sheet."
+                            }
+                            p { "    • Gold is earned as loot at the end of each scenario." }
+
                             // Progression
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
                                 "🏆 Progression"
                             }
-                            p { "13. At the end of a scenario the host loads the next stage." }
+                            p { "15. At the end of a scenario the host loads the next stage." }
                             p {
-                                "14. Each universe has 10 progressive stages. Complete them all to win!"
+                                "16. Each universe has 10 progressive stages. Complete them all to win!"
                             }
                             p {
-                                "15. Save slots (up to 3 by default) let you continue a run later from the Load Game page."
+                                "17. Save slots (up to 3 by default) let you continue a run later from the Load Game page."
+                            }
+                            p {
+                                "18. ⚙️ Settings — toggle auto-save, attack tooltips, boss HP / energy bars, and hero aggro display."
                             }
 
                             // Admin
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
                                 "🛡️ Admin panel"
                             }
-                            p { "16. If you are an admin, access the 🛡️ Panel link in the navbar." }
+                            p { "19. If you are an admin, access the 🛡️ Panel link in the navbar." }
                             p { "    • Users tab: manage accounts and connection status." }
                             p { "    • Characters tab: browse all heroes and bosses by universe." }
                             p {
