@@ -39,7 +39,9 @@ const BOSS_SPRITES: &[&str] = &[
 
 // Picks a stable sprite index from an ID by summing its bytes mod count.
 fn sprite_idx(id: &str, count: usize) -> usize {
-    id.bytes().fold(0usize, |acc, b| acc.wrapping_add(b as usize)) % count
+    id.bytes()
+        .fold(0usize, |acc, b| acc.wrapping_add(b as usize))
+        % count
 }
 
 fn hero_sprite(id: &str) -> &'static str {
