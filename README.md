@@ -610,21 +610,14 @@ git tag v1.2.3 && git push origin v1.2.3
 
 ## Screenshots
 
-### Home page — before login
-<img width="1909" height="431" alt="image" src="https://github.com/user-attachments/assets/09e2e271-29fa-4d1a-a13c-4fb26255f2b4" />
+### Web (desktop)
 
-### Home page — after login
-<img width="1904" height="346" alt="image" src="https://github.com/user-attachments/assets/bc050e92-1b10-4293-ac90-4dc8e706e622" />
+<img src="docs/web-game.png" width="600" alt="Web game screenshot"/>
 
-### Create server page
-<img width="1899" height="253" alt="image" src="https://github.com/user-attachments/assets/073c230f-7344-48d0-b75f-75121b36f2d2" />
+### Fight
 
-### New game page
-<img width="1911" height="268" alt="image" src="https://github.com/user-attachments/assets/4b7284e2-ee13-4ff8-9ac1-31742ed2cf1a" />
+<img src="docs/fight.png" width="600" alt="Fight screenshot"/>
 
-### Load game page
-<img width="1903" height="416" alt="image" src="https://github.com/user-attachments/assets/86e63864-2df6-4862-a95d-fe3eb41422e9" />
+### Mobile
 
-### Join game page
-<img width="1916" height="189" alt="image" src="https://github.com/user-attachments/assets/541fd928-f228-4c35-a7d4-a4ca86b3b5a2" />
-
+<img src="docs/mobile-game.jpg" width="300" alt="Mobile game screenshot"/>

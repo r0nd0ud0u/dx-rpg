@@ -1970,14 +1970,14 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     /* Grow to fill .ow-page space below the toolbar. */
     flex: 1 1 auto;
     min-height: 0;
-    overflow: hidden;
+    overflow: clip;
 }
 
-/* Scrollable wrapper — fills the .ow-map-area; map scrolls inside. */
+/* Scrollable wrapper — sits inside .ow-map-area; map scrolls inside. */
 .ow-grid-scroll {
-    flex: 1 1 auto;
-    min-height: 0;
+    width: fit-content;
     max-width: 100%;
+    max-height: 55vh;
     overflow-x: auto;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -2038,18 +2038,17 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 
 .ow-hero { z-index: 3; }
 
-/* NPC dialog box — absolute overlay at the bottom of .ow-map-area, no layout shift */
+/* NPC dialog box — absolute overlay at the bottom of .ow-map-area */
 .ow-dialog {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 20;
+    z-index: 5;
     background: rgba(18, 20, 42, 0.97);
-    border-top: 2px solid var(--rpg-accent, #7c6fff);
-    border-radius: 0 0 4px 4px;
+    border: 2px solid var(--rpg-accent, #7c6fff);
+    border-radius: 4px 4px 0 0;
     padding: 10px 16px 12px;
-    backdrop-filter: blur(4px);
 }
 .ow-dialog-line {
     margin: 0 0 4px;
@@ -2161,14 +2160,17 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     .ow-container { padding: 4px 2px; gap: 4px; }
 }
 
-/* ── Map area wrapper (holds scroll + zoom overlay) ────────────────── */
+/* ── Map area wrapper (holds scroll + zoom overlay + dialog) ────────── */
 .ow-map-area {
     position: relative;
-    flex: 1 1 auto;
-    min-height: 0;
-    width: 100%;
+    flex: 0 0 auto;
+    width: fit-content;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
+    /* Contains the absolutely-positioned dialog so it never inflates
+       the scroll area of .ow-container (overflow: auto ancestor). */
+    overflow: clip;
 }
 
 /* Zoom overlay — always visible in the top-right corner of the map. */
