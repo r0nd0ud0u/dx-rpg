@@ -88,11 +88,11 @@ pub enum ClientEvent {
     UsePartyPotion(String, String, String, String), // server_name, player_name, potion_name, target_id_name
     BuyItem(String, String, String, String), // server_name, character_id_name, item_name, item_kind ("Equipment"|"Consumable")
     SellItem(String, String, String, String), // server_name, character_id_name, item_name_or_unique_name, item_kind
-    MovePlayer(String, String, Direction),    // server_name, player_name, direction
-    Interact(String, String),                 // server_name, player_name
-    DismissDialog(String, String),            // server_name, player_name
-    EnterOverworld(String, String),           // server_name, map_id
-    ExitOverworld(String),                    // server_name
+    MovePlayer(String, String, Direction, String), // server_name, player_name, direction, lang ("en"|"fr")
+    Interact(String, String, String),              // server_name, player_name, lang ("en"|"fr")
+    DismissDialog(String, String),                 // server_name, player_name
+    EnterOverworld(String, String),                // server_name, map_id
+    ExitOverworld(String),                         // server_name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -308,13 +308,13 @@ pub async fn on_rcv_client_event(
                                 sell_item_handler(&server_name, &character_id_name, &item_name, &item_kind);
                                 update_clients_server_data(&server_name);
                             }
-                            Ok(ClientEvent::MovePlayer(server_name, player_name, dir)) => {
+                            Ok(ClientEvent::MovePlayer(server_name, player_name, dir, lang)) => {
                                 tracing::debug!("Player {} moving {:?} on server {}", player_name, dir, server_name);
-                                overworld_move_handler(&server_name, &player_name, dir);
+                                overworld_move_handler(&server_name, &player_name, dir, &lang);
                             }
-                            Ok(ClientEvent::Interact(server_name, player_name)) => {
+                            Ok(ClientEvent::Interact(server_name, player_name, lang)) => {
                                 tracing::debug!("Player {} interacting on server {}", player_name, server_name);
-                                overworld_interact_handler(&server_name, &player_name);
+                                overworld_interact_handler(&server_name, &player_name, &lang);
                             }
                             Ok(ClientEvent::DismissDialog(server_name, player_name)) => {
                                 tracing::debug!("Player {} dismissing dialog on server {}", player_name, server_name);
@@ -893,8 +893,10 @@ pub fn use_party_potion_handler(
 }
 
 #[cfg(feature = "server")]
-fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction) {
+fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction, lang: &str) {
     use lib_rpg::server::overworld_manager::{MoveResult, OverworldManager};
+
+    let lang = crate::common::lang_from_app_lang(lang);
 
     enum PostAction {
         Broadcast,
@@ -929,7 +931,7 @@ fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction) 
         ow_state.active_dialog.clear();
         ow_state.pending_fight = None;
         let mut manager = OverworldManager::from_state(ow_state.clone());
-        let result = manager.move_player(&hero_id, dir);
+        let result = manager.move_player(&hero_id, dir, lang);
         match result {
             MoveResult::Blocked => {
                 // Persist state so active_dialog (locked-door hint) reaches clients.
@@ -960,8 +962,10 @@ fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction) 
 }
 
 #[cfg(feature = "server")]
-fn overworld_interact_handler(server_name: &str, player_name: &str) {
+fn overworld_interact_handler(server_name: &str, player_name: &str, lang: &str) {
     use lib_rpg::server::overworld_manager::{InteractResult, OverworldManager};
+
+    let lang = crate::common::lang_from_app_lang(lang);
 
     let fight_scenario = {
         let mut sm = SERVER_MANAGER.lock().unwrap();
@@ -987,7 +991,7 @@ fn overworld_interact_handler(server_name: &str, player_name: &str) {
             return;
         };
         let mut manager = OverworldManager::from_state(ow_state.clone());
-        let result = manager.interact(&hero_id);
+        let result = manager.interact(&hero_id, lang);
         // Write back mutations (active_dialog, pending_fight).
         *ow_state = manager.state;
         match result {

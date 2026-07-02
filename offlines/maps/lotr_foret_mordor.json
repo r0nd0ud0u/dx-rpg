@@ -188,6 +188,14 @@
       "dialog": [
         "Les terres du Mordor commencent ici.",
         "Le Nécromancien commande les ombres. Soyez prudents."
+      ],
+      "dialog_en": [
+        "The lands of Mordor begin here.",
+        "The Necromancer commands the shadows. Be careful."
+      ],
+      "dialog_fr": [
+        "Les terres du Mordor commencent ici.",
+        "Le Nécromancien commande les ombres. Soyez prudents."
       ]
     },
     {
@@ -195,6 +203,14 @@
       "x": 7,
       "y": 3,
       "dialog": [
+        "Un Nécromancien du Mordor surgit de l'obscurité !",
+        "Vos âmes appartiendront à Sauron !"
+      ],
+      "dialog_en": [
+        "A Necromancer of Mordor rises from the darkness!",
+        "Your souls will belong to Sauron!"
+      ],
+      "dialog_fr": [
         "Un Nécromancien du Mordor surgit de l'obscurité !",
         "Vos âmes appartiendront à Sauron !"
       ],

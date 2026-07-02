@@ -399,6 +399,7 @@ pub fn NewAtkButton(
     let attack_name = attack_type.name.clone();
     let launcher_id_name = launcher.id_name.clone();
     let lang = lang_from_app_lang(&app_lang());
+    let display_name = attack_type.name_for(lang).to_string();
     let description = attack_type.description_for(lang).to_string();
     let effects_description = attack_type.effects_description_for(lang).to_string();
     let has_description = !description.is_empty();
@@ -431,12 +432,12 @@ pub fn NewAtkButton(
                         }
                     },
                     disabled: !can_be_launched,
-                    "{attack_type.name}"
+                    "{display_name}"
                 }
             }
             TooltipContent {
                 p { style: "margin:0 0 4px 0; font-weight:600; color:var(--rpg-gold,#c9a227);",
-                    "{attack_type.name}"
+                    "{display_name}"
                 }
                 if has_description {
                     p { style: "margin:0; color:var(--primary-color); font-style:italic;",

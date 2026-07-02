@@ -188,6 +188,14 @@
       "dialog": [
         "La plaine du Désespoir... même le soleil semble s'y éteindre.",
         "Le Nazgûl rôde. Il ne doit pas passer."
+      ],
+      "dialog_en": [
+        "The Plain of Despair... even the sun seems to fade here.",
+        "The Nazgûl is prowling. It must not pass."
+      ],
+      "dialog_fr": [
+        "La plaine du Désespoir... même le soleil semble s'y éteindre.",
+        "Le Nazgûl rôde. Il ne doit pas passer."
       ]
     },
     {
@@ -195,6 +203,14 @@
       "x": 7,
       "y": 3,
       "dialog": [
+        "Un Nazgûl fond sur vous depuis les cieux !",
+        "L'Anneau... donnez-moi l'Anneau !"
+      ],
+      "dialog_en": [
+        "A Nazgûl swoops down upon you from the skies!",
+        "The Ring... give me the Ring!"
+      ],
+      "dialog_fr": [
         "Un Nazgûl fond sur vous depuis les cieux !",
         "L'Anneau... donnez-moi l'Anneau !"
       ],

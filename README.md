@@ -559,21 +559,26 @@ stacked on top of the existing desktop-first styles.
 
 ## Internationalization (i18n)
 
-The UI supports English and French via [`dioxus-i18n`](https://github.com/dioxus-community/dioxus-i18n), with a toggle button in the navbar. Two independent mechanisms, deliberately kept separate:
+The UI supports English and French via [`dioxus-i18n`](https://github.com/dioxus-community/dioxus-i18n), with a language dropdown in the navbar (🇬🇧 English / 🇫🇷 Français, current language shown as the selected option). Three independent mechanisms, deliberately kept separate:
 
 ### UI chrome — `dioxus-i18n`
 
 - Translations live in Fluent bundles under `src/i18n/en-US.ftl` and `src/i18n/fr-FR.ftl`, embedded at compile time via `include_str!` and registered with `use_init_i18n` in `main.rs`.
 - Components call the `t!("key")` macro (from `dioxus_i18n::t`) instead of hardcoding text; each key must exist in both `.ftl` files (enforced by `unit_locale_files_have_matching_keys` in `src/i18n.rs`).
 - The current locale is a `CtxAppLang(pub Signal<String>)` context (`"en"` / `"fr"`, see `src/common.rs`), synced to browser `localStorage` via `dioxus-sdk-storage`'s `use_synced_storage` — the same pattern used for login-session persistence, so the choice survives a reload and works **before** logging in (unlike the SQLite-backed `CtxShow*` settings, which require an authenticated session).
-- A `use_effect` in `main.rs` keeps `dioxus-i18n`'s active locale synced to `CtxAppLang` on both initial hydration and every toggle click.
-- **Only `navbar.rs`** (brand, nav links, help dialog, footer) has been converted to `t!()` so far — the rest of the UI's hardcoded strings are tracked file-by-file in `docs/iteration-plan.md` under "i18n rollout".
+- A `use_effect` in `main.rs` keeps `dioxus-i18n`'s active locale synced to `CtxAppLang` on both initial hydration and every dropdown change.
+- Every `board_game_components/*.rs` and `widgets/*.rs` file has been converted to `t!()`. The navbar's own auth/quit buttons use a fixed CSS width (`.navbar-btn-auth`/`.navbar-btn-quit` in `assets/main.css`) sized for the longer of the two languages' text, so they don't resize when the language is switched.
+- Deliberately left untranslated: dynamic backend-generated content (combat log text, shop/equipment item `name`/`description`, aggregated attack-stat labels in `widgets/charts.rs` and the gameboard's last-attack banner — these carry only a plain `atk_name: String`, not an `AttackType`, so there's no bilingual field to resolve), enum-backed `<select>` `value:` attributes, and brand/logo strings.
 
-### Game-data content — bilingual descriptions
+### Game-data content — bilingual descriptions and names
 
-Attack and character `Description`/`DescriptionEffects` text in the offline JSON is a **separate** mechanism — `dioxus-i18n` doesn't apply to game data. `lib-rpg`'s `AttackType` and `Character` structs carry optional `description_en`/`description_fr` (and `effects_description_en`/`effects_description_fr` on `AttackType`) fields; `description_for(lang)` / `effects_description_for(lang)` return the locale-specific text, falling back to the legacy single-language field when unset. See [lib-rpg's README](https://github.com/r0nd0ud0u/lib-rpg#bilingual-descriptions-description_en--description_fr) for the schema.
+Attack/character `Description`/`DescriptionEffects` text and attack `Nom` (name) in the offline JSON are a **separate** mechanism — `dioxus-i18n` doesn't apply to game data. `lib-rpg`'s `AttackType` and `Character` structs carry optional `description_en`/`description_fr` (and `effects_description_en`/`effects_description_fr`, `name_en`/`name_fr` on `AttackType`) fields; the `*_for(lang)` resolver methods return the locale-specific text, falling back to the legacy single-language field when unset. See [lib-rpg's README](https://github.com/r0nd0ud0u/lib-rpg#bilingual-descriptions-description_en--description_fr) for the schema.
 
-Only **Elara la guerisseuse de la Lorien** (character + all 12 attacks) has bilingual fields populated so far — toggling the navbar language changes her character-select card and attack tooltips live; every other character keeps showing its single existing-language text regardless of the toggle. Remaining characters are tracked in `docs/iteration-plan.md`.
+Only **Elara la guerisseuse de la Lorien** (character + all 12 attacks) has bilingual description/name fields populated so far — toggling the navbar language changes her character-select card, attack list buttons and attack tooltips live; every other character keeps showing its single existing-language text regardless of the toggle. `attack_type.name` itself stays the canonical identifier everywhere else (lookups, cooldowns, stats, `ClientEvent` payloads) — only display sites use `name_for(lang)`. Remaining characters/attacks are tracked in `docs/iteration-plan.md`.
+
+### Game-data content — bilingual overworld NPC dialog
+
+Overworld NPC dialog lines (`offlines/maps/<map_id>.json`) follow the same fallback pattern: `dialog_en`/`dialog_fr` on each NPC, resolved via `NpcState::dialog_for(lang)`. Unlike descriptions/names, **all 12 shipped maps are fully migrated** (10 LOTR maps translated to English, the 2 Pokémon maps translated to French). The client sends its current `CtxAppLang` value along with every `ClientEvent::MovePlayer`/`ClientEvent::Interact` message; the server resolves NPC dialog (and the locked-door hint) into that language before broadcasting `OverworldState::active_dialog`. In multiplayer, dialog resolves to the **party owner's** language, since only the owner drives overworld movement/interaction.
 
 ---
 

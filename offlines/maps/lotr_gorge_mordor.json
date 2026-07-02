@@ -188,6 +188,14 @@
       "dialog": [
         "Cette gorge résonne de magie noire.",
         "Le nécromancien prépare un rituel. Interrompez-le !"
+      ],
+      "dialog_en": [
+        "This gorge echoes with dark magic.",
+        "The necromancer is preparing a ritual. Interrupt him!"
+      ],
+      "dialog_fr": [
+        "Cette gorge résonne de magie noire.",
+        "Le nécromancien prépare un rituel. Interrompez-le !"
       ]
     },
     {
@@ -195,6 +203,14 @@
       "x": 6,
       "y": 3,
       "dialog": [
+        "Le Rituel des Ténèbres commence !",
+        "Vous ne pouvez pas arrêter Sauron !"
+      ],
+      "dialog_en": [
+        "The Ritual of Darkness begins!",
+        "You cannot stop Sauron!"
+      ],
+      "dialog_fr": [
         "Le Rituel des Ténèbres commence !",
         "Vous ne pouvez pas arrêter Sauron !"
       ],

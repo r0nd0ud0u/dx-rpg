@@ -70,14 +70,14 @@ pub fn Navbar() -> Element {
                 }
                 // Right: trigger buttons only (no dialog roots here)
                 div { style: "display: flex; flex-direction: row; align-items: center; gap: 0.75rem;",
-                    // Language toggle — shows the language you'd switch to
-                    Button {
-                        variant: ButtonVariant::Outline,
-                        onclick: move |_| {
-                            let next = if app_lang() == "fr" { "en" } else { "fr" };
-                            app_lang.set(next.to_owned());
-                        },
-                        {t!("lang-toggle")}
+                    // Language dropdown — current language is the selected option.
+                    select {
+                        class: "navbar-lang-select",
+                        "aria-label": t!("lang-select-label"),
+                        value: "{app_lang()}",
+                        onchange: move |e| app_lang.set(e.value()),
+                        option { value: "en", "🇬🇧 English" }
+                        option { value: "fr", "🇫🇷 Français" }
                     }
                     // Help trigger
                     Button {
@@ -88,6 +88,7 @@ pub fn Navbar() -> Element {
                     // Quit-game trigger (only while a game is running)
                     if server_data().core_game_data.game_phase == GamePhase::Running {
                         Button {
+                            class: "navbar-btn-quit",
                             onclick: move |_| quit_open.set(true),
                             r#type: "button",
                             {t!("navbar-quit-game")}
@@ -97,6 +98,7 @@ pub fn Navbar() -> Element {
                         span { class: "navbar-user", "👤 {snap_local_login_name_session}" }
                     }
                     Button {
+                        class: "navbar-btn-auth",
                         variant: if snap_local_login_name_session == *DISCONNECTED_USER { ButtonVariant::Secondary } else { ButtonVariant::Destructive },
                         onclick: move |_| async move {
                             if local_login_name_session() != *DISCONNECTED_USER {

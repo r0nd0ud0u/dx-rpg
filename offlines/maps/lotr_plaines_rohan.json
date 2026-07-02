@@ -188,6 +188,14 @@
       "dialog": [
         "Ces plaines appartiennent au Rohan.",
         "La patrouille ennemie empêche notre avance. Bonne chance !"
+      ],
+      "dialog_en": [
+        "These plains belong to Rohan.",
+        "The enemy patrol is blocking our advance. Good luck!"
+      ],
+      "dialog_fr": [
+        "Ces plaines appartiennent au Rohan.",
+        "La patrouille ennemie empêche notre avance. Bonne chance !"
       ]
     },
     {
@@ -195,6 +203,14 @@
       "x": 6,
       "y": 4,
       "dialog": [
+        "Une patrouille mixte Orc-Gobelin vous intercepte !",
+        "Personne ne passe par ici !"
+      ],
+      "dialog_en": [
+        "A mixed Orc-Goblin patrol intercepts you!",
+        "No one passes through here!"
+      ],
+      "dialog_fr": [
         "Une patrouille mixte Orc-Gobelin vous intercepte !",
         "Personne ne passe par ici !"
       ],

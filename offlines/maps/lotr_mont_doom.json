@@ -181,6 +181,16 @@
         "Voici la Montagne du Destin.",
         "Sauron l'Œil Flamboyant vous attend. C'est le combat final.",
         "Que la lumière guide vos lames !"
+      ],
+      "dialog_en": [
+        "Here is Mount Doom.",
+        "Sauron the Blazing Eye awaits you. This is the final battle.",
+        "May the light guide your blades!"
+      ],
+      "dialog_fr": [
+        "Voici la Montagne du Destin.",
+        "Sauron l'Œil Flamboyant vous attend. C'est le combat final.",
+        "Que la lumière guide vos lames !"
       ]
     },
     {
@@ -188,6 +198,14 @@
       "x": 7,
       "y": 3,
       "dialog": [
+        "L'Œil de Sauron s'ouvre sur vous !",
+        "Ce monde appartient à l'Obscurité !"
+      ],
+      "dialog_en": [
+        "The Eye of Sauron opens upon you!",
+        "This world belongs to the Darkness!"
+      ],
+      "dialog_fr": [
         "L'Œil de Sauron s'ouvre sur vous !",
         "Ce monde appartient à l'Obscurité !"
       ],

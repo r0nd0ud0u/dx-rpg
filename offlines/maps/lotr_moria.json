@@ -188,6 +188,14 @@
       "dialog": [
         "Les mines de la Moria... sombres et profondes.",
         "Méfiez-vous : le champion n'est pas seul dans ces couloirs."
+      ],
+      "dialog_en": [
+        "The mines of Moria... dark and deep.",
+        "Beware: the champion is not alone in these halls."
+      ],
+      "dialog_fr": [
+        "Les mines de la Moria... sombres et profondes.",
+        "Méfiez-vous : le champion n'est pas seul dans ces couloirs."
       ]
     },
     {
@@ -195,6 +203,14 @@
       "x": 8,
       "y": 4,
       "dialog": [
+        "Le Champion revient, encore plus furieux !",
+        "Cette fois vous ne vous en sortirez pas !"
+      ],
+      "dialog_en": [
+        "The Champion returns, even more furious!",
+        "This time you won't get away!"
+      ],
+      "dialog_fr": [
         "Le Champion revient, encore plus furieux !",
         "Cette fois vous ne vous en sortirez pas !"
       ],

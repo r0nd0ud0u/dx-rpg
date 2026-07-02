@@ -2,7 +2,7 @@ navbar-admin-panel = 🛡️ Panneau
 navbar-quit-game = Quitter la partie
 navbar-sign-in = Se connecter
 navbar-sign-out = Se déconnecter
-lang-toggle = EN
+lang-select-label = Langue
 
 common-close = Fermer
 common-cancel = Annuler

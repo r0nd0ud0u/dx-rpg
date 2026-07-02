@@ -2,7 +2,7 @@ navbar-admin-panel = 🛡️ Panel
 navbar-quit-game = Quit game
 navbar-sign-in = Sign in
 navbar-sign-out = Sign out
-lang-toggle = FR
+lang-select-label = Language
 
 common-close = Close
 common-cancel = Cancel
