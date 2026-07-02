@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 
 use crate::{
     auth_manager::server_fn::is_admin_enabled,
@@ -32,36 +33,36 @@ pub fn AdminPage() -> Element {
     if !admin_enabled() {
         return rsx! {
             div { class: "home-container",
-                h2 { class: "rpg-title", "🛡️ Admin Panel" }
-                p { class: "rpg-subtitle", "The admin panel is disabled." }
+                h2 { class: "rpg-title", {t!("admin-panel-title")} }
+                p { class: "rpg-subtitle", {t!("admin-panel-disabled")} }
             }
         };
     }
 
     rsx! {
         div { class: "admin-page-container",
-            h2 { class: "rpg-title", "🛡️ Admin Panel" }
+            h2 { class: "rpg-title", {t!("admin-panel-title")} }
 
             div { class: "admin-tabs",
                 button {
                     class: if tab() == AdminTab::Users { "admin-tab active" } else { "admin-tab" },
                     onclick: move |_| tab.set(AdminTab::Users),
-                    "👤 Users"
+                    {t!("admin-tab-users")}
                 }
                 button {
                     class: if tab() == AdminTab::Scenarios { "admin-tab active" } else { "admin-tab" },
                     onclick: move |_| tab.set(AdminTab::Scenarios),
-                    "📜 Scenarios"
+                    {t!("admin-tab-scenarios")}
                 }
                 button {
                     class: if tab() == AdminTab::Characters { "admin-tab active" } else { "admin-tab" },
                     onclick: move |_| tab.set(AdminTab::Characters),
-                    "🧙 Characters"
+                    {t!("admin-tab-characters")}
                 }
                 button {
                     class: if tab() == AdminTab::Equipment { "admin-tab active" } else { "admin-tab" },
                     onclick: move |_| tab.set(AdminTab::Equipment),
-                    "🔧 Equipment"
+                    {t!("admin-tab-equipment")}
                 }
             }
 

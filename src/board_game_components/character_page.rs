@@ -3,6 +3,7 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
+use dioxus_i18n::t;
 use dioxus_primitives::ContentSide;
 use indexmap::IndexMap;
 use lib_rpg::{
@@ -170,17 +171,21 @@ pub fn CharacterPanel(
                 // Header: name + level + attack button
                 div { class: "char-header",
                     span { class: "char-name-text", "{c.db_full_name}" }
-                    span { class: "char-level", "Lvl {c.level}" }
+                    span { class: "char-level", {t!("character-page-lvl", level: c.level as i64)} }
                     if extra_rounds > 0 {
                         span {
                             class: "char-extra-rounds",
-                            title: "Extra round from speed advantage",
+                            title: t!("character-page-extra-round-title"),
                             "⚡×{extra_rounds}"
                         }
                     }
                     if c.kind == CharacterKind::Hero && show_hero_aggro() {
                         if let Some(aggro_stat) = c.stats.all_stats.get(AGGRO) {
-                            span { class: "char-aggro", title: "Aggro", "🎯 {aggro_stat.current}" }
+                            span {
+                                class: "char-aggro",
+                                title: t!("character-page-aggro-title"),
+                                "🎯 {aggro_stat.current}"
+                            }
                         }
                     }
                     if is_auto_atk() {
@@ -441,7 +446,7 @@ pub fn NewAtkButton(
                 if has_effects {
                     div { style: "margin-top:6px; padding-top:6px; border-top:1px solid var(--rpg-border,#3a3f55);",
                         span { style: "display:block; margin-bottom:2px; font-size:0.72rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--rpg-text-muted,#8a8fa8);",
-                            "Effects"
+                            {t!("character-page-effects-label")}
                         }
                         p { style: "margin:0; line-height:1.4;", "{effects_description}" }
                     }
@@ -555,7 +560,7 @@ pub fn PotionList(
         return rsx! {
             div { class: "attack-list",
                 span { style: "color: var(--rpg-text-muted); font-size: 0.85rem;",
-                    "No potions available"
+                    {t!("character-page-no-potions")}
                 }
             }
         };

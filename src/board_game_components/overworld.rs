@@ -1,6 +1,7 @@
 use dioxus::fullstack::{CborEncoding, UseWebsocket};
 use dioxus::html::Key;
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 use lib_rpg::{
     common::overworld::{Direction, TileKind},
     server::server_manager::ServerData,
@@ -97,7 +98,7 @@ pub fn OverworldMap() -> Element {
             div {
                 class: "ow-container",
                 style: "justify-content:center; align-items:center; min-height:300px;",
-                p { style: "color:#7fff7f; font-size:1.2rem;", "🗺 Entering overworld…" }
+                p { style: "color:#7fff7f; font-size:1.2rem;", {t!("overworld-entering")} }
             }
         };
     };
@@ -253,7 +254,7 @@ pub fn OverworldMap() -> Element {
                             p { class: "ow-dialog-line", "{line}" }
                         }
                         if ow.pending_fight.is_some() {
-                            p { class: "ow-dialog-question", "Do you want to start the fight?" }
+                            p { class: "ow-dialog-question", {t!("overworld-start-fight-question")} }
                             div { class: "ow-dialog-actions",
                                 button {
                                     class: "ow-dialog-btn ow-dialog-btn-yes",
@@ -266,7 +267,7 @@ pub fn OverworldMap() -> Element {
                                             let _ = sock.send(ClientEvent::Interact(sn, pn)).await;
                                         }
                                     },
-                                    "⚔️ Yes, fight!"
+                                    {t!("overworld-yes-fight")}
                                 }
                                 button {
                                     class: "ow-dialog-btn ow-dialog-btn-no",
@@ -279,7 +280,7 @@ pub fn OverworldMap() -> Element {
                                             let _ = sock.send(ClientEvent::DismissDialog(sn, pn)).await;
                                         }
                                     },
-                                    "🚪 No, not yet"
+                                    {t!("overworld-no-not-yet")}
                                 }
                             }
                         }
@@ -380,7 +381,7 @@ pub fn OverworldMap() -> Element {
 
             div { class: "ow-hud",
                 span { class: "ow-map-name", "📍 {ow.map_id}" }
-                span { class: "ow-controls", "Arrows: move  |  Enter/⚔: interact" }
+                span { class: "ow-controls", {t!("overworld-controls-hint")} }
             }
         }
     }

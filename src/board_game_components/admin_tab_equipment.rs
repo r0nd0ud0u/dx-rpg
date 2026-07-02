@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 
 use crate::{
     auth_manager::server_fn::{
@@ -45,7 +46,7 @@ pub fn AdminEquipmentTab() -> Element {
 
     rsx! {
         div { class: "admin-card",
-            p { class: "admin-section-title", "🔧 Equipment Browser" }
+            p { class: "admin-section-title", {t!("admin-equip-browser-title")} }
             div { style: "display:flex;gap:12px;flex-wrap:wrap;",
                 select {
                     class: "admin-select",
@@ -66,7 +67,7 @@ pub fn AdminEquipmentTab() -> Element {
                             });
                         }
                     },
-                    option { value: "", "— type —" }
+                    option { value: "", {t!("admin-equip-select-type")} }
                     for t in eq_types() {
                         option { value: "{t}", "{t}" }
                     }
@@ -90,7 +91,7 @@ pub fn AdminEquipmentTab() -> Element {
                                 });
                             }
                         },
-                        option { value: "", "— category —" }
+                        option { value: "", {t!("admin-equip-select-category")} }
                         for c in eq_categories() {
                             option { value: "{c}", "{c}" }
                         }
@@ -101,7 +102,9 @@ pub fn AdminEquipmentTab() -> Element {
 
         if !eq_items().is_empty() {
             div { class: "admin-full-card",
-                p { class: "admin-section-title", "📋 Items — {selected_category}" }
+                p { class: "admin-section-title",
+                    {t!("admin-equip-items-title", category : selected_category())}
+                }
                 div { style: "display:flex;flex-wrap:wrap;gap:6px;",
                     for item in eq_items() {
                         {
@@ -129,7 +132,7 @@ pub fn AdminEquipmentTab() -> Element {
                                                         selected_item.set(Some(n.clone()));
                                                     }
                                                     Err(e) => {
-                                                        feedback.set(format!("❌ {e}"));
+                                                        feedback.set(t!("admin-error", error: e.to_string()));
                                                         return;
                                                     }
                                                 }
@@ -140,7 +143,7 @@ pub fn AdminEquipmentTab() -> Element {
                                                         eq_categorie.set(form.categorie);
                                                         eq_stats.set(form.stats);
                                                     }
-                                                    Err(e) => feedback.set(format!("❌ {e}")),
+                                                    Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
                                                 }
                                             });
                                         },
@@ -156,14 +159,14 @@ pub fn AdminEquipmentTab() -> Element {
                                                 spawn(async move {
                                                     match admin_delete_equipment(t.clone(), c.clone(), n).await {
                                                         Ok(()) => {
-                                                            feedback.set("✅ Deleted.".to_owned());
+                                                            feedback.set(t!("admin-deleted"));
                                                             confirm_delete_item.set(None);
                                                             selected_item.set(None);
                                                             if let Ok(items) = admin_list_equipment_items(t, c).await {
                                                                 eq_items.set(items);
                                                             }
                                                         }
-                                                        Err(e) => feedback.set(format!("❌ {e}")),
+                                                        Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
                                                     }
                                                 });
                                             },
@@ -194,7 +197,7 @@ pub fn AdminEquipmentTab() -> Element {
             div { class: "admin-card",
                 div { class: "eq-create-header",
                     p { class: "admin-section-title", style: "margin:0;",
-                        "➕ New Item in {selected_category}"
+                        {t!("admin-equip-new-item-in", category : selected_category())}
                     }
                     Button {
                         variant: ButtonVariant::Secondary,
@@ -203,9 +206,9 @@ pub fn AdminEquipmentTab() -> Element {
                             new_item_name.set(String::new());
                         },
                         if show_create_form() {
-                            "✕ Cancel"
+                            {t!("admin-equip-cancel-new")}
                         } else {
-                            "➕ New"
+                            {t!("admin-equip-new")}
                         }
                     }
                 }
@@ -216,12 +219,12 @@ pub fn AdminEquipmentTab() -> Element {
                                 html_for: "eq-new-name",
                                 color: "var(--rpg-text-muted)",
                                 font_size: "0.82rem",
-                                "Item filename (no spaces, no extension)"
+                                {t!("admin-equip-filename-label")}
                             }
                             Input {
                                 id: "eq-new-name",
                                 r#type: "text",
-                                placeholder: "e.g. epic_sword",
+                                placeholder: t!("admin-equip-filename-placeholder"),
                                 value: "{new_item_name}",
                                 oninput: move |e: FormEvent| new_item_name.set(e.value()),
                             }
@@ -233,13 +236,13 @@ pub fn AdminEquipmentTab() -> Element {
                                 let c = selected_category();
                                 let n = new_item_name().trim().to_owned();
                                 if n.is_empty() {
-                                    feedback.set("❌ Name cannot be empty.".to_owned());
+                                    feedback.set(t!("admin-equip-name-empty"));
                                     return;
                                 }
                                 spawn(async move {
                                     match admin_create_equipment(t.clone(), c.clone(), n.clone()).await {
                                         Ok(()) => {
-                                            feedback.set(format!("✅ '{n}' created."));
+                                            feedback.set(t!("admin-equip-created", name: n.clone()));
                                             show_create_form.set(false);
                                             new_item_name.set(String::new());
                                             if let Ok(items) = admin_list_equipment_items(t.clone(), c.clone())
@@ -264,12 +267,12 @@ pub fn AdminEquipmentTab() -> Element {
                                                 eq_stats.set(form.stats);
                                                 eq_form_mode.set(true);
                                             }
-                                        }
-                                        Err(e) => feedback.set(format!("❌ {e}")),
+                        }
+                                        Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
                                     }
                                 });
                             },
-                            "💾 Create"
+                            {t!("admin-equip-create")}
                         }
                     }
                 }
@@ -284,14 +287,16 @@ pub fn AdminEquipmentTab() -> Element {
                 rsx! {
                     div { class: "admin-full-card",
                         div { style: "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;",
-                            p { class: "admin-section-title", style: "margin:0;", "✏️ {item_name}" }
+                            p { class: "admin-section-title", style: "margin:0;",
+                                {t!("admin-equip-edit-title", name : item_name.clone())}
+                            }
                             Button {
                                 variant: ButtonVariant::Secondary,
                                 onclick: move |_| eq_form_mode.set(!eq_form_mode()),
                                 if eq_form_mode() {
-                                    "✏️ JSON mode"
+                                    {t!("admin-equip-json-mode")}
                                 } else {
-                                    "📝 Form mode"
+                                    {t!("admin-equip-form-mode")}
                                 }
                             }
                         }
@@ -302,7 +307,7 @@ pub fn AdminEquipmentTab() -> Element {
                                         html_for: "eq-nom",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Nom"
+                                        {t!("admin-equip-name-label")}
                                     }
                                     Input {
                                         r#type: "text",
@@ -315,7 +320,7 @@ pub fn AdminEquipmentTab() -> Element {
                                         html_for: "eq-nom-unique",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Nom unique"
+                                        {t!("admin-equip-unique-name-label")}
                                     }
                                     Input {
                                         r#type: "text",
@@ -328,7 +333,7 @@ pub fn AdminEquipmentTab() -> Element {
                                         html_for: "eq-categorie",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Catégorie"
+                                        {t!("admin-equip-category-label")}
                                     }
                                     Input {
                                         r#type: "text",
@@ -339,12 +344,12 @@ pub fn AdminEquipmentTab() -> Element {
                             }
                             if !eq_stats().is_empty() {
                                 p { style: "font-weight:600;margin:12px 0 6px;color:var(--rpg-text-muted);font-size:0.82rem;",
-                                    "Stats"
+                                    {t!("admin-equip-stats-title")}
                                 }
                                 div { class: "admin-stats-table",
                                     div { class: "admin-stats-header",
-                                        span { class: "ast-col-name", "Stat" }
-                                        span { class: "ast-col-val", "Value" }
+                                        span { class: "ast-col-name", {t!("admin-equip-stat-col")} }
+                                        span { class: "ast-col-val", {t!("admin-equip-value-col")} }
                                         span { class: "ast-col-sep", "" }
                                         span { class: "ast-col-val", "%" }
                                     }
@@ -395,12 +400,12 @@ pub fn AdminEquipmentTab() -> Element {
                                         };
                                         spawn(async move {
                                             match admin_save_equipment_form(t, c, n, form).await {
-                                                Ok(()) => feedback.set("✅ Saved.".to_owned()),
-                                                Err(e) => feedback.set(format!("❌ {e}")),
+                                                Ok(()) => feedback.set(t!("admin-equip-saved")),
+                                                Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
                                             }
                                         });
                                     },
-                                    "💾 Save"
+                                    {t!("admin-equip-save")}
                                 }
                                 Button {
                                     variant: ButtonVariant::Secondary,
@@ -408,7 +413,7 @@ pub fn AdminEquipmentTab() -> Element {
                                         selected_item.set(None);
                                         feedback.set(String::new());
                                     },
-                                    "Cancel"
+                                    {t!("common-cancel")}
                                 }
                             }
                         } else {
@@ -428,12 +433,12 @@ pub fn AdminEquipmentTab() -> Element {
                                         let json = eq_json();
                                         spawn(async move {
                                             match admin_save_equipment_json(t, c, n, json).await {
-                                                Ok(()) => feedback.set("✅ Saved.".to_owned()),
-                                                Err(e) => feedback.set(format!("❌ {e}")),
+                                                Ok(()) => feedback.set(t!("admin-equip-saved")),
+                                                Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
                                             }
                                         });
                                     },
-                                    "💾 Save"
+                                    {t!("admin-equip-save")}
                                 }
                                 Button {
                                     variant: ButtonVariant::Secondary,
@@ -442,7 +447,7 @@ pub fn AdminEquipmentTab() -> Element {
                                         eq_json.set(String::new());
                                         feedback.set(String::new());
                                     },
-                                    "Cancel"
+                                    {t!("common-cancel")}
                                 }
                             }
                         }

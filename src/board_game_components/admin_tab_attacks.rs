@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 
 use crate::{
     auth_manager::server_fn::{
@@ -78,7 +79,9 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                 let fname = name.clone();
                 match upload_photo(name, data).await {
                     Ok(_) => atk_photo.set(fname),
-                    Err(e) => attack_feedback.set(format!("❌ Upload: {e}")),
+                    Err(e) => {
+                        attack_feedback.set(t!("admin-atk-upload-error", error: e.to_string()))
+                    }
                 }
             }
         });
@@ -86,10 +89,10 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
 
     rsx! {
         div { class: "admin-full-card",
-            p { class: "admin-section-title", "⚔️ Attacks — {char_name}" }
+            p { class: "admin-section-title", {t!("admin-atk-title", character : char_name.clone())} }
 
             if attacks_list().is_empty() {
-                p { style: "color:var(--rpg-text-muted);", "No attacks found." }
+                p { style: "color:var(--rpg-text-muted);", {t!("admin-atk-empty")} }
             } else {
                 div { style: "display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;",
                     for atk in attacks_list() {
@@ -110,7 +113,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                                     attack_json.set(json);
                                                     edit_attack_name.set(Some(n));
                                                 }
-                                                Err(e) => attack_feedback.set(format!("❌ {e}")),
+                                                Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
                                             }
                                         });
                                     },
@@ -139,7 +142,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                     rsx! {
                         if attack_edit_form_mode() {
                             div { style: "display:flex;align-items:center;justify-content:space-between;margin:8px 0 4px;",
-                                p { style: "font-weight:600;", "📝 {aname}" }
+                                p { style: "font-weight:600;", {t!("admin-atk-form-edit-title", name : aname.clone())} }
                                 Button {
                                     variant: ButtonVariant::Secondary,
                                     onclick: move |_| {
@@ -152,7 +155,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         });
                                         attack_edit_form_mode.set(false);
                                     },
-                                    "✏️ JSON mode"
+                                    {t!("admin-equip-json-mode")}
                                 }
                             }
                             div { class: "admin-form-grid",
@@ -161,7 +164,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-nom",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Nom"
+                                        {t!("admin-equip-name-label")}
                                     }
                                     Input {
                                         r#type: "text",
@@ -174,7 +177,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-niveau",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Niveau"
+                                        {t!("admin-atk-level-label")}
                                     }
                                     Input {
                                         r#type: "number",
@@ -187,17 +190,17 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-cible",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Cible"
+                                        {t!("admin-atk-target-label")}
                                     }
                                     select {
                                         class: "admin-select",
                                         value: "{atk_cible}",
                                         onchange: move |e| atk_cible.set(e.value()),
-                                        option { value: "Enemy", "Enemy" }
-                                        option { value: "Ally", "Ally" }
-                                        option { value: "Self", "Self" }
-                                        option { value: "Zone", "Zone" }
-                                        option { value: "All", "All" }
+                                        option { value: "Enemy", {t!("admin-atk-target-enemy")} }
+                                        option { value: "Ally", {t!("admin-atk-target-ally")} }
+                                        option { value: "Self", {t!("admin-atk-target-self")} }
+                                        option { value: "Zone", {t!("admin-atk-target-zone")} }
+                                        option { value: "All", {t!("admin-atk-target-all")} }
                                     }
                                 }
                                 div { class: "admin-form-field",
@@ -205,15 +208,15 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-portee",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Portée"
+                                        {t!("admin-atk-reach-label")}
                                     }
                                     select {
                                         class: "admin-select",
                                         value: "{atk_portee}",
                                         onchange: move |e| atk_portee.set(e.value()),
-                                        option { value: "Individual", "Individual" }
-                                        option { value: "Area", "Area" }
-                                        option { value: "All", "All" }
+                                        option { value: "Individual", {t!("admin-atk-reach-individual")} }
+                                        option { value: "Area", {t!("admin-atk-reach-area")} }
+                                        option { value: "All", {t!("admin-atk-reach-all")} }
                                     }
                                 }
                                 div { class: "admin-form-field",
@@ -221,16 +224,16 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-forme",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Forme"
+                                        {t!("admin-atk-form-label")}
                                     }
                                     select {
                                         class: "admin-select",
                                         value: "{atk_forme}",
                                         onchange: move |e| atk_forme.set(e.value()),
-                                        option { value: "Standard", "Standard" }
-                                        option { value: "Magic", "Magic" }
-                                        option { value: "Healing", "Healing" }
-                                        option { value: "Support", "Support" }
+                                        option { value: "Standard", {t!("admin-atk-form-standard")} }
+                                        option { value: "Magic", {t!("admin-atk-form-magic")} }
+                                        option { value: "Healing", {t!("admin-atk-form-healing")} }
+                                        option { value: "Support", {t!("admin-atk-form-support")} }
                                     }
                                 }
                                 div { class: "admin-form-field",
@@ -238,11 +241,11 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-photo",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Photo"
+                                        {t!("admin-atk-photo-label")}
                                     }
                                     Input {
                                         r#type: "text",
-                                        placeholder: "e.g. Fireball.png",
+                                        placeholder: t!("admin-atk-photo-placeholder"),
                                         value: "{atk_photo}",
                                         oninput: move |e: FormEvent| atk_photo.set(e.value()),
                                     }
@@ -252,7 +255,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-photo-file",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Upload Photo"
+                                        {t!("admin-atk-upload-photo-label")}
                                     }
                                     input {
                                         r#type: "file",
@@ -266,7 +269,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-mana",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Coût Mana"
+                                        {t!("admin-atk-cost-mana-label")}
                                     }
                                     Input {
                                         r#type: "number",
@@ -279,7 +282,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-rage",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Coût Rage"
+                                        {t!("admin-atk-cost-rage-label")}
                                     }
                                     Input {
                                         r#type: "number",
@@ -292,7 +295,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-vigueur",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Coût Vigueur"
+                                        {t!("admin-atk-cost-vigor-label")}
                                     }
                                     Input {
                                         r#type: "number",
@@ -305,7 +308,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-duree",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Durée"
+                                        {t!("admin-atk-duration-label")}
                                     }
                                     Input {
                                         r#type: "number",
@@ -318,7 +321,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-aggro",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Aggro"
+                                        {t!("admin-atk-aggro-label")}
                                     }
                                     Input {
                                         r#type: "number",
@@ -331,7 +334,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-degats",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Dégâts"
+                                        {t!("admin-atk-damage-label")}
                                     }
                                     Input {
                                         r#type: "number",
@@ -344,7 +347,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-soin",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Soin"
+                                        {t!("admin-atk-heal-label")}
                                     }
                                     Input {
                                         r#type: "number",
@@ -357,7 +360,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-regen-mana",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Regen Mana"
+                                        {t!("admin-atk-regen-mana-label")}
                                     }
                                     Input {
                                         r#type: "number",
@@ -370,7 +373,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-regen-rage",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Regen Rage"
+                                        {t!("admin-atk-regen-rage-label")}
                                     }
                                     Input {
                                         r#type: "number",
@@ -383,7 +386,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         html_for: "atk-regen-vigueur",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Regen Vigueur"
+                                        {t!("admin-atk-regen-vigor-label")}
                                     }
                                     Input {
                                         r#type: "number",
@@ -396,7 +399,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                 html_for: "atk-description",
                                 color: "var(--rpg-text-muted)",
                                 font_size: "0.82rem",
-                                "Description"
+                                {t!("admin-scenarios-col-description")}
                             }
                             textarea {
                                 class: "admin-json-textarea",
@@ -408,7 +411,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                 html_for: "atk-effet",
                                 color: "var(--rpg-text-muted)",
                                 font_size: "0.82rem",
-                                "Effet (JSON array)"
+                                {t!("admin-atk-effects-label")}
                             }
                             textarea {
                                 class: "admin-json-textarea",
@@ -444,12 +447,12 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         };
                                         spawn(async move {
                                             match admin_save_attack_form(c, n, form).await {
-                                                Ok(()) => attack_feedback.set("✅ Saved.".to_owned()),
-                                                Err(e) => attack_feedback.set(format!("❌ {e}")),
+                                                Ok(()) => attack_feedback.set(t!("admin-equip-saved")),
+                                                Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
                                             }
                                         });
                                     },
-                                    "💾 Save"
+                                    {t!("admin-equip-save")}
                                 }
                                 Button {
                                     variant: ButtonVariant::Destructive,
@@ -459,17 +462,17 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         spawn(async move {
                                             match admin_delete_attack(c.clone(), n).await {
                                                 Ok(()) => {
-                                                    attack_feedback.set("✅ Deleted.".to_owned());
+                                                    attack_feedback.set(t!("admin-deleted"));
                                                     edit_attack_name.set(None);
                                                     if let Ok(list) = admin_list_attacks(c).await {
                                                         attacks_list.set(list);
                                                     }
                                                 }
-                                                Err(e) => attack_feedback.set(format!("❌ {e}")),
+                                                Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
                                             }
                                         });
                                     },
-                                    "🗑️ Delete"
+                                    {t!("admin-scenarios-delete")}
                                 }
                                 Button {
                                     variant: ButtonVariant::Secondary,
@@ -477,7 +480,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         edit_attack_name.set(None);
                                         attack_feedback.set(String::new());
                                     },
-                                    "Cancel"
+                                    {t!("common-cancel")}
                                 }
                             }
                         } else {
@@ -511,11 +514,11 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                                     atk_effet.set(form.effet_json);
                                                     attack_edit_form_mode.set(true);
                                                 }
-                                                Err(e) => attack_feedback.set(format!("❌ {e}")),
+                                                Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
                                             }
                                         });
                                     },
-                                    "📝 Form mode"
+                                    {t!("admin-equip-form-mode")}
                                 }
                             }
                             textarea {
@@ -533,12 +536,12 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         let json = attack_json();
                                         spawn(async move {
                                             match admin_save_attack_json(c, n, json).await {
-                                                Ok(()) => attack_feedback.set("✅ Saved.".to_owned()),
-                                                Err(e) => attack_feedback.set(format!("❌ {e}")),
+                                                Ok(()) => attack_feedback.set(t!("admin-equip-saved")),
+                                                Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
                                             }
                                         });
                                     },
-                                    "💾 Save"
+                                    {t!("admin-equip-save")}
                                 }
                                 Button {
                                     variant: ButtonVariant::Destructive,
@@ -548,17 +551,17 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         spawn(async move {
                                             match admin_delete_attack(c.clone(), n).await {
                                                 Ok(()) => {
-                                                    attack_feedback.set("✅ Deleted.".to_owned());
+                                                    attack_feedback.set(t!("admin-deleted"));
                                                     edit_attack_name.set(None);
                                                     if let Ok(list) = admin_list_attacks(c).await {
                                                         attacks_list.set(list);
                                                     }
                                                 }
-                                                Err(e) => attack_feedback.set(format!("❌ {e}")),
+                                                Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
                                             }
                                         });
                                     },
-                                    "🗑️ Delete"
+                                    {t!("admin-scenarios-delete")}
                                 }
                                 Button {
                                     variant: ButtonVariant::Secondary,
@@ -566,7 +569,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         edit_attack_name.set(None);
                                         attack_feedback.set(String::new());
                                     },
-                                    "Cancel"
+                                    {t!("common-cancel")}
                                 }
                             }
                         }
@@ -576,10 +579,10 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
 
             // ── New Attack ──────────────────────────────────────────────────
             div { style: "margin-top:16px;border-top:1px solid var(--rpg-border);padding-top:12px;",
-                p { style: "font-weight:600;margin-bottom:6px;", "➕ New Attack" }
+                p { style: "font-weight:600;margin-bottom:6px;", {t!("admin-atk-new-title")} }
                 div { style: "display:flex;gap:8px;align-items:center;",
                     Input {
-                        placeholder: "Attack file name (e.g. Fireball)",
+                        placeholder: t!("admin-atk-new-placeholder"),
                         r#type: "text",
                         value: "{new_attack_name}",
                         oninput: move |e: FormEvent| new_attack_name.set(e.value()),
@@ -603,16 +606,16 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                 match admin_save_attack_json(c.clone(), n.clone(), json).await {
                                     Ok(()) => {
                                         new_attack_name.set(String::new());
-                                        attack_feedback.set("✅ Created.".to_owned());
+                                        attack_feedback.set(t!("admin-atk-created"));
                                         if let Ok(list) = admin_list_attacks(c).await {
                                             attacks_list.set(list);
                                         }
                                     }
-                                    Err(e) => attack_feedback.set(format!("❌ {e}")),
+                                    Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
                                 }
                             });
                         },
-                        "Create"
+                        {t!("admin-atk-create-button")}
                     }
                 }
             }

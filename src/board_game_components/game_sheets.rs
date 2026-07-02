@@ -2,6 +2,7 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
+use dioxus_i18n::t;
 use dioxus_primitives::scroll_area::ScrollDirection;
 use lib_rpg::{
     character_mod::loot::LootType,
@@ -51,7 +52,7 @@ fn SaveButton(is_saved: Signal<bool>) -> Element {
                     is_saved.set(true);
                 }
             },
-            "Save"
+            {t!("gs-save")}
         }
     }
 }
@@ -123,47 +124,47 @@ pub fn GameSheets() -> Element {
             Button {
                 variant: ButtonVariant::Outline,
                 onclick: open_sheet(SheetKind::Menu),
-                "Menu"
+                {t!("gs-menu")}
             }
             Button {
                 variant: ButtonVariant::Outline,
                 onclick: open_sheet(SheetKind::Inventory),
                 position: "relative",
-                "Inventory"
+                {t!("gs-inventory")}
                 if has_new_equipment {
                     span {
                         class: "equip-tab-new-badge",
                         style: "position:absolute;top:2px;right:2px;",
-                        title: "New equipment!",
+                        title: t!("gs-new-equipment"),
                     }
                 }
             }
             Button {
                 variant: ButtonVariant::Outline,
                 onclick: open_sheet(SheetKind::Logs),
-                "Logs"
+                {t!("gs-logs")}
             }
             Button {
                 variant: ButtonVariant::Outline,
                 onclick: open_sheet(SheetKind::Stats),
-                "Game stats"
+                {t!("gs-game-stats")}
             }
             Button {
                 variant: ButtonVariant::Outline,
                 onclick: open_sheet(SheetKind::Scenarios),
-                "📜 Scenarios"
+                {t!("gs-scenarios")}
             }
             Button {
                 variant: ButtonVariant::Outline,
                 onclick: open_sheet(SheetKind::Settings),
-                "⚙️ Settings"
+                {t!("gs-settings")}
             }
             Button {
                 variant: ButtonVariant::Outline,
                 disabled: !shop_enabled(),
-                title: if shop_enabled() { "" } else { "Enable \"Shop During Scenario\" in ⚙️ Settings" },
+                title: if shop_enabled() { String::new() } else { t!("gs-store-disabled-hint") },
                 onclick: open_sheet(SheetKind::Store),
-                "🛒 Store"
+                {t!("gs-store")}
             }
         }
         Sheet { open: open(), on_open_change: move |v| open.set(v),
@@ -238,8 +239,8 @@ fn InventorySheet(s: SheetSide) -> Element {
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "📦 Inventory — {character.db_full_name}" }
-                SheetDescription { "Level {character.level} · Stats & Equipment" }
+                SheetTitle { {t!("gs-inv-title", name : character.db_full_name.clone())} }
+                SheetDescription { {t!("gs-inv-desc", level : character.level as i64)} }
             }
 
             div {
@@ -261,7 +262,7 @@ fn InventorySheet(s: SheetSide) -> Element {
                                     span {
                                         class: "equip-tab-new-badge",
                                         style: "position:absolute;top:2px;right:2px;",
-                                        title: "New equipment for {hero.db_full_name}!",
+                                        title: t!("gs-new-equipment-for", name : hero.db_full_name.clone()),
                                     }
                                 }
                             }
@@ -311,7 +312,7 @@ fn InventorySheet(s: SheetSide) -> Element {
             SheetFooter {
                 SheetClose {
                     r#as: |attributes| rsx! {
-                        Button { variant: ButtonVariant::Outline, attributes, "Close" }
+                        Button { variant: ButtonVariant::Outline, attributes, {t!("gs-close")} }
                     },
                 }
             }
@@ -360,8 +361,8 @@ fn GameStatsSheet(s: SheetSide) -> Element {
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "📊 Game Stats" }
-                SheetDescription { "Evolution of the current game." }
+                SheetTitle { {t!("gs-stats-title")} }
+                SheetDescription { {t!("gs-stats-desc")} }
             }
 
             ScrollArea {
@@ -381,15 +382,15 @@ fn GameStatsSheet(s: SheetSide) -> Element {
                         grid_template_columns: "1fr 1fr 1fr",
                         gap: "0.5rem",
                         div { class: "stats-kpi",
-                            span { class: "stats-kpi-label", "TURN" }
+                            span { class: "stats-kpi-label", {t!("gs-turn-label")} }
                             span { class: "stats-kpi-value", "{current_turn}" }
                         }
                         div { class: "stats-kpi",
-                            span { class: "stats-kpi-label", "ROUND" }
+                            span { class: "stats-kpi-label", {t!("gs-round-label")} }
                             span { class: "stats-kpi-value", "{current_round}/{total_in_round}" }
                         }
                         div { class: "stats-kpi",
-                            span { class: "stats-kpi-label", "KILLS" }
+                            span { class: "stats-kpi-label", {t!("gs-kills-label")} }
                             span { class: "stats-kpi-value stats-kpi-danger",
                                 "{kills}/{total_bosses_ever}"
                             }
@@ -398,16 +399,16 @@ fn GameStatsSheet(s: SheetSide) -> Element {
 
                     // ── Active Player ────────────────────────────────────────
                     div { class: "stats-current-player",
-                        span { class: "stats-kpi-label", "⚔️ ACTIVE PLAYER" }
+                        span { class: "stats-kpi-label", {t!("gs-stats-active-player-label")} }
                         span { class: "stats-kpi-value stats-kpi-teal", "{current_player}" }
                     }
 
                     // ── Scenario Progress ────────────────────────────────────
                     div { class: "stats-section",
-                        div { class: "stats-section-title", "📜 Scenario Progress" }
+                        div { class: "stats-section-title", {t!("gs-scenario-progress-title")} }
                         div { class: "stats-progress-bar-wrap",
                             div { class: "stats-progress-text",
-                                "{completed} / {total_scenarios} completed"
+                                {t!("gs-scenarios-completed", completed : completed as i64, total : total_scenarios as i64)}
                             }
                             div { class: "stats-progress-outer",
                                 div {
@@ -420,9 +421,15 @@ fn GameStatsSheet(s: SheetSide) -> Element {
                             div { class: "stats-current-scenario",
                                 span { "🗺️ " }
                                 span { style: "font-weight:600;", "{sc.name}" }
-                                span { class: "stats-scenario-level", " · Lv {sc.level}" }
+                                span { class: "stats-scenario-level",
+                                    " · "
+                                    {t!("common-level", level : sc.level as i64)}
+                                }
                                 if !sc.universe.is_empty() {
-                                    span { class: "stats-scenario-universe", " · 🌐 {sc.universe}" }
+                                    span { class: "stats-scenario-universe",
+                                        " · "
+                                        {t!("loadgame-universe", universe : sc.universe.clone())}
+                                    }
                                 }
                             }
                         }
@@ -430,7 +437,7 @@ fn GameStatsSheet(s: SheetSide) -> Element {
 
                     // ── Heroes HP bars ───────────────────────────────────────
                     div { class: "stats-section",
-                        div { class: "stats-section-title", "🧙 Heroes Status" }
+                        div { class: "stats-section-title", {t!("gs-heroes-status-title")} }
                         for hero in gm.pm.active_heroes.iter() {
                             {
                                 let hp_cur = hero.stats.all_stats.get(HP).map(|a| a.current).unwrap_or(0);
@@ -470,7 +477,7 @@ fn GameStatsSheet(s: SheetSide) -> Element {
             SheetFooter {
                 SheetClose {
                     r#as: |attributes| rsx! {
-                        Button { variant: ButtonVariant::Outline, attributes, "Close" }
+                        Button { variant: ButtonVariant::Outline, attributes, {t!("gs-close")} }
                     },
                 }
             }
@@ -497,8 +504,8 @@ fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>, is_saved: Signal<bool>) -> El
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "☰ Menu" }
-                SheetDescription { "Save your game or return to the adventure." }
+                SheetTitle { {t!("gs-menu-title")} }
+                SheetDescription { {t!("gs-menu-desc")} }
             }
 
             div {
@@ -514,7 +521,7 @@ fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>, is_saved: Signal<bool>) -> El
                             html_for: "menu-srv",
                             font_size: "0.7rem",
                             color: "var(--rpg-text-muted)",
-                            "SERVER"
+                            {t!("gs-menu-server-label")}
                         }
                         div { style: "font-size:0.9rem; font-weight:600; color:var(--rpg-gold);",
                             "{server_name}"
@@ -525,7 +532,7 @@ fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>, is_saved: Signal<bool>) -> El
                             html_for: "menu-turn",
                             font_size: "0.7rem",
                             color: "var(--rpg-text-muted)",
-                            "TURN"
+                            {t!("gs-turn-label")}
                         }
                         div { style: "font-size:0.9rem; font-weight:600;", "{current_turn}" }
                     }
@@ -534,7 +541,7 @@ fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>, is_saved: Signal<bool>) -> El
                             html_for: "menu-player",
                             font_size: "0.7rem",
                             color: "var(--rpg-text-muted)",
-                            "ACTIVE PLAYER"
+                            {t!("gs-menu-active-player-label")}
                         }
                         div { style: "font-size:0.85rem; font-weight:500; color:var(--rpg-teal);",
                             "{current_player}"
@@ -545,7 +552,7 @@ fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>, is_saved: Signal<bool>) -> El
                             html_for: "menu-players",
                             font_size: "0.7rem",
                             color: "var(--rpg-text-muted)",
-                            "PLAYERS"
+                            {t!("gs-menu-players-label")}
                         }
                         div { style: "font-size:0.85rem; font-weight:500;", "{players_count}" }
                     }
@@ -554,7 +561,7 @@ fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>, is_saved: Signal<bool>) -> El
                 // Save status indicator
                 if is_saved() {
                     div { style: "background:#14532d; border:1px solid #22c55e; border-radius:8px; padding:8px 14px; display:flex; align-items:center; gap:8px;",
-                        div { style: "font-size:0.9rem; color:#86efac;", "✅ Game saved successfully" }
+                        div { style: "font-size:0.9rem; color:#86efac;", {t!("gs-game-saved")} }
                     }
                 }
             }
@@ -569,7 +576,7 @@ fn MenuSheet(s: SheetSide, open_wnd: Signal<bool>, is_saved: Signal<bool>) -> El
                                 is_saved.set(false);
                             },
                             attributes,
-                            "Close"
+                            {t!("gs-close")}
                         }
                     },
                 }
@@ -587,8 +594,8 @@ fn LogsSheet(s: SheetSide) -> Element {
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "Logs" }
-                SheetDescription { "History of all game events." }
+                SheetTitle { {t!("gs-logs-title")} }
+                SheetDescription { {t!("gs-logs-desc")} }
             }
 
             div {
@@ -602,10 +609,10 @@ fn LogsSheet(s: SheetSide) -> Element {
                 Tabs { default_value: "all".to_owned(), horizontal: true,
 
                     TabList {
-                        TabTrigger { value: "all".to_owned(), index: 0_usize, "All" }
-                        TabTrigger { value: "combat".to_owned(), index: 1_usize, "⚔ Combat" }
-                        TabTrigger { value: "heal".to_owned(), index: 2_usize, "💚 Healing" }
-                        TabTrigger { value: "event".to_owned(), index: 3_usize, "ℹ Events" }
+                        TabTrigger { value: "all".to_owned(), index: 0_usize, {t!("gs-logs-all")} }
+                        TabTrigger { value: "combat".to_owned(), index: 1_usize, {t!("gs-logs-combat")} }
+                        TabTrigger { value: "heal".to_owned(), index: 2_usize, {t!("gs-logs-healing")} }
+                        TabTrigger { value: "event".to_owned(), index: 3_usize, {t!("gs-logs-events")} }
                     }
 
                     TabContent { value: "all".to_owned(), index: 0_usize,
@@ -638,7 +645,7 @@ fn LogsSheet(s: SheetSide) -> Element {
             SheetFooter {
                 SheetClose {
                     r#as: |attributes| rsx! {
-                        Button { variant: ButtonVariant::Outline, attributes, "Close" }
+                        Button { variant: ButtonVariant::Outline, attributes, {t!("gs-close")} }
                     },
                 }
             }
@@ -672,7 +679,7 @@ fn LogsList(logs: Vec<LogData>, filter: String) -> Element {
             div { class: "scroll-content",
                 if filtered.is_empty() {
                     div { style: "color: var(--rpg-text-muted); text-align: center; padding: 2rem; font-size: 0.85rem;",
-                        "No logs yet."
+                        {t!("gs-logs-empty")}
                     }
                 }
                 for log in filtered {
@@ -708,8 +715,8 @@ fn ScenariosSheet(s: SheetSide) -> Element {
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "📜 Scenarios" }
-                SheetDescription { "Progress through all available stages." }
+                SheetTitle { {t!("gs-scenarios-sheet-title")} }
+                SheetDescription { {t!("gs-scenarios-sheet-desc")} }
             }
 
             div {
@@ -720,7 +727,7 @@ fn ScenariosSheet(s: SheetSide) -> Element {
 
                 if sorted_scenarios.is_empty() {
                     div { style: "color:var(--rpg-text-muted); text-align:center; padding:2rem; font-size:0.85rem;",
-                        "No scenarios loaded."
+                        {t!("gs-scenarios-empty")}
                     }
                 } else {
                     div { class: "scenario-history",
@@ -733,21 +740,21 @@ fn ScenariosSheet(s: SheetSide) -> Element {
                                 let (status_text, chip_class, item_class) = match state {
                                     ScenarioState::Completed => {
                                         (
-                                            "✅ Completed",
+                                            t!("gs-scenario-completed"),
                                             "scenario-chip completed",
                                             "scenario-history-item completed",
                                         )
                                     }
                                     ScenarioState::InProgress => {
                                         (
-                                            "⚔️ In Progress",
+                                            t!("gs-scenario-in-progress"),
                                             "scenario-chip in-progress",
                                             "scenario-history-item",
                                         )
                                     }
                                     ScenarioState::NotStarted => {
                                         (
-                                            "🔒 Not Started",
+                                            t!("gs-scenario-not-started"),
                                             "scenario-chip",
                                             "scenario-history-item not-started",
                                         )
@@ -769,7 +776,7 @@ fn ScenariosSheet(s: SheetSide) -> Element {
             SheetFooter {
                 SheetClose {
                     r#as: |attributes| rsx! {
-                        Button { variant: ButtonVariant::Outline, attributes, "Close" }
+                        Button { variant: ButtonVariant::Outline, attributes, {t!("gs-close")} }
                     },
                 }
             }
@@ -787,11 +794,11 @@ fn rank_color(rank: &lib_rpg::character_mod::rank::Rank) -> &'static str {
     }
 }
 
-fn rank_label(rank: &lib_rpg::character_mod::rank::Rank) -> &'static str {
+fn rank_label(rank: &lib_rpg::character_mod::rank::Rank) -> String {
     match rank {
-        lib_rpg::character_mod::rank::Rank::Common => "Common",
-        lib_rpg::character_mod::rank::Rank::Intermediate => "Intermediate",
-        lib_rpg::character_mod::rank::Rank::Advanced => "Advanced",
+        lib_rpg::character_mod::rank::Rank::Common => t!("rank-common"),
+        lib_rpg::character_mod::rank::Rank::Intermediate => t!("rank-intermediate"),
+        lib_rpg::character_mod::rank::Rank::Advanced => t!("rank-advanced"),
     }
 }
 
@@ -843,11 +850,12 @@ pub fn StoreSheet(s: SheetSide) -> Element {
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "🛒 Store — {character.db_full_name}" }
+                SheetTitle { {t!("gs-store-title", name: character.db_full_name.clone())} }
                 SheetDescription {
-                    "Level {character.level} · "
+                    {t!("common-level", level: character.level as i64)}
+                    " · "
                     span { style: "color: var(--rpg-gold, #c9a227); font-weight: 700;",
-                        "💰 {gold} gold"
+                        {t!("gs-gold-amount", amount: gold as i64)}
                     }
                 }
             }
@@ -876,12 +884,12 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                     button {
                         class: if main_tab() == 0 { "inv-tab inv-tab--active" } else { "inv-tab" },
                         onclick: move |_| main_tab.set(0),
-                        "🏪 Shop"
+                        {t!("gs-store-shop")}
                     }
                     button {
                         class: if main_tab() == 1 { "inv-tab inv-tab--active" } else { "inv-tab" },
                         onclick: move |_| main_tab.set(1),
-                        "🎒 Bag"
+                        {t!("gs-store-bag")}
                     }
                 }
 
@@ -896,12 +904,12 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                         button {
                             class: if shop_sub_tab() == 0 { "inv-tab inv-tab--active" } else { "inv-tab" },
                             onclick: move |_| shop_sub_tab.set(0),
-                            "⚔️ Equipment"
+                            {t!("gs-store-equipment")}
                         }
                         button {
                             class: if shop_sub_tab() == 1 { "inv-tab inv-tab--active" } else { "inv-tab" },
                             onclick: move |_| shop_sub_tab.set(1),
-                            "💊 Consumables"
+                            {t!("gs-store-consumables")}
                         }
                     }
 
@@ -944,16 +952,18 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                         "{rank_lbl}"
                                                     }
                                                 }
-                                                span { style: "font-size:0.75rem;color:var(--rpg-text-muted);", "Slot: {category_label}" }
+                                                span { style: "font-size:0.75rem;color:var(--rpg-text-muted);",
+                                                    {t!("gs-store-slot", category: category_label.clone())}
+                                                }
                                                 span { style: "font-size:0.78rem;color:var(--rpg-text-secondary,var(--rpg-text-muted));",
                                                     "{item.description}"
                                                 }
                                                 div { style: "display:flex;align-items:center;justify-content:space-between;margin-top:0.25rem;",
                                                     span { style: "color:var(--rpg-gold,#c9a227);font-weight:600;font-size:0.85rem;",
-                                                        "💰 {item.price} gold"
+                                                        {t!("gs-gold-amount", amount: item.price as i64)}
                                                         if bag_count > 0 {
                                                             span { style: "margin-left:0.4rem;font-size:0.75rem;color:var(--rpg-text-muted);",
-                                                                "(×{bag_count} in bag)"
+                                                                {t!("gs-store-in-bag", count: bag_count as i64)}
                                                             }
                                                         }
                                                     }
@@ -981,9 +991,9 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                             }
                                                         },
                                                         if can_afford {
-                                                            "Buy"
+                                                            {t!("gs-store-buy")}
                                                         } else {
-                                                            "No gold"
+                                                            {t!("gs-store-no-gold")}
                                                         }
                                                     }
                                                 }
@@ -1037,10 +1047,10 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                 }
                                                 div { style: "display:flex;align-items:center;justify-content:space-between;margin-top:0.25rem;",
                                                     span { style: "color:var(--rpg-gold,#c9a227);font-weight:600;font-size:0.85rem;",
-                                                        "💰 {item.price} gold"
+                                                        {t!("gs-gold-amount", amount: item.price as i64)}
                                                         if bag_count > 0 {
                                                             span { style: "margin-left:0.4rem;font-size:0.75rem;color:var(--rpg-text-muted);",
-                                                                "(×{bag_count} in bag)"
+                                                                {t!("gs-store-in-bag", count: bag_count as i64)}
                                                             }
                                                         }
                                                     }
@@ -1068,9 +1078,9 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                             }
                                                         },
                                                         if can_afford {
-                                                            "Buy"
+                                                            {t!("gs-store-buy")}
                                                         } else {
-                                                            "No gold"
+                                                            {t!("gs-store-no-gold")}
                                                         }
                                                     }
                                                 }
@@ -1125,7 +1135,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
 
                                 if is_empty {
                                     div { style: "color:var(--rpg-text-muted);text-align:center;padding:2rem;font-size:0.85rem;",
-                                        "Your bag is empty."
+                                        {t!("gs-store-bag-empty")}
                                     }
                                 } else {
                                     div {
@@ -1137,7 +1147,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                         // Equipment section
                                         if !unequipped.is_empty() {
                                             span { style: "font-size:0.8rem;font-weight:700;color:var(--rpg-text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0.25rem 0;",
-                                                "⚔️ Equipment"
+                                                {t!("gs-store-equipment")}
                                             }
                                             for (unique_name, cat_label) in unequipped.iter() {
                                                 {
@@ -1154,11 +1164,13 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                         div { style: "border:1px solid var(--rpg-border);border-radius:8px;padding:0.6rem 0.75rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;",
                                                             div { display: "flex", flex_direction: "column",
                                                                 span { style: "font-weight:600;font-size:0.85rem;", "{unique_name}" }
-                                                                span { style: "font-size:0.75rem;color:var(--rpg-text-muted);", "Slot: {cat_label}" }
+                                                                span { style: "font-size:0.75rem;color:var(--rpg-text-muted);",
+                                                                    {t!("gs-store-slot", category: cat_label.clone())}
+                                                                }
                                                             }
                                                             div { display: "flex", align_items: "center", gap: "0.5rem",
                                                                 span { style: "color:var(--rpg-gold,#c9a227);font-size:0.8rem;font-weight:600;white-space:nowrap;",
-                                                                    "💰 {refund} gold"
+                                                                    {t!("gs-gold-amount", amount: refund as i64)}
                                                                 }
                                                                 Button {
                                                                     variant: ButtonVariant::Destructive,
@@ -1182,7 +1194,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                                             }
                                                                         }
                                                                     },
-                                                                    "Sell"
+                                                                    {t!("gs-store-sell")}
                                                                 }
                                                             }
                                                         }
@@ -1194,7 +1206,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                         // Consumables section (personal — from shop purchases, sellable)
                                         if !bag_consumables.is_empty() {
                                             span { style: "font-size:0.8rem;font-weight:700;color:var(--rpg-text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0.25rem 0;margin-top:0.25rem;",
-                                                "💊 Consumables"
+                                                {t!("gs-store-consumables")}
                                             }
                                             for consumable in bag_consumables.iter() {
                                                 {
@@ -1216,7 +1228,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                             }
                                                             div { display: "flex", align_items: "center", gap: "0.5rem",
                                                                 span { style: "color:var(--rpg-gold,#c9a227);font-size:0.8rem;font-weight:600;white-space:nowrap;",
-                                                                    "💰 {refund} gold"
+                                                                    {t!("gs-gold-amount", amount: refund as i64)}
                                                                 }
                                                                 Button {
                                                                     variant: ButtonVariant::Destructive,
@@ -1240,7 +1252,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                                             }
                                                                         }
                                                                     },
-                                                                    "Sell"
+                                                                    {t!("gs-store-sell")}
                                                                 }
                                                             }
                                                         }
@@ -1252,7 +1264,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                         // Party loot consumables (shared pool, grouped, sellable)
                                         if !party_grouped.is_empty() {
                                             span { style: "font-size:0.8rem;font-weight:700;color:var(--rpg-text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0.25rem 0;margin-top:0.25rem;",
-                                                "🎒 Party loot"
+                                                {t!("gs-store-party-loot")}
                                             }
                                             for (consumable_name, count, rank) in party_grouped.iter() {
                                                 {
@@ -1280,7 +1292,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                             }
                                                             div { display: "flex", align_items: "center", gap: "0.5rem",
                                                                 span { style: "color:var(--rpg-gold,#c9a227);font-size:0.8rem;font-weight:600;white-space:nowrap;",
-                                                                    "💰 {refund} gold"
+                                                                    {t!("gs-gold-amount", amount: refund as i64)}
                                                                 }
                                                                 Button {
                                                                     variant: ButtonVariant::Destructive,
@@ -1304,7 +1316,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                                             }
                                                                         }
                                                                     },
-                                                                    "Sell"
+                                                                    {t!("gs-store-sell")}
                                                                 }
                                                             }
                                                         }
@@ -1323,7 +1335,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
             SheetFooter {
                 SheetClose {
                     r#as: |attributes| rsx! {
-                        Button { variant: ButtonVariant::Outline, attributes, "Close" }
+                        Button { variant: ButtonVariant::Outline, attributes, {t!("gs-close")} }
                     },
                 }
             }
@@ -1387,8 +1399,8 @@ fn SettingsSheet(s: SheetSide) -> Element {
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { "⚙️ Settings" }
-                SheetDescription { "Personalise your game experience." }
+                SheetTitle { {t!("gs-settings-title")} }
+                SheetDescription { {t!("gs-settings-desc")} }
             }
 
             div {
@@ -1400,9 +1412,9 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 // ── Attack Tooltips ────────────────────────────────────────────
                 div { class: "settings-row",
                     div { class: "settings-label-group",
-                        span { class: "settings-label", "Attack Tooltips" }
+                        span { class: "settings-label", {t!("gs-settings-tooltips-label")} }
                         span { class: "settings-hint",
-                            "Show attack description on hover in the attack list."
+                            {t!("gs-settings-tooltips-hint")}
                         }
                     }
                     label { class: "toggle-switch",
@@ -1413,14 +1425,14 @@ fn SettingsSheet(s: SheetSide) -> Element {
                                 let v = e.value() == "true" || show_atk_tooltips();
                                 let new_val = !show_atk_tooltips();
                                 show_atk_tooltips.set(new_val);
-                                save_msg.set("Saving…".to_owned());
+                                save_msg.set(t!("gs-settings-saving"));
                                 spawn(async move {
                                     let _ = save_user_setting(
                                             SETTING_TOOLTIPS.to_string(),
                                             if new_val { "true" } else { "false" }.to_string(),
                                         )
                                         .await;
-                                    save_msg.set("✅ Saved".to_owned());
+                                    save_msg.set(t!("gs-settings-saved"));
                                     let _ = v;
                                 });
                             },
@@ -1432,8 +1444,8 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 // ── Boss Energy Bars ───────────────────────────────────────────
                 div { class: "settings-row",
                     div { class: "settings-label-group",
-                        span { class: "settings-label", "Boss Energy Bars" }
-                        span { class: "settings-hint", "Show mana/vigor/berserk bars for bosses." }
+                        span { class: "settings-label", {t!("gs-settings-boss-energy-label")} }
+                        span { class: "settings-hint", {t!("gs-settings-boss-energy-hint")} }
                     }
                     label { class: "toggle-switch",
                         input {
@@ -1442,14 +1454,14 @@ fn SettingsSheet(s: SheetSide) -> Element {
                             onchange: move |_| {
                                 let new_val = !show_boss_energy();
                                 show_boss_energy.set(new_val);
-                                save_msg.set("Saving…".to_owned());
+                                save_msg.set(t!("gs-settings-saving"));
                                 spawn(async move {
                                     let _ = save_user_setting(
                                             SETTING_BOSS_ENERGY.to_string(),
                                             if new_val { "true" } else { "false" }.to_string(),
                                         )
                                         .await;
-                                    save_msg.set("✅ Saved".to_owned());
+                                    save_msg.set(t!("gs-settings-saved"));
                                 });
                             },
                         }
@@ -1460,8 +1472,8 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 // ── Hero Aggro ─────────────────────────────────────────────────
                 div { class: "settings-row",
                     div { class: "settings-label-group",
-                        span { class: "settings-label", "Hero Aggro" }
-                        span { class: "settings-hint", "Show aggro value on the hero panel header." }
+                        span { class: "settings-label", {t!("gs-settings-hero-aggro-label")} }
+                        span { class: "settings-hint", {t!("gs-settings-hero-aggro-hint")} }
                     }
                     label { class: "toggle-switch",
                         input {
@@ -1470,14 +1482,14 @@ fn SettingsSheet(s: SheetSide) -> Element {
                             onchange: move |_| {
                                 let new_val = !show_hero_aggro();
                                 show_hero_aggro.set(new_val);
-                                save_msg.set("Saving…".to_owned());
+                                save_msg.set(t!("gs-settings-saving"));
                                 spawn(async move {
                                     let _ = save_user_setting(
                                             SETTING_HERO_AGGRO.to_string(),
                                             if new_val { "true" } else { "false" }.to_string(),
                                         )
                                         .await;
-                                    save_msg.set("✅ Saved".to_owned());
+                                    save_msg.set(t!("gs-settings-saved"));
                                 });
                             },
                         }
@@ -1488,9 +1500,9 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 // ── Boss HP Bar ────────────────────────────────────────────────
                 div { class: "settings-row",
                     div { class: "settings-label-group",
-                        span { class: "settings-label", "Boss HP Bar" }
+                        span { class: "settings-label", {t!("gs-settings-boss-hp-label")} }
                         span { class: "settings-hint",
-                            "Show the HP bar on boss panels (hidden if you want mystery)."
+                            {t!("gs-settings-boss-hp-hint")}
                         }
                     }
                     label { class: "toggle-switch",
@@ -1500,14 +1512,14 @@ fn SettingsSheet(s: SheetSide) -> Element {
                             onchange: move |_| {
                                 let new_val = !show_boss_hp();
                                 show_boss_hp.set(new_val);
-                                save_msg.set("Saving…".to_owned());
+                                save_msg.set(t!("gs-settings-saving"));
                                 spawn(async move {
                                     let _ = save_user_setting(
                                             SETTING_BOSS_HP.to_string(),
                                             if new_val { "true" } else { "false" }.to_string(),
                                         )
                                         .await;
-                                    save_msg.set("✅ Saved".to_owned());
+                                    save_msg.set(t!("gs-settings-saved"));
                                 });
                             },
                         }
@@ -1518,9 +1530,9 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 // ── Auto-save on scenario start ────────────────────────────────
                 div { class: "settings-row",
                     div { class: "settings-label-group",
-                        span { class: "settings-label", "Auto-save on Scenario" }
+                        span { class: "settings-label", {t!("gs-settings-autosave-label")} }
                         span { class: "settings-hint",
-                            "Automatically save at the start of each new scenario."
+                            {t!("gs-settings-autosave-hint")}
                         }
                     }
                     label { class: "toggle-switch",
@@ -1530,14 +1542,14 @@ fn SettingsSheet(s: SheetSide) -> Element {
                             onchange: move |_| {
                                 let new_val = !auto_save_scenario();
                                 auto_save_scenario.set(new_val);
-                                save_msg.set("Saving…".to_owned());
+                                save_msg.set(t!("gs-settings-saving"));
                                 spawn(async move {
                                     let _ = save_user_setting(
                                             SETTING_AUTO_SAVE.to_string(),
                                             if new_val { "true" } else { "false" }.to_string(),
                                         )
                                         .await;
-                                    save_msg.set("✅ Saved".to_owned());
+                                    save_msg.set(t!("gs-settings-saved"));
                                 });
                             },
                         }
@@ -1548,9 +1560,9 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 // ── Shop During Scenario ───────────────────────────────────────
                 div { class: "settings-row",
                     div { class: "settings-label-group",
-                        span { class: "settings-label", "Shop During Scenario" }
+                        span { class: "settings-label", {t!("gs-settings-shop-label")} }
                         span { class: "settings-hint",
-                            "Allow opening the Store during an active scenario."
+                            {t!("gs-settings-shop-hint")}
                         }
                     }
                     label { class: "toggle-switch",
@@ -1560,14 +1572,14 @@ fn SettingsSheet(s: SheetSide) -> Element {
                             onchange: move |_| {
                                 let new_val = !shop_enabled();
                                 shop_enabled.set(new_val);
-                                save_msg.set("Saving…".to_owned());
+                                save_msg.set(t!("gs-settings-saving"));
                                 spawn(async move {
                                     let _ = save_user_setting(
                                             SETTING_SHOP_ENABLED.to_string(),
                                             if new_val { "true" } else { "false" }.to_string(),
                                         )
                                         .await;
-                                    save_msg.set("✅ Saved".to_owned());
+                                    save_msg.set(t!("gs-settings-saved"));
                                 });
                             },
                         }
@@ -1583,7 +1595,7 @@ fn SettingsSheet(s: SheetSide) -> Element {
             SheetFooter {
                 SheetClose {
                     r#as: |attributes| rsx! {
-                        Button { variant: ButtonVariant::Outline, attributes, "Close" }
+                        Button { variant: ButtonVariant::Outline, attributes, {t!("gs-close")} }
                     },
                 }
             }

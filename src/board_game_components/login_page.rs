@@ -1,6 +1,7 @@
 use dioxus::fullstack::CborEncoding;
 use dioxus::prelude::*;
 use dioxus::{fullstack::UseWebsocket, logger::tracing};
+use dioxus_i18n::t;
 
 use crate::auth_manager::server_fn::get_user_id;
 use crate::websocket_handler::NO_CLIENT_ID;
@@ -42,21 +43,21 @@ pub fn LoginPage() -> Element {
     rsx! {
         div { class: "home-container",
             div { class: "rotate-scale-up",
-                h1 { class: "rpg-title", "⚔️ RPG Adventure" }
+                h1 { class: "rpg-title", {t!("home-title")} }
             }
             div { class: "auth-grid",
                 // --- Sign in card ---
                 div { class: "rpg-card auth-card",
-                    p { class: "auth-section-title", "Sign In" }
+                    p { class: "auth-section-title", {t!("login-sign-in-title")} }
                     Input {
-                        placeholder: "Your username",
+                        placeholder: t!("login-username-placeholder"),
                         r#type: "text",
                         value: "{username}",
                         oninput: set_username,
                     }
                     if use_pw {
                         Input {
-                            placeholder: "Password",
+                            placeholder: t!("login-password-placeholder"),
                             r#type: "password",
                             value: "{password}",
                             oninput: set_password,
@@ -68,7 +69,7 @@ pub fn LoginPage() -> Element {
                             tracing::info!("Attempting to log in with username: {}", username());
                             match login(username(), password(), use_pw).await {
                                 Ok(()) => {
-                                    logon_answer.set(format!("{} logged in", username()));
+                                    logon_answer.set(t!("login-success", username: username()));
                                     match get_user_id().await {
                                         Ok(sql_id) => {
                                             *local_login_id_session.write() = sql_id;
@@ -92,7 +93,7 @@ pub fn LoginPage() -> Element {
                                 }
                             }
                         },
-                        "Sign In →"
+                        {t!("login-sign-in-button")}
                     }
                     if !logon_answer().is_empty() {
                         p { class: "rpg-answer", "{logon_answer}" }
@@ -100,16 +101,16 @@ pub fn LoginPage() -> Element {
                 }
                 // --- Sign up card ---
                 div { class: "rpg-card auth-card",
-                    p { class: "auth-section-title", "Create Account" }
+                    p { class: "auth-section-title", {t!("login-create-account-title")} }
                     Input {
-                        placeholder: "Choose a username",
+                        placeholder: t!("login-choose-username-placeholder"),
                         r#type: "text",
                         value: "{register_name}",
                         oninput: set_register,
                     }
                     if use_pw {
                         Input {
-                            placeholder: "Choose a password",
+                            placeholder: t!("login-choose-password-placeholder"),
                             r#type: "password",
                             value: "{register_password}",
                             oninput: set_register_pw,
@@ -129,17 +130,17 @@ pub fn LoginPage() -> Element {
                                         }
                                         Err(e) => {
                                             tracing::info!("{}", e.to_owned());
-                                            register_answer.set("Invalid login".to_owned());
+                                            register_answer.set(t!("login-invalid-login"));
                                         }
                                     }
                                 }
                                 Err(e) => {
                                     tracing::info!("{}", e.to_owned());
-                                    register_answer.set("This name is already taken.".to_owned());
+                                    register_answer.set(t!("login-name-taken"));
                                 }
                             }
                         },
-                        "Sign Up →"
+                        {t!("login-sign-up-button")}
                     }
                     if !register_answer().is_empty() {
                         p { class: "rpg-answer-error", "{register_answer}" }

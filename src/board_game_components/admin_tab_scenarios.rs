@@ -1,5 +1,6 @@
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 
 use crate::{
     auth_manager::server_fn::{
@@ -66,7 +67,7 @@ pub fn AdminScenariosTab() -> Element {
 
     rsx! {
         div { class: "admin-card",
-            p { class: "admin-section-title", "🌐 Select Universe" }
+            p { class: "admin-section-title", {t!("admin-scenarios-select-universe")} }
             select {
                 class: "admin-select",
                 value: "{selected_universe}",
@@ -76,7 +77,7 @@ pub fn AdminScenariosTab() -> Element {
                     feedback.set(String::new());
                     confirm_delete.set(String::new());
                 },
-                option { value: "", "— choose a universe —" }
+                option { value: "", {t!("admin-scenarios-choose-universe")} }
                 for u in &universes {
                     option { value: "{u}", "{u}" }
                 }
@@ -85,24 +86,26 @@ pub fn AdminScenariosTab() -> Element {
 
         if !selected_universe().is_empty() {
             div { class: "admin-full-card",
-                p { class: "admin-section-title", "📜 Scenarios — {selected_universe}" }
+                p { class: "admin-section-title",
+                    {t!("admin-scenarios-title", universe : selected_universe())}
+                }
 
                 if loading() {
-                    p { style: "color:var(--rpg-text-muted);", "Loading…" }
+                    p { style: "color:var(--rpg-text-muted);", {t!("common-loading")} }
                 } else if scenarios().is_empty() {
                     p { style: "color:var(--rpg-text-muted);",
-                        "No scenarios found for this universe."
+                        {t!("admin-scenarios-empty")}
                     }
                 } else {
                     table { class: "admin-table",
                         thead {
                             tr {
-                                th { class: "col-level", "Lvl" }
-                                th { class: "col-name", "Name" }
-                                th { class: "col-bosses", "Bosses" }
-                                th { class: "col-description", "Description" }
-                                th { class: "col-file", "File" }
-                                th { "Actions" }
+                                th { class: "col-level", {t!("admin-scenarios-col-level")} }
+                                th { class: "col-name", {t!("admin-equip-name-label")} }
+                                th { class: "col-bosses", {t!("admin-scenarios-col-bosses")} }
+                                th { class: "col-description", {t!("admin-scenarios-col-description")} }
+                                th { class: "col-file", {t!("admin-scenarios-col-file")} }
+                                th { {t!("admin-scenarios-col-actions")} }
                             }
                         }
                         tbody {
@@ -149,11 +152,11 @@ pub fn AdminScenariosTab() -> Element {
                                                                         edit_file_stem.set(fs);
                                                                         edit_mode.set(ScenarioEditMode::Edit(fs_for_mode));
                                                                     }
-                                                                    Err(e) => feedback.set(format!("❌ {e}")),
+                                                                    Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
                                                                 }
                                                             });
                                                         },
-                                                        "✏️ Edit"
+                                                        {t!("admin-scenarios-edit")}
                                                     }
                                                     if is_confirm {
                                                         Button {
@@ -164,7 +167,7 @@ pub fn AdminScenariosTab() -> Element {
                                                                 spawn(async move {
                                                                     match delete_scenario_json(u.clone(), fs).await {
                                                                         Ok(()) => {
-                                                                            feedback.set("✅ Deleted.".to_owned());
+                                                                            feedback.set(t!("admin-deleted"));
                                                                             confirm_delete.set(String::new());
                                                                             edit_mode.set(ScenarioEditMode::None);
                                                                             if let Ok(mut s) = admin_list_scenarios().await {
@@ -174,18 +177,18 @@ pub fn AdminScenariosTab() -> Element {
                                                                             }
                                                                         }
                                                                         Err(e) => {
-                                                                            feedback.set(format!("❌ {e}"));
+                                                                            feedback.set(t!("admin-error", error: e.to_string()));
                                                                             confirm_delete.set(String::new());
                                                                         }
                                                                     }
                                                                 });
                                                             },
-                                                            "⚠️ Confirm"
+                                                            {t!("admin-scenarios-confirm-delete")}
                                                         }
                                                         Button {
                                                             variant: ButtonVariant::Secondary,
                                                             onclick: move |_| confirm_delete.set(String::new()),
-                                                            "Cancel"
+                                                            {t!("common-cancel")}
                                                         }
                                                     } else {
                                                         Button {
@@ -194,7 +197,7 @@ pub fn AdminScenariosTab() -> Element {
                                                                 let fs = file_stem.clone();
                                                                 move |_| confirm_delete.set(fs.clone())
                                                             },
-                                                            "🗑️ Delete"
+                                                            {t!("admin-scenarios-delete")}
                                                         }
                                                     }
                                                 }
@@ -221,7 +224,7 @@ pub fn AdminScenariosTab() -> Element {
                                 edit_mode.set(ScenarioEditMode::New);
                                 feedback.set(String::new());
                             },
-                            "➕ Add Scenario"
+                            {t!("admin-scenarios-add")}
                         }
                     }
                 }
@@ -231,9 +234,9 @@ pub fn AdminScenariosTab() -> Element {
                 div { class: "admin-full-card",
                     p { class: "admin-section-title",
                         if edit_mode() == ScenarioEditMode::New {
-                            "➕ New Scenario"
+                            {t!("admin-scenarios-new-title")}
                         } else {
-                            "✏️ Edit Scenario"
+                            {t!("admin-scenarios-edit-title")}
                         }
                     }
 
@@ -242,10 +245,10 @@ pub fn AdminScenariosTab() -> Element {
                             html_for: "scenario-stem",
                             color: "var(--rpg-text-muted)",
                             font_size: "0.82rem",
-                            "File stem (e.g. stage_11)"
+                            {t!("admin-scenarios-file-stem-label")}
                         }
                         Input {
-                            placeholder: "stage_11",
+                            placeholder: t!("admin-scenarios-file-stem-placeholder"),
                             r#type: "text",
                             value: "{edit_file_stem}",
                             oninput: move |e: FormEvent| edit_file_stem.set(e.value()),
@@ -256,10 +259,10 @@ pub fn AdminScenariosTab() -> Element {
                         html_for: "scenario-name",
                         color: "var(--rpg-text-muted)",
                         font_size: "0.82rem",
-                        "Name"
+                        {t!("admin-equip-name-label")}
                     }
                     Input {
-                        placeholder: "Scenario name",
+                        placeholder: t!("admin-scenarios-name-placeholder"),
                         r#type: "text",
                         value: "{edit_name}",
                         oninput: move |e: FormEvent| edit_name.set(e.value()),
@@ -268,10 +271,10 @@ pub fn AdminScenariosTab() -> Element {
                         html_for: "scenario-desc",
                         color: "var(--rpg-text-muted)",
                         font_size: "0.82rem",
-                        "Description"
+                        {t!("admin-scenarios-col-description")}
                     }
                     Input {
-                        placeholder: "Describe the scenario…",
+                        placeholder: t!("admin-scenarios-description-placeholder"),
                         r#type: "text",
                         value: "{edit_description}",
                         oninput: move |e: FormEvent| edit_description.set(e.value()),
@@ -280,7 +283,7 @@ pub fn AdminScenariosTab() -> Element {
                         html_for: "scenario-level",
                         color: "var(--rpg-text-muted)",
                         font_size: "0.82rem",
-                        "Level"
+                        {t!("admin-scenarios-level-label")}
                     }
                     Input {
                         placeholder: "1",
@@ -292,7 +295,7 @@ pub fn AdminScenariosTab() -> Element {
                         html_for: "scenario-bosses",
                         color: "var(--rpg-text-muted)",
                         font_size: "0.82rem",
-                        "Bosses (one per line — \"BossName\" or \"BossName: 0, 1, 2\")"
+                        {t!("admin-scenarios-bosses-label")}
                     }
                     textarea {
                         class: "admin-json-textarea",
@@ -306,7 +309,7 @@ pub fn AdminScenariosTab() -> Element {
                         html_for: "scenario-loots",
                         color: "var(--rpg-text-muted)",
                         font_size: "0.82rem",
-                        "Loots"
+                        {t!("admin-scenarios-loots-label")}
                     }
                     div { style: "display:flex;flex-direction:column;gap:8px;",
                         for (idx, loot) in edit_loots().iter().enumerate() {
@@ -316,7 +319,7 @@ pub fn AdminScenariosTab() -> Element {
                                 rsx! {
                                     div { class: "loot-row",
                                         Input {
-                                            placeholder: "Name",
+                                            placeholder: t!("admin-equip-name-label"),
                                             r#type: "text",
                                             value: "{loot.name}",
                                             oninput: move |e: FormEvent| {
@@ -337,10 +340,10 @@ pub fn AdminScenariosTab() -> Element {
                                                 }
                                                 edit_loots.set(loots);
                                             },
-                                            option { value: "Equipment", selected: loot.kind == "Equipment", "Equipment" }
-                                            option { value: "Consumable", selected: loot.kind == "Consumable", "Consumable" }
-                                            option { value: "Material", selected: loot.kind == "Material", "Material" }
-                                            option { value: "Currency", selected: loot.kind == "Currency", "Currency" }
+                                            option { value: "Equipment", selected: loot.kind == "Equipment", {t!("loot-kind-equipment")} }
+                                            option { value: "Consumable", selected: loot.kind == "Consumable", {t!("loot-kind-consumable")} }
+                                            option { value: "Material", selected: loot.kind == "Material", {t!("loot-kind-material")} }
+                                            option { value: "Currency", selected: loot.kind == "Currency", {t!("loot-kind-currency")} }
                                         }
                                         select {
                                             class: "admin-select loot-select",
@@ -352,12 +355,12 @@ pub fn AdminScenariosTab() -> Element {
                                                 }
                                                 edit_loots.set(loots);
                                             },
-                                            option { value: "Common", selected: loot.rank == "Common", "Common" }
-                                            option { value: "Intermediate", selected: loot.rank == "Intermediate", "Intermediate" }
-                                            option { value: "Advanced", selected: loot.rank == "Advanced", "Advanced" }
+                                            option { value: "Common", selected: loot.rank == "Common", {t!("rank-common")} }
+                                            option { value: "Intermediate", selected: loot.rank == "Intermediate", {t!("rank-intermediate")} }
+                                            option { value: "Advanced", selected: loot.rank == "Advanced", {t!("rank-advanced")} }
                                         }
                                         Input {
-                                            placeholder: "Lvl",
+                                            placeholder: t!("admin-scenarios-loot-level-placeholder"),
                                             r#type: "number",
                                             value: "{loot.level}",
                                             oninput: move |e: FormEvent| {
@@ -369,7 +372,7 @@ pub fn AdminScenariosTab() -> Element {
                                             },
                                         }
                                         Input {
-                                            placeholder: "Classes (Standard, Warrior…)",
+                                            placeholder: t!("admin-scenarios-loot-classes-placeholder"),
                                             r#type: "text",
                                             value: "{loot.classes}",
                                             oninput: move |e: FormEvent| {
@@ -387,7 +390,7 @@ pub fn AdminScenariosTab() -> Element {
                                                 loots.remove(idx_rm);
                                                 edit_loots.set(loots);
                                             },
-                                            "✕"
+                                            {t!("admin-scenarios-remove-loot")}
                                         }
                                     }
                                 }
@@ -408,7 +411,7 @@ pub fn AdminScenariosTab() -> Element {
                                 });
                             edit_loots.set(loots);
                         },
-                        "＋ Add Loot"
+                        {t!("admin-scenarios-add-loot")}
                     }
 
                     div { style: "display:flex;gap:8px;margin-top:8px;",
@@ -427,16 +430,16 @@ pub fn AdminScenariosTab() -> Element {
                                 };
                                 spawn(async move {
                                     if fs.trim().is_empty() {
-                                        feedback.set("❌ File stem cannot be empty.".to_owned());
+                                        feedback.set(t!("admin-scenarios-file-stem-empty"));
                                         return;
                                     }
                                     if detail.name.trim().is_empty() {
-                                        feedback.set("❌ Name cannot be empty.".to_owned());
+                                        feedback.set(t!("admin-equip-name-empty"));
                                         return;
                                     }
                                     match save_scenario_detail(u.clone(), fs, detail).await {
                                         Ok(()) => {
-                                            feedback.set("✅ Saved.".to_owned());
+                                            feedback.set(t!("admin-equip-saved"));
                                             edit_mode.set(ScenarioEditMode::None);
                                             universes_resource.restart();
                                             if let Ok(mut s) = admin_list_scenarios().await {
@@ -445,11 +448,11 @@ pub fn AdminScenariosTab() -> Element {
                                                 scenarios.set(s);
                                             }
                                         }
-                                        Err(e) => feedback.set(format!("❌ {e}")),
+                                        Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
                                     }
                                 });
                             },
-                            "💾 Save"
+                            {t!("admin-equip-save")}
                         }
                         Button {
                             variant: ButtonVariant::Secondary,
@@ -457,7 +460,7 @@ pub fn AdminScenariosTab() -> Element {
                                 edit_mode.set(ScenarioEditMode::None);
                                 feedback.set(String::new());
                             },
-                            "Cancel"
+                            {t!("common-cancel")}
                         }
                     }
                 }

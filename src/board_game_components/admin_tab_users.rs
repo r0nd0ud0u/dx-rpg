@@ -1,5 +1,6 @@
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 
 use crate::{
     auth_manager::server_fn::{AdminUserInfo, admin_list_users, delete_user},
@@ -31,18 +32,18 @@ pub fn AdminUsersTab() -> Element {
 
     rsx! {
         div { class: "admin-card",
-            p { class: "admin-section-title", "📋 All Users" }
+            p { class: "admin-section-title", {t!("admin-users-title")} }
             if loading() {
-                p { style: "color:var(--rpg-text-muted);", "Loading…" }
+                p { style: "color:var(--rpg-text-muted);", {t!("common-loading")} }
             } else if users().is_empty() {
-                p { style: "color:var(--rpg-text-muted);", "No users found." }
+                p { style: "color:var(--rpg-text-muted);", {t!("admin-users-empty")} }
             } else {
                 table { class: "admin-table",
                     thead {
                         tr {
-                            th { "Username" }
-                            th { "Connected" }
-                            th { "Saves" }
+                            th { {t!("admin-users-col-username")} }
+                            th { {t!("admin-users-col-connected")} }
+                            th { {t!("admin-users-col-saves")} }
                         }
                     }
                     tbody {
@@ -69,15 +70,15 @@ pub fn AdminUsersTab() -> Element {
         }
 
         div { class: "admin-card",
-            p { class: "admin-section-title", "🗑️ Delete User" }
+            p { class: "admin-section-title", {t!("admin-users-delete-title")} }
             Label {
                 html_for: "admin-delete",
                 color: "var(--rpg-text-muted)",
                 font_size: "0.82rem",
-                "Username to delete"
+                {t!("admin-users-delete-label")}
             }
             Input {
-                placeholder: "Enter username…",
+                placeholder: t!("admin-users-delete-placeholder"),
                 r#type: "text",
                 value: "{delete_name}",
                 oninput: move |e: FormEvent| delete_name.set(e.value()),
@@ -87,18 +88,18 @@ pub fn AdminUsersTab() -> Element {
                 onclick: move |_| async move {
                     match delete_user(delete_name(), "".to_owned(), false).await {
                         Ok(()) => {
-                            delete_answer.set("✅ User deleted.".to_owned());
+                            delete_answer.set(t!("admin-users-delete-success"));
                             if let Ok(u) = admin_list_users().await {
                                 users.set(u);
                             }
                         }
                         Err(e) => {
                             tracing::info!("{}", e.to_owned());
-                            delete_answer.set("❌ This name cannot be deleted.".to_owned());
+                            delete_answer.set(t!("admin-users-delete-error"));
                         }
                     }
                 },
-                "Delete User"
+                {t!("admin-users-delete-button")}
             }
             if !delete_answer().is_empty() {
                 p { class: if delete_answer().starts_with('✅') { "admin-answer" } else { "admin-answer-error" },

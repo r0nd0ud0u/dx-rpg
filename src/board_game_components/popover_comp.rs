@@ -1,10 +1,12 @@
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 
 use crate::components::{
     button::Button,
     popover::{PopoverContent, PopoverRoot, PopoverTrigger},
 };
 
+// Unreferenced anywhere in the app (no route/page renders it) — kept translated for consistency.
 #[component]
 pub fn PopoverComp() -> Element {
     let mut open = use_signal(|| false);
@@ -12,7 +14,7 @@ pub fn PopoverComp() -> Element {
 
     rsx! {
         PopoverRoot { open: open(), on_open_change: move |v| open.set(v),
-            PopoverTrigger { "Show Popover" }
+            PopoverTrigger { {t!("popover-demo-trigger")} }
             PopoverContent { gap: "0.25rem",
                 h3 {
                     padding_top: "0.25rem",
@@ -20,7 +22,7 @@ pub fn PopoverComp() -> Element {
                     width: "100%",
                     text_align: "center",
                     margin: 0,
-                    "Delete Item?"
+                    {t!("popover-demo-title")}
                 }
                 Button {
                     r#type: "button",
@@ -29,7 +31,7 @@ pub fn PopoverComp() -> Element {
                         open.set(false);
                         confirmed.set(true);
                     },
-                    "Confirm"
+                    {t!("common-confirm")}
                 }
                 Button {
                     r#type: "button",
@@ -37,13 +39,13 @@ pub fn PopoverComp() -> Element {
                     onclick: move |_| {
                         open.set(false);
                     },
-                    "Cancel"
+                    {t!("common-cancel")}
                 }
             }
         }
         if confirmed() {
             p { style: "color: var(--contrast-error-color); margin-top: 16px; font-weight: 600;",
-                "Item deleted!"
+                {t!("popover-demo-confirmed")}
             }
         }
     }

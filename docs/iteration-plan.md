@@ -72,21 +72,13 @@ If a stat is already full, `real_amount_tx = 0` and the log says `"uses potion d
 
 ## i18n rollout
 
-Infrastructure landed (2026-07-03): `dioxus-i18n` wired in `main.rs`, `CtxAppLang` (localStorage-backed) + navbar toggle, `navbar.rs` fully converted to `t!()`, and bilingual `description_en`/`description_fr` fields + resolver added to lib-rpg's `AttackType`/`Character` with Elara la guerisseuse de la Lorien migrated as the worked example. Everything below is scoped-out follow-up, not started.
+Infrastructure landed (2026-07-03): `dioxus-i18n` wired in `main.rs`, `CtxAppLang` (localStorage-backed) + navbar toggle, `navbar.rs` fully converted to `t!()`, and bilingual `description_en`/`description_fr` fields + resolver added to lib-rpg's `AttackType`/`Character` with Elara la guerisseuse de la Lorien migrated as the worked example.
 
-### UI chrome strings (convert to `t!()`, add matching keys to both `.ftl` files)
+**UI chrome rollout completed (2026-07-02):** every `board_game_components/*.rs` and `widgets/*.rs` file is now converted to `t!()` — navbar, all pages (home/lobby/login/create-server/join/load/start/character-select/character-page/gameboard/overworld), all admin tabs (users/attacks/characters/equipment/scenarios), and `game_sheets.rs` in full (menu/inventory/stats/logs/scenarios/store/settings sheets). `en-US.ftl`/`fr-FR.ftl` key parity is enforced by `unit_locale_files_have_matching_keys`. Deliberately left untranslated: dynamic backend-generated content (`lib_rpg` combat log text via `log_text()`/`log.message`, shop/equipment/consumable item `name`/`description` — game data, not UI chrome, same category as character bios below), enum-backed `value:` attributes on `<select>` options (kept as literal schema keywords), brand/logo strings, and `tracing::*!` log lines (server-side only, never rendered).
 
-Priority order:
-1. **`home_page.rs`** — landing page copy.
-2. **`lobby_page.rs`** — lobby instructions, ready/not-ready labels.
-3. **`game_sheets.rs`** — largest file (~1600 lines); do in sub-passes: settings sheet labels/hints, inventory sheet, logs sheet, stats sheet.
-4. **`admin_page.rs` + `admin_tab_*.rs`** (attacks/characters/scenarios/users) — admin-only, lower priority than player-facing surfaces.
-5. **`auth_manager/*`** — login/signup form labels + any `ServerFnError` messages that actually surface as UI toasts (audit which ones do vs. stay in logs first).
-6. **`character_select.rs`** — remaining non-description strings (class/level labels).
-7. **`startgame_page.rs` / `joinongoinggame_page.rs` / `loadgame_page.rs` / `create_server_page.rs`** — page-specific copy.
-8. **`components/*`** — only if any hardcode non-prop default text.
-9. **Overworld HUD strings** — once that feature stabilizes (see "Next steps for overworld" above).
-10. `character_page.rs`'s "Effects" tooltip label (line ~442 as of this pass) and any other stray strings found outside `navbar.rs` during this rollout.
+Remaining UI-chrome follow-up:
+1. **`auth_manager/*` server functions** — audit which `ServerFnError` messages actually surface as UI toasts (vs. stay server-side/logs only) and translate only those.
+2. New components/pages added after this pass should follow the same `t!()` convention from the start.
 
 ### Bilingual character data (`description_en`/`description_fr`)
 
