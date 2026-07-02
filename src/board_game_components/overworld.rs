@@ -8,7 +8,6 @@ use lib_rpg::{
 
 use crate::{
     common::{PATH_IMG, SERVER_NAME},
-    components::button::{Button, ButtonVariant},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 

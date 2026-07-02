@@ -1034,7 +1034,6 @@ fn overworld_dismiss_dialog_handler(server_name: &str, player_name: &str) {
 #[cfg(feature = "server")]
 fn overworld_enter_handler(server_name: &str, map_id: &str, spawn_override: Option<Position>) {
     use crate::common::OFFLINE_PATH;
-    use lib_rpg::server::game_state::GameStatus;
 
     let offline_root = std::path::Path::new(OFFLINE_PATH);
     {
