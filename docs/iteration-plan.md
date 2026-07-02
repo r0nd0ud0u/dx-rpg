@@ -81,18 +81,23 @@ Remaining UI-chrome follow-up:
 2. New components/pages added after this pass should follow the same `t!()` convention from the start.
 3. **Language picker landed (2026-07-02):** the old single-toggle Button was replaced with a native `<select>` (`.navbar-lang-select` in `assets/main.css`) showing 🇬🇧 English / 🇫🇷 Français, current language as the selected option. Sign-in/out and quit-game buttons got fixed CSS widths (`.navbar-btn-auth`/`.navbar-btn-quit`) sized for the longer FR strings so they don't resize on toggle — if a future translation ends up longer than "Quitter la partie" (18 chars) or "Se déconnecter" (14 chars), bump those widths.
 
-### Bilingual attack/character names and descriptions (`name_en`/`name_fr`, `description_en`/`description_fr`)
+### Bilingual attack names (`name_en`/`name_fr`) — DONE (2026-07-02)
 
-~20+ characters and all attacks but Elara's remain on the legacy single-language `name`/`description` fields (harmless — every `*_for(lang)` resolver transparently falls back). Priority order, per `lib-rpg/README.md`'s "Hero Balance (LOTR roster)" documentation depth:
+**All 113 shipped attack files** (LOTR + Pokémon rosters, both repos) now have `NomEn`/`NomFr` populated. LOTR attacks (French-authored) got English translations added; Pokémon attacks (English-authored) got French translations added; `Charge` (shared by most characters) is identical in both. `character_page.rs`'s attack list buttons/tooltips resolve `name_for(lang)` — this was the actual player-facing bug report ("attack names stay French mid-combat"), since only Elara's names were migrated in the prior pass and every other character showed raw French `name`.
+
+Not yet covered: `widgets/charts.rs`'s attack-usage stat labels and `gameboard.rs`'s last-attack banner still display the raw `atk_name: String` from aggregated stats/`ResultLaunchAttack`, with no `AttackType` in scope to resolve — would need either an `AttackType` lookup by name in the launcher's attack list, or carrying `name_en`/`name_fr` alongside `atk_name` in those stat structs.
+
+### Bilingual descriptions (`description_en`/`description_fr`)
+
+~20+ characters and all attacks but Elara's remain on the legacy single-language `description`/`effects_description` fields (harmless — `description_for`/`effects_description_for` transparently fall back). Priority order, per `lib-rpg/README.md`'s "Hero Balance (LOTR roster)" documentation depth:
 1. **Thraïn** — passive and attacks already documented in lib-rpg's README.
 2. **Thalia**
 3. **Azrak Ombresang** — his `OverHealBoostStat` passive is documented.
 4. Remaining LOTR roster — enumerate via `find offlines/characters/lotr -name '*.json'` at the start of that session.
-5. Pokémon-universe characters — confirm first whether their descriptions/names have the same language-mixing problem before assuming English.
+5. Pokémon-universe characters — confirm first whether their descriptions have the same language-mixing problem before assuming English.
 6. `offlines/equipment/*.json` and scenario `description` fields — would need their own struct-field audit first (not covered by this pass's schema work).
-7. Once more attacks have `name_en`/`name_fr`, revisit `widgets/charts.rs` (attack-usage stat labels) and `gameboard.rs`'s last-attack banner — both currently display the raw `atk_name: String` from aggregated stats/`ResultLaunchAttack` with no `AttackType` in scope, so there's no bilingual field to resolve today. Would need either a name of an AttackType lookup by name in the launcher's attack list, or carrying `name_en`/`name_fr` alongside `atk_name` in those stat structs.
 
-Each future migration session should: confirm the existing text's actual language per file (don't assume — this pass verified Elara's attack names/text were French/English before translating), edit both `lib-rpg/offlines/` and `dx-rpg/offlines/` together (they must stay byte-identical), and no code changes are needed — the resolver/UI hookup is already generic.
+Each future migration session should: confirm the existing text's actual language per file (don't assume — this pass verified each character's attack names were French/English before translating), edit both `lib-rpg/offlines/` and `dx-rpg/offlines/` together (they must stay byte-identical), and no code changes are needed — the resolver/UI hookup is already generic.
 
 ### Bilingual overworld NPC dialog (`dialog_en`/`dialog_fr`)
 
