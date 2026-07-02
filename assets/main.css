@@ -63,6 +63,19 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     border-radius: var(--r-sm);
 }
 
+.navbar-lang-select {
+    border: 1px solid var(--primary-color-6);
+    background-color: var(--light, var(--primary-color)) var(--dark, var(--primary-color-3));
+    color: var(--secondary-color-4);
+    border-radius: 0.5rem;
+    padding: 6px 10px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+.navbar-lang-select:hover { background-color: var(--primary-color-4); }
+.navbar-lang-select:focus-visible { box-shadow: 0 0 0 2px var(--focused-border-color); }
+
 /* LAYOUT */
 .rpg-page {
     min-height: calc(100vh - 56px);

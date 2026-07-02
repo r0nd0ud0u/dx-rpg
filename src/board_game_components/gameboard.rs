@@ -17,6 +17,7 @@ use crate::{
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 
 #[component]
 pub fn GameBoard() -> Element {
@@ -68,9 +69,7 @@ pub fn GameBoard() -> Element {
     // Display the game board with characters and attacks
     rsx! {
         if is_spectator {
-            div { class: "spectator-banner",
-                "👁 Spectator mode — you have no active character in this game"
-            }
+            div { class: "spectator-banner", {t!("gameboard-spectator-mode")} }
         }
         div { class: "grid-board",
             div {
@@ -152,7 +151,7 @@ pub fn GameBoard() -> Element {
                                                 selected_consumable_target.set("".to_owned());
                                             }
                                         },
-                                        "✅ Use"
+                                        {t!("gameboard-use")}
                                     }
                                 }
                             }
@@ -170,7 +169,7 @@ pub fn GameBoard() -> Element {
                                     .await;
                                 selected_atk_name.set("".to_owned());
                             },
-                            "⚔️ Launch Attack"
+                            {t!("gameboard-launch-attack")}
                         }
                     } else {
                         {
@@ -192,12 +191,21 @@ pub fn GameBoard() -> Element {
                             };
                             rsx! {
                                 if !ra.atk_name.is_empty() {
-                                    div { class: "{banner_class} {output_text_css_class}", "⚔️ {ra.launcher_id_name} attacks!" }
+                                    div { class: "{banner_class} {output_text_css_class}",
+                                        {t!("gameboard-attacks", launcher : ra.launcher_id_name.clone())}
+                                    }
                                 } else if !last_action_header.is_empty() {
                                     div { class: "action-banner {output_text_css_class}", "{last_action_header}" }
                                 }
                                 if !ra.logs_end_of_round.is_empty() {
-                                    div { class: "round-log-header", "🔄 Turn {ra.turn_nb} — Round {ra.round_nb}" }
+                                    div { class: "round-log-header",
+                                        {
+                                            t!(
+                                                "gameboard-turn-round", turn : ra.turn_nb, round : ra
+                                                .round_nb
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -316,17 +324,20 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
         !ra.new_game_atk_effects.is_empty() || has_dodge_info || !ra.passive_logs.is_empty();
     rsx! {
         if show_block {
-            "Last attack: {ra.atk_name}\n"
+            {t!("gameboard-last-attack", name : ra.atk_name.clone())}
+            "\n"
             if ra.is_crit {
                 div { style: "color: var(--secondary-color-2); font-weight: bold; font-size: 1.1em;",
-                    "💥 Critical Strike!"
+                    {t!("gameboard-critical-strike")}
                 }
             }
             for d in dodging {
                 if d.is_dodging {
-                    "{d.name} is dodging\n"
+                    {t!("gameboard-is-dodging", name : d.name.clone())}
+                    "\n"
                 } else if d.is_blocking {
-                    "{d.name} is blocking\n"
+                    {t!("gameboard-is-blocking", name : d.name.clone())}
+                    "\n"
                 }
             }
             for (i, (_target, effects)) in ordered_groups.iter().enumerate() {

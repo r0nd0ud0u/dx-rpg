@@ -188,6 +188,14 @@
       "dialog": [
         "La forêt ancienne cache bien des dangers.",
         "Des gobelins en embuscade gardent le passage vers les montagnes."
+      ],
+      "dialog_en": [
+        "The ancient forest hides many dangers.",
+        "Goblins in ambush guard the passage to the mountains."
+      ],
+      "dialog_fr": [
+        "La forêt ancienne cache bien des dangers.",
+        "Des gobelins en embuscade gardent le passage vers les montagnes."
       ]
     },
     {
@@ -195,6 +203,14 @@
       "x": 7,
       "y": 4,
       "dialog": [
+        "Deux Gobelins sortent de l'ombre !",
+        "Il n'y a pas d'issue !"
+      ],
+      "dialog_en": [
+        "Two Goblins emerge from the shadows!",
+        "There is no escape!"
+      ],
+      "dialog_fr": [
         "Deux Gobelins sortent de l'ombre !",
         "Il n'y a pas d'issue !"
       ],

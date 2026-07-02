@@ -2,6 +2,7 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
+use dioxus_i18n::t;
 use lib_rpg::server::server_manager::OnGoingGame;
 
 use crate::{
@@ -24,9 +25,9 @@ pub fn JoinOngoingGame() -> Element {
 
     rsx! {
         div { class: "ongoing-games-container",
-            h2 { class: "rpg-title", "🗺️ Ongoing Adventures" }
+            h2 { class: "rpg-title", {t!("join-ongoing-title")} }
             if snap_ongoing_games.is_empty() {
-                p { class: "rpg-subtitle", "No games running yet. Create one!" }
+                p { class: "rpg-subtitle", {t!("join-ongoing-empty")} }
             } else {
                 div { class: "games-grid",
                     for game in snap_ongoing_games.iter() {

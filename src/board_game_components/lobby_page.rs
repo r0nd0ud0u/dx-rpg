@@ -3,6 +3,7 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
+use dioxus_i18n::t;
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::components::button::ButtonVariant;
@@ -66,20 +67,20 @@ pub fn LobbyPage() -> Element {
             div { class: "lobby-page",
                 h2 { class: "rpg-title",
                     if server_data_snap.core_game_data.game_phase == GamePhase::InitGame {
-                        "⚔️ Lobby"
+                        {t!("lobby-title")}
                     } else {
-                        "⏳ Loading…"
+                        {t!("lobby-loading")}
                     }
                 }
 
                 // Info bar: server + players + universe
                 div { class: "lobby-info-bar",
                     div { class: "lobby-info-item",
-                        span { class: "lobby-info-label", "Server" }
+                        span { class: "lobby-info-label", {t!("lobby-server-label")} }
                         span { class: "lobby-info-value", "{SERVER_NAME()}" }
                     }
                     div { class: "lobby-info-item",
-                        span { class: "lobby-info-label", "Players" }
+                        span { class: "lobby-info-label", {t!("lobby-players-label")} }
                         span { class: "lobby-info-value",
                             "{server_data_snap.players_data.players_info.len()} / {server_data_snap.core_game_data.players_nb}"
                         }
@@ -88,8 +89,10 @@ pub fn LobbyPage() -> Element {
                         if !selected_universe().is_empty() {
                             rsx! {
                                 div { class: "lobby-info-item",
-                                    span { class: "lobby-info-label", "Universe" }
-                                    span { class: "lobby-info-value lobby-universe", "🌐 {selected_universe()}" }
+                                    span { class: "lobby-info-label", {t!("lobby-universe-label")} }
+                                    span { class: "lobby-info-value lobby-universe",
+                                        {t!("loadgame-universe", universe : selected_universe())}
+                                    }
                                 }
                             }
                         } else {
@@ -110,7 +113,7 @@ pub fn LobbyPage() -> Element {
                         };
                         rsx! {
                             div { class: "lobby-info-item",
-                                span { class: "lobby-info-label", "Scenarios" }
+                                span { class: "lobby-info-label", {t!("lobby-scenarios-label")} }
                                 span { class: "lobby-info-value", "{nb}" }
                             }
                         }
@@ -129,7 +132,7 @@ pub fn LobbyPage() -> Element {
                         onclick: move |_| async move {
                             send_start_game(socket).await;
                         },
-                        "▶ Start Game"
+                        {t!("lobby-start-game")}
                     }
                 }
 
@@ -144,14 +147,16 @@ pub fn LobbyPage() -> Element {
                     if universe_locked {
                         rsx! {
                             div { class: "lobby-universe-select",
-                                label { class: "lobby-info-label", "Universe (saved)" }
-                                div { class: "lobby-universe-locked", "🔒 {selected_universe()}" }
+                                label { class: "lobby-info-label", {t!("lobby-universe-saved-label")} }
+                                div { class: "lobby-universe-locked",
+                                    {t!("lobby-universe-locked", universe : selected_universe())}
+                                }
                             }
                         }
                     } else {
                         rsx! {
                             div { class: "lobby-universe-select",
-                                label { class: "lobby-info-label", "Choose Universe" }
+                                label { class: "lobby-info-label", {t!("lobby-choose-universe-label")} }
                                 select {
                                     class: "lobby-select",
                                     value: "{selected_universe}",
@@ -164,7 +169,7 @@ pub fn LobbyPage() -> Element {
                                                 .await;
                                         });
                                     },
-                                    option { value: "", "— select a universe —" }
+                                    option { value: "", {t!("lobby-select-universe-option")} }
                                     for u in &universes {
                                         option { value: "{u}", "{u}" }
                                     }
@@ -192,7 +197,7 @@ pub fn LobbyPage() -> Element {
 
                 ButtonLink {
                     target: Route::Home {}.into(),
-                    name: "Not enough players".to_owned(),
+                    name: t!("lobby-not-enough-players"),
                     onclick: move |_| {
                         async move {
                             let _ = socket
@@ -210,7 +215,7 @@ pub fn LobbyPage() -> Element {
         } else if server_data_snap.core_game_data.game_phase == GamePhase::Ended {
             ButtonLink {
                 target: Route::Home {}.into(),
-                name: "No more game, back to home".to_owned(),
+                name: t!("lobby-game-ended"),
             }
         } else if server_data_snap.core_game_data.game_phase == GamePhase::Default {
 

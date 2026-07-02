@@ -2,6 +2,7 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
+use dioxus_i18n::t;
 
 use crate::{
     common::Route,
@@ -31,7 +32,7 @@ pub fn CreateServer() -> Element {
         spawn(async move {
             match get_save_slots(player_name).await {
                 Ok(s) => slots.set(s),
-                Err(e) => error_msg.set(format!("Failed to load saves: {e}")),
+                Err(e) => error_msg.set(t!("loadgame-fetch-error", error: e.to_string())),
             }
         });
     });
@@ -54,7 +55,7 @@ pub fn CreateServer() -> Element {
 
     rsx! {
         div { class: "home-container",
-            h1 { class: "rpg-title", "🏰 Create a Game" }
+            h1 { class: "rpg-title", {t!("create-server-title")} }
 
             if !error_msg().is_empty() {
                 p { class: "admin-answer-error", "{error_msg}" }
@@ -62,31 +63,31 @@ pub fn CreateServer() -> Element {
 
             // ── Step 1: Game Mode ────────────────────────────────────────────
             div { class: "create-server-section",
-                p { class: "create-server-section-title", "1️⃣ Game Mode" }
+                p { class: "create-server-section-title", {t!("create-server-step1")} }
                 div { class: "mode-toggle",
                     button {
                         class: if !is_single_player() { "mode-btn mode-btn-active" } else { "mode-btn" },
                         onclick: move |_| is_single_player.set(false),
-                        "👥 Multiplayer"
+                        {t!("create-server-multiplayer")}
                     }
                     button {
                         class: if is_single_player() { "mode-btn mode-btn-active" } else { "mode-btn" },
                         onclick: move |_| is_single_player.set(true),
-                        "🎮 Single Player"
+                        {t!("create-server-singleplayer")}
                     }
                 }
                 p { class: "create-server-mode-hint",
                     if is_single_player() {
-                        "One player controls all heroes."
+                        {t!("create-server-singleplayer-hint")}
                     } else {
-                        "Each connected player picks one hero."
+                        {t!("create-server-multiplayer-hint")}
                     }
                 }
             }
 
             // ── Step 2: Save Slot ────────────────────────────────────────────
             div { class: "create-server-section",
-                p { class: "create-server-section-title", "2️⃣ Choose a Save Slot" }
+                p { class: "create-server-section-title", {t!("create-server-step2")} }
                 div { class: "save-slot-grid",
                     for (idx, slot) in slots().iter().enumerate() {
                         if slot.name.is_empty() {
@@ -94,7 +95,9 @@ pub fn CreateServer() -> Element {
                                 class: "save-slot-card save-slot-empty",
                                 onclick: move |_| async move { start_game_in_slot(idx).await },
                                 span { class: "save-slot-icon", "➕" }
-                                span { class: "save-slot-label", "Empty Slot {idx + 1}" }
+                                span { class: "save-slot-label",
+                                    {t!("create-server-empty-slot", index : (idx + 1) as i64)}
+                                }
                             }
                         } else {
                             div {
@@ -111,20 +114,27 @@ pub fn CreateServer() -> Element {
                                     span { class: "save-slot-name", "{slot.name}" }
                                     if !slot.current_scenario.is_empty() {
                                         span { class: "save-slot-scenario",
-                                            "📜 {slot.current_scenario} (Lvl {slot.scenario_level})"
+                                            {
+                                                t!(
+                                                    "loadgame-slot-scenario", scenario : slot.current_scenario
+                                                    .clone(), level : slot.scenario_level as i64
+                                                )
+                                            }
                                         }
                                     }
                                     span { class: "save-slot-date", "🕐 {slot.last_saved}" }
                                     div { class: "save-slot-meta",
                                         if slot.is_single_player {
-                                            span { class: "save-slot-mode", "🎮 Solo" }
+                                            span { class: "save-slot-mode", {t!("loadgame-mode-solo")} }
                                         } else {
                                             span { class: "save-slot-mode",
-                                                "👥 Multi ({slot.players_nb}p)"
+                                                {t!("loadgame-mode-multi", players : slot.players_nb as i64)}
                                             }
                                         }
                                         if !slot.universe.is_empty() {
-                                            span { class: "save-slot-universe", "🌐 {slot.universe}" }
+                                            span { class: "save-slot-universe",
+                                                {t!("loadgame-universe", universe : slot.universe.clone())}
+                                            }
                                         }
                                     }
                                 }
@@ -148,7 +158,7 @@ pub fn CreateServer() -> Element {
                                                     }
                                                 }
                                             },
-                                            "▶ Overwrite & Play"
+                                            {t!("create-server-overwrite-play")}
                                         }
                                     }
                                 }
@@ -170,9 +180,9 @@ pub fn CreateServer() -> Element {
                                 request_update_saved_game_list_display(socket, &user_name).await;
                             }
                         },
-                        "Load Game"
+                        {t!("create-server-load-game")}
                     }
-                    p { class: "action-desc", "Continue a saved adventure" }
+                    p { class: "action-desc", {t!("create-server-load-game-desc")} }
                 }
             }
         }

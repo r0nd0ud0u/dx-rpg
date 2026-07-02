@@ -7,11 +7,12 @@ use dioxus::{
     logger::tracing,
     prelude::*,
 };
+use dioxus_i18n::t;
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
     auth_manager::server_fn::logout,
-    common::{ADMIN, Route},
+    common::{ADMIN, CtxAppLang, Route},
     components::{
         alert_dialog::{
             AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -33,6 +34,7 @@ pub fn Navbar() -> Element {
     let mut local_login_name_session = use_context::<Signal<String>>();
     let mut local_login_id_session = use_context::<Signal<i64>>();
     let server_data = use_context::<Signal<ServerData>>();
+    let mut app_lang = use_context::<CtxAppLang>().0;
 
     // nav
     let navigator = use_navigator();
@@ -62,12 +64,21 @@ pub fn Navbar() -> Element {
                         Link {
                             class: "navbar-admin-link",
                             to: Route::AdminPage {},
-                            "🛡️ Panel"
+                            {t!("navbar-admin-panel")}
                         }
                     }
                 }
                 // Right: trigger buttons only (no dialog roots here)
                 div { style: "display: flex; flex-direction: row; align-items: center; gap: 0.75rem;",
+                    // Language dropdown — current language is the selected option.
+                    select {
+                        class: "navbar-lang-select",
+                        "aria-label": t!("lang-select-label"),
+                        value: "{app_lang()}",
+                        onchange: move |e| app_lang.set(e.value()),
+                        option { value: "en", "🇬🇧 English" }
+                        option { value: "fr", "🇫🇷 Français" }
+                    }
                     // Help trigger
                     Button {
                         variant: ButtonVariant::Outline,
@@ -77,15 +88,17 @@ pub fn Navbar() -> Element {
                     // Quit-game trigger (only while a game is running)
                     if server_data().core_game_data.game_phase == GamePhase::Running {
                         Button {
+                            style: "width: 190px; box-sizing: border-box; text-align: center; white-space: nowrap;",
                             onclick: move |_| quit_open.set(true),
                             r#type: "button",
-                            "Quit game"
+                            {t!("navbar-quit-game")}
                         }
                     }
                     if snap_local_login_name_session != *DISCONNECTED_USER {
                         span { class: "navbar-user", "👤 {snap_local_login_name_session}" }
                     }
                     Button {
+                        style: "width: 160px; box-sizing: border-box; text-align: center; white-space: nowrap;",
                         variant: if snap_local_login_name_session == *DISCONNECTED_USER { ButtonVariant::Secondary } else { ButtonVariant::Destructive },
                         onclick: move |_| async move {
                             if local_login_name_session() != *DISCONNECTED_USER {
@@ -107,9 +120,9 @@ pub fn Navbar() -> Element {
                             navigator.push(Route::Home {});
                         },
                         if snap_local_login_name_session == *DISCONNECTED_USER {
-                            "Sign in"
+                            {t!("navbar-sign-in")}
                         } else {
-                            "Sign out"
+                            {t!("navbar-sign-out")}
                         }
                     }
                 }
@@ -120,131 +133,91 @@ pub fn Navbar() -> Element {
             // Help dialog
             AlertDialogRoot { open: help_open(), on_open_change: move |v| help_open.set(v),
                 AlertDialogContent {
-                    AlertDialogTitle { "How to play" }
+                    AlertDialogTitle { {t!("help-title")} }
                     AlertDialogDescription {
                         div { style: "text-align:left; line-height:1.8; max-height:70vh; overflow-y:auto; padding-right:4px;",
                             // Getting started
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-bottom:2px;",
-                                "🚀 Getting started"
+                                {t!("help-section-getting-started")}
                             }
-                            p { "1. 🔐 Sign in or create an account on the login page." }
-                            p { "2. 🌍 Choose a universe (LOTR or Pokémon) when creating a server." }
-                            p { "3. 🎮 From the home page, create a new game or join an ongoing one." }
+                            p { {t!("help-step-1")} }
+                            p { {t!("help-step-2")} }
+                            p { {t!("help-step-3")} }
 
                             // Game mode
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                "🕹️ Game modes"
+                                {t!("help-section-game-modes")}
                             }
-                            p {
-                                "• Multiplayer — each connected player picks exactly one hero; other cards are locked 🔒 for other players."
-                            }
-                            p {
-                                "• Single-player — one player picks multiple heroes and controls them all in battle; click a selected card again to deselect it."
-                            }
+                            p { {t!("help-mode-multiplayer")} }
+                            p { {t!("help-mode-singleplayer")} }
 
                             // Lobby & character selection
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                "🧙 Lobby & character selection"
+                                {t!("help-section-lobby")}
                             }
-                            p {
-                                "4. Select your character card in the lobby. Wait for all players to be ready."
-                            }
-                            p { "5. ▶️ The host clicks 'Start Game' once everyone has chosen." }
+                            p { {t!("help-step-4")} }
+                            p { {t!("help-step-5")} }
 
                             // Combat
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                "⚔️ Combat"
+                                {t!("help-section-combat")}
                             }
-                            p {
-                                "6. On your turn, click ⚔️ on your character card to open the attack list, then pick an attack."
-                            }
-                            p {
-                                "7. 🎯 Click target buttons to select your target(s), then confirm with '⚔️ Launch Attack'."
-                            }
-                            p {
-                                "8. 💊 Click 💊 on your character card to use a potion (counts as your turn action)."
-                            }
+                            p { {t!("help-step-6")} }
+                            p { {t!("help-step-7")} }
+                            p { {t!("help-step-8")} }
 
                             // Toolbar
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                "🛠️ Game toolbar"
+                                {t!("help-section-toolbar")}
                             }
-                            p { "9. 📦 Inventory — view your hero's stats and equipment." }
-                            p {
-                                "10. 📊 Stats — track damage dealt, healing done, kill count, and scenario progress bar."
-                            }
-                            p {
-                                "11. 📜 Scenarios — side sheet listing all stages with their completion status (Not Started / In Progress / ✅ Done)."
-                            }
-                            p {
-                                "12. ⚙️ Settings — toggle 'Attack Tooltips' to show/hide attack descriptions on hover."
-                            }
+                            p { {t!("help-step-9")} }
+                            p { {t!("help-step-10")} }
+                            p { {t!("help-step-11")} }
+                            p { {t!("help-step-12")} }
 
                             // Overworld
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                "🗺️ Overworld exploration"
+                                {t!("help-section-overworld")}
                             }
-                            p {
-                                "13. The host clicks '🗺 Overworld' to enter the tile-map exploration mode."
-                            }
-                            p { "    • Arrow keys / D-pad — move your hero." }
-                            p { "    • Enter or Space — interact with adjacent NPCs." }
-                            p {
-                                "    • Walking on grass may trigger a random encounter (50 % chance per step)."
-                            }
-                            p {
-                                "    • Interact with a boss NPC to start its pre-fight dialog, then confirm to begin the fight."
-                            }
-                            p {
-                                "    • Defeating a boss NPC unlocks the next door and removes the NPC from the map."
-                            }
-                            p { "    • '⚔️ Back to Fight' returns to the active fight at any time." }
+                            p { {t!("help-step-13")} }
+                            p { "    " {t!("help-overworld-move")} }
+                            p { "    " {t!("help-overworld-interact")} }
+                            p { "    " {t!("help-overworld-encounter")} }
+                            p { "    " {t!("help-overworld-boss")} }
+                            p { "    " {t!("help-overworld-unlock")} }
+                            p { "    " {t!("help-overworld-back")} }
 
                             // Store
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                "🛒 Store"
+                                {t!("help-section-store")}
                             }
-                            p {
-                                "14. The store opens between scenarios (end-of-scenario screen) via the '🛒 Shop' button."
-                            }
-                            p {
-                                "    • Equipment tab — weapons, armour, rings and more; bought items go to your Bag."
-                            }
-                            p { "    • Consumables tab — potions (HP / Mana / Vigor / Berserk / Resurrection)." }
-                            p {
-                                "    • Bag tab — sell unequipped items for 50 % of their price; equip them from the Inventory sheet."
-                            }
-                            p { "    • Gold is earned as loot at the end of each scenario." }
+                            p { {t!("help-step-14")} }
+                            p { "    " {t!("help-store-equipment")} }
+                            p { "    " {t!("help-store-consumables")} }
+                            p { "    " {t!("help-store-bag")} }
+                            p { "    " {t!("help-store-gold")} }
 
                             // Progression
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                "🏆 Progression"
+                                {t!("help-section-progression")}
                             }
-                            p { "15. At the end of a scenario the host loads the next stage." }
-                            p {
-                                "16. Each universe has 10 progressive stages. Complete them all to win!"
-                            }
-                            p {
-                                "17. Save slots (up to 3 by default) let you continue a run later from the Load Game page."
-                            }
-                            p {
-                                "18. ⚙️ Settings — toggle auto-save, attack tooltips, boss HP / energy bars, and hero aggro display."
-                            }
+                            p { {t!("help-step-15")} }
+                            p { {t!("help-step-16")} }
+                            p { {t!("help-step-17")} }
+                            p { {t!("help-step-18")} }
 
                             // Admin
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                "🛡️ Admin panel"
+                                {t!("help-section-admin")}
                             }
-                            p { "19. If you are an admin, access the 🛡️ Panel link in the navbar." }
-                            p { "    • Users tab: manage accounts and connection status." }
-                            p { "    • Characters tab: browse all heroes and bosses by universe." }
-                            p {
-                                "    • Scenarios tab: add, edit or delete scenarios via inline JSON editor."
-                            }
+                            p { {t!("help-step-19")} }
+                            p { "    " {t!("help-admin-users")} }
+                            p { "    " {t!("help-admin-characters")} }
+                            p { "    " {t!("help-admin-scenarios")} }
                         }
                     }
                     AlertDialogAction {
-                        AlertDialogCancel { "Close" }
+                        AlertDialogCancel { {t!("common-close")} }
                     }
                 }
             }
@@ -252,10 +225,10 @@ pub fn Navbar() -> Element {
             // Quit-game confirmation dialog
             AlertDialogRoot { open: quit_open(), on_open_change: move |v| quit_open.set(v),
                 AlertDialogContent {
-                    AlertDialogTitle { "Quit Game" }
-                    AlertDialogDescription { "Are you sure you want to quit the game?" }
+                    AlertDialogTitle { {t!("quit-dialog-title")} }
+                    AlertDialogDescription { {t!("quit-dialog-body")} }
                     AlertDialogAction {
-                        AlertDialogCancel { "Cancel" }
+                        AlertDialogCancel { {t!("common-cancel")} }
                         AlertDialogAction {
                             on_click: move |_| {
                                 async move {
@@ -264,7 +237,7 @@ pub fn Navbar() -> Element {
                                     navigator.push(Route::Home {});
                                 }
                             },
-                            "Confirm"
+                            {t!("common-confirm")}
                         }
                     }
                 }
@@ -283,7 +256,7 @@ pub fn Navbar() -> Element {
                     }
                     // About
                     div { class: "app-footer-section",
-                        span { class: "app-footer-section-title", "About" }
+                        span { class: "app-footer-section-title", {t!("footer-about")} }
                         a {
                             href: "https://github.com/r0nd0ud0u/dx-rpg",
                             target: "_blank",
@@ -295,32 +268,32 @@ pub fn Navbar() -> Element {
                             href: "https://github.com/r0nd0ud0u/lib-rpg",
                             target: "_blank",
                             rel: "noopener noreferrer",
-                            "lib-rpg engine"
+                            {t!("footer-lib-rpg-engine")}
                         }
                         span { class: "app-footer-sep", "·" }
                         a {
                             href: "https://dioxuslabs.com",
                             target: "_blank",
                             rel: "noopener noreferrer",
-                            "Built with Dioxus"
+                            {t!("footer-built-with-dioxus")}
                         }
                         span { "⚡ Rust + WASM" }
                     }
                     // Contact
                     div { class: "app-footer-section",
-                        span { class: "app-footer-section-title", "Contact" }
+                        span { class: "app-footer-section-title", {t!("footer-contact")} }
                         a {
                             href: "https://github.com/r0nd0ud0u/dx-rpg/issues",
                             target: "_blank",
                             rel: "noopener noreferrer",
-                            "Report an issue"
+                            {t!("footer-report-issue")}
                         }
                         span { class: "app-footer-sep", "·" }
                         a {
                             href: "https://github.com/r0nd0ud0u/dx-rpg/discussions",
                             target: "_blank",
                             rel: "noopener noreferrer",
-                            "Discussions"
+                            {t!("footer-discussions")}
                         }
                     }
                 }

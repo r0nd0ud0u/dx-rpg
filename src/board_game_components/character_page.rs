@@ -3,6 +3,7 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
+use dioxus_i18n::t;
 use dioxus_primitives::ContentSide;
 use indexmap::IndexMap;
 use lib_rpg::{
@@ -23,8 +24,8 @@ use crate::{
 };
 use crate::{
     common::{
-        CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
-        CtxToggleAtkAnimation, ENERGY_GRAD, SERVER_NAME,
+        CtxAppLang, CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
+        CtxToggleAtkAnimation, ENERGY_GRAD, SERVER_NAME, lang_from_app_lang,
     },
     components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     websocket_handler::event::{ClientEvent, ServerEvent},
@@ -170,17 +171,21 @@ pub fn CharacterPanel(
                 // Header: name + level + attack button
                 div { class: "char-header",
                     span { class: "char-name-text", "{c.db_full_name}" }
-                    span { class: "char-level", "Lvl {c.level}" }
+                    span { class: "char-level", {t!("character-page-lvl", level: c.level as i64)} }
                     if extra_rounds > 0 {
                         span {
                             class: "char-extra-rounds",
-                            title: "Extra round from speed advantage",
+                            title: t!("character-page-extra-round-title"),
                             "⚡×{extra_rounds}"
                         }
                     }
                     if c.kind == CharacterKind::Hero && show_hero_aggro() {
                         if let Some(aggro_stat) = c.stats.all_stats.get(AGGRO) {
-                            span { class: "char-aggro", title: "Aggro", "🎯 {aggro_stat.current}" }
+                            span {
+                                class: "char-aggro",
+                                title: t!("character-page-aggro-title"),
+                                "🎯 {aggro_stat.current}"
+                            }
                         }
                     }
                     if is_auto_atk() {
@@ -384,6 +389,7 @@ pub fn NewAtkButton(
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let show_tooltips = use_context::<CtxShowAtkTooltips>().0;
+    let app_lang = use_context::<CtxAppLang>().0;
     // local signals
     let can_be_launched = launcher
         .character_rounds_info
@@ -392,8 +398,10 @@ pub fn NewAtkButton(
         .any(|atk| atk.name == attack_type.name);
     let attack_name = attack_type.name.clone();
     let launcher_id_name = launcher.id_name.clone();
-    let description = attack_type.description.clone();
-    let effects_description = attack_type.effects_description.clone();
+    let lang = lang_from_app_lang(&app_lang());
+    let display_name = attack_type.name_for(lang).to_string();
+    let description = attack_type.description_for(lang).to_string();
+    let effects_description = attack_type.effects_description_for(lang).to_string();
     let has_description = !description.is_empty();
     let has_effects = !effects_description.is_empty();
     let has_tooltip = has_description || has_effects;
@@ -424,12 +432,12 @@ pub fn NewAtkButton(
                         }
                     },
                     disabled: !can_be_launched,
-                    "{attack_type.name}"
+                    "{display_name}"
                 }
             }
             TooltipContent {
                 p { style: "margin:0 0 4px 0; font-weight:600; color:var(--rpg-gold,#c9a227);",
-                    "{attack_type.name}"
+                    "{display_name}"
                 }
                 if has_description {
                     p { style: "margin:0; color:var(--primary-color); font-style:italic;",
@@ -439,7 +447,7 @@ pub fn NewAtkButton(
                 if has_effects {
                     div { style: "margin-top:6px; padding-top:6px; border-top:1px solid var(--rpg-border,#3a3f55);",
                         span { style: "display:block; margin-bottom:2px; font-size:0.72rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--rpg-text-muted,#8a8fa8);",
-                            "Effects"
+                            {t!("character-page-effects-label")}
                         }
                         p { style: "margin:0; line-height:1.4;", "{effects_description}" }
                     }
@@ -553,7 +561,7 @@ pub fn PotionList(
         return rsx! {
             div { class: "attack-list",
                 span { style: "color: var(--rpg-text-muted); font-size: 0.85rem;",
-                    "No potions available"
+                    {t!("character-page-no-potions")}
                 }
             }
         };

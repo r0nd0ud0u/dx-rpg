@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 use lib_rpg::{
     character_mod::{attack_type::AtksInfo, stats_in_game::StatsInGame},
     server::server_manager::ServerData,
@@ -82,7 +83,7 @@ fn AtkUsageChart(atks_info: Vec<AtksInfo>) -> Element {
     let total_uses: i64 = atks_info.iter().map(|a| a.nb_use).sum();
     if total_uses == 0 {
         return rsx! {
-            p { class: "rpg-no-data", "No attacks recorded yet." }
+            p { class: "rpg-no-data", {t!("charts-no-attacks")} }
         };
     }
 
@@ -102,7 +103,7 @@ fn AtkUsageChart(atks_info: Vec<AtksInfo>) -> Element {
 
     rsx! {
         div { class: "rpg-section",
-            h4 { class: "rpg-section-title", "⚔️ Attack Frequency" }
+            h4 { class: "rpg-section-title", {t!("charts-attack-frequency")} }
             div { class: "rpg-bar-list",
                 for (i, atk) in sorted.iter().enumerate() {
                     ProgressBar {
@@ -125,7 +126,7 @@ fn AtkAmountTable(atks_info: Vec<AtksInfo>) -> Element {
     let has_data = atks_info.iter().any(|a| !a.totals_by_target.is_empty());
     if !has_data {
         return rsx! {
-            p { class: "rpg-no-data", "No damage or heal data yet." }
+            p { class: "rpg-no-data", {t!("charts-no-dmg-heal")} }
         };
     }
 
@@ -144,7 +145,7 @@ fn AtkAmountTable(atks_info: Vec<AtksInfo>) -> Element {
 
     rsx! {
         div { class: "rpg-section",
-            h4 { class: "rpg-section-title", "🗡️ Damage dealt" }
+            h4 { class: "rpg-section-title", {t!("charts-damage-dealt")} }
             div { class: "rpg-bar-list",
                 for atk in atks_info
                     .iter()
@@ -156,14 +157,14 @@ fn AtkAmountTable(atks_info: Vec<AtksInfo>) -> Element {
                             value: totals.total_real_dmg.abs(),
                             max: max_dmg.max(1),
                             color: "var(--secondary-color-2)".to_owned(),
-                            suffix: " dmg".to_owned(),
+                            suffix: format!(" {}", t!("charts-suffix-dmg")),
                         }
                     }
                 }
             }
         }
         div { class: "rpg-section",
-            h4 { class: "rpg-section-title", "💚 Healing done" }
+            h4 { class: "rpg-section-title", {t!("charts-healing-done")} }
             div { class: "rpg-bar-list",
                 for atk in atks_info
                     .iter()
@@ -175,7 +176,7 @@ fn AtkAmountTable(atks_info: Vec<AtksInfo>) -> Element {
                             value: totals.total_real_heal,
                             max: max_heal.max(1),
                             color: "var(--secondary-success-color)".to_owned(),
-                            suffix: " hp".to_owned(),
+                            suffix: format!(" {}", t!("charts-suffix-hp")),
                         }
                     }
                 }
@@ -208,37 +209,37 @@ fn HeroStatsPanel(atks_info: Vec<AtksInfo>, rounds: usize) -> Element {
             // ── Summary cards ──────────────────────────────────────────────
             div { class: "rpg-stat-cards",
                 StatCard {
-                    label: "Total Damage".to_owned(),
+                    label: t!("charts-total-damage"),
                     value: format!("{dmg}"),
                     color: "var(--secondary-color-2)".to_owned(),
                     icon: "🗡️".to_owned(),
                 }
                 StatCard {
-                    label: "Total Heal".to_owned(),
+                    label: t!("charts-total-heal"),
                     value: format!("{heal}"),
                     color: "var(--secondary-success-color)".to_owned(),
                     icon: "💚".to_owned(),
                 }
                 StatCard {
-                    label: "Dmg / Round".to_owned(),
+                    label: t!("charts-dmg-per-round"),
                     value: format!("{dpr}"),
                     color: "var(--rpg-gold)".to_owned(),
                     icon: "📈".to_owned(),
                 }
                 StatCard {
-                    label: "Heal / Round".to_owned(),
+                    label: t!("charts-heal-per-round"),
                     value: format!("{hpr}"),
                     color: "var(--rpg-teal)".to_owned(),
                     icon: "✨".to_owned(),
                 }
                 StatCard {
-                    label: "Attacks cast".to_owned(),
+                    label: t!("charts-attacks-cast"),
                     value: format!("{uses}"),
                     color: "#9b59b6".to_owned(),
                     icon: "🔢".to_owned(),
                 }
                 StatCard {
-                    label: "Favourite".to_owned(),
+                    label: t!("charts-favourite"),
                     value: top_atk.to_owned(),
                     color: "#e67e22".to_owned(),
                     icon: "⭐".to_owned(),
@@ -303,7 +304,7 @@ pub fn TabStats() -> Element {
             horizontal: true,
             max_width: "42em",
             TabList {
-                TabTrigger { value: "tab0".to_owned(), index: 0_usize, "🌐 Party" }
+                TabTrigger { value: "tab0".to_owned(), index: 0_usize, {t!("charts-party-tab")} }
                 for (i, c) in heroes.clone().into_iter().enumerate() {
                     TabTrigger { value: format!("tab{}", i + 1), index: i + 1, "⚔️ {c.db_full_name}" }
                 }

@@ -182,6 +182,18 @@
         "Un ennemi se cache derrière la crête de pierre.",
         "Contournez le col par le sud pour l'atteindre.",
         "La porte du nord sera ouverte une fois la menace écartée."
+      ],
+      "dialog_en": [
+        "The Shire is threatened, friend!",
+        "An enemy hides behind the stone ridge.",
+        "Go around the pass to the south to reach it.",
+        "The north gate will open once the threat is dealt with."
+      ],
+      "dialog_fr": [
+        "La Comté est menacée, ami !",
+        "Un ennemi se cache derrière la crête de pierre.",
+        "Contournez le col par le sud pour l'atteindre.",
+        "La porte du nord sera ouverte une fois la menace écartée."
       ]
     },
     {
@@ -189,6 +201,14 @@
       "x": 10,
       "y": 3,
       "dialog": [
+        "Un Gobelin Éclaireur vous barre la route !",
+        "Préparez-vous au combat !"
+      ],
+      "dialog_en": [
+        "A Goblin Scout blocks your path!",
+        "Prepare for battle!"
+      ],
+      "dialog_fr": [
         "Un Gobelin Éclaireur vous barre la route !",
         "Préparez-vous au combat !"
       ],

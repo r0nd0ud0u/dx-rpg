@@ -1,6 +1,7 @@
 use dioxus::fullstack::CborEncoding;
 use dioxus::prelude::*;
 use dioxus::{fullstack::UseWebsocket, logger::tracing};
+use dioxus_i18n::t;
 
 use crate::utils::server_file_utils::{SaveSlotInfo, delete_game, get_save_slots};
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
@@ -25,19 +26,23 @@ pub fn LoadGame() -> Element {
         spawn(async move {
             match get_save_slots(player_name).await {
                 Ok(s) => slots.set(s.into_iter().filter(|s| !s.name.is_empty()).collect()),
-                Err(e) => error_msg.set(format!("Failed to load saves: {e}")),
+                Err(e) => error_msg.set(t!("loadgame-fetch-error", error: e.to_string())),
             }
         });
     });
 
     let occupied_slots = slots();
     let save_count = occupied_slots.len();
-    let plural = if save_count != 1 { "s" } else { "" };
+    let count_label = if save_count == 1 {
+        t!("loadgame-count-one", count: save_count as i64)
+    } else {
+        t!("loadgame-count-other", count: save_count as i64)
+    };
 
     rsx! {
         div { class: "home-container",
-            h2 { class: "rpg-title", "💾 Load Game" }
-            p { class: "rpg-subtitle", "{save_count} saved adventure{plural}" }
+            h2 { class: "rpg-title", {t!("loadgame-title")} }
+            p { class: "rpg-subtitle", "{count_label}" }
 
             if !error_msg().is_empty() {
                 p { class: "admin-answer-error", "{error_msg}" }
@@ -46,9 +51,9 @@ pub fn LoadGame() -> Element {
             if occupied_slots.is_empty() {
                 div { class: "load-empty",
                     span { "📂" }
-                    p { "No saved games found." }
+                    p { {t!("loadgame-empty")} }
                     p { style: "font-size:.82rem; color:var(--rpg-text-muted);",
-                        "Create a new game first."
+                        {t!("loadgame-empty-hint")}
                     }
                 }
             } else {
@@ -71,18 +76,27 @@ pub fn LoadGame() -> Element {
                                         span { class: "save-slot-name", "{slot.name}" }
                                         if !slot.current_scenario.is_empty() {
                                             span { class: "save-slot-scenario",
-                                                "📜 {slot.current_scenario} (Lvl {slot.scenario_level})"
+                                                {
+                                                    t!(
+                                                        "loadgame-slot-scenario", scenario : slot.current_scenario
+                                                        .clone(), level : slot.scenario_level as i64
+                                                    )
+                                                }
                                             }
                                         }
                                         span { class: "save-slot-date", "🕐 {slot.last_saved}" }
                                         div { class: "save-slot-meta",
                                             if slot.is_single_player {
-                                                span { class: "save-slot-mode", "🎮 Solo" }
+                                                span { class: "save-slot-mode", {t!("loadgame-mode-solo")} }
                                             } else {
-                                                span { class: "save-slot-mode", "👥 Multi ({slot.players_nb}p)" }
+                                                span { class: "save-slot-mode",
+                                                    {t!("loadgame-mode-multi", players : slot.players_nb as i64)}
+                                                }
                                             }
                                             if !slot.universe.is_empty() {
-                                                span { class: "save-slot-universe", "🌐 {slot.universe}" }
+                                                span { class: "save-slot-universe",
+                                                    {t!("loadgame-universe", universe : slot.universe.clone())}
+                                                }
                                             }
                                         }
                                     }
@@ -104,7 +118,7 @@ pub fn LoadGame() -> Element {
                                                         }
                                                     }
                                                 },
-                                                "▶ Load"
+                                                {t!("loadgame-load-button")}
                                             }
                                             Button {
                                                 variant: ButtonVariant::Destructive,
@@ -131,7 +145,7 @@ pub fn LoadGame() -> Element {
                                                         }
                                                     }
                                                 },
-                                                "🗑 Delete"
+                                                {t!("loadgame-delete-button")}
                                             }
                                         }
                                     }

@@ -14,6 +14,7 @@ use crate::{
 };
 use dioxus::fullstack::{CborEncoding, UseWebsocket};
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 use lib_rpg::{
     character_mod::character::CharacterKind,
     common::constants::stats_const::HP,
@@ -64,10 +65,10 @@ fn EndStatePanels() -> Element {
                         background_color: "var(--secondary-error-color)",
                         div { class: "char-header",
                             span { class: "char-name-text", "{c.db_full_name}" }
-                            span { class: "char-level", "Lvl {c.level}" }
+                            span { class: "char-level", {t!("startgame-lvl", level : c.level as i64)} }
                             if c.stats.is_dead().is_some_and(|v| v) {
                                 span { style: "font-size:0.8rem; color:var(--rpg-text-muted);",
-                                    "💀 Defeated"
+                                    {t!("startgame-defeated")}
                                 }
                             }
                         }
@@ -107,7 +108,7 @@ pub fn QuitGameButton() -> Element {
                     navigator.push(Route::Home {});
                 }
             },
-            "🚪 Quit"
+            {t!("startgame-quit")}
         }
     }
 }
@@ -182,9 +183,14 @@ pub fn RunningGamePage() -> Element {
         if !in_overworld {
             if server_data().core_game_data.game_manager.game_state.status == GameStatus::EndOfGame {
                 div { class: "gameover-page",
-                    h1 { class: "gameover-title", "💀 Game Over" }
+                    h1 { class: "gameover-title", {t!("startgame-game-over")} }
                     p { class: "gameover-sub",
-                        "Remaining players: {server_data().players_data.players_info.len()}"
+                        {
+                            t!(
+                                "startgame-remaining-players", count : server_data().players_data
+                                .players_info.len() as i64
+                            )
+                        }
                     }
                     EndStatePanels {}
                     div { class: "scenario-actions",
@@ -195,7 +201,7 @@ pub fn RunningGamePage() -> Element {
                                 onclick: move |_| async move {
                                     let _ = socket.send(ClientEvent::ReplayGame(SERVER_NAME())).await;
                                 },
-                                "🔄 Replay Game"
+                                {t!("startgame-replay-game")}
                             }
                         }
                     }
@@ -205,7 +211,7 @@ pub fn RunningGamePage() -> Element {
                 == GameStatus::EndOfScenario
             {
                 div { class: "scenario-end-page",
-                    h2 { class: "scenario-end-title", "🏆 Scenario Complete!" }
+                    h2 { class: "scenario-end-title", {t!("startgame-scenario-complete")} }
 
                     // Show the finishing blow details
                     {
@@ -219,16 +225,18 @@ pub fn RunningGamePage() -> Element {
                             || last_atk.is_dot_kill;
                         if show_blow {
                             let title = if last_atk.is_dot_kill {
-                                "⚔️ Finishing Blow (DOT)"
+                                t!("startgame-finishing-blow-dot")
                             } else {
-                                "⚔️ Finishing Blow"
+                                t!("startgame-finishing-blow")
                             };
                             let dying_last = last_atk.dying_char_last_atk.clone();
                             rsx! {
                                 div { class: "scenario-section",
                                     h3 { class: "scenario-section-title", "{title}" }
                                     if last_atk.is_dot_kill && !dying_last.is_empty() {
-                                        p { class: "dot-kill-info", "Enemy's last attack: {dying_last}" }
+                                        p { class: "dot-kill-info",
+                                            {t!("startgame-enemy-last-attack", name : dying_last.clone())}
+                                        }
                                     }
                                     if !last_atk.new_game_atk_effects.is_empty() {
                                         div { class: "scenario-last-atk",
@@ -247,7 +255,7 @@ pub fn RunningGamePage() -> Element {
                         Button {
                             variant: ButtonVariant::Outline,
                             onclick: move |_| shop_open.set(true),
-                            "🛒 Shop"
+                            {t!("startgame-shop")}
                         }
                         if server_data().players_data.owner_player_name == local_login_name_session() {
                             Button {
@@ -257,7 +265,7 @@ pub fn RunningGamePage() -> Element {
                                         .send(ClientEvent::LoadNextScenario(SERVER_NAME(), auto_save_scenario()))
                                         .await;
                                 },
-                                "⚡ Load Next Scenario"
+                                {t!("startgame-load-next-scenario")}
                             }
                             if let Some(map_id) = return_map_id.clone() {
                                 Button {
@@ -270,7 +278,7 @@ pub fn RunningGamePage() -> Element {
                                                 .await;
                                         }
                                     },
-                                    "🗺 Explore Overworld"
+                                    {t!("startgame-explore-overworld")}
                                 }
                             }
                         }
@@ -282,7 +290,7 @@ pub fn RunningGamePage() -> Element {
                         StoreSheet { s: SheetSide::Right }
                     }
                     div { class: "scenario-section",
-                        h3 { class: "scenario-section-title", "🎁 Loots" }
+                        h3 { class: "scenario-section-title", {t!("startgame-loots")} }
                         div { class: "loot-grid",
                             for l in snap_server_data.core_game_data.game_manager.current_scenario.loots.iter() {
                                 div { class: "loot-item", "{l.format_loot()}" }
@@ -290,7 +298,7 @@ pub fn RunningGamePage() -> Element {
                         }
                     }
                     div { class: "scenario-section",
-                        h3 { class: "scenario-section-title", "⬆️ Level Upgrades" }
+                        h3 { class: "scenario-section-title", {t!("startgame-level-upgrades")} }
                         div {
                             class: "level-up-box",
                             dangerous_inner_html: "{snap_server_data.core_game_data.game_manager.end_of_scenario.to_formatted_string(true)}",
@@ -307,7 +315,13 @@ pub fn RunningGamePage() -> Element {
                     div { class: "game-toolbar",
                         GameSheets {}
                         div { class: "turn-badge",
-                            "⚔️ Turn {server_data().core_game_data.game_manager.game_state.current_turn_nb} - Round {server_data().core_game_data.game_manager.game_state.current_round}"
+                            {
+                                t!(
+                                    "startgame-turn-round", turn : server_data().core_game_data.game_manager
+                                    .game_state.current_turn_nb as i64, round : server_data()
+                                    .core_game_data.game_manager.game_state.current_round as i64
+                                )
+                            }
                         }
                         if server_data().players_data.owner_player_name == local_login_name_session() {
                             if let Some(map_id) = return_map_id.clone() {
@@ -321,7 +335,7 @@ pub fn RunningGamePage() -> Element {
                                                 .await;
                                         }
                                     },
-                                    "🗺 Run away"
+                                    {t!("startgame-run-away")}
                                 }
                             }
                         }

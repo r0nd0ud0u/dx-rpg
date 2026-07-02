@@ -188,6 +188,14 @@
       "dialog": [
         "Ces montagnes sont traîtresses.",
         "L'Orc gardien du col est redoutable, mais pas invincible."
+      ],
+      "dialog_en": [
+        "These mountains are treacherous.",
+        "The Orc guarding the pass is fearsome, but not invincible."
+      ],
+      "dialog_fr": [
+        "Ces montagnes sont traîtresses.",
+        "L'Orc gardien du col est redoutable, mais pas invincible."
       ]
     },
     {
@@ -195,6 +203,14 @@
       "x": 8,
       "y": 3,
       "dialog": [
+        "Un Orc Pillard barre le col !",
+        "Vos os orneront ma ceinture."
+      ],
+      "dialog_en": [
+        "An Orc Raider blocks the pass!",
+        "Your bones will adorn my belt."
+      ],
+      "dialog_fr": [
         "Un Orc Pillard barre le col !",
         "Vos os orneront ma ceinture."
       ],

@@ -1,6 +1,6 @@
 [package]
 name = "dx-rpg"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["rondoudou"]
 edition = "2024"
 
@@ -8,7 +8,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.103"
 dioxus = { version = "0.7.9", features = ["router", "fullstack"] }
-lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", tag = "v1.5.2" }
+lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", tag = "v1.5.3" }
 serde = "1.0.228"
 dioxus-desktop = { version = "0.7.9", optional = true }
 dioxus-html = "0.7.9"
@@ -53,6 +53,8 @@ strum = "0.28.0"
 strum_macros = "0.28.0"
 chrono = { version = "0.4.45", features = ["serde"] }
 data-encoding = { version = "2", optional = true }
+dioxus-i18n = "0.5.1"
+unic-langid = { version = "0.9.6", features = ["macros"] }
 
 [features]
 default = ["server"]

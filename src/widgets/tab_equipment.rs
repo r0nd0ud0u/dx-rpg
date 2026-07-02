@@ -4,6 +4,7 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
+use dioxus_i18n::t;
 use dioxus_primitives::ContentSide;
 use lib_rpg::{
     character_mod::{
@@ -100,12 +101,16 @@ pub fn TabEquipment(c: Character) -> Element {
                                     if equipped_count > 0 {
                                         span {
                                             class: "equip-tab-equipped-badge",
-                                            title: "{equipped_count} equipped",
+                                            title: t!("equip-count-equipped", count : equipped_count as i64),
                                             "✓"
                                         }
                                     }
                                     if has_new {
-                                        span { class: "equip-tab-new-badge", title: "New item!", "!" }
+                                        span {
+                                            class: "equip-tab-new-badge",
+                                            title: t!("equip-new-item"),
+                                            "!"
+                                        }
                                     }
                                 }
                             }
@@ -146,7 +151,7 @@ fn EquipmentTabContent(
     rsx! {
         div { class: "equip-tab-content",
             if !equipped.is_empty() {
-                div { class: "equip-section-title", "✅ Equipped" }
+                div { class: "equip-section-title", {t!("equip-section-equipped")} }
             }
             for item in equipped {
                 EquipmentTooltip {
@@ -156,7 +161,7 @@ fn EquipmentTabContent(
                 }
             }
             if !unequipped.is_empty() {
-                div { class: "equip-section-title", "🎒 In bag" }
+                div { class: "equip-section-title", {t!("equip-section-in-bag")} }
             }
             for item in unequipped {
                 EquipmentTooltip {
@@ -166,7 +171,7 @@ fn EquipmentTabContent(
                 }
             }
             if items.is_empty() {
-                div { class: "equip-empty", "No item in this slot." }
+                div { class: "equip-empty", {t!("equip-empty-slot")} }
             }
         }
     }
@@ -191,7 +196,7 @@ fn EquipmentTooltip(
         Some(equipment) => equipment,
         None => {
             return rsx! {
-                div { "Equipment not found" }
+                div { {t!("equip-not-found")} }
             };
         }
     };
@@ -233,7 +238,11 @@ fn EquipmentTooltip(
                             },
                             span { class: "equip-btn-label",
                                 if is_new {
-                                    span { class: "equip-new-dot", title: "New!", "🆕 " }
+                                    span {
+                                        class: "equip-new-dot",
+                                        title: t!("equip-new-dot-title"),
+                                        "🆕 "
+                                    }
                                 }
                                 "{e_inventory.unique_name}"
                                 if e_inventory.is_equipped {
@@ -249,7 +258,7 @@ fn EquipmentTooltip(
                     }
                     if stats.is_empty() {
                         p { style: "margin:0; color: var(--rpg-text-muted,#8a8fa8); font-style:italic;",
-                            "No stat bonuses."
+                            {t!("equip-no-stat-bonuses")}
                         }
                     } else {
                         for stat in stats {
@@ -258,9 +267,9 @@ fn EquipmentTooltip(
                     }
                     p { style: "margin:4px 0 0 0; font-size:0.72rem; color:var(--rpg-text-muted,#8a8fa8);",
                         if e_inventory.is_equipped {
-                            "Click to unequip"
+                            {t!("equip-click-to-unequip")}
                         } else {
-                            "Click to equip"
+                            {t!("equip-click-to-equip")}
                         }
                     }
                 }

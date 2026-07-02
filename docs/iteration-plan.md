@@ -67,3 +67,38 @@ If a stat is already full, `real_amount_tx = 0` and the log says `"uses potion d
 
 - Party potion from bag: verify behavior when multiple heroes use the same potion type in the same round.
 - Resurrection potion: currently `apply_consumable_effects` is used directly (bypassing `use_consumable`), which skips inventory removal. Confirm this is intentional.
+
+---
+
+## i18n rollout
+
+Infrastructure landed (2026-07-03): `dioxus-i18n` wired in `main.rs`, `CtxAppLang` (localStorage-backed) + navbar toggle, `navbar.rs` fully converted to `t!()`, and bilingual `description_en`/`description_fr` fields + resolver added to lib-rpg's `AttackType`/`Character` with Elara la guerisseuse de la Lorien migrated as the worked example.
+
+**UI chrome rollout completed (2026-07-02):** every `board_game_components/*.rs` and `widgets/*.rs` file is now converted to `t!()` — navbar, all pages (home/lobby/login/create-server/join/load/start/character-select/character-page/gameboard/overworld), all admin tabs (users/attacks/characters/equipment/scenarios), and `game_sheets.rs` in full (menu/inventory/stats/logs/scenarios/store/settings sheets). `en-US.ftl`/`fr-FR.ftl` key parity is enforced by `unit_locale_files_have_matching_keys`. Deliberately left untranslated: dynamic backend-generated content (`lib_rpg` combat log text via `log_text()`/`log.message`, shop/equipment/consumable item `name`/`description` — game data, not UI chrome, same category as character bios below), enum-backed `value:` attributes on `<select>` options (kept as literal schema keywords), brand/logo strings, and `tracing::*!` log lines (server-side only, never rendered).
+
+Remaining UI-chrome follow-up:
+1. **`auth_manager/*` server functions** — audit which `ServerFnError` messages actually surface as UI toasts (vs. stay server-side/logs only) and translate only those.
+2. New components/pages added after this pass should follow the same `t!()` convention from the start.
+3. **Language picker landed (2026-07-02):** the old single-toggle Button was replaced with a native `<select>` (`.navbar-lang-select` in `assets/main.css`) showing 🇬🇧 English / 🇫🇷 Français, current language as the selected option. Sign-in/out and quit-game buttons got fixed CSS widths (`.navbar-btn-auth`/`.navbar-btn-quit`) sized for the longer FR strings so they don't resize on toggle — if a future translation ends up longer than "Quitter la partie" (18 chars) or "Se déconnecter" (14 chars), bump those widths.
+
+### Bilingual attack names (`name_en`/`name_fr`) — DONE (2026-07-02)
+
+**All 113 shipped attack files** (LOTR + Pokémon rosters, both repos) now have `NomEn`/`NomFr` populated. LOTR attacks (French-authored) got English translations added; Pokémon attacks (English-authored) got French translations added; `Charge` (shared by most characters) is identical in both. `character_page.rs`'s attack list buttons/tooltips resolve `name_for(lang)` — this was the actual player-facing bug report ("attack names stay French mid-combat"), since only Elara's names were migrated in the prior pass and every other character showed raw French `name`.
+
+Not yet covered: `widgets/charts.rs`'s attack-usage stat labels and `gameboard.rs`'s last-attack banner still display the raw `atk_name: String` from aggregated stats/`ResultLaunchAttack`, with no `AttackType` in scope to resolve — would need either an `AttackType` lookup by name in the launcher's attack list, or carrying `name_en`/`name_fr` alongside `atk_name` in those stat structs.
+
+### Bilingual descriptions (`description_en`/`description_fr`)
+
+~20+ characters and all attacks but Elara's remain on the legacy single-language `description`/`effects_description` fields (harmless — `description_for`/`effects_description_for` transparently fall back). Priority order, per `lib-rpg/README.md`'s "Hero Balance (LOTR roster)" documentation depth:
+1. **Thraïn** — passive and attacks already documented in lib-rpg's README.
+2. **Thalia**
+3. **Azrak Ombresang** — his `OverHealBoostStat` passive is documented.
+4. Remaining LOTR roster — enumerate via `find offlines/characters/lotr -name '*.json'` at the start of that session.
+5. Pokémon-universe characters — confirm first whether their descriptions have the same language-mixing problem before assuming English.
+6. `offlines/equipment/*.json` and scenario `description` fields — would need their own struct-field audit first (not covered by this pass's schema work).
+
+Each future migration session should: confirm the existing text's actual language per file (don't assume — this pass verified each character's attack names were French/English before translating), edit both `lib-rpg/offlines/` and `dx-rpg/offlines/` together (they must stay byte-identical), and no code changes are needed — the resolver/UI hookup is already generic.
+
+### Bilingual overworld NPC dialog (`dialog_en`/`dialog_fr`)
+
+**Fully migrated (2026-07-02):** all 12 shipped maps (`lotr_col_brumeux`, `lotr_foret_ancienne`, `lotr_foret_mordor`, `lotr_gorge_mordor`, `lotr_isengard`, `lotr_mont_doom`, `lotr_moria`, `lotr_plaine_desespoir`, `lotr_plaines_rohan`, `lotr_shire`, `pallet_town`, `route_1`) have `dialog_en`/`dialog_fr` populated on every NPC, plus lib-rpg's own smaller `pallet_town.json` test fixture. `OverworldManager::move_player`/`interact` take a `Lang` parameter (threaded from the client's `CtxAppLang` via new `ClientEvent::MovePlayer`/`Interact` lang fields) and resolve dialog + the locked-door hint message accordingly. No further action needed unless new maps are added — just populate `dialog_en`/`dialog_fr` alongside `dialog` on each new NPC.

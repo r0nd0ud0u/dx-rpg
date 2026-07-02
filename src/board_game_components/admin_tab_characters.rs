@@ -1,5 +1,6 @@
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 
 use crate::{
     auth_manager::server_fn::{
@@ -9,7 +10,7 @@ use crate::{
         list_universes_server, upload_photo,
     },
     board_game_components::admin_tab_attacks::AdminAttacksPanel,
-    common::photo_src,
+    common::{CtxAppLang, lang_from_app_lang, photo_src},
     components::{
         button::{Button, ButtonVariant},
         input::Input,
@@ -35,6 +36,7 @@ const JS_READ_CHAR_PHOTO: &str = "const input = document.getElementById('char-ph
 
 #[component]
 pub fn AdminCharactersTab() -> Element {
+    let app_lang = use_context::<CtxAppLang>().0;
     let mut characters: Signal<Vec<AdminCharacterInfo>> = use_signal(Vec::new);
     let mut boss_characters: Signal<Vec<AdminCharacterInfo>> = use_signal(Vec::new);
     let mut loading = use_signal(|| true);
@@ -114,9 +116,9 @@ pub fn AdminCharactersTab() -> Element {
     };
 
     let kind_label = if show_bosses() {
-        "👹 Bosses"
+        t!("admin-chars-bosses")
     } else {
-        "🧙 Heroes"
+        t!("admin-chars-heroes")
     };
 
     let on_char_photo_change = move |_: FormEvent| {
@@ -137,7 +139,9 @@ pub fn AdminCharactersTab() -> Element {
                     let full_name = name.clone();
                     match upload_photo(name, data).await {
                         Ok(_) => form_photo.set(full_name),
-                        Err(e) => char_feedback.set(format!("❌ Upload: {e}")),
+                        Err(e) => {
+                            char_feedback.set(t!("admin-atk-upload-error", error: e.to_string()))
+                        }
                     }
                 }
             }
@@ -147,7 +151,7 @@ pub fn AdminCharactersTab() -> Element {
     rsx! {
         // Universe filter
         div { class: "admin-card",
-            p { class: "admin-section-title", "🌐 Filter by Universe" }
+            p { class: "admin-section-title", {t!("admin-chars-filter-universe")} }
             select {
                 class: "admin-select",
                 value: "{selected_universe}",
@@ -156,7 +160,7 @@ pub fn AdminCharactersTab() -> Element {
                     edit_char_name.set(None);
                     attacks_char.set(None);
                 },
-                option { value: "", "— all universes —" }
+                option { value: "", {t!("admin-chars-all-universes")} }
                 for u in &universes {
                     option { value: "{u}", "{u}" }
                 }
@@ -165,10 +169,10 @@ pub fn AdminCharactersTab() -> Element {
 
         // Create new universe
         div { class: "admin-card",
-            p { class: "admin-section-title", "🌍 Create Universe" }
+            p { class: "admin-section-title", {t!("admin-chars-create-universe-title")} }
             div { style: "display:flex;gap:8px;align-items:center;",
                 Input {
-                    placeholder: "Universe name (e.g. pokemon)",
+                    placeholder: t!("admin-chars-universe-name-placeholder"),
                     r#type: "text",
                     value: "{new_universe_name}",
                     oninput: move |e: FormEvent| new_universe_name.set(e.value()),
@@ -183,14 +187,14 @@ pub fn AdminCharactersTab() -> Element {
                         spawn(async move {
                             match admin_create_universe(name).await {
                                 Ok(()) => {
-                                    universe_feedback.set("✅ Universe created.".to_owned());
+                                    universe_feedback.set(t!("admin-chars-universe-created"));
                                     new_universe_name.set(String::new());
                                 }
-                                Err(e) => universe_feedback.set(format!("❌ {e}")),
+                                Err(e) => universe_feedback.set(t!("admin-error", error: e.to_string())),
                             }
                         });
                     },
-                    "Create"
+                    {t!("admin-atk-create-button")}
                 }
             }
             if !universe_feedback().is_empty() {
@@ -211,7 +215,7 @@ pub fn AdminCharactersTab() -> Element {
                             edit_char_name.set(None);
                             attacks_char.set(None);
                         },
-                        "🧙 Heroes"
+                        {t!("admin-chars-heroes")}
                     }
                     Button {
                         variant: if show_bosses() { ButtonVariant::Primary } else { ButtonVariant::Secondary },
@@ -220,15 +224,15 @@ pub fn AdminCharactersTab() -> Element {
                             edit_char_name.set(None);
                             attacks_char.set(None);
                         },
-                        "👹 Bosses"
+                        {t!("admin-chars-bosses")}
                     }
                 }
             }
 
             if loading() {
-                p { style: "color:var(--rpg-text-muted);", "Loading…" }
+                p { style: "color:var(--rpg-text-muted);", {t!("common-loading")} }
             } else if displayed.is_empty() {
-                p { style: "color:var(--rpg-text-muted);", "No {kind_label} found." }
+                p { style: "color:var(--rpg-text-muted);", {t!("admin-chars-none-found", kind : kind_label.clone())} }
             } else {
                 div { class: "admin-char-grid",
                     for c in displayed {
@@ -250,15 +254,20 @@ pub fn AdminCharactersTab() -> Element {
                                             span { class: "admin-char-name", "{c.db_full_name}" }
                                             div { class: "admin-char-badges",
                                                 span { class: "admin-char-class", "{c.class}" }
-                                                span { class: "admin-char-level", "Lv {c.level}" }
+                                                span { class: "admin-char-level", {t!("common-level", level : c.level as i64)} }
                                                 if !c.universe.is_empty() {
-                                                    span { class: "admin-char-universe", "🌐 {c.universe}" }
+                                                    span { class: "admin-char-universe", {t!("loadgame-universe", universe : c.universe.clone())} }
                                                 }
                                             }
                                         }
                                     }
-                                    if !c.description.is_empty() {
-                                        p { class: "admin-char-desc", "{c.description}" }
+                                    {
+                                        let desc = c.description_for(lang_from_app_lang(&app_lang())).to_owned();
+                                        rsx! {
+                                            if !desc.is_empty() {
+                                                p { class: "admin-char-desc", "{desc}" }
+                                            }
+                                        }
                                     }
                                     div { class: "admin-char-stats",
                                         {
@@ -301,11 +310,11 @@ pub fn AdminCharactersTab() -> Element {
                                                             edit_char_name.set(Some(n));
                                                             attacks_char.set(None);
                                                         }
-                                                        Err(e) => char_feedback.set(format!("❌ {e}")),
+                                                        Err(e) => char_feedback.set(t!("admin-error", error: e.to_string())),
                                                     }
                                                 });
                                             },
-                                            "📝 Form"
+                                            {t!("admin-chars-form-button")}
                                         }
                                         Button {
                                             variant: ButtonVariant::Secondary,
@@ -321,11 +330,11 @@ pub fn AdminCharactersTab() -> Element {
                                                             edit_char_name.set(Some(n));
                                                             attacks_char.set(None);
                                                         }
-                                                        Err(e) => char_feedback.set(format!("❌ {e}")),
+                                                        Err(e) => char_feedback.set(t!("admin-error", error: e.to_string())),
                                                     }
                                                 });
                                             },
-                                            "✏️ JSON"
+                                            {t!("admin-chars-json-button")}
                                         }
                                         Button {
                                             variant: ButtonVariant::Secondary,
@@ -342,7 +351,7 @@ pub fn AdminCharactersTab() -> Element {
                                                     }
                                                 });
                                             },
-                                            "⚔️ Attacks"
+                                            {t!("admin-chars-attacks-button")}
                                         }
                                     }
                                 }
@@ -364,7 +373,7 @@ pub fn AdminCharactersTab() -> Element {
                     div { class: "admin-full-card",
                         if char_edit_form_mode() {
                             div { style: "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;",
-                                p { class: "admin-section-title", style: "margin:0;", "📝 Form: {cname}" }
+                                p { class: "admin-section-title", style: "margin:0;", {t!("admin-chars-form-title", name : cname.clone())} }
                                 Button {
                                     variant: ButtonVariant::Secondary,
                                     onclick: move |_| {
@@ -377,7 +386,7 @@ pub fn AdminCharactersTab() -> Element {
                                         });
                                         char_edit_form_mode.set(false);
                                     },
-                                    "✏️ JSON mode"
+                                    {t!("admin-equip-json-mode")}
                                 }
                             }
                             div { class: "admin-form-grid",
@@ -386,10 +395,10 @@ pub fn AdminCharactersTab() -> Element {
                                         html_for: "char-name",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Name"
+                                        {t!("admin-equip-name-label")}
                                     }
                                     Input {
-                                        placeholder: "Character name",
+                                        placeholder: t!("admin-chars-name-placeholder"),
                                         r#type: "text",
                                         value: "{form_name}",
                                         oninput: move |e: FormEvent| form_name.set(e.value()),
@@ -400,10 +409,10 @@ pub fn AdminCharactersTab() -> Element {
                                         html_for: "char-short-name",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Short name"
+                                        {t!("admin-chars-short-name-label")}
                                     }
                                     Input {
-                                        placeholder: "Short name",
+                                        placeholder: t!("admin-chars-short-name-label"),
                                         r#type: "text",
                                         value: "{form_short_name}",
                                         oninput: move |e: FormEvent| form_short_name.set(e.value()),
@@ -414,7 +423,7 @@ pub fn AdminCharactersTab() -> Element {
                                         html_for: "char-class",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Class"
+                                        {t!("admin-chars-class-label")}
                                     }
                                     select {
                                         class: "admin-select",
@@ -423,15 +432,15 @@ pub fn AdminCharactersTab() -> Element {
                                         option {
                                             value: "Standard",
                                             selected: form_class() == "Standard",
-                                            "Standard"
+                                            {t!("admin-atk-form-standard")}
                                         }
-                                        option { value: "Warrior", selected: form_class() == "Warrior", "Warrior" }
-                                        option { value: "Mage", selected: form_class() == "Mage", "Mage" }
-                                        option { value: "Healer", selected: form_class() == "Healer", "Healer" }
+                                        option { value: "Warrior", selected: form_class() == "Warrior", {t!("class-warrior")} }
+                                        option { value: "Mage", selected: form_class() == "Mage", {t!("class-mage")} }
+                                        option { value: "Healer", selected: form_class() == "Healer", {t!("class-healer")} }
                                         option {
                                             value: "Berserker",
                                             selected: form_class() == "Berserker",
-                                            "Berserker"
+                                            {t!("class-berserker")}
                                         }
                                     }
                                 }
@@ -440,7 +449,7 @@ pub fn AdminCharactersTab() -> Element {
                                         html_for: "char-level",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Level"
+                                        {t!("admin-atk-level-label")}
                                     }
                                     Input {
                                         r#type: "number",
@@ -453,22 +462,22 @@ pub fn AdminCharactersTab() -> Element {
                                         html_for: "char-rank",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Rank"
+                                        {t!("admin-chars-rank-label")}
                                     }
                                     select {
                                         class: "admin-select",
                                         value: "{form_rank}",
                                         onchange: move |e| form_rank.set(e.value()),
-                                        option { value: "Common", selected: form_rank() == "Common", "Common" }
+                                        option { value: "Common", selected: form_rank() == "Common", {t!("rank-common")} }
                                         option {
                                             value: "Intermediate",
                                             selected: form_rank() == "Intermediate",
-                                            "Intermediate"
+                                            {t!("rank-intermediate")}
                                         }
                                         option {
                                             value: "Advanced",
                                             selected: form_rank() == "Advanced",
-                                            "Advanced"
+                                            {t!("rank-advanced")}
                                         }
                                     }
                                 }
@@ -477,14 +486,14 @@ pub fn AdminCharactersTab() -> Element {
                                         html_for: "char-type",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Type"
+                                        {t!("admin-chars-type-label")}
                                     }
                                     select {
                                         class: "admin-select",
                                         value: "{form_char_type}",
                                         onchange: move |e| form_char_type.set(e.value()),
-                                        option { value: "Hero", selected: form_char_type() == "Hero", "Hero" }
-                                        option { value: "Boss", selected: form_char_type() == "Boss", "Boss" }
+                                        option { value: "Hero", selected: form_char_type() == "Hero", {t!("admin-chars-type-hero")} }
+                                        option { value: "Boss", selected: form_char_type() == "Boss", {t!("admin-chars-type-boss")} }
                                     }
                                 }
                                 div { class: "admin-form-field",
@@ -492,10 +501,10 @@ pub fn AdminCharactersTab() -> Element {
                                         html_for: "char-photo",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Photo filename"
+                                        {t!("admin-chars-photo-filename-label")}
                                     }
                                     Input {
-                                        placeholder: "e.g. Thalia.png",
+                                        placeholder: t!("admin-chars-photo-placeholder"),
                                         r#type: "text",
                                         value: "{form_photo}",
                                         oninput: move |e: FormEvent| form_photo.set(e.value()),
@@ -506,7 +515,7 @@ pub fn AdminCharactersTab() -> Element {
                                         html_for: "char-photo-file",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Upload Photo"
+                                        {t!("admin-atk-upload-photo-label")}
                                     }
                                     input {
                                         r#type: "file",
@@ -520,10 +529,10 @@ pub fn AdminCharactersTab() -> Element {
                                         html_for: "char-color",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Color"
+                                        {t!("admin-chars-color-label")}
                                     }
                                     Input {
-                                        placeholder: "e.g. green",
+                                        placeholder: t!("admin-chars-color-placeholder"),
                                         r#type: "text",
                                         value: "{form_color}",
                                         oninput: move |e: FormEvent| form_color.set(e.value()),
@@ -534,7 +543,7 @@ pub fn AdminCharactersTab() -> Element {
                                         html_for: "char-max-actions",
                                         color: "var(--rpg-text-muted)",
                                         font_size: "0.82rem",
-                                        "Max actions / round"
+                                        {t!("admin-chars-max-actions-label")}
                                     }
                                     Input {
                                         r#type: "number",
@@ -547,24 +556,29 @@ pub fn AdminCharactersTab() -> Element {
                                 html_for: "char-description",
                                 color: "var(--rpg-text-muted)",
                                 font_size: "0.82rem",
-                                "Description"
+                                {t!("admin-scenarios-col-description")}
                             }
                             textarea {
                                 class: "admin-json-textarea",
                                 rows: "3",
-                                placeholder: "Character description…",
+                                placeholder: t!("admin-chars-description-placeholder"),
                                 value: "{form_description}",
                                 oninput: move |e: FormEvent| form_description.set(e.value()),
                             }
                             div { style: "display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:10px 0;",
                                 div { style: "display:flex;flex-direction:column;gap:4px;",
                                     p { style: "font-size:0.82rem;color:var(--rpg-text-muted);margin:0 0 4px;",
-                                        "Energies"
+                                        {t!("admin-chars-energies-label")}
                                     }
                                     div { style: "display:flex;gap:10px;flex-wrap:wrap;",
                                         for energy in ["Mana", "Rage", "Vigor"] {
                                             {
                                                 let e = energy;
+                                                let e_label = match e {
+                                                    "Mana" => t!("energy-mana"),
+                                                    "Rage" => t!("energy-rage"),
+                                                    _ => t!("energy-vigor"),
+                                                };
                                                 let has = form_energies().contains(&e.to_owned());
                                                 rsx! {
                                                     label { style: "display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9rem;",
@@ -581,7 +595,7 @@ pub fn AdminCharactersTab() -> Element {
                                                                 form_energies.set(energies);
                                                             },
                                                         }
-                                                        "{e}"
+                                                        "{e_label}"
                                                     }
                                                 }
                                             }
@@ -594,19 +608,19 @@ pub fn AdminCharactersTab() -> Element {
                                         checked: form_is_blocking_atk(),
                                         onchange: move |_| form_is_blocking_atk.set(!form_is_blocking_atk()),
                                     }
-                                    "Is blocking attack"
+                                    {t!("admin-chars-blocking-atk-label")}
                                 }
                             }
                             if !form_stats().is_empty() {
                                 p { style: "font-weight:600;margin:12px 0 6px;color:var(--rpg-text-muted);font-size:0.82rem;",
-                                    "Stats"
+                                    {t!("admin-equip-stats-title")}
                                 }
                                 div { class: "admin-stats-table",
                                     div { class: "admin-stats-header",
-                                        span { class: "ast-col-name", "Stat" }
-                                        span { class: "ast-col-val", "Current" }
+                                        span { class: "ast-col-name", {t!("admin-equip-stat-col")} }
+                                        span { class: "ast-col-val", {t!("admin-chars-current-col")} }
                                         span { class: "ast-col-sep", "" }
-                                        span { class: "ast-col-val", "Max" }
+                                        span { class: "ast-col-val", {t!("admin-chars-max-col")} }
                                     }
                                     for (idx, stat) in form_stats().iter().enumerate() {
                                         {
@@ -671,7 +685,7 @@ pub fn AdminCharactersTab() -> Element {
                                         spawn(async move {
                                             match admin_save_character_form(u.clone(), name.clone(), form).await {
                                                 Ok(()) => {
-                                                    char_feedback.set("✅ Saved.".to_owned());
+                                                    char_feedback.set(t!("admin-equip-saved"));
                                                     edit_char_name.set(None);
                                                     if let Ok(c) = admin_list_characters().await {
                                                         characters.set(c);
@@ -680,11 +694,11 @@ pub fn AdminCharactersTab() -> Element {
                                                         boss_characters.set(b);
                                                     }
                                                 }
-                                                Err(e) => char_feedback.set(format!("❌ {e}")),
+                                                Err(e) => char_feedback.set(t!("admin-error", error: e.to_string())),
                                             }
                                         });
                                     },
-                                    "💾 Save"
+                                    {t!("admin-equip-save")}
                                 }
                                 Button {
                                     variant: ButtonVariant::Secondary,
@@ -692,12 +706,12 @@ pub fn AdminCharactersTab() -> Element {
                                         edit_char_name.set(None);
                                         char_feedback.set(String::new());
                                     },
-                                    "Cancel"
+                                    {t!("common-cancel")}
                                 }
                             }
                         } else {
                             div { style: "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;",
-                                p { class: "admin-section-title", style: "margin:0;", "✏️ JSON: {cname}" }
+                                p { class: "admin-section-title", style: "margin:0;", {t!("admin-chars-json-title", name : cname.clone())} }
                                 Button {
                                     variant: ButtonVariant::Secondary,
                                     onclick: move |_| {
@@ -722,7 +736,7 @@ pub fn AdminCharactersTab() -> Element {
                                             }
                                         });
                                     },
-                                    "📝 Form mode"
+                                    {t!("admin-equip-form-mode")}
                                 }
                             }
                             textarea {
@@ -741,7 +755,7 @@ pub fn AdminCharactersTab() -> Element {
                                         spawn(async move {
                                             match admin_save_character_json(u, name.clone(), json).await {
                                                 Ok(()) => {
-                                                    char_feedback.set("✅ Saved.".to_owned());
+                                                    char_feedback.set(t!("admin-equip-saved"));
                                                     edit_char_name.set(None);
                                                     if let Ok(c) = admin_list_characters().await {
                                                         characters.set(c);
@@ -750,11 +764,11 @@ pub fn AdminCharactersTab() -> Element {
                                                         boss_characters.set(b);
                                                     }
                                                 }
-                                                Err(e) => char_feedback.set(format!("❌ {e}")),
+                                                Err(e) => char_feedback.set(t!("admin-error", error: e.to_string())),
                                             }
                                         });
                                     },
-                                    "💾 Save"
+                                    {t!("admin-equip-save")}
                                 }
                                 Button {
                                     variant: ButtonVariant::Secondary,
@@ -762,7 +776,7 @@ pub fn AdminCharactersTab() -> Element {
                                         edit_char_name.set(None);
                                         char_feedback.set(String::new());
                                     },
-                                    "Cancel"
+                                    {t!("common-cancel")}
                                 }
                             }
                         }

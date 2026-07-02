@@ -1,13 +1,14 @@
 use dioxus::fullstack::{CborEncoding, UseWebsocket};
 use dioxus::html::Key;
 use dioxus::prelude::*;
+use dioxus_i18n::t;
 use lib_rpg::{
     common::overworld::{Direction, TileKind},
     server::server_manager::ServerData,
 };
 
 use crate::{
-    common::{PATH_IMG, SERVER_NAME},
+    common::{CtxAppLang, PATH_IMG, SERVER_NAME},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
@@ -90,6 +91,7 @@ pub fn OverworldMap() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
+    let app_lang = use_context::<CtxAppLang>().0;
 
     let ow_state = server_data().core_game_data.overworld.clone();
     let Some(ow) = ow_state else {
@@ -97,7 +99,7 @@ pub fn OverworldMap() -> Element {
             div {
                 class: "ow-container",
                 style: "justify-content:center; align-items:center; min-height:300px;",
-                p { style: "color:#7fff7f; font-size:1.2rem;", "🗺 Entering overworld…" }
+                p { style: "color:#7fff7f; font-size:1.2rem;", {t!("overworld-entering")} }
             }
         };
     };
@@ -123,12 +125,18 @@ pub fn OverworldMap() -> Element {
             onkeydown: move |e: KeyboardEvent| async move {
                 let server_name = SERVER_NAME();
                 let player_name = local_login_name_session();
+                let lang = app_lang();
                 match e.key() {
                     Key::ArrowUp => {
                         e.prevent_default();
                         let _ = socket
                             .send(
-                                ClientEvent::MovePlayer(server_name, player_name, Direction::Up),
+                                ClientEvent::MovePlayer(
+                                    server_name,
+                                    player_name,
+                                    Direction::Up,
+                                    lang,
+                                ),
                             )
                             .await;
                     }
@@ -140,6 +148,7 @@ pub fn OverworldMap() -> Element {
                                     server_name,
                                     player_name,
                                     Direction::Down,
+                                    lang,
                                 ),
                             )
                             .await;
@@ -152,6 +161,7 @@ pub fn OverworldMap() -> Element {
                                     server_name,
                                     player_name,
                                     Direction::Left,
+                                    lang,
                                 ),
                             )
                             .await;
@@ -164,6 +174,7 @@ pub fn OverworldMap() -> Element {
                                     server_name,
                                     player_name,
                                     Direction::Right,
+                                    lang,
                                 ),
                             )
                             .await;
@@ -171,13 +182,13 @@ pub fn OverworldMap() -> Element {
                     Key::Enter => {
                         e.prevent_default();
                         let _ = socket
-                            .send(ClientEvent::Interact(server_name, player_name))
+                            .send(ClientEvent::Interact(server_name, player_name, lang))
                             .await;
                     }
                     Key::Character(s) if s == " " => {
                         e.prevent_default();
                         let _ = socket
-                            .send(ClientEvent::Interact(server_name, player_name))
+                            .send(ClientEvent::Interact(server_name, player_name, lang))
                             .await;
                     }
                     _ => {}
@@ -253,7 +264,7 @@ pub fn OverworldMap() -> Element {
                             p { class: "ow-dialog-line", "{line}" }
                         }
                         if ow.pending_fight.is_some() {
-                            p { class: "ow-dialog-question", "Do you want to start the fight?" }
+                            p { class: "ow-dialog-question", {t!("overworld-start-fight-question")} }
                             div { class: "ow-dialog-actions",
                                 button {
                                     class: "ow-dialog-btn ow-dialog-btn-yes",
@@ -261,12 +272,15 @@ pub fn OverworldMap() -> Element {
                                     onclick: move |_| {
                                         let sn = SERVER_NAME();
                                         let pn = local_login_name_session();
+                                        let lang = app_lang();
                                         let sock = socket_confirm_fight.clone();
                                         async move {
-                                            let _ = sock.send(ClientEvent::Interact(sn, pn)).await;
+                                            let _ = sock
+                                                .send(ClientEvent::Interact(sn, pn, lang))
+                                                .await;
                                         }
                                     },
-                                    "⚔️ Yes, fight!"
+                                    {t!("overworld-yes-fight")}
                                 }
                                 button {
                                     class: "ow-dialog-btn ow-dialog-btn-no",
@@ -279,7 +293,7 @@ pub fn OverworldMap() -> Element {
                                             let _ = sock.send(ClientEvent::DismissDialog(sn, pn)).await;
                                         }
                                     },
-                                    "🚪 No, not yet"
+                                    {t!("overworld-no-not-yet")}
                                 }
                             }
                         }
@@ -310,9 +324,12 @@ pub fn OverworldMap() -> Element {
                             onclick: move |_| {
                                 let sn = sn_up.clone();
                                 let pn = pn_up.clone();
+                                let lang = app_lang();
                                 let sock = socket_up.clone();
                                 async move {
-                                    let _ = sock.send(ClientEvent::MovePlayer(sn, pn, Direction::Up)).await;
+                                    let _ = sock
+                                        .send(ClientEvent::MovePlayer(sn, pn, Direction::Up, lang))
+                                        .await;
                                 }
                             },
                             "▲"
@@ -325,9 +342,12 @@ pub fn OverworldMap() -> Element {
                             onclick: move |_| {
                                 let sn = sn_left.clone();
                                 let pn = pn_left.clone();
+                                let lang = app_lang();
                                 let sock = socket_left.clone();
                                 async move {
-                                    let _ = sock.send(ClientEvent::MovePlayer(sn, pn, Direction::Left)).await;
+                                    let _ = sock
+                                        .send(ClientEvent::MovePlayer(sn, pn, Direction::Left, lang))
+                                        .await;
                                 }
                             },
                             "◀"
@@ -338,9 +358,10 @@ pub fn OverworldMap() -> Element {
                             onclick: move |_| {
                                 let sn = sn_int.clone();
                                 let pn = pn_int.clone();
+                                let lang = app_lang();
                                 let sock = socket_interact.clone();
                                 async move {
-                                    let _ = sock.send(ClientEvent::Interact(sn, pn)).await;
+                                    let _ = sock.send(ClientEvent::Interact(sn, pn, lang)).await;
                                 }
                             },
                             "⚔"
@@ -351,9 +372,12 @@ pub fn OverworldMap() -> Element {
                             onclick: move |_| {
                                 let sn = sn_right.clone();
                                 let pn = pn_right.clone();
+                                let lang = app_lang();
                                 let sock = socket_right.clone();
                                 async move {
-                                    let _ = sock.send(ClientEvent::MovePlayer(sn, pn, Direction::Right)).await;
+                                    let _ = sock
+                                        .send(ClientEvent::MovePlayer(sn, pn, Direction::Right, lang))
+                                        .await;
                                 }
                             },
                             "▶"
@@ -366,9 +390,12 @@ pub fn OverworldMap() -> Element {
                             onclick: move |_| {
                                 let sn = sn_down.clone();
                                 let pn = pn_down.clone();
+                                let lang = app_lang();
                                 let sock = socket_down.clone();
                                 async move {
-                                    let _ = sock.send(ClientEvent::MovePlayer(sn, pn, Direction::Down)).await;
+                                    let _ = sock
+                                        .send(ClientEvent::MovePlayer(sn, pn, Direction::Down, lang))
+                                        .await;
                                 }
                             },
                             "▼"
@@ -380,7 +407,7 @@ pub fn OverworldMap() -> Element {
 
             div { class: "ow-hud",
                 span { class: "ow-map-name", "📍 {ow.map_id}" }
-                span { class: "ow-controls", "Arrows: move  |  Enter/⚔: interact" }
+                span { class: "ow-controls", {t!("overworld-controls-hint")} }
             }
         }
     }

@@ -188,6 +188,14 @@
       "dialog": [
         "Isengard est tombé... mais des orcs résistent encore.",
         "Battez leur champion et la route de la Moria s'ouvrira."
+      ],
+      "dialog_en": [
+        "Isengard has fallen... but orcs still resist.",
+        "Defeat their champion and the road to Moria will open."
+      ],
+      "dialog_fr": [
+        "Isengard est tombé... mais des orcs résistent encore.",
+        "Battez leur champion et la route de la Moria s'ouvrira."
       ]
     },
     {
@@ -195,6 +203,14 @@
       "x": 7,
       "y": 3,
       "dialog": [
+        "Le Champion Orc rugit de fureur !",
+        "Vous ne franchirez pas Isengard !"
+      ],
+      "dialog_en": [
+        "The Orc Champion roars with fury!",
+        "You will not pass through Isengard!"
+      ],
+      "dialog_fr": [
         "Le Champion Orc rugit de fureur !",
         "Vous ne franchirez pas Isengard !"
       ],

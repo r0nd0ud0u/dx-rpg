@@ -2,6 +2,7 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
+use dioxus_i18n::t;
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
@@ -28,9 +29,9 @@ pub fn Home() -> Element {
         rsx! {
             div { class: "home-container",
                 div { class: "rotate-scale-up",
-                    h1 { class: "rpg-title", "⚔️ RPG Adventure" }
+                    h1 { class: "rpg-title", {t!("home-title")} }
                 }
-                p { class: "rpg-subtitle", "Welcome, {user_name}!" }
+                p { class: "rpg-subtitle", {t!("home-welcome", user_name: user_name.clone())} }
                 div { class: "action-grid",
                     div { class: "action-card",
                         span { class: "action-icon", "🏰" }
@@ -40,9 +41,9 @@ pub fn Home() -> Element {
                             onclick: move |_| {
                                 server_data().write().core_game_data.game_phase = GamePhase::Default;
                             },
-                            "Create Server"
+                            {t!("home-create-server")}
                         }
-                        p { class: "action-desc", "Start a new adventure as host" }
+                        p { class: "action-desc", {t!("home-create-server-desc")} }
                     }
                     div { class: "action-card",
                         span { class: "action-icon", "🗺️" }
@@ -54,9 +55,9 @@ pub fn Home() -> Element {
                                     let _ = socket.send(ClientEvent::RequestOnGoingGamesList).await;
                                 }
                             },
-                            "Join Game"
+                            {t!("home-join-game")}
                         }
-                        p { class: "action-desc", "Join an ongoing adventure" }
+                        p { class: "action-desc", {t!("home-join-game-desc")} }
                     }
                 }
             }

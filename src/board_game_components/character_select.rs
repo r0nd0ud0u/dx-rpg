@@ -4,6 +4,7 @@ use dioxus::{
     fullstack::{CborEncoding, UseWebsocket},
     prelude::*,
 };
+use dioxus_i18n::t;
 use lib_rpg::{
     character_mod::character::Character,
     common::constants::stats_const::HP,
@@ -11,7 +12,7 @@ use lib_rpg::{
 };
 
 use crate::{
-    common::photo_src,
+    common::{CtxAppLang, lang_from_app_lang, photo_src},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
@@ -56,9 +57,9 @@ pub fn CharacterSelect(universe: String) -> Element {
         div { class: "char-select-container",
             h3 { class: "char-select-title",
                 if is_single {
-                    "🎮 Single Player — Choose Your Heroes"
+                    {t!("char-select-title-single")}
                 } else {
-                    "👥 Choose Your Character"
+                    {t!("char-select-title-multi")}
                 }
             }
 
@@ -87,7 +88,7 @@ pub fn CharacterSelect(universe: String) -> Element {
                 && !others.is_empty()
             {
                 div { class: "char-select-others",
-                    p { class: "char-select-others-title", "Other players:" }
+                    p { class: "char-select-others-title", {t!("char-select-other-players")} }
                     for (player, choice) in others {
                         div { class: "char-select-chosen-row",
                             span { class: "char-select-player-name", "{player}" }
@@ -160,8 +161,11 @@ fn CharCardItem(
 ) -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let sd_signal = use_context::<Signal<ServerData>>();
+    let app_lang = use_context::<CtxAppLang>().0;
     let max_hp = c.stats.all_stats.get(HP).map(|s| s.max).unwrap_or(0);
-    let desc = c.description.clone();
+    let desc = c
+        .description_for(lang_from_app_lang(&app_lang()))
+        .to_string();
 
     // use_memo: recomputes whenever sd_signal changes; the handle is Copy so the
     // onclick closure can call is_selected() to read the *current* value at click
@@ -253,7 +257,7 @@ fn CharCardItem(
                 span { class: "char-card-name", "{c.db_full_name}" }
                 div { class: "char-card-badges",
                     span { class: "char-card-class", "{c.class.to_emoji()} {c.class.to_str()}" }
-                    span { class: "char-card-level", "Lv {c.level}" }
+                    span { class: "char-card-level", {t!("common-level", level : c.level as i64)} }
                 }
                 div { class: "char-card-hp",
                     span { class: "char-card-hp-label", "HP" }
@@ -265,12 +269,12 @@ fn CharCardItem(
             }
             if is_taken {
                 if let Some(taker) = taken_by.clone() {
-                    div { class: "char-card-taken-label", "🔒 {taker}" }
+                    div { class: "char-card-taken-label", {t!("char-card-taken-by", taker : taker.clone())} }
                 }
             } else if is_selected() {
-                div { class: "char-card-action char-card-action-selected", "× Remove" }
+                div { class: "char-card-action char-card-action-selected", {t!("char-card-remove")} }
             } else {
-                div { class: "char-card-action char-card-action-unselected", "+ Select" }
+                div { class: "char-card-action char-card-action-unselected", {t!("char-card-select")} }
             }
         }
     }
