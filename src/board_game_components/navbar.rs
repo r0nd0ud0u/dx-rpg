@@ -88,7 +88,7 @@ pub fn Navbar() -> Element {
                     // Quit-game trigger (only while a game is running)
                     if server_data().core_game_data.game_phase == GamePhase::Running {
                         Button {
-                            class: "navbar-btn-quit",
+                            style: "width: 190px; box-sizing: border-box; text-align: center; white-space: nowrap;",
                             onclick: move |_| quit_open.set(true),
                             r#type: "button",
                             {t!("navbar-quit-game")}
@@ -98,7 +98,7 @@ pub fn Navbar() -> Element {
                         span { class: "navbar-user", "👤 {snap_local_login_name_session}" }
                     }
                     Button {
-                        class: "navbar-btn-auth",
+                        style: "width: 160px; box-sizing: border-box; text-align: center; white-space: nowrap;",
                         variant: if snap_local_login_name_session == *DISCONNECTED_USER { ButtonVariant::Secondary } else { ButtonVariant::Destructive },
                         onclick: move |_| async move {
                             if local_login_name_session() != *DISCONNECTED_USER {
