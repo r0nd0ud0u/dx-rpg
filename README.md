@@ -16,6 +16,7 @@ A browser-based multiplayer RPG built with [Dioxus](https://dioxuslabs.com/) (Ru
 - [Data Flow](#data-flow)
 - [Development Setup](#development-setup)
 - [Responsive Design](#responsive-design)
+- [Internationalization (i18n)](#internationalization-i18n)
 - [Deployment](#deployment)
 - [Screenshots](#screenshots)
 
@@ -553,6 +554,26 @@ stacked on top of the existing desktop-first styles.
 - All interactive buttons are `≥ 44 px` tall in their default (desktop) state.
 - Attack target buttons use absolute positioning and remain tappable as circular hit-areas.
 - Sheet overlays (Dioxus `Sheet` component) occupy the full screen width on narrow viewports.
+
+---
+
+## Internationalization (i18n)
+
+The UI supports English and French via [`dioxus-i18n`](https://github.com/dioxus-community/dioxus-i18n), with a toggle button in the navbar. Two independent mechanisms, deliberately kept separate:
+
+### UI chrome — `dioxus-i18n`
+
+- Translations live in Fluent bundles under `src/i18n/en-US.ftl` and `src/i18n/fr-FR.ftl`, embedded at compile time via `include_str!` and registered with `use_init_i18n` in `main.rs`.
+- Components call the `t!("key")` macro (from `dioxus_i18n::t`) instead of hardcoding text; each key must exist in both `.ftl` files (enforced by `unit_locale_files_have_matching_keys` in `src/i18n.rs`).
+- The current locale is a `CtxAppLang(pub Signal<String>)` context (`"en"` / `"fr"`, see `src/common.rs`), synced to browser `localStorage` via `dioxus-sdk-storage`'s `use_synced_storage` — the same pattern used for login-session persistence, so the choice survives a reload and works **before** logging in (unlike the SQLite-backed `CtxShow*` settings, which require an authenticated session).
+- A `use_effect` in `main.rs` keeps `dioxus-i18n`'s active locale synced to `CtxAppLang` on both initial hydration and every toggle click.
+- **Only `navbar.rs`** (brand, nav links, help dialog, footer) has been converted to `t!()` so far — the rest of the UI's hardcoded strings are tracked file-by-file in `docs/iteration-plan.md` under "i18n rollout".
+
+### Game-data content — bilingual descriptions
+
+Attack and character `Description`/`DescriptionEffects` text in the offline JSON is a **separate** mechanism — `dioxus-i18n` doesn't apply to game data. `lib-rpg`'s `AttackType` and `Character` structs carry optional `description_en`/`description_fr` (and `effects_description_en`/`effects_description_fr` on `AttackType`) fields; `description_for(lang)` / `effects_description_for(lang)` return the locale-specific text, falling back to the legacy single-language field when unset. See [lib-rpg's README](https://github.com/r0nd0ud0u/lib-rpg#bilingual-descriptions-description_en--description_fr) for the schema.
+
+Only **Elara la guerisseuse de la Lorien** (character + all 12 attacks) has bilingual fields populated so far — toggling the navbar language changes her character-select card and attack tooltips live; every other character keeps showing its single existing-language text regardless of the toggle. Remaining characters are tracked in `docs/iteration-plan.md`.
 
 ---
 

@@ -9,7 +9,7 @@ use crate::{
         list_universes_server, upload_photo,
     },
     board_game_components::admin_tab_attacks::AdminAttacksPanel,
-    common::photo_src,
+    common::{CtxAppLang, lang_from_app_lang, photo_src},
     components::{
         button::{Button, ButtonVariant},
         input::Input,
@@ -35,6 +35,7 @@ const JS_READ_CHAR_PHOTO: &str = "const input = document.getElementById('char-ph
 
 #[component]
 pub fn AdminCharactersTab() -> Element {
+    let app_lang = use_context::<CtxAppLang>().0;
     let mut characters: Signal<Vec<AdminCharacterInfo>> = use_signal(Vec::new);
     let mut boss_characters: Signal<Vec<AdminCharacterInfo>> = use_signal(Vec::new);
     let mut loading = use_signal(|| true);
@@ -257,8 +258,13 @@ pub fn AdminCharactersTab() -> Element {
                                             }
                                         }
                                     }
-                                    if !c.description.is_empty() {
-                                        p { class: "admin-char-desc", "{c.description}" }
+                                    {
+                                        let desc = c.description_for(lang_from_app_lang(&app_lang())).to_owned();
+                                        rsx! {
+                                            if !desc.is_empty() {
+                                                p { class: "admin-char-desc", "{desc}" }
+                                            }
+                                        }
                                     }
                                     div { class: "admin-char-stats",
                                         {

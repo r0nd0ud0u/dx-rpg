@@ -11,7 +11,7 @@ use lib_rpg::{
 };
 
 use crate::{
-    common::photo_src,
+    common::{CtxAppLang, lang_from_app_lang, photo_src},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
@@ -160,8 +160,11 @@ fn CharCardItem(
 ) -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let sd_signal = use_context::<Signal<ServerData>>();
+    let app_lang = use_context::<CtxAppLang>().0;
     let max_hp = c.stats.all_stats.get(HP).map(|s| s.max).unwrap_or(0);
-    let desc = c.description.clone();
+    let desc = c
+        .description_for(lang_from_app_lang(&app_lang()))
+        .to_string();
 
     // use_memo: recomputes whenever sd_signal changes; the handle is Copy so the
     // onclick closure can call is_selected() to read the *current* value at click

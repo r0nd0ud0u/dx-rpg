@@ -94,6 +94,24 @@ pub struct CtxAutoSaveScenario(pub Signal<bool>);
 #[derive(Clone, Copy)]
 pub struct CtxShopEnabled(pub Signal<bool>);
 
+/// Current UI language ("en" or "fr"), synced to browser localStorage (works
+/// pre-login, unlike the SQLite-backed CtxShow* settings above). Drives both
+/// dioxus-i18n's t!() chrome strings (via the sync effect in main.rs) and
+/// lib-rpg's Lang resolver for bilingual descriptions (see lang_from_app_lang).
+#[derive(Clone, Copy)]
+pub struct CtxAppLang(pub Signal<String>);
+
+/// Converts the app's "en"/"fr" locale string into lib-rpg's `Lang` enum —
+/// the one conversion boundary between the two crates' locale representations
+/// (lib-rpg has no dioxus/unic_langid dependency).
+pub fn lang_from_app_lang(app_lang: &str) -> lib_rpg::common::lang::Lang {
+    if app_lang == "fr" {
+        lib_rpg::common::lang::Lang::Fr
+    } else {
+        lib_rpg::common::lang::Lang::En
+    }
+}
+
 /// Returns the URL for serving a character photo via the dynamic image route.
 /// If `photo_name` already contains an extension (has a dot), the URL is used
 /// as-is; otherwise `.png` is appended for backward-compat with legacy entries
@@ -103,5 +121,20 @@ pub fn photo_src(photo_name: &str) -> String {
         format!("/img-srv/{}", photo_name)
     } else {
         format!("/img-srv/{}.png", photo_name)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::lang_from_app_lang;
+    use lib_rpg::common::lang::Lang;
+
+    #[test]
+    fn unit_lang_from_app_lang() {
+        assert_eq!(lang_from_app_lang("fr"), Lang::Fr);
+        assert_eq!(lang_from_app_lang("en"), Lang::En);
+        // Anything unrecognized defaults to English.
+        assert_eq!(lang_from_app_lang(""), Lang::En);
+        assert_eq!(lang_from_app_lang("fr-FR"), Lang::En);
     }
 }

@@ -23,8 +23,8 @@ use crate::{
 };
 use crate::{
     common::{
-        CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
-        CtxToggleAtkAnimation, ENERGY_GRAD, SERVER_NAME,
+        CtxAppLang, CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
+        CtxToggleAtkAnimation, ENERGY_GRAD, SERVER_NAME, lang_from_app_lang,
     },
     components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     websocket_handler::event::{ClientEvent, ServerEvent},
@@ -384,6 +384,7 @@ pub fn NewAtkButton(
     // contexts
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let show_tooltips = use_context::<CtxShowAtkTooltips>().0;
+    let app_lang = use_context::<CtxAppLang>().0;
     // local signals
     let can_be_launched = launcher
         .character_rounds_info
@@ -392,8 +393,9 @@ pub fn NewAtkButton(
         .any(|atk| atk.name == attack_type.name);
     let attack_name = attack_type.name.clone();
     let launcher_id_name = launcher.id_name.clone();
-    let description = attack_type.description.clone();
-    let effects_description = attack_type.effects_description.clone();
+    let lang = lang_from_app_lang(&app_lang());
+    let description = attack_type.description_for(lang).to_string();
+    let effects_description = attack_type.effects_description_for(lang).to_string();
     let has_description = !description.is_empty();
     let has_effects = !effects_description.is_empty();
     let has_tooltip = has_description || has_effects;

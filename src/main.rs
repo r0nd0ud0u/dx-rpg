@@ -3,13 +3,14 @@ use dioxus::{
     logger::tracing::{self, Level},
     prelude::*,
 };
+use dioxus_i18n::prelude::*;
 use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use dotenv::dotenv;
 use dx_rpg::{
     common::{
-        CtxAutoSaveScenario, CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp,
-        CtxShowHeroAggro, CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS, Route,
-        SERVER_NAME,
+        CtxAppLang, CtxAutoSaveScenario, CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy,
+        CtxShowBossHp, CtxShowHeroAggro, CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS,
+        Route, SERVER_NAME,
     },
     websocket_handler::{
         NO_CLIENT_ID,
@@ -17,6 +18,7 @@ use dx_rpg::{
     },
 };
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
+use unic_langid::langid;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -178,6 +180,13 @@ pub async fn init_data_manager() {
 
 #[component]
 fn App() -> Element {
+    // i18n — English default, French available; toggle lives in the Navbar.
+    use_init_i18n(|| {
+        I18nConfig::new(langid!("en-US"))
+            .with_locale((langid!("en-US"), include_str!("./i18n/en-US.ftl")))
+            .with_locale((langid!("fr-FR"), include_str!("./i18n/fr-FR.ftl")))
+    });
+
     // Local UI state
     let mut message = use_signal(String::new);
     let mut player_client_id = use_signal(|| 0);
@@ -198,6 +207,22 @@ fn App() -> Element {
         });
     let mut login_id_session_local_sync =
         use_synced_storage::<LocalStorage, i64>("synced_user_sql_id".to_owned(), || NO_CLIENT_ID); // from db, integer primary key not null and from 1 upwards
+    let app_lang_local_sync =
+        use_synced_storage::<LocalStorage, String>("synced_app_lang".to_owned(), || {
+            "en".to_owned()
+        });
+
+    // Keep dioxus-i18n's active locale synced to the persisted "en"/"fr" value —
+    // covers both the initial load from localStorage and every toggle click.
+    use_effect(move || {
+        let mut i18n = i18n();
+        let target = if app_lang_local_sync() == "fr" {
+            langid!("fr-FR")
+        } else {
+            langid!("en-US")
+        };
+        i18n.set_language(target);
+    });
 
     // Set the theme to dark on app load
     use_effect(|| {
@@ -352,6 +377,8 @@ fn App() -> Element {
     // Shop access during an active scenario — default disabled
     let shop_enabled: Signal<bool> = use_signal(|| false);
     use_context_provider(|| CtxShopEnabled(shop_enabled));
+    // UI language ("en"/"fr") — localStorage-backed so it works pre-login
+    use_context_provider(|| CtxAppLang(app_lang_local_sync));
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

@@ -8,8 +8,27 @@ pub struct AdminCharacterInfo {
     pub class: String,
     pub level: u64,
     pub description: String,
+    pub description_en: String,
+    pub description_fr: String,
     pub universe: String,
     pub stats: std::collections::HashMap<String, (u64, u64)>,
+}
+
+impl AdminCharacterInfo {
+    /// Locale-specific description; falls back to the legacy `description`
+    /// field when the locale-specific one is empty (unmigrated characters).
+    /// Mirrors `lib_rpg::character_mod::character::Character::description_for`.
+    pub fn description_for(&self, lang: lib_rpg::common::lang::Lang) -> &str {
+        let localized = match lang {
+            lib_rpg::common::lang::Lang::En => &self.description_en,
+            lib_rpg::common::lang::Lang::Fr => &self.description_fr,
+        };
+        if localized.is_empty() {
+            &self.description
+        } else {
+            localized
+        }
+    }
 }
 
 /// A single stat entry for the character form.
@@ -56,6 +75,8 @@ pub async fn admin_list_characters() -> Result<Vec<AdminCharacterInfo>, ServerFn
             class: format!("{} {}", c.class.to_emoji(), c.class.to_str()),
             level: c.level,
             description: c.description.clone(),
+            description_en: c.description_en.clone(),
+            description_fr: c.description_fr.clone(),
             universe: c.universe.clone(),
             stats: c
                 .stats
@@ -84,6 +105,8 @@ pub async fn admin_list_bosses() -> Result<Vec<AdminCharacterInfo>, ServerFnErro
             class: format!("{} {}", c.class.to_emoji(), c.class.to_str()),
             level: c.level,
             description: c.description.clone(),
+            description_en: c.description_en.clone(),
+            description_fr: c.description_fr.clone(),
             universe: c.universe.clone(),
             stats: c
                 .stats

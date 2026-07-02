@@ -67,3 +67,35 @@ If a stat is already full, `real_amount_tx = 0` and the log says `"uses potion d
 
 - Party potion from bag: verify behavior when multiple heroes use the same potion type in the same round.
 - Resurrection potion: currently `apply_consumable_effects` is used directly (bypassing `use_consumable`), which skips inventory removal. Confirm this is intentional.
+
+---
+
+## i18n rollout
+
+Infrastructure landed (2026-07-03): `dioxus-i18n` wired in `main.rs`, `CtxAppLang` (localStorage-backed) + navbar toggle, `navbar.rs` fully converted to `t!()`, and bilingual `description_en`/`description_fr` fields + resolver added to lib-rpg's `AttackType`/`Character` with Elara la guerisseuse de la Lorien migrated as the worked example. Everything below is scoped-out follow-up, not started.
+
+### UI chrome strings (convert to `t!()`, add matching keys to both `.ftl` files)
+
+Priority order:
+1. **`home_page.rs`** — landing page copy.
+2. **`lobby_page.rs`** — lobby instructions, ready/not-ready labels.
+3. **`game_sheets.rs`** — largest file (~1600 lines); do in sub-passes: settings sheet labels/hints, inventory sheet, logs sheet, stats sheet.
+4. **`admin_page.rs` + `admin_tab_*.rs`** (attacks/characters/scenarios/users) — admin-only, lower priority than player-facing surfaces.
+5. **`auth_manager/*`** — login/signup form labels + any `ServerFnError` messages that actually surface as UI toasts (audit which ones do vs. stay in logs first).
+6. **`character_select.rs`** — remaining non-description strings (class/level labels).
+7. **`startgame_page.rs` / `joinongoinggame_page.rs` / `loadgame_page.rs` / `create_server_page.rs`** — page-specific copy.
+8. **`components/*`** — only if any hardcode non-prop default text.
+9. **Overworld HUD strings** — once that feature stabilizes (see "Next steps for overworld" above).
+10. `character_page.rs`'s "Effects" tooltip label (line ~442 as of this pass) and any other stray strings found outside `navbar.rs` during this rollout.
+
+### Bilingual character data (`description_en`/`description_fr`)
+
+~20+ characters remain on the legacy single-language `description` field (harmless — `description_for`/`effects_description_for` transparently fall back to it). Priority order, per `lib-rpg/README.md`'s "Hero Balance (LOTR roster)" documentation depth:
+1. **Thraïn** — passive and attacks already documented in lib-rpg's README.
+2. **Thalia**
+3. **Azrak Ombresang** — his `OverHealBoostStat` passive is documented.
+4. Remaining LOTR roster — enumerate via `find offlines/characters/lotr -name '*.json'` at the start of that session.
+5. Pokémon-universe characters — confirm first whether their descriptions have the same language-mixing problem before assuming English.
+6. `offlines/equipment/*.json` and scenario `description` fields — would need their own struct-field audit first (not covered by this pass's schema work).
+
+Each future migration session should: confirm the existing text's actual language per file (don't assume — this pass verified Elara's text was English before translating), edit both `lib-rpg/offlines/` and `dx-rpg/offlines/` together (they must stay byte-identical), and no code changes are needed — the resolver/UI hookup is already generic.
