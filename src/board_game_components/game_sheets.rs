@@ -19,6 +19,7 @@ use lib_rpg::{
 
 use crate::{
     auth_manager::server_fn::{get_user_setting, save_user_setting},
+    common::{CtxAppLang, lang_from_app_lang},
     components::{
         button::{Button, ButtonVariant},
         label::Label,
@@ -810,6 +811,8 @@ pub fn StoreSheet(s: SheetSide) -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
+    let app_lang = use_context::<CtxAppLang>().0;
+    let lang = lang_from_app_lang(&app_lang());
 
     let server_data_snap = server_data();
     let gm = &server_data_snap.core_game_data.game_manager;
@@ -944,10 +947,11 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                             .unwrap_or_default();
                                         let rank_col = rank_color(&item.rank);
                                         let rank_lbl = rank_label(&item.rank);
+                                        let display_name = item.display_name_for(lang).to_owned();
                                         rsx! {
                                             div { style: "border:1px solid var(--rpg-border);border-radius:8px;padding:0.75rem;display:flex;flex-direction:column;gap:0.4rem;",
                                                 div { style: "display:flex;justify-content:space-between;align-items:center;",
-                                                    span { style: "font-weight:700;font-size:0.9rem;", "{item.name}" }
+                                                    span { style: "font-weight:700;font-size:0.9rem;", "{display_name}" }
                                                     span { style: "font-size:0.72rem;font-weight:600;color:{rank_col};border:1px solid {rank_col};border-radius:4px;padding:1px 6px;",
                                                         "{rank_lbl}"
                                                     }
@@ -1155,15 +1159,19 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                     let cat_label = cat_label.clone();
                                                     let char_id_clone = char_id.clone();
 
-                                                    let refund = shop_catalog
+                                                    let matched_item = shop_catalog
                                                         .iter()
-                                                        .find(|i| i.name == unique_name)
+                                                        .find(|i| i.name == unique_name);
+                                                    let refund = matched_item
                                                         .map(|i| sell_price(i.price))
                                                         .unwrap_or(0);
+                                                    let display_name = matched_item
+                                                        .map(|i| i.display_name_for(lang).to_owned())
+                                                        .unwrap_or_else(|| unique_name.clone());
                                                     rsx! {
                                                         div { style: "border:1px solid var(--rpg-border);border-radius:8px;padding:0.6rem 0.75rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;",
                                                             div { display: "flex", flex_direction: "column",
-                                                                span { style: "font-weight:600;font-size:0.85rem;", "{unique_name}" }
+                                                                span { style: "font-weight:600;font-size:0.85rem;", "{display_name}" }
                                                                 span { style: "font-size:0.75rem;color:var(--rpg-text-muted);",
                                                                     {t!("gs-store-slot", category: cat_label.clone())}
                                                                 }

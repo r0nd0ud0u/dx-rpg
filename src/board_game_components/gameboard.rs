@@ -12,7 +12,7 @@ use lib_rpg::{
 
 use crate::{
     board_game_components::character_page::{AttackList, CharacterPanel, PotionList},
-    common::{CtxToggleAtkAnimation, SERVER_NAME},
+    common::{CtxAppLang, CtxToggleAtkAnimation, SERVER_NAME, lang_from_app_lang},
     components::button::{Button, ButtonVariant},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
@@ -295,6 +295,10 @@ pub fn GameBoard() -> Element {
 
 #[component]
 pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
+    let app_lang = use_context::<CtxAppLang>().0;
+    let lang = lang_from_app_lang(&app_lang());
+    let display_atk_name = ra.atk_display_name_for(lang).to_owned();
+
     // `all_dodging` holds one entry per attack effect, so a target that dodges an
     // attack with several effects appears multiple times. Deduplicate by character
     // name so each dodge/block is reported only once.
@@ -324,7 +328,7 @@ pub fn ResultAtkText(ra: ResultLaunchAttack) -> Element {
         !ra.new_game_atk_effects.is_empty() || has_dodge_info || !ra.passive_logs.is_empty();
     rsx! {
         if show_block {
-            {t!("gameboard-last-attack", name : ra.atk_name.clone())}
+            {t!("gameboard-last-attack", name : display_atk_name)}
             "\n"
             if ra.is_crit {
                 div { style: "color: var(--secondary-color-2); font-weight: bold; font-size: 1.1em;",
