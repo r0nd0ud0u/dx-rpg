@@ -8,11 +8,13 @@ use lib_rpg::{
 };
 
 use crate::{
+    auth_manager::server_fn::{get_user_setting, save_user_setting},
     common::{CtxAppLang, PATH_IMG, SERVER_NAME},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
 
 const TILE_PX: i32 = 48;
+const SETTING_OVERWORLD_ZOOM: &str = "overworld_zoom";
 
 const HERO_SPRITES: &[&str] = &[
     "heroes/tile_0084.png",
@@ -93,6 +95,20 @@ pub fn OverworldMap() -> Element {
     let local_login_name_session = use_context::<Signal<String>>();
     let app_lang = use_context::<CtxAppLang>().0;
 
+    // Declared before the early return below so hook order stays stable across renders.
+    let mut tile_zoom: Signal<f32> = use_signal(|| 0.85_f32);
+    // Load the player's persisted zoom level once per mount.
+    use_effect(move || {
+        spawn(async move {
+            if let Ok(val) =
+                get_user_setting(SETTING_OVERWORLD_ZOOM.to_string(), "0.85".to_owned()).await
+                && let Ok(parsed) = val.parse::<f32>()
+            {
+                tile_zoom.set(parsed);
+            }
+        });
+    });
+
     let ow_state = server_data().core_game_data.overworld.clone();
     let Some(ow) = ow_state else {
         return rsx! {
@@ -112,8 +128,6 @@ pub fn OverworldMap() -> Element {
     let socket_interact = socket.clone();
     let socket_confirm_fight = socket.clone();
     let socket_dismiss = socket.clone();
-
-    let mut tile_zoom: Signal<f32> = use_signal(|| 0.85_f32);
 
     rsx! {
         div {
@@ -245,14 +259,34 @@ pub fn OverworldMap() -> Element {
                     button {
                         class: "ow-zoom-btn",
                         tabindex: "-1",
-                        onclick: move |_| tile_zoom.set((tile_zoom() - 0.1).max(0.4)),
+                        onclick: move |_| {
+                            let new_zoom = (tile_zoom() - 0.1).max(0.4);
+                            tile_zoom.set(new_zoom);
+                            spawn(async move {
+                                let _ = save_user_setting(
+                                    SETTING_OVERWORLD_ZOOM.to_string(),
+                                    new_zoom.to_string(),
+                                )
+                                    .await;
+                            });
+                        },
                         "−"
                     }
                     span { class: "ow-zoom-label", "{(tile_zoom() * 100.0) as u32}%" }
                     button {
                         class: "ow-zoom-btn",
                         tabindex: "-1",
-                        onclick: move |_| tile_zoom.set((tile_zoom() + 0.1).min(1.5)),
+                        onclick: move |_| {
+                            let new_zoom = (tile_zoom() + 0.1).min(1.5);
+                            tile_zoom.set(new_zoom);
+                            spawn(async move {
+                                let _ = save_user_setting(
+                                    SETTING_OVERWORLD_ZOOM.to_string(),
+                                    new_zoom.to_string(),
+                                )
+                                    .await;
+                            });
+                        },
                         "+"
                     }
                 }

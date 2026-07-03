@@ -322,7 +322,11 @@ pub async fn on_rcv_client_event(
                             }
                             Ok(ClientEvent::EnterOverworld(server_name, map_id)) => {
                                 tracing::info!("Entering overworld map '{}' on server {}", map_id, server_name);
-                                overworld_enter_handler(&server_name, &map_id, None);
+                                // Auto-save on returning to (or entering) the overworld so a
+                                // reload resumes here instead of at the last manual save.
+                                if let Some(owner) = overworld_enter_handler(&server_name, &map_id, None) {
+                                    process_save_game(&server_name, &owner).await;
+                                }
                             }
                             Ok(ClientEvent::ExitOverworld(server_name)) => {
                                 tracing::info!("Exiting overworld on server {}", server_name);
@@ -956,7 +960,9 @@ fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction, 
     match action {
         PostAction::Broadcast => update_clients_server_data(server_name),
         PostAction::EnterMap(map_id, spawn) => {
-            overworld_enter_handler(server_name, &map_id, Some(spawn))
+            // Ordinary map-to-map door transition — not tied to finishing a
+            // scenario, so deliberately not auto-saved here.
+            let _ = overworld_enter_handler(server_name, &map_id, Some(spawn));
         }
     }
 }
@@ -1035,16 +1041,22 @@ fn overworld_dismiss_dialog_handler(server_name: &str, player_name: &str) {
     update_clients_server_data(server_name);
 }
 
+/// Returns the owner player's name on success (so callers can trigger an
+/// auto-save now that `game_phase == Overworld`), or `None` if the map failed to load.
 #[cfg(feature = "server")]
-fn overworld_enter_handler(server_name: &str, map_id: &str, spawn_override: Option<Position>) {
+fn overworld_enter_handler(
+    server_name: &str,
+    map_id: &str,
+    spawn_override: Option<Position>,
+) -> Option<String> {
     use crate::common::OFFLINE_PATH;
 
     let offline_root = std::path::Path::new(OFFLINE_PATH);
-    {
+    let owner_name = {
         let mut sm = SERVER_MANAGER.lock().unwrap();
         let Some(server_data) = sm.servers_data.get_mut(server_name) else {
             tracing::error!("overworld_enter: no server data for {}", server_name);
-            return;
+            return None;
         };
         let result = if let Some(spawn) = spawn_override {
             server_data
@@ -1057,7 +1069,7 @@ fn overworld_enter_handler(server_name: &str, map_id: &str, spawn_override: Opti
         };
         if let Err(e) = result {
             tracing::error!("overworld_enter: failed to load map '{}': {}", map_id, e);
-            return;
+            return None;
         }
 
         // Derive the owner's first hero id and current game state before the mutable borrow.
@@ -1087,13 +1099,15 @@ fn overworld_enter_handler(server_name: &str, map_id: &str, spawn_override: Opti
             server_name,
             owner_name
         );
-    }
+        owner_name
+    };
     // Lightweight signal first — guaranteed CBOR-safe.
     send_server_event_to_clients(
         server_name,
         &ServerEvent::OverworldEntered(map_id.to_owned()),
     );
     update_clients_server_data(server_name);
+    Some(owner_name)
 }
 
 #[cfg(feature = "server")]

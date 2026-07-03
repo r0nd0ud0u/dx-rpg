@@ -16,7 +16,7 @@ use lib_rpg::{
 };
 
 use crate::{
-    common::SERVER_NAME,
+    common::{CtxAppLang, SERVER_NAME, lang_from_app_lang},
     components::{
         button::{Button, ButtonVariant},
         tabs::{TabContent, TabList, TabTrigger, Tabs},
@@ -185,9 +185,11 @@ fn EquipmentTooltip(
 ) -> Element {
     // context
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let app_lang = use_context::<CtxAppLang>().0;
 
     let e_inventory_name = e_inventory.unique_name.clone();
     let is_new = e_inventory.is_new;
+    let lang = lang_from_app_lang(&app_lang());
 
     let equipment = match all_inventory_equipments
         .iter()
@@ -244,7 +246,7 @@ fn EquipmentTooltip(
                                         "🆕 "
                                     }
                                 }
-                                "{e_inventory.unique_name}"
+                                "{equipment.name_for(lang)}"
                                 if e_inventory.is_equipped {
                                     span { class: "equip-equipped-check", " ✓" }
                                 }
@@ -254,7 +256,7 @@ fn EquipmentTooltip(
                 }
                 TooltipContent { side: ContentSide::Right,
                     p { style: "margin:0 0 4px 0; font-weight:600; color:var(--rpg-gold,#c9a227);",
-                        "{e_inventory.unique_name}"
+                        "{equipment.name_for(lang)}"
                     }
                     if stats.is_empty() {
                         p { style: "margin:0; color: var(--rpg-text-muted,#8a8fa8); font-style:italic;",

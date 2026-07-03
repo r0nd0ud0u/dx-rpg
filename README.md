@@ -239,6 +239,9 @@ Between (or during) fights the owner can click **🗺 Overworld** / **🗺 Explo
 | Enter / Space | Interact with adjacent NPC |
 | Virtual D-pad (touch) | Move + interact on mobile / tablet |
 | ⚔️ Back to Fight | Return to the active fight |
+| +/− zoom buttons | Zoom the map in/out (persisted per user — the same zoom level is restored the next time you enter the overworld) |
+
+**Auto-save:** finishing a scenario that was launched from the overworld and returning via **🗺 Explore Overworld** automatically saves the game. Reloading that save resumes directly in the overworld instead of at the last manual save.
 
 **Map tiles — emoji legend**
 
