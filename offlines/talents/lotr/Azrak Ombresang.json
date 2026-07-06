@@ -1,0 +1,253 @@
+{
+    "hero_key": "Azrak Ombresang",
+    "paths": [
+        {
+            "key": "shadowblade",
+            "name_en": "Shadowblade",
+            "name_fr": "Lame d'Ombre",
+            "talents": [
+                {
+                    "id": "azrak_shadowblade_1",
+                    "path": "shadowblade",
+                    "tier": 1,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": [],
+                    "name_en": "Honed Edge",
+                    "name_fr": "Lame Affûtée",
+                    "description_en": "Physical power increased by 10%.",
+                    "description_fr": "Puissance physique augmentée de 10%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Physical power", "value": 10, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "azrak_shadowblade_2",
+                    "path": "shadowblade",
+                    "tier": 2,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": ["azrak_shadowblade_1"],
+                    "name_en": "Shadow Step",
+                    "name_fr": "Pas de l'Ombre",
+                    "description_en": "Critical strike increased by 15%.",
+                    "description_fr": "Coup critique augmenté de 15%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Critical strike", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "azrak_shadowblade_3",
+                    "path": "shadowblade",
+                    "tier": 3,
+                    "cost": 2,
+                    "is_capstone": false,
+                    "requires": ["azrak_shadowblade_2"],
+                    "name_en": "Blackened Steel",
+                    "name_fr": "Acier Noirci",
+                    "description_en": "Damage dealt increased by 10%.",
+                    "description_fr": "Dégâts infligés augmentés de 10%.",
+                    "effects": [
+                        { "kind": "DamageTxPercent", "stats-name": "", "value": 10, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "azrak_shadowblade_4",
+                    "path": "shadowblade",
+                    "tier": 4,
+                    "cost": 3,
+                    "is_capstone": false,
+                    "requires": ["azrak_shadowblade_3"],
+                    "name_en": "Killing Intent",
+                    "name_fr": "Intention Meurtrière",
+                    "description_en": "Damage dealt increased by a further 15%.",
+                    "description_fr": "Dégâts infligés augmentés de 15% supplémentaires.",
+                    "effects": [
+                        { "kind": "DamageTxPercent", "stats-name": "", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "azrak_shadowblade_5",
+                    "path": "shadowblade",
+                    "tier": 5,
+                    "cost": 4,
+                    "is_capstone": true,
+                    "requires": ["azrak_shadowblade_4"],
+                    "name_en": "Nightfall Strike",
+                    "name_fr": "Frappe du Crépuscule",
+                    "description_en": "Damage dealt increased by a further 25%.",
+                    "description_fr": "Dégâts infligés augmentés de 25% supplémentaires.",
+                    "effects": [
+                        { "kind": "DamageTxPercent", "stats-name": "", "value": 25, "is-percent": true }
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "blight",
+            "name_en": "Blight",
+            "name_fr": "Fléau",
+            "talents": [
+                {
+                    "id": "azrak_blight_1",
+                    "path": "blight",
+                    "tier": 1,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": [],
+                    "name_en": "Withering Touch",
+                    "name_fr": "Toucher Flétrissant",
+                    "description_en": "Damage dealt increased by 8%.",
+                    "description_fr": "Dégâts infligés augmentés de 8%.",
+                    "effects": [
+                        { "kind": "DamageTxPercent", "stats-name": "", "value": 8, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "azrak_blight_2",
+                    "path": "blight",
+                    "tier": 2,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": ["azrak_blight_1"],
+                    "name_en": "Creeping Dread",
+                    "name_fr": "Effroi Rampant",
+                    "description_en": "Magic power increased by 10%.",
+                    "description_fr": "Puissance magique augmentée de 10%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Magic power", "value": 10, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "azrak_blight_3",
+                    "path": "blight",
+                    "tier": 3,
+                    "cost": 2,
+                    "is_capstone": false,
+                    "requires": ["azrak_blight_2"],
+                    "name_en": "Soul Siphon",
+                    "name_fr": "Siphon d'Âme",
+                    "description_en": "Healing dealt increased by 10%.",
+                    "description_fr": "Soins prodigués augmentés de 10%.",
+                    "effects": [
+                        { "kind": "HealTxPercent", "stats-name": "", "value": 10, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "azrak_blight_4",
+                    "path": "blight",
+                    "tier": 4,
+                    "cost": 3,
+                    "is_capstone": false,
+                    "requires": ["azrak_blight_3"],
+                    "name_en": "Plague of Shadows",
+                    "name_fr": "Peste des Ombres",
+                    "description_en": "Damage dealt increased by a further 12%.",
+                    "description_fr": "Dégâts infligés augmentés de 12% supplémentaires.",
+                    "effects": [
+                        { "kind": "DamageTxPercent", "stats-name": "", "value": 12, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "azrak_blight_5",
+                    "path": "blight",
+                    "tier": 5,
+                    "cost": 4,
+                    "is_capstone": true,
+                    "requires": ["azrak_blight_4"],
+                    "name_en": "Umbral Ruin",
+                    "name_fr": "Ruine des Ombres",
+                    "description_en": "Damage dealt increased by 20% and healing dealt increased by 10%.",
+                    "description_fr": "Dégâts infligés augmentés de 20% et soins prodigués augmentés de 10%.",
+                    "effects": [
+                        { "kind": "DamageTxPercent", "stats-name": "", "value": 20, "is-percent": true },
+                        { "kind": "HealTxPercent", "stats-name": "", "value": 10, "is-percent": true }
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "umbral_guard",
+            "name_en": "Umbral Guard",
+            "name_fr": "Garde Ombreuse",
+            "talents": [
+                {
+                    "id": "azrak_guard_1",
+                    "path": "umbral_guard",
+                    "tier": 1,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": [],
+                    "name_en": "Dark Ward",
+                    "name_fr": "Ward Ténébreux",
+                    "description_en": "Physical armor increased by 15%.",
+                    "description_fr": "Armure physique augmentée de 15%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Physical armor", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "azrak_guard_2",
+                    "path": "umbral_guard",
+                    "tier": 2,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": ["azrak_guard_1"],
+                    "name_en": "Shadow Veil",
+                    "name_fr": "Voile d'Ombre",
+                    "description_en": "Dodge increased by 15%.",
+                    "description_fr": "Esquive augmentée de 15%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Dodge", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "azrak_guard_3",
+                    "path": "umbral_guard",
+                    "tier": 3,
+                    "cost": 2,
+                    "is_capstone": false,
+                    "requires": ["azrak_guard_2"],
+                    "name_en": "Vigorous Resolve",
+                    "name_fr": "Résolution Vigoureuse",
+                    "description_en": "Max Vigor increased by 20%.",
+                    "description_fr": "Vigueur max augmentée de 20%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Vigor", "value": 20, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "azrak_guard_4",
+                    "path": "umbral_guard",
+                    "tier": 4,
+                    "cost": 3,
+                    "is_capstone": false,
+                    "requires": ["azrak_guard_3"],
+                    "name_en": "Grim Endurance",
+                    "name_fr": "Endurance Funeste",
+                    "description_en": "Damage received reduced by 10%.",
+                    "description_fr": "Dégâts reçus réduits de 10%.",
+                    "effects": [
+                        { "kind": "DamageRxPercent", "stats-name": "", "value": -10, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "azrak_guard_5",
+                    "path": "umbral_guard",
+                    "tier": 5,
+                    "cost": 4,
+                    "is_capstone": true,
+                    "requires": ["azrak_guard_4"],
+                    "name_en": "Eternal Shade",
+                    "name_fr": "Ombre Éternelle",
+                    "description_en": "Max HP increased by 15% and damage received reduced by a further 10%.",
+                    "description_fr": "PV max augmentés de 15% et dégâts reçus réduits de 10% supplémentaires.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "HP", "value": 15, "is-percent": true },
+                        { "kind": "DamageRxPercent", "stats-name": "", "value": -10, "is-percent": true }
+                    ]
+                }
+            ]
+        }
+    ]
+}

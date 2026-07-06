@@ -1,0 +1,253 @@
+{
+    "hero_key": "Thraïn",
+    "paths": [
+        {
+            "key": "juggernaut",
+            "name_en": "Juggernaut",
+            "name_fr": "Colosse",
+            "talents": [
+                {
+                    "id": "thrain_juggernaut_1",
+                    "path": "juggernaut",
+                    "tier": 1,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": [],
+                    "name_en": "Iron Constitution",
+                    "name_fr": "Constitution de Fer",
+                    "description_en": "Max HP increased by 15%.",
+                    "description_fr": "PV max augmentés de 15%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "HP", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thrain_juggernaut_2",
+                    "path": "juggernaut",
+                    "tier": 2,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": ["thrain_juggernaut_1"],
+                    "name_en": "Stonehide",
+                    "name_fr": "Peau de Pierre",
+                    "description_en": "Physical armor increased by 15%.",
+                    "description_fr": "Armure physique augmentée de 15%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Physical armor", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thrain_juggernaut_3",
+                    "path": "juggernaut",
+                    "tier": 3,
+                    "cost": 2,
+                    "is_capstone": false,
+                    "requires": ["thrain_juggernaut_2"],
+                    "name_en": "Unbreakable",
+                    "name_fr": "Inébranlable",
+                    "description_en": "Magic armor increased by 15%.",
+                    "description_fr": "Armure magique augmentée de 15%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Magic armor", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thrain_juggernaut_4",
+                    "path": "juggernaut",
+                    "tier": 4,
+                    "cost": 3,
+                    "is_capstone": false,
+                    "requires": ["thrain_juggernaut_3"],
+                    "name_en": "Last Stand",
+                    "name_fr": "Dernier Rempart",
+                    "description_en": "Damage received reduced by 10%.",
+                    "description_fr": "Dégâts reçus réduits de 10%.",
+                    "effects": [
+                        { "kind": "DamageRxPercent", "stats-name": "", "value": -10, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thrain_juggernaut_5",
+                    "path": "juggernaut",
+                    "tier": 5,
+                    "cost": 4,
+                    "is_capstone": true,
+                    "requires": ["thrain_juggernaut_4"],
+                    "name_en": "Immovable Object",
+                    "name_fr": "Objet Inamovible",
+                    "description_en": "Max HP increased by a further 20% and damage received reduced by a further 10%.",
+                    "description_fr": "PV max augmentés de 20% et dégâts reçus réduits de 10% supplémentaires.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "HP", "value": 20, "is-percent": true },
+                        { "kind": "DamageRxPercent", "stats-name": "", "value": -10, "is-percent": true }
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "berserk_fury",
+            "name_en": "Berserk Fury",
+            "name_fr": "Fureur Berserk",
+            "talents": [
+                {
+                    "id": "thrain_fury_1",
+                    "path": "berserk_fury",
+                    "tier": 1,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": [],
+                    "name_en": "Simmering Rage",
+                    "name_fr": "Rage Latente",
+                    "description_en": "Max Berserk increased by 20%.",
+                    "description_fr": "Berserk max augmenté de 20%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Berserk", "value": 20, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thrain_fury_2",
+                    "path": "berserk_fury",
+                    "tier": 2,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": ["thrain_fury_1"],
+                    "name_en": "Blood for Fury",
+                    "name_fr": "Sang pour la Fureur",
+                    "description_en": "Berserk rate increased by 15%.",
+                    "description_fr": "Taux de berserk augmenté de 15%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Berserk rate", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thrain_fury_3",
+                    "path": "berserk_fury",
+                    "tier": 3,
+                    "cost": 2,
+                    "is_capstone": false,
+                    "requires": ["thrain_fury_2"],
+                    "name_en": "Reckless Swing",
+                    "name_fr": "Frappe Téméraire",
+                    "description_en": "Damage dealt increased by 10%.",
+                    "description_fr": "Dégâts infligés augmentés de 10%.",
+                    "effects": [
+                        { "kind": "DamageTxPercent", "stats-name": "", "value": 10, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thrain_fury_4",
+                    "path": "berserk_fury",
+                    "tier": 4,
+                    "cost": 3,
+                    "is_capstone": false,
+                    "requires": ["thrain_fury_3"],
+                    "name_en": "Frenzy",
+                    "name_fr": "Frénésie",
+                    "description_en": "Critical strike increased by 15%.",
+                    "description_fr": "Coup critique augmenté de 15%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Critical strike", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thrain_fury_5",
+                    "path": "berserk_fury",
+                    "tier": 5,
+                    "cost": 4,
+                    "is_capstone": true,
+                    "requires": ["thrain_fury_4"],
+                    "name_en": "Unrelenting Fury",
+                    "name_fr": "Fureur Implacable",
+                    "description_en": "Damage dealt increased by a further 25%.",
+                    "description_fr": "Dégâts infligés augmentés de 25% supplémentaires.",
+                    "effects": [
+                        { "kind": "DamageTxPercent", "stats-name": "", "value": 25, "is-percent": true }
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "aggro_warden",
+            "name_en": "Aggro Warden",
+            "name_fr": "Gardien de l'Aggro",
+            "talents": [
+                {
+                    "id": "thrain_warden_1",
+                    "path": "aggro_warden",
+                    "tier": 1,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": [],
+                    "name_en": "Booming Voice",
+                    "name_fr": "Voix Tonnante",
+                    "description_en": "Aggro rate increased by 20%.",
+                    "description_fr": "Taux d'aggro augmenté de 20%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Aggro rate", "value": 20, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thrain_warden_2",
+                    "path": "aggro_warden",
+                    "tier": 2,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": ["thrain_warden_1"],
+                    "name_en": "Heavy Footsteps",
+                    "name_fr": "Pas Lourds",
+                    "description_en": "Speed increased by 10%.",
+                    "description_fr": "Vitesse augmentée de 10%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Speed", "value": 10, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thrain_warden_3",
+                    "path": "aggro_warden",
+                    "tier": 3,
+                    "cost": 2,
+                    "is_capstone": false,
+                    "requires": ["thrain_warden_2"],
+                    "name_en": "Warhammer Momentum",
+                    "name_fr": "Élan du Marteau",
+                    "description_en": "Speed regeneration increased by 15%.",
+                    "description_fr": "Régénération de vitesse augmentée de 15%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Speed regeneration", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thrain_warden_4",
+                    "path": "aggro_warden",
+                    "tier": 4,
+                    "cost": 3,
+                    "is_capstone": false,
+                    "requires": ["thrain_warden_3"],
+                    "name_en": "Taunting Roar",
+                    "name_fr": "Rugissement Provocateur",
+                    "description_en": "Damage received reduced by 8%.",
+                    "description_fr": "Dégâts reçus réduits de 8%.",
+                    "effects": [
+                        { "kind": "DamageRxPercent", "stats-name": "", "value": -8, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thrain_warden_5",
+                    "path": "aggro_warden",
+                    "tier": 5,
+                    "cost": 4,
+                    "is_capstone": true,
+                    "requires": ["thrain_warden_4"],
+                    "name_en": "Warden's Resolve",
+                    "name_fr": "Résolution du Gardien",
+                    "description_en": "Max HP increased by 15% and aggro rate increased by a further 15%.",
+                    "description_fr": "PV max augmentés de 15% et taux d'aggro augmenté de 15% supplémentaires.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "HP", "value": 15, "is-percent": true },
+                        { "kind": "ChangeMaxStat", "stats-name": "Aggro rate", "value": 15, "is-percent": true }
+                    ]
+                }
+            ]
+        }
+    ]
+}

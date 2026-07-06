@@ -35,7 +35,7 @@ use crate::{
         event::{ClientEvent, ServerEvent},
         msg_from_client::request_save_game,
     },
-    widgets::{charts::TabStats, tab_equipment::TabEquipment},
+    widgets::{charts::TabStats, tab_equipment::TabEquipment, tab_talents::TabTalents},
 };
 
 #[component]
@@ -62,6 +62,7 @@ fn SaveButton(is_saved: Signal<bool>) -> Element {
 enum SheetKind {
     Menu,
     Inventory,
+    Talents,
     Logs,
     Stats,
     Scenarios,
@@ -120,12 +121,42 @@ pub fn GameSheets() -> Element {
         })
         .any(|h| !h.stats.is_dead().unwrap_or(false) && h.inventory.has_unseen_equipment());
 
+    let has_unspent_talent_points = snap
+        .core_game_data
+        .game_manager
+        .pm
+        .active_heroes
+        .iter()
+        .filter(|h| {
+            if is_single_player {
+                return true;
+            }
+            snap.players_data
+                .get_first_character_name(&local_login_name_session())
+                .as_deref()
+                == Some(h.id_name.as_str())
+        })
+        .any(|h| !h.stats.is_dead().unwrap_or(false) && h.talents.available() > 0);
+
     rsx! {
         div { display: "flex", gap: "0.5rem",
             Button {
                 variant: ButtonVariant::Outline,
                 onclick: open_sheet(SheetKind::Menu),
                 {t!("gs-menu")}
+            }
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: open_sheet(SheetKind::Talents),
+                position: "relative",
+                {t!("gs-talents")}
+                if has_unspent_talent_points {
+                    span {
+                        class: "equip-tab-new-badge",
+                        style: "position:absolute;top:2px;right:2px;",
+                        title: t!("gs-talents-unspent-points"),
+                    }
+                }
             }
             Button {
                 variant: ButtonVariant::Outline,
@@ -172,6 +203,9 @@ pub fn GameSheets() -> Element {
             match sheet_kind() {
                 SheetKind::Inventory => rsx! {
                     InventorySheet { s: SheetSide::Right }
+                },
+                SheetKind::Talents => rsx! {
+                    TalentsSheet { s: SheetSide::Right }
                 },
                 SheetKind::Stats => rsx! {
                     GameStatsSheet { s: SheetSide::Left }
@@ -308,6 +342,89 @@ fn InventorySheet(s: SheetSide) -> Element {
                 // key, the effect's captured hero id / category list stays stale and
                 // the "new equipment" badges never clear for other heroes.
                 TabEquipment { key: "{character.id_name}", c: character.clone() }
+            }
+
+            SheetFooter {
+                SheetClose {
+                    r#as: |attributes| rsx! {
+                        Button { variant: ButtonVariant::Outline, attributes, {t!("gs-close")} }
+                    },
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn TalentsSheet(s: SheetSide) -> Element {
+    // contexts
+    let server_data = use_context::<Signal<ServerData>>();
+    let local_login_name_session = use_context::<Signal<String>>();
+
+    // snap
+    let server_data_snap = server_data();
+    let gm = &server_data_snap.core_game_data.game_manager;
+    let is_single_player = server_data_snap.core_game_data.is_single_player;
+
+    // In single-player mode show a tab per hero; otherwise only show the logged-in hero.
+    let heroes_to_show: Vec<lib_rpg::character_mod::character::Character> = if is_single_player {
+        gm.pm.active_heroes.clone()
+    } else {
+        let Some(character_name) = server_data_snap
+            .players_data
+            .get_first_character_name(&local_login_name_session())
+        else {
+            return rsx! {};
+        };
+        match gm.pm.get_active_hero_character(&character_name) {
+            Some(c) => vec![c.clone()],
+            None => return rsx! {},
+        }
+    };
+
+    // Tab state – index of currently visible hero tab
+    let mut active_tab: Signal<usize> = use_signal(|| 0);
+    let active_tab_idx = active_tab().min(heroes_to_show.len().saturating_sub(1));
+    let character = heroes_to_show
+        .get(active_tab_idx)
+        .cloned()
+        .unwrap_or_default();
+
+    rsx! {
+        SheetContent { side: s,
+            SheetHeader {
+                SheetTitle { {t!("gs-talents-title", name : character.db_full_name.clone())} }
+                SheetDescription { {t!("gs-talents-desc", level : character.level as i64)} }
+            }
+
+            div {
+                display: "flex",
+                flex_direction: "column",
+                gap: "1rem",
+                padding: "0 1rem",
+
+                // Hero selector tabs — only shown in single-player when there are multiple heroes
+                if heroes_to_show.len() > 1 {
+                    div { display: "flex", gap: "0.4rem", flex_wrap: "wrap",
+                        for (i, hero) in heroes_to_show.iter().enumerate() {
+                            button {
+                                class: if i == active_tab_idx { "inv-tab inv-tab--active" } else { "inv-tab" },
+                                onclick: move |_| active_tab.set(i),
+                                position: "relative",
+                                "{hero.db_full_name}"
+                                if hero.talents.available() > 0 {
+                                    span {
+                                        class: "equip-tab-new-badge",
+                                        style: "position:absolute;top:2px;right:2px;",
+                                        title: t!("gs-talents-unspent-points"),
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                TabTalents { key: "{character.id_name}", c: character.clone() }
             }
 
             SheetFooter {
