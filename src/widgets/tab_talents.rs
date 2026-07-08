@@ -216,7 +216,7 @@ fn TalentNode(
                         }
                     }
                 }
-                TooltipContent { side: ContentSide::Right,
+                TooltipContent { side: ContentSide::Left,
                     p { style: "margin:0 0 4px 0; font-weight:600; color:var(--rpg-gold,#c9a227);",
                         "{talent_name(&talent, lang)}"
                     }

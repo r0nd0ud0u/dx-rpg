@@ -342,7 +342,9 @@ Every hero earns skill points as they level up: **+1 per level**, plus a **+1 bo
 
 Talent trees are defined as JSON under `offlines/talents/<universe>/<character-name>.json` (same convention as `offlines/characters/`), one file per hero, each listing its 3 paths and their tiered nodes (id, cost, prerequisites, bilingual name/description, and effects).
 
-Mechanically, a talent's effect is either a stat modifier (e.g. `+15% Max HP`) applied through the same accumulator equipment uses, or a passive combat modifier (e.g. `+10% damage dealt`) read live by the existing buff/debuff resolution — unlocking/respeccing a talent doesn't require any new combat-engine code, just adding/removing a `Buffer` entry on the character.
+Beyond plain stat/percent boosts, higher tiers lean on more distinctive combat mechanics for real build variety: guaranteed critical strikes or dodges/blocks every N turns (`StreakBreakerCrit`/`StreakBreakerDodge`), a flat crit-damage multiplier bump (`DamageCritCapped`), doubled healing (`MultiValue`), converting damage dealt into healing for your neediest ally (`IsDamageTxHealNeedyAlly`), and turning excess healing received into a burst boost to a chosen stat (`OverHealBoostStat`). Each hero's three capstones are deliberately distinct mechanics, not just bigger versions of the same number.
+
+Mechanically, a talent's effect is either a permanent stat modifier (`ChangeMaxStat`/`ChangeCurrentStat`, e.g. `+15% Max HP`) applied through the same accumulator equipment uses, or a passive combat modifier read live by the existing buff/debuff resolution (`character_rounds_info.all_buffers`) — unlocking/respeccing a talent doesn't require any new combat-engine code, just adding/removing a `Buffer` entry on the character. Effects are routed by `kind`, not by whether their `stats_name` happens to match a real stat — some kinds (like `OverHealBoostStat`) legitimately name a stat for their own purposes without being a stat accumulator themselves.
 
 ### Load Game page
 

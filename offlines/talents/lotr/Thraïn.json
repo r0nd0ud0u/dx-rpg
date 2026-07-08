@@ -58,12 +58,12 @@
                     "cost": 3,
                     "is_capstone": false,
                     "requires": ["thrain_juggernaut_3"],
-                    "name_en": "Last Stand",
-                    "name_fr": "Dernier Rempart",
-                    "description_en": "Damage received reduced by 10%.",
-                    "description_fr": "Dégâts reçus réduits de 10%.",
+                    "name_en": "Hardened by Mercy",
+                    "name_fr": "Endurci par la Pitié",
+                    "description_en": "Excess healing you receive hardens your Physical armor for that turn.",
+                    "description_fr": "Les soins excédentaires que vous recevez renforcent votre Armure physique le temps du tour.",
                     "effects": [
-                        { "kind": "DamageRxPercent", "stats-name": "", "value": -10, "is-percent": true }
+                        { "kind": "OverHealBoostStat", "stats-name": "Physical armor", "value": 0, "is-percent": false }
                     ]
                 },
                 {
@@ -75,11 +75,10 @@
                     "requires": ["thrain_juggernaut_4"],
                     "name_en": "Immovable Object",
                     "name_fr": "Objet Inamovible",
-                    "description_en": "Max HP increased by a further 20% and damage received reduced by a further 10%.",
-                    "description_fr": "PV max augmentés de 20% et dégâts reçus réduits de 10% supplémentaires.",
+                    "description_en": "Guarantees a block every 3 turns without one.",
+                    "description_fr": "Garantit un blocage tous les 3 tours sans en avoir obtenu un.",
                     "effects": [
-                        { "kind": "ChangeMaxStat", "stats-name": "HP", "value": 20, "is-percent": true },
-                        { "kind": "DamageRxPercent", "stats-name": "", "value": -10, "is-percent": true }
+                        { "kind": "StreakBreakerDodge", "stats-name": "", "value": 3, "is-percent": false }
                     ]
                 }
             ]
@@ -141,12 +140,12 @@
                     "cost": 3,
                     "is_capstone": false,
                     "requires": ["thrain_fury_3"],
-                    "name_en": "Frenzy",
-                    "name_fr": "Frénésie",
-                    "description_en": "Critical strike increased by 15%.",
-                    "description_fr": "Coup critique augmenté de 15%.",
+                    "name_en": "Building Fury",
+                    "name_fr": "Fureur Grandissante",
+                    "description_en": "Guarantees a critical strike every 4 turns without one.",
+                    "description_fr": "Garantit un coup critique tous les 4 tours sans en avoir obtenu un.",
                     "effects": [
-                        { "kind": "ChangeMaxStat", "stats-name": "Critical strike", "value": 15, "is-percent": true }
+                        { "kind": "StreakBreakerCrit", "stats-name": "", "value": 4, "is-percent": false }
                     ]
                 },
                 {
@@ -158,10 +157,10 @@
                     "requires": ["thrain_fury_4"],
                     "name_en": "Unrelenting Fury",
                     "name_fr": "Fureur Implacable",
-                    "description_en": "Damage dealt increased by a further 25%.",
-                    "description_fr": "Dégâts infligés augmentés de 25% supplémentaires.",
+                    "description_en": "Critical strikes deal a further +100% damage.",
+                    "description_fr": "Les coups critiques infligent 100% de dégâts supplémentaires.",
                     "effects": [
-                        { "kind": "DamageTxPercent", "stats-name": "", "value": 25, "is-percent": true }
+                        { "kind": "DamageCritCapped", "stats-name": "", "value": 1, "is-percent": false }
                     ]
                 }
             ]
@@ -223,12 +222,12 @@
                     "cost": 3,
                     "is_capstone": false,
                     "requires": ["thrain_warden_3"],
-                    "name_en": "Taunting Roar",
-                    "name_fr": "Rugissement Provocateur",
-                    "description_en": "Damage received reduced by 8%.",
-                    "description_fr": "Dégâts reçus réduits de 8%.",
+                    "name_en": "Warlord's Bond",
+                    "name_fr": "Lien du Seigneur de Guerre",
+                    "description_en": "20% of the damage you deal heals your neediest ally.",
+                    "description_fr": "20% des dégâts que vous infligez soignent votre allié le plus affaibli.",
                     "effects": [
-                        { "kind": "DamageRxPercent", "stats-name": "", "value": -8, "is-percent": true }
+                        { "kind": "IsDamageTxHealNeedyAlly", "stats-name": "", "value": 20, "is-percent": false }
                     ]
                 },
                 {

@@ -58,12 +58,12 @@
                     "cost": 3,
                     "is_capstone": false,
                     "requires": ["thalia_verdant_3"],
-                    "name_en": "Deep Roots",
-                    "name_fr": "Racines Profondes",
-                    "description_en": "Max HP increased by 10%.",
-                    "description_fr": "PV max augmentés de 10%.",
+                    "name_en": "Overflowing Vitality",
+                    "name_fr": "Vitalité Débordante",
+                    "description_en": "Excess healing you receive surges your Magic power for that turn.",
+                    "description_fr": "Les soins excédentaires que vous recevez dopent votre Puissance magique le temps du tour.",
                     "effects": [
-                        { "kind": "ChangeMaxStat", "stats-name": "HP", "value": 10, "is-percent": true }
+                        { "kind": "OverHealBoostStat", "stats-name": "Magic power", "value": 0, "is-percent": false }
                     ]
                 },
                 {
@@ -75,10 +75,10 @@
                     "requires": ["thalia_verdant_4"],
                     "name_en": "World Tree's Blessing",
                     "name_fr": "Bénédiction de l'Arbre-Monde",
-                    "description_en": "Healing dealt increased by a further 25%.",
-                    "description_fr": "Soins prodigués augmentés de 25% supplémentaires.",
+                    "description_en": "Your healing spells are doubled.",
+                    "description_fr": "Vos sorts de soin sont doublés.",
                     "effects": [
-                        { "kind": "HealTxPercent", "stats-name": "", "value": 25, "is-percent": true }
+                        { "kind": "MultiValue", "stats-name": "", "value": 2, "is-percent": false }
                     ]
                 }
             ]
@@ -140,12 +140,12 @@
                     "cost": 3,
                     "is_capstone": false,
                     "requires": ["thalia_wildfire_3"],
-                    "name_en": "Scorched Earth",
-                    "name_fr": "Terre Brûlée",
-                    "description_en": "Damage dealt increased by a further 15%.",
-                    "description_fr": "Dégâts infligés augmentés de 15% supplémentaires.",
+                    "name_en": "Building Wildfire",
+                    "name_fr": "Feu Grandissant",
+                    "description_en": "Guarantees a critical strike every 4 turns without one.",
+                    "description_fr": "Garantit un coup critique tous les 4 tours sans en avoir obtenu un.",
                     "effects": [
-                        { "kind": "DamageTxPercent", "stats-name": "", "value": 15, "is-percent": true }
+                        { "kind": "StreakBreakerCrit", "stats-name": "", "value": 4, "is-percent": false }
                     ]
                 },
                 {
@@ -157,10 +157,10 @@
                     "requires": ["thalia_wildfire_4"],
                     "name_en": "Inferno Bloom",
                     "name_fr": "Éclosion Infernale",
-                    "description_en": "Damage dealt increased by a further 25%.",
-                    "description_fr": "Dégâts infligés augmentés de 25% supplémentaires.",
+                    "description_en": "Critical strikes deal a further +100% damage.",
+                    "description_fr": "Les coups critiques infligent 100% de dégâts supplémentaires.",
                     "effects": [
-                        { "kind": "DamageTxPercent", "stats-name": "", "value": 25, "is-percent": true }
+                        { "kind": "DamageCritCapped", "stats-name": "", "value": 1, "is-percent": false }
                     ]
                 }
             ]
@@ -222,12 +222,12 @@
                     "cost": 3,
                     "is_capstone": false,
                     "requires": ["thalia_ironbark_3"],
-                    "name_en": "Thornmail",
-                    "name_fr": "Cotte d'Épines",
-                    "description_en": "Damage received reduced by 10%.",
-                    "description_fr": "Dégâts reçus réduits de 10%.",
+                    "name_en": "Unshaken Bark",
+                    "name_fr": "Écorce Inébranlable",
+                    "description_en": "Guarantees a dodge or block every 4 turns without one.",
+                    "description_fr": "Garantit une esquive ou un blocage tous les 4 tours sans en avoir obtenu un.",
                     "effects": [
-                        { "kind": "DamageRxPercent", "stats-name": "", "value": -10, "is-percent": true }
+                        { "kind": "StreakBreakerDodge", "stats-name": "", "value": 4, "is-percent": false }
                     ]
                 },
                 {
@@ -239,11 +239,10 @@
                     "requires": ["thalia_ironbark_4"],
                     "name_en": "Heart of the Forest",
                     "name_fr": "Cœur de la Forêt",
-                    "description_en": "Max HP increased by a further 20% and damage received reduced by a further 10%.",
-                    "description_fr": "PV max augmentés de 20% et dégâts reçus réduits de 10% supplémentaires.",
+                    "description_en": "20% of the damage you deal heals your neediest ally.",
+                    "description_fr": "20% des dégâts que vous infligez soignent votre allié le plus affaibli.",
                     "effects": [
-                        { "kind": "ChangeMaxStat", "stats-name": "HP", "value": 20, "is-percent": true },
-                        { "kind": "DamageRxPercent", "stats-name": "", "value": -10, "is-percent": true }
+                        { "kind": "IsDamageTxHealNeedyAlly", "stats-name": "", "value": 20, "is-percent": false }
                     ]
                 }
             ]

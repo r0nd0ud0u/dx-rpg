@@ -58,12 +58,12 @@
                     "cost": 3,
                     "is_capstone": false,
                     "requires": ["elara_sacred_3"],
-                    "name_en": "Divine Verdict",
-                    "name_fr": "Verdict Divin",
-                    "description_en": "Healing dealt increased by a further 15%.",
-                    "description_fr": "Soins prodigués augmentés de 15% supplémentaires.",
+                    "name_en": "Radiant Momentum",
+                    "name_fr": "Élan Radieux",
+                    "description_en": "Guarantees a critical strike every 4 turns without one.",
+                    "description_fr": "Garantit un coup critique tous les 4 tours sans en avoir obtenu un.",
                     "effects": [
-                        { "kind": "HealTxPercent", "stats-name": "", "value": 15, "is-percent": true }
+                        { "kind": "StreakBreakerCrit", "stats-name": "", "value": 4, "is-percent": false }
                     ]
                 },
                 {
@@ -75,11 +75,10 @@
                     "requires": ["elara_sacred_4"],
                     "name_en": "Solar Flare",
                     "name_fr": "Éruption Solaire",
-                    "description_en": "Damage dealt increased by 15% and healing dealt increased by 15%.",
-                    "description_fr": "Dégâts infligés augmentés de 15% et soins prodigués augmentés de 15%.",
+                    "description_en": "Critical strikes deal a further +100% damage.",
+                    "description_fr": "Les coups critiques infligent 100% de dégâts supplémentaires.",
                     "effects": [
-                        { "kind": "DamageTxPercent", "stats-name": "", "value": 15, "is-percent": true },
-                        { "kind": "HealTxPercent", "stats-name": "", "value": 15, "is-percent": true }
+                        { "kind": "DamageCritCapped", "stats-name": "", "value": 1, "is-percent": false }
                     ]
                 }
             ]
@@ -141,12 +140,12 @@
                     "cost": 3,
                     "is_capstone": false,
                     "requires": ["elara_lifebloom_3"],
-                    "name_en": "Cascade",
-                    "name_fr": "Cascade",
-                    "description_en": "Healing received increased by 15%.",
-                    "description_fr": "Soins reçus augmentés de 15%.",
+                    "name_en": "Blooming Reserve",
+                    "name_fr": "Réserve en Fleur",
+                    "description_en": "Excess healing you receive surges your Magic power for that turn.",
+                    "description_fr": "Les soins excédentaires que vous recevez dopent votre Puissance magique le temps du tour.",
                     "effects": [
-                        { "kind": "HealRxPercent", "stats-name": "", "value": 15, "is-percent": true }
+                        { "kind": "OverHealBoostStat", "stats-name": "Magic power", "value": 0, "is-percent": false }
                     ]
                 },
                 {
@@ -158,11 +157,10 @@
                     "requires": ["elara_lifebloom_4"],
                     "name_en": "Eternal Spring",
                     "name_fr": "Source Éternelle",
-                    "description_en": "Healing dealt increased by 20% and HP regeneration increased by a further 20%.",
-                    "description_fr": "Soins prodigués augmentés de 20% et régénération de PV augmentée de 20% supplémentaires.",
+                    "description_en": "Your healing spells are doubled.",
+                    "description_fr": "Vos sorts de soin sont doublés.",
                     "effects": [
-                        { "kind": "HealTxPercent", "stats-name": "", "value": 20, "is-percent": true },
-                        { "kind": "ChangeMaxStat", "stats-name": "HP regeneration", "value": 20, "is-percent": true }
+                        { "kind": "MultiValue", "stats-name": "", "value": 2, "is-percent": false }
                     ]
                 }
             ]
@@ -224,12 +222,12 @@
                     "cost": 3,
                     "is_capstone": false,
                     "requires": ["elara_radiance_3"],
-                    "name_en": "Beacon of Hope",
-                    "name_fr": "Phare d'Espoir",
-                    "description_en": "Healing received increased by 15%.",
-                    "description_fr": "Soins reçus augmentés de 15%.",
+                    "name_en": "Guiding Ward",
+                    "name_fr": "Ward Protecteur",
+                    "description_en": "Guarantees a dodge or block every 4 turns without one.",
+                    "description_fr": "Garantit une esquive ou un blocage tous les 4 tours sans en avoir obtenu un.",
                     "effects": [
-                        { "kind": "HealRxPercent", "stats-name": "", "value": 15, "is-percent": true }
+                        { "kind": "StreakBreakerDodge", "stats-name": "", "value": 4, "is-percent": false }
                     ]
                 },
                 {
