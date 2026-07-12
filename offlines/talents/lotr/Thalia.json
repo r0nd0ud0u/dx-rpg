@@ -1,0 +1,251 @@
+{
+    "hero_key": "Thalia",
+    "paths": [
+        {
+            "key": "verdant_growth",
+            "name_en": "Verdant Growth",
+            "name_fr": "Croissance Verdoyante",
+            "talents": [
+                {
+                    "id": "thalia_verdant_1",
+                    "path": "verdant_growth",
+                    "tier": 1,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": [],
+                    "name_en": "Sprouting Roots",
+                    "name_fr": "Racines Naissantes",
+                    "description_en": "Mana regeneration increased by 10%.",
+                    "description_fr": "Régénération de mana augmentée de 10%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Mana regeneration", "value": 10, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thalia_verdant_2",
+                    "path": "verdant_growth",
+                    "tier": 2,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": ["thalia_verdant_1"],
+                    "name_en": "Photosynthesis",
+                    "name_fr": "Photosynthèse",
+                    "description_en": "HP regeneration increased by 15%.",
+                    "description_fr": "Régénération de PV augmentée de 15%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "HP regeneration", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thalia_verdant_3",
+                    "path": "verdant_growth",
+                    "tier": 3,
+                    "cost": 2,
+                    "is_capstone": false,
+                    "requires": ["thalia_verdant_2"],
+                    "name_en": "Overgrowth",
+                    "name_fr": "Sur-croissance",
+                    "description_en": "Healing dealt increased by 10%.",
+                    "description_fr": "Soins prodigués augmentés de 10%.",
+                    "effects": [
+                        { "kind": "HealTxPercent", "stats-name": "", "value": 10, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thalia_verdant_4",
+                    "path": "verdant_growth",
+                    "tier": 4,
+                    "cost": 3,
+                    "is_capstone": false,
+                    "requires": ["thalia_verdant_3"],
+                    "name_en": "Overflowing Vitality",
+                    "name_fr": "Vitalité Débordante",
+                    "description_en": "Excess healing you receive surges your Magic power for that turn.",
+                    "description_fr": "Les soins excédentaires que vous recevez dopent votre Puissance magique le temps du tour.",
+                    "effects": [
+                        { "kind": "OverHealBoostStat", "stats-name": "Magic power", "value": 0, "is-percent": false }
+                    ]
+                },
+                {
+                    "id": "thalia_verdant_5",
+                    "path": "verdant_growth",
+                    "tier": 5,
+                    "cost": 4,
+                    "is_capstone": true,
+                    "requires": ["thalia_verdant_4"],
+                    "name_en": "World Tree's Blessing",
+                    "name_fr": "Bénédiction de l'Arbre-Monde",
+                    "description_en": "Your healing spells are doubled.",
+                    "description_fr": "Vos sorts de soin sont doublés.",
+                    "effects": [
+                        { "kind": "MultiValue", "stats-name": "", "value": 2, "is-percent": false }
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "wildfire_bloom",
+            "name_en": "Wildfire Bloom",
+            "name_fr": "Éclosion Ardente",
+            "talents": [
+                {
+                    "id": "thalia_wildfire_1",
+                    "path": "wildfire_bloom",
+                    "tier": 1,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": [],
+                    "name_en": "Ember Seed",
+                    "name_fr": "Graine de Braise",
+                    "description_en": "Magic power increased by 10%.",
+                    "description_fr": "Puissance magique augmentée de 10%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Magic power", "value": 10, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thalia_wildfire_2",
+                    "path": "wildfire_bloom",
+                    "tier": 2,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": ["thalia_wildfire_1"],
+                    "name_en": "Kindling",
+                    "name_fr": "Embrasement",
+                    "description_en": "Damage dealt increased by 10%.",
+                    "description_fr": "Dégâts infligés augmentés de 10%.",
+                    "effects": [
+                        { "kind": "DamageTxPercent", "stats-name": "", "value": 10, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thalia_wildfire_3",
+                    "path": "wildfire_bloom",
+                    "tier": 3,
+                    "cost": 2,
+                    "is_capstone": false,
+                    "requires": ["thalia_wildfire_2"],
+                    "name_en": "Combustion",
+                    "name_fr": "Combustion",
+                    "description_en": "Critical strike increased by 10%.",
+                    "description_fr": "Coup critique augmenté de 10%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Critical strike", "value": 10, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thalia_wildfire_4",
+                    "path": "wildfire_bloom",
+                    "tier": 4,
+                    "cost": 3,
+                    "is_capstone": false,
+                    "requires": ["thalia_wildfire_3"],
+                    "name_en": "Building Wildfire",
+                    "name_fr": "Feu Grandissant",
+                    "description_en": "Guarantees a critical strike every 4 turns without one.",
+                    "description_fr": "Garantit un coup critique tous les 4 tours sans en avoir obtenu un.",
+                    "effects": [
+                        { "kind": "StreakBreakerCrit", "stats-name": "", "value": 4, "is-percent": false }
+                    ]
+                },
+                {
+                    "id": "thalia_wildfire_5",
+                    "path": "wildfire_bloom",
+                    "tier": 5,
+                    "cost": 4,
+                    "is_capstone": true,
+                    "requires": ["thalia_wildfire_4"],
+                    "name_en": "Inferno Bloom",
+                    "name_fr": "Éclosion Infernale",
+                    "description_en": "Critical strikes deal a further +100% damage.",
+                    "description_fr": "Les coups critiques infligent 100% de dégâts supplémentaires.",
+                    "effects": [
+                        { "kind": "DamageCritCapped", "stats-name": "", "value": 1, "is-percent": false }
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "ironbark",
+            "name_en": "Ironbark",
+            "name_fr": "Écorce de Fer",
+            "talents": [
+                {
+                    "id": "thalia_ironbark_1",
+                    "path": "ironbark",
+                    "tier": 1,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": [],
+                    "name_en": "Bark Skin",
+                    "name_fr": "Peau d'Écorce",
+                    "description_en": "Magic armor increased by 15%.",
+                    "description_fr": "Armure magique augmentée de 15%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Magic armor", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thalia_ironbark_2",
+                    "path": "ironbark",
+                    "tier": 2,
+                    "cost": 1,
+                    "is_capstone": false,
+                    "requires": ["thalia_ironbark_1"],
+                    "name_en": "Root Stance",
+                    "name_fr": "Posture Enracinée",
+                    "description_en": "Dodge increased by 15%.",
+                    "description_fr": "Esquive augmentée de 15%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "Dodge", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thalia_ironbark_3",
+                    "path": "ironbark",
+                    "tier": 3,
+                    "cost": 2,
+                    "is_capstone": false,
+                    "requires": ["thalia_ironbark_2"],
+                    "name_en": "Thick Hide",
+                    "name_fr": "Peau Épaisse",
+                    "description_en": "Max HP increased by 15%.",
+                    "description_fr": "PV max augmentés de 15%.",
+                    "effects": [
+                        { "kind": "ChangeMaxStat", "stats-name": "HP", "value": 15, "is-percent": true }
+                    ]
+                },
+                {
+                    "id": "thalia_ironbark_4",
+                    "path": "ironbark",
+                    "tier": 4,
+                    "cost": 3,
+                    "is_capstone": false,
+                    "requires": ["thalia_ironbark_3"],
+                    "name_en": "Unshaken Bark",
+                    "name_fr": "Écorce Inébranlable",
+                    "description_en": "Guarantees a dodge or block every 4 turns without one.",
+                    "description_fr": "Garantit une esquive ou un blocage tous les 4 tours sans en avoir obtenu un.",
+                    "effects": [
+                        { "kind": "StreakBreakerDodge", "stats-name": "", "value": 4, "is-percent": false }
+                    ]
+                },
+                {
+                    "id": "thalia_ironbark_5",
+                    "path": "ironbark",
+                    "tier": 5,
+                    "cost": 4,
+                    "is_capstone": true,
+                    "requires": ["thalia_ironbark_4"],
+                    "name_en": "Heart of the Forest",
+                    "name_fr": "Cœur de la Forêt",
+                    "description_en": "20% of the damage you deal heals your neediest ally.",
+                    "description_fr": "20% des dégâts que vous infligez soignent votre allié le plus affaibli.",
+                    "effects": [
+                        { "kind": "IsDamageTxHealNeedyAlly", "stats-name": "", "value": 20, "is-percent": false }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -332,6 +332,20 @@ The 📊 Stats sheet now shows:
 - HP bars for all active heroes
 - Favourite attack card spanning full width to avoid truncation
 
+### Talent Trees
+
+Every hero earns skill points as they level up: **+1 per level**, plus a **+1 bonus every 5th level**. Points are spent in the 🌳 Talents sheet (opened next to Inventory/Stats) on a per-hero talent tree with three thematic paths:
+
+- **5 tiers per path**, costing `1, 1, 2, 3, 4` skill points — cheap to start, expensive to finish, so a hero can fully max one path or spread points across two, but never max all three.
+- **Capstones** (tier 5) are **mutually exclusive across a hero's 3 paths** — unlocking one path's capstone locks out the other two until you respec.
+- **Respec is free and unlimited** — a Respec button in the sheet refunds every spent point instantly so players can experiment with builds.
+
+Talent trees are defined as JSON under `offlines/talents/<universe>/<character-name>.json` (same convention as `offlines/characters/`), one file per hero, each listing its 3 paths and their tiered nodes (id, cost, prerequisites, bilingual name/description, and effects).
+
+Beyond plain stat/percent boosts, higher tiers lean on more distinctive combat mechanics for real build variety: guaranteed critical strikes or dodges/blocks every N turns (`StreakBreakerCrit`/`StreakBreakerDodge`), a flat crit-damage multiplier bump (`DamageCritCapped`), doubled healing (`MultiValue`), converting damage dealt into healing for your neediest ally (`IsDamageTxHealNeedyAlly`), and turning excess healing received into a burst boost to a chosen stat (`OverHealBoostStat`). Each hero's three capstones are deliberately distinct mechanics, not just bigger versions of the same number.
+
+Mechanically, a talent's effect is either a permanent stat modifier (`ChangeMaxStat`/`ChangeCurrentStat`, e.g. `+15% Max HP`) applied through the same accumulator equipment uses, or a passive combat modifier read live by the existing buff/debuff resolution (`character_rounds_info.all_buffers`) — unlocking/respeccing a talent doesn't require any new combat-engine code, just adding/removing a `Buffer` entry on the character. Effects are routed by `kind`, not by whether their `stats_name` happens to match a real stat — some kinds (like `OverHealBoostStat`) legitimately name a stat for their own purposes without being a stat accumulator themselves.
+
 ### Load Game page
 
 The Load Game page now shows save-slot style cards identical to the Create Server page, with load and delete actions inline.

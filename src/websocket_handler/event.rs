@@ -93,6 +93,8 @@ pub enum ClientEvent {
     DismissDialog(String, String),                 // server_name, player_name
     EnterOverworld(String, String),                // server_name, map_id
     ExitOverworld(String),                         // server_name
+    RequestUnlockTalent(String, String, String),   // server_name, character_id_name, talent_id
+    RequestRespecTalents(String, String),          // server_name, character_id_name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -154,6 +156,9 @@ pub async fn on_rcv_client_event(
                     request_mark_equip_seen, request_toggle_equip,
                 };
                 use crate::websocket_handler::event_store::{buy_item_handler, sell_item_handler};
+                use crate::websocket_handler::event_talents::{
+                    request_respec_talents, request_unlock_talent,
+                };
 
                 tokio::select! {
                     // Outgoing messages destined for this client
@@ -331,6 +336,14 @@ pub async fn on_rcv_client_event(
                             Ok(ClientEvent::ExitOverworld(server_name)) => {
                                 tracing::info!("Exiting overworld on server {}", server_name);
                                 overworld_exit_handler(&server_name);
+                            }
+                            Ok(ClientEvent::RequestUnlockTalent(server_name, character_id_name, talent_id)) => {
+                                tracing::info!("Character {} unlocking talent '{}' on server {}", character_id_name, talent_id, server_name);
+                                request_unlock_talent(&server_name, &character_id_name, &talent_id);
+                            }
+                            Ok(ClientEvent::RequestRespecTalents(server_name, character_id_name)) => {
+                                tracing::info!("Character {} respeccing talents on server {}", character_id_name, server_name);
+                                request_respec_talents(&server_name, &character_id_name);
                             }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
