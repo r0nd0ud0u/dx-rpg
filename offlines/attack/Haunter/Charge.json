@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 8,
+    "Coût de vigueur": 800,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -26,5 +26,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Ghostly lick.",
-    "DescriptionEffects": "Deals 32 magic damage to one enemy."
+    "DescriptionEn": "Ghostly lick.",
+    "DescriptionFr": "Coup de langue fantomatique.",
+    "DescriptionEffects": "Deals 32 magic damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 32 magic damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 32 dégâts magiques à un ennemi."
 }

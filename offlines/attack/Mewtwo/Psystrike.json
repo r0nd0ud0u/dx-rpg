@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 28,
+    "Coût de vigueur": 2800,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -54,5 +54,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "The ultimate psychic strike — reduces physical armour as psychic power overwhelms the target.",
-    "DescriptionEffects": "Deals 100 magic damage to one enemy; -30% max Physical armor on enemy for 3 turns; 5-turn cooldown."
+    "DescriptionEn": "The ultimate psychic strike — reduces physical armour as psychic power overwhelms the target.",
+    "DescriptionFr": "La frappe psychique ultime — réduit l'armure physique tandis que la puissance psychique submerge la cible.",
+    "DescriptionEffects": "Deals 100 magic damage to one enemy; -30% max Physical armor on enemy for 3 turns; 5-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 100 magic damage to one enemy; -30% max Physical armor on enemy for 3 turns; 5-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 100 dégâts magiques à un ennemi ; -30 % d'armure physique max de l'ennemi pendant 3 tours ; temps de recharge de 5 tours."
 }

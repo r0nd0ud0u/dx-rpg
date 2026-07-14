@@ -1,7 +1,7 @@
 {
     "Aggro": 0,
     "Cible": "Ally",
-    "Coût de mana": 11,
+    "Coût de mana": 18,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -69,5 +69,9 @@
     "Photo": "Thalia.png",
     "Portée": "Individual",
     "Description": "Awakening of Hope — a radiant bloom of hope that heals the targeted ally.",
-    "DescriptionEffects": "Heals on the targeted ally for 100; removes the oldest debuff on the targeted ally; resets its active effects; 5-turn cooldown."
+    "DescriptionEn": "Awakening of Hope — a radiant bloom of hope that heals the targeted ally.",
+    "DescriptionFr": "Éveil de l'Espérance — une éclosion radieuse d'espoir qui soigne l'allié ciblé.",
+    "DescriptionEffects": "Heals on the targeted ally for 100; removes the oldest debuff on the targeted ally; resets its active effects; 5-turn cooldown.",
+    "DescriptionEffectsEn": "Heals on the targeted ally for 100; removes the oldest debuff on the targeted ally; resets its active effects; 5-turn cooldown.",
+    "DescriptionEffectsFr": "Soigne l'allié ciblé de 100 PV ; retire le plus ancien affaiblissement de l'allié ciblé ; réinitialise ses effets actifs ; temps de recharge de 5 tours."
 }

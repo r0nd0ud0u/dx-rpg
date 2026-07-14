@@ -3,7 +3,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 25,
+    "Coût de vigueur": 2500,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -27,5 +27,9 @@
     "Photo": "Charge.png",
     "Portée": "Zone",
     "Description": "Crushing Charge — a fierce charge that deals heavy damage on impact.",
-    "DescriptionEffects": "Deals 40 physical damage to all enemies."
+    "DescriptionEn": "Crushing Charge — a fierce charge that deals heavy damage on impact.",
+    "DescriptionFr": "Charge Écrasante — une charge féroce qui inflige de lourds dégâts à l'impact.",
+    "DescriptionEffects": "Deals 40 physical damage to all enemies.",
+    "DescriptionEffectsEn": "Deals 40 physical damage to all enemies.",
+    "DescriptionEffectsFr": "Inflige 40 dégâts physiques à tous les ennemis."
 }

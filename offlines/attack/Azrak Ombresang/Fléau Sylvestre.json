@@ -3,7 +3,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 13,
+    "Coût de vigueur": 17,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -41,5 +41,9 @@
     "Photo": "Azrak Ombresang.png",
     "Portée": "Individual",
     "Description": "Forest Blight — a blight strike that corrupts nature energy to deal damage.",
-    "DescriptionEffects": "Deals 60 physical damage to one enemy; -25% max Physical armor on enemy for 4 turns."
+    "DescriptionEn": "Forest Blight — a blight strike that corrupts nature energy to deal damage.",
+    "DescriptionFr": "Fléau Sylvestre — une frappe corruptrice qui dévoie l'énergie de la nature pour infliger des dégâts.",
+    "DescriptionEffects": "Deals 60 physical damage to one enemy; -25% max Physical armor on enemy for 4 turns.",
+    "DescriptionEffectsEn": "Deals 60 physical damage to one enemy; -25% max Physical armor on enemy for 4 turns.",
+    "DescriptionEffectsFr": "Inflige 60 dégâts physiques à un ennemi ; -25 % d'armure physique max de l'ennemi pendant 4 tours."
 }

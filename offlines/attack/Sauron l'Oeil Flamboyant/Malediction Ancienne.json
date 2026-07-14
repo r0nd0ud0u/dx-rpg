@@ -1,7 +1,7 @@
 {
     "Aggro": 0,
     "Cible": "Enemy",
-    "Coût de mana": 35,
+    "Coût de mana": 3500,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -27,5 +27,9 @@
     "Photo": "Charge.png",
     "Portée": "Zone",
     "Description": "Ancient Curse — an age-old curse that severely weakens all heroes over time.",
-    "DescriptionEffects": "Deals 80 magic damage to all enemies per turn for 4 turns."
+    "DescriptionEn": "Ancient Curse — an age-old curse that severely weakens all heroes over time.",
+    "DescriptionFr": "Malédiction Ancienne — une malédiction ancestrale qui affaiblit sévèrement tous les héros dans la durée.",
+    "DescriptionEffects": "Deals 80 magic damage to all enemies per turn for 4 turns.",
+    "DescriptionEffectsEn": "Deals 80 magic damage to all enemies per turn for 4 turns.",
+    "DescriptionEffectsFr": "Inflige 80 dégâts magiques à tous les ennemis par tour pendant 4 tours."
 }

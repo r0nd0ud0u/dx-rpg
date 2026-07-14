@@ -1,6 +1,6 @@
 {
     "Cible": "Ally",
-    "Coût de mana": 12,
+    "Coût de mana": 19,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -54,5 +54,9 @@
     "Photo": "Thalia.png",
     "Portée": "Zone",
     "Description": "Flower of Hope — a delicate nature bloom that instantly restores HP.",
-    "DescriptionEffects": "Heals all allies for 25 per turn for 5 turns; +2 max Mana regeneration on all allies for 5 turns; +10% max Magic power on all allies for 5 turns."
+    "DescriptionEn": "Flower of Hope — a delicate nature bloom that instantly restores HP.",
+    "DescriptionFr": "Fleur de l'Espoir — une délicate fleur de la nature qui restaure instantanément les PV.",
+    "DescriptionEffects": "Heals all allies for 25 per turn for 5 turns; +2 max Mana regeneration on all allies for 5 turns; +10% max Magic power on all allies for 5 turns.",
+    "DescriptionEffectsEn": "Heals all allies for 25 per turn for 5 turns; +2 max Mana regeneration on all allies for 5 turns; +10% max Magic power on all allies for 5 turns.",
+    "DescriptionEffectsFr": "Soigne tous les alliés de 25 PV par tour pendant 5 tours ; +2 de régénération de mana max pour tous les alliés pendant 5 tours ; +10 % de puissance magique max pour tous les alliés pendant 5 tours."
 }

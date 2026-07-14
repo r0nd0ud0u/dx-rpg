@@ -18,14 +18,7 @@
             "kind": "Equipment",
             "rank": "Advanced",
             "level": 5,
-            "classes": ["Warrior", "Berserker"]
-        },
-        {
-            "name": "medium gloves",
-            "kind": "Equipment",
-            "rank": "Advanced",
-            "level": 5,
-            "classes": ["Healer", "Mage"]
+            "classes": ["Warrior", "Berserker", "Healer", "Mage"]
         },
         {
             "name": "gold",

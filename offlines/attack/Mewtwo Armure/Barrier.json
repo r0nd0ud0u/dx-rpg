@@ -2,7 +2,7 @@
     "Cible": "Self",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 16,
+    "Coût de vigueur": 1600,
     "Effet": [
         {
             "Cible": "Self",
@@ -54,5 +54,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Raises an impenetrable psychic barrier — massively boosts all armour for 4 turns.",
-    "DescriptionEffects": "+40% max Physical armor for 4 turns; +40% max Magic armor for 4 turns; 6-turn cooldown."
+    "DescriptionEn": "Raises an impenetrable psychic barrier — massively boosts all armour for 4 turns.",
+    "DescriptionFr": "Érige une barrière psychique impénétrable — augmente massivement toute l'armure pendant 4 tours.",
+    "DescriptionEffects": "+40% max Physical armor for 4 turns; +40% max Magic armor for 4 turns; 6-turn cooldown.",
+    "DescriptionEffectsEn": "+40% max Physical armor for 4 turns; +40% max Magic armor for 4 turns; 6-turn cooldown.",
+    "DescriptionEffectsFr": "+40 % d'armure physique max pendant 4 tours ; +40 % d'armure magique max pendant 4 tours ; temps de recharge de 6 tours."
 }

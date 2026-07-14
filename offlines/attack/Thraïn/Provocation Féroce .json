@@ -82,5 +82,9 @@
     "Photo": "Thraïn.png",
     "Portée": "Individual",
     "Description": "Fierce Taunt — forces all enemies to target this character, protecting allies.",
-    "DescriptionEffects": "+12 Berserk; +10 Aggro; resets its active effects; +40 max Critical strike for 3 turns; 5-turn cooldown."
+    "DescriptionEn": "Fierce Taunt — forces all enemies to target this character, protecting allies.",
+    "DescriptionFr": "Provocation Féroce — force tous les ennemis à cibler ce personnage, protégeant les alliés.",
+    "DescriptionEffects": "+12 Berserk; +10 Aggro; resets its active effects; +40 max Critical strike for 3 turns; 5-turn cooldown.",
+    "DescriptionEffectsEn": "+12 Berserk; +10 Aggro; resets its active effects; +40 max Critical strike for 3 turns; 5-turn cooldown.",
+    "DescriptionEffectsFr": "+12 Rage ; +10 Aggro ; réinitialise ses effets actifs ; +40 de coup critique max pendant 3 tours ; temps de recharge de 5 tours."
 }

@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 18,
+    "Coût de vigueur": 1800,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -40,5 +40,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Strikes with powerful wings — boosts own physical power.",
-    "DescriptionEffects": "Deals 65 physical damage to one enemy; +15% max Physical power for 2 turns."
+    "DescriptionEn": "Strikes with powerful wings — boosts own physical power.",
+    "DescriptionFr": "Frappe avec de puissantes ailes — augmente sa propre puissance physique.",
+    "DescriptionEffects": "Deals 65 physical damage to one enemy; +15% max Physical power for 2 turns.",
+    "DescriptionEffectsEn": "Deals 65 physical damage to one enemy; +15% max Physical power for 2 turns.",
+    "DescriptionEffectsFr": "Inflige 65 dégâts physiques à un ennemi ; +15 % de puissance physique max pendant 2 tours."
 }

@@ -54,5 +54,9 @@
     "Photo": "bulbasaur.png",
     "Portée": "Individual",
     "Description": "Whips the enemy with razor-sharp vines, reducing their physical defence for 2 turns.",
-    "DescriptionEffects": "Deals 38 magic damage to one enemy; -15% max Physical armor on enemy for 2 turns; 2-turn cooldown."
+    "DescriptionEn": "Whips the enemy with razor-sharp vines, reducing their physical defence for 2 turns.",
+    "DescriptionFr": "Fouette l'ennemi avec des lianes tranchantes, réduisant sa défense physique pendant 2 tours.",
+    "DescriptionEffects": "Deals 38 magic damage to one enemy; -15% max Physical armor on enemy for 2 turns; 2-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 38 magic damage to one enemy; -15% max Physical armor on enemy for 2 turns; 2-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 38 dégâts magiques à un ennemi ; -15 % d'armure physique max de l'ennemi pendant 2 tours ; temps de recharge de 2 tours."
 }

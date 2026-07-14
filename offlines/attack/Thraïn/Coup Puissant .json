@@ -21,12 +21,12 @@
         {
             "Cible": "Self",
             "Portée": "Individual",
-            "Tours actifs": 4,
+            "Tours actifs": 2,
             "Valeur de l'effet": 0,
             "IsMagicEffect": false,
             "Buffer": {
                 "kind": "CooldownTurnsNumber",
-                "value": 4,
+                "value": 2,
                 "is-percent": false,
                 "stats-name": "",
                 "passive-enabled": false
@@ -68,5 +68,9 @@
     "Photo": "Thraïn.png",
     "Portée": "Individual",
     "Description": "Mighty Blow — a heavy hammer strike dealing massive physical damage.",
-    "DescriptionEffects": "Deals 80 physical damage to one enemy; 4-turn cooldown; -25% max Physical armor on enemy for 3 turns; -15 max Speed regeneration on enemy for 3 turns."
+    "DescriptionEn": "Mighty Blow — a heavy hammer strike dealing massive physical damage.",
+    "DescriptionFr": "Coup Puissant — une lourde frappe de marteau infligeant d'immenses dégâts physiques.",
+    "DescriptionEffects": "Deals 83 physical damage to one enemy; 2-turn cooldown; -25% max Physical armor on enemy for 3 turns; -15 max Speed regeneration on enemy for 3 turns.",
+    "DescriptionEffectsEn": "Deals 83 physical damage to one enemy; 2-turn cooldown; -25% max Physical armor on enemy for 3 turns; -15 max Speed regeneration on enemy for 3 turns.",
+    "DescriptionEffectsFr": "Inflige 83 dégâts physiques à un ennemi ; temps de recharge de 2 tours ; -25 % d'armure physique max de l'ennemi pendant 3 tours ; -15 de régénération de vitesse max de l'ennemi pendant 3 tours."
 }

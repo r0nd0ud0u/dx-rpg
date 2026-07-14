@@ -3,7 +3,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 15,
+    "Coût de vigueur": 1500,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -27,5 +27,9 @@
     "Photo": "Charge.png",
     "Portée": "Zone",
     "Description": "Rock Throw — hurls a heavy stone, dealing moderate physical damage.",
-    "DescriptionEffects": "Deals 25 physical damage to all enemies."
+    "DescriptionEn": "Rock Throw — hurls a heavy stone, dealing moderate physical damage.",
+    "DescriptionFr": "Jet de Pierres — lance une lourde pierre, infligeant des dégâts physiques modérés.",
+    "DescriptionEffects": "Deals 25 physical damage to all enemies.",
+    "DescriptionEffectsEn": "Deals 25 physical damage to all enemies.",
+    "DescriptionEffectsFr": "Inflige 25 dégâts physiques à tous les ennemis."
 }

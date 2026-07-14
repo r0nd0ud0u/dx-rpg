@@ -1,7 +1,7 @@
 {
     "Aggro": 0,
     "Cible": "Enemy",
-    "Coût de mana": 15,
+    "Coût de mana": 1500,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -27,5 +27,9 @@
     "Photo": "Charge.png",
     "Portée": "Individual",
     "Description": "Shadow Bolt — a concentrated bolt of dark magic dealing arcane damage.",
-    "DescriptionEffects": "Deals 200 magic damage to one enemy."
+    "DescriptionEn": "Shadow Bolt — a concentrated bolt of dark magic dealing arcane damage.",
+    "DescriptionFr": "Éclair de l'Obscurité — un éclair concentré de magie noire infligeant des dégâts arcaniques.",
+    "DescriptionEffects": "Deals 200 magic damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 200 magic damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 200 dégâts magiques à un ennemi."
 }

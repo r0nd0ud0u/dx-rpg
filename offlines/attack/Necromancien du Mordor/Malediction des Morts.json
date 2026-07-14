@@ -1,7 +1,7 @@
 {
     "Aggro": 0,
     "Cible": "Enemy",
-    "Coût de mana": 25,
+    "Coût de mana": 2500,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -27,5 +27,9 @@
     "Photo": "Charge.png",
     "Portée": "Zone",
     "Description": "Curse of the Dead — a necromantic hex that saps strength and deals ongoing damage.",
-    "DescriptionEffects": "Deals 50 magic damage to all enemies per turn for 3 turns."
+    "DescriptionEn": "Curse of the Dead — a necromantic hex that saps strength and deals ongoing damage.",
+    "DescriptionFr": "Malédiction des Morts — un sortilège nécromantique qui draine la force et inflige des dégâts continus.",
+    "DescriptionEffects": "Deals 50 magic damage to all enemies per turn for 3 turns.",
+    "DescriptionEffectsEn": "Deals 50 magic damage to all enemies per turn for 3 turns.",
+    "DescriptionEffectsFr": "Inflige 50 dégâts magiques à tous les ennemis par tour pendant 3 tours."
 }

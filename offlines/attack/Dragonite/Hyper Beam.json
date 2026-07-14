@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 30,
+    "Coût de vigueur": 3000,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -40,5 +40,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Fires an enormous beam of energy — requires recharge after use.",
-    "DescriptionEffects": "Deals 110 physical damage to one enemy; 4-turn cooldown."
+    "DescriptionEn": "Fires an enormous beam of energy — requires recharge after use.",
+    "DescriptionFr": "Tire un énorme rayon d'énergie — nécessite une récupération après usage.",
+    "DescriptionEffects": "Deals 110 physical damage to one enemy; 4-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 110 physical damage to one enemy; 4-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 110 dégâts physiques à un ennemi ; temps de recharge de 4 tours."
 }

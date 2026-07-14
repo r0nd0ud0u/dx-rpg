@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 12,
+    "Coût de vigueur": 1200,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -26,5 +26,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Muscled punch.",
-    "DescriptionEffects": "Deals 40 physical damage to one enemy."
+    "DescriptionEn": "Muscled punch.",
+    "DescriptionFr": "Coup de poing musclé.",
+    "DescriptionEffects": "Deals 40 physical damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 40 physical damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 40 dégâts physiques à un ennemi."
 }

@@ -3,7 +3,7 @@
     "Cible": "Ally",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 13,
+    "Coût de vigueur": 17,
     "Effet": [
         {
             "Cible": "Self",
@@ -82,5 +82,9 @@
     "Photo": "Azrak Ombresang.png",
     "Portée": "Zone",
     "Description": "Mordor Fury — channels the rage of Mordor for a powerful, wide-area assault.",
-    "DescriptionEffects": "+20% max Physical power for 4 turns; +10% max Physical power on all allies for 4 turns; +20% max Magic power for 4 turns; +10% max Magic power on all allies for 4 turns; 6-turn cooldown."
+    "DescriptionEn": "Mordor Fury — channels the rage of Mordor for a powerful, wide-area assault.",
+    "DescriptionFr": "Furie du Mordor — canalise la rage du Mordor pour un puissant assaut de grande envergure.",
+    "DescriptionEffects": "+20% max Physical power for 4 turns; +10% max Physical power on all allies for 4 turns; +20% max Magic power for 4 turns; +10% max Magic power on all allies for 4 turns; 6-turn cooldown.",
+    "DescriptionEffectsEn": "+20% max Physical power for 4 turns; +10% max Physical power on all allies for 4 turns; +20% max Magic power for 4 turns; +10% max Magic power on all allies for 4 turns; 6-turn cooldown.",
+    "DescriptionEffectsFr": "+20 % de puissance physique max pendant 4 tours ; +10 % de puissance physique max pour tous les alliés pendant 4 tours ; +20 % de puissance magique max pendant 4 tours ; +10 % de puissance magique max pour tous les alliés pendant 4 tours ; temps de recharge de 6 tours."
 }

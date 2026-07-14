@@ -82,5 +82,9 @@
     "Portée": "Individual",
     "Sound": "gomu-gomu-no-pistol.mp3",
     "Description": "Skull Crusher — a brutal mace blow aimed at the head for maximum damage.",
-    "DescriptionEffects": "Deals 150 physical damage to one enemy; +65 max Dodge for 2 turns; +20% damage taken by one enemy for 2 turns; 10-turn cooldown; +25 Berserk."
+    "DescriptionEn": "Skull Crusher — a brutal mace blow aimed at the head for maximum damage.",
+    "DescriptionFr": "Fracassage de Crâne à la Masse — un coup de masse brutal visant la tête pour un maximum de dégâts.",
+    "DescriptionEffects": "Deals 150 physical damage to one enemy; +65 max Dodge for 2 turns; +20% damage taken by one enemy for 2 turns; 10-turn cooldown; +25 Berserk.",
+    "DescriptionEffectsEn": "Deals 150 physical damage to one enemy; +65 max Dodge for 2 turns; +20% damage taken by one enemy for 2 turns; 10-turn cooldown; +25 Berserk.",
+    "DescriptionEffectsFr": "Inflige 150 dégâts physiques à un ennemi ; +65 d'esquive max pendant 2 tours ; +20 % de dégâts subis par un ennemi pendant 2 tours ; temps de recharge de 10 tours ; +25 Rage."
 }

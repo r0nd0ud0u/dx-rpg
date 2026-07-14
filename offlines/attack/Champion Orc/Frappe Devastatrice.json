@@ -3,7 +3,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 12,
+    "Coût de vigueur": 1200,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -27,5 +27,9 @@
     "Photo": "Charge.png",
     "Portée": "Individual",
     "Description": "Devastating Strike — an overwhelmingly powerful attack that ignores defenses.",
-    "DescriptionEffects": "Deals 150 physical damage to one enemy."
+    "DescriptionEn": "Devastating Strike — an overwhelmingly powerful attack that ignores defenses.",
+    "DescriptionFr": "Frappe Dévastatrice — une attaque d'une puissance écrasante qui ignore les défenses.",
+    "DescriptionEffects": "Deals 150 physical damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 150 physical damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 150 dégâts physiques à un ennemi."
 }

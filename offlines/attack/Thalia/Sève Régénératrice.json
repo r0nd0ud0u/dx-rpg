@@ -1,6 +1,6 @@
 {
     "Cible": "Ally",
-    "Coût de mana": 18,
+    "Coût de mana": 29,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -40,5 +40,9 @@
     "Photo": "Thalia.png",
     "Portée": "Individual",
     "Description": "Regenerative Sap — the sap of ancient trees flows through the target, restoring vitality.",
-    "DescriptionEffects": "Resets its active effects; heals all allies for 120 HP."
+    "DescriptionEn": "Regenerative Sap — the sap of ancient trees flows through the target, restoring vitality.",
+    "DescriptionFr": "Sève Régénératrice — la sève des arbres anciens irrigue la cible, restaurant sa vitalité.",
+    "DescriptionEffects": "Resets its active effects; heals the targeted ally for 120 HP.",
+    "DescriptionEffectsEn": "Resets its active effects; heals the targeted ally for 120 HP.",
+    "DescriptionEffectsFr": "Réinitialise ses effets actifs ; soigne l'allié ciblé de 120 PV."
 }

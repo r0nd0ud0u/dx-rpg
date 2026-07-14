@@ -1,7 +1,7 @@
 {
     "Aggro": 0,
     "Cible": "Enemy",
-    "Coût de mana": 14,
+    "Coût de mana": 10,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -41,5 +41,9 @@
     "Photo": "Azrak Ombresang.png",
     "Portée": "Individual",
     "Description": "Angmar's Curse — a dark hex from the Witch-realm that weakens and corrupts the target over time.",
-    "DescriptionEffects": "Deals 92 physical damage to one enemy per turn for 3 turns; -20% max Magic armor on enemy for 4 turns."
+    "DescriptionEn": "Angmar's Curse — a dark hex from the Witch-realm that weakens and corrupts the target over time.",
+    "DescriptionFr": "Malédiction d'Angmar — un sortilège ténébreux du royaume-sorcier qui affaiblit et corrompt sa cible dans la durée.",
+    "DescriptionEffects": "Deals 92 physical damage to one enemy per turn for 3 turns; -20% max Magic armor on enemy for 4 turns.",
+    "DescriptionEffectsEn": "Deals 92 physical damage to one enemy per turn for 3 turns; -20% max Magic armor on enemy for 4 turns.",
+    "DescriptionEffectsFr": "Inflige 92 dégâts physiques à un ennemi par tour pendant 3 tours ; -20 % d'armure magique max de l'ennemi pendant 4 tours."
 }

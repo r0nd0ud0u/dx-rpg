@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 28,
+    "Coût de vigueur": 2800,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -54,5 +54,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Maximum psychic force — shatters even the strongest armour.",
-    "DescriptionEffects": "Deals 110 magic damage to one enemy; -35% max Physical armor on enemy for 3 turns; 5-turn cooldown."
+    "DescriptionEn": "Maximum psychic force — shatters even the strongest armour.",
+    "DescriptionFr": "Force psychique maximale — brise même l'armure la plus solide.",
+    "DescriptionEffects": "Deals 110 magic damage to one enemy; -35% max Physical armor on enemy for 3 turns; 5-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 110 magic damage to one enemy; -35% max Physical armor on enemy for 3 turns; 5-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 110 dégâts magiques à un ennemi ; -35 % d'armure physique max de l'ennemi pendant 3 tours ; temps de recharge de 5 tours."
 }

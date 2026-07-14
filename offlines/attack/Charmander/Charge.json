@@ -26,5 +26,9 @@
     "Photo": "charmander.png",
     "Portée": "Individual",
     "Description": "A fierce scratch dealing physical fire damage.",
-    "DescriptionEffects": "Deals 28 physical damage to one enemy."
+    "DescriptionEn": "A fierce scratch dealing physical fire damage.",
+    "DescriptionFr": "Une griffure féroce infligeant des dégâts physiques de feu.",
+    "DescriptionEffects": "Deals 28 physical damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 28 physical damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 28 dégâts physiques à un ennemi."
 }

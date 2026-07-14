@@ -55,5 +55,9 @@
     "Portée": "Zone",
     "Sound": "",
     "Description": "Destructive Whirlwind — spins the great hammer in a wide arc, dealing damage to all enemies.",
-    "DescriptionEffects": "Deals 60 physical damage to all enemies; +5 Aggro; +100% max Berserk rate for 4 turns."
+    "DescriptionEn": "Destructive Whirlwind — spins the great hammer in a wide arc, dealing damage to all enemies.",
+    "DescriptionFr": "Tourbillon Destructeur — fait tournoyer le grand marteau dans un large arc, infligeant des dégâts à tous les ennemis.",
+    "DescriptionEffects": "Deals 60 physical damage to all enemies; +5 Aggro; +100% max Berserk rate for 4 turns.",
+    "DescriptionEffectsEn": "Deals 60 physical damage to all enemies; +5 Aggro; +100% max Berserk rate for 4 turns.",
+    "DescriptionEffectsFr": "Inflige 60 dégâts physiques à tous les ennemis ; +5 Aggro ; +100 % de taux de Rage max pendant 4 tours."
 }

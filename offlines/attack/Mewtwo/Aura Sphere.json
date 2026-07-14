@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 22,
+    "Coût de vigueur": 2200,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -40,5 +40,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "A never-missing ball of aura energy — guaranteed damage.",
-    "DescriptionEffects": "Deals 85 magic damage to one enemy; 3-turn cooldown."
+    "DescriptionEn": "A never-missing ball of aura energy — guaranteed damage.",
+    "DescriptionFr": "Une sphère d'énergie aurique qui ne manque jamais sa cible — dégâts garantis.",
+    "DescriptionEffects": "Deals 85 magic damage to one enemy; 3-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 85 magic damage to one enemy; 3-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 85 dégâts magiques à un ennemi ; temps de recharge de 3 tours."
 }

@@ -3,7 +3,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 18,
+    "Coût de vigueur": 1800,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -27,5 +27,9 @@
     "Photo": "Charge.png",
     "Portée": "Individual",
     "Description": "Wraith Blade — a spectral sword cuts through armor, dealing dark physical damage.",
-    "DescriptionEffects": "Deals 220 physical damage to one enemy."
+    "DescriptionEn": "Wraith Blade — a spectral sword cuts through armor, dealing dark physical damage.",
+    "DescriptionFr": "Lame du Spectre — une épée spectrale transperce l'armure, infligeant de sombres dégâts physiques.",
+    "DescriptionEffects": "Deals 220 physical damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 220 physical damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 220 dégâts physiques à un ennemi."
 }

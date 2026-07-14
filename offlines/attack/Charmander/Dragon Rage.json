@@ -1,7 +1,7 @@
 {
     "Cible": "Enemy",
     "Coût de mana": 0,
-    "Coût de rage": 16,
+    "Coût de rage": 13,
     "Coût de vigueur": 0,
     "Effet": [
         {
@@ -54,5 +54,9 @@
     "Photo": "charmander.png",
     "Portée": "Individual",
     "Description": "Channels draconic energy into a devastating strike that shreds enemy armour.",
-    "DescriptionEffects": "Deals 85 physical damage to one enemy; -20% max Physical armor on enemy for 3 turns; 4-turn cooldown."
+    "DescriptionEn": "Channels draconic energy into a devastating strike that shreds enemy armour.",
+    "DescriptionFr": "Canalise une énergie draconique en une frappe dévastatrice qui déchire l'armure ennemie.",
+    "DescriptionEffects": "Deals 85 physical damage to one enemy; -20% max Physical armor on enemy for 3 turns; 4-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 85 physical damage to one enemy; -20% max Physical armor on enemy for 3 turns; 4-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 85 dégâts physiques à un ennemi ; -20 % d'armure physique max de l'ennemi pendant 3 tours ; temps de recharge de 4 tours."
 }

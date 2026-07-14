@@ -54,5 +54,9 @@
     "Photo": "bulbasaur.png",
     "Portée": "Individual",
     "Description": "Plants a seed that drains enemy vitality each turn, restoring Bulbasaur's own health.",
-    "DescriptionEffects": "Deals 18 magic damage to one enemy per turn for 4 turns; heals self for 12% health per turn for 4 turns; 4-turn cooldown."
+    "DescriptionEn": "Plants a seed that drains enemy vitality each turn, restoring Bulbasaur's own health.",
+    "DescriptionFr": "Plante une graine qui draine la vitalité de l'ennemi à chaque tour, restaurant la santé de Bulbizarre.",
+    "DescriptionEffects": "Deals 18 magic damage to one enemy per turn for 4 turns; heals self for 12% health per turn for 4 turns; 4-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 18 magic damage to one enemy per turn for 4 turns; heals self for 12% health per turn for 4 turns; 4-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 18 dégâts magiques à un ennemi par tour pendant 4 tours ; soigne 12 % des PV par tour pendant 4 tours ; temps de recharge de 4 tours."
 }

@@ -1,7 +1,7 @@
 {
     "Cible": "Enemy",
     "Coût de mana": 0,
-    "Coût de rage": 5,
+    "Coût de rage": 4,
     "Coût de vigueur": 0,
     "Effet": [
         {
@@ -54,5 +54,9 @@
     "Photo": "charmander.png",
     "Portée": "Individual",
     "Description": "Spits embers that burn the enemy — deals immediate damage and leaves them burning for 3 turns.",
-    "DescriptionEffects": "Deals 42 magic damage to one enemy; deals 10 magic damage to one enemy per turn for 3 turns; 2-turn cooldown."
+    "DescriptionEn": "Spits embers that burn the enemy — deals immediate damage and leaves them burning for 3 turns.",
+    "DescriptionFr": "Crache des braises qui brûlent l'ennemi — inflige des dégâts immédiats et le laisse brûler pendant 3 tours.",
+    "DescriptionEffects": "Deals 42 magic damage to one enemy; deals 10 magic damage to one enemy per turn for 3 turns; 2-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 42 magic damage to one enemy; deals 10 magic damage to one enemy per turn for 3 turns; 2-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 42 dégâts magiques à un ennemi ; inflige 10 dégâts magiques à un ennemi par tour pendant 3 tours ; temps de recharge de 2 tours."
 }

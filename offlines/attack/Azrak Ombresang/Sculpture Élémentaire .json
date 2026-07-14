@@ -1,6 +1,6 @@
 {
     "Cible": "Enemy",
-    "Coût de mana": 24,
+    "Coût de mana": 17,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -55,5 +55,9 @@
     "Portée": "Zone",
     "Sound": "",
     "Description": "Elemental Sculpting — shapes elemental forces into a precise, multi-elemental strike.",
-    "DescriptionEffects": "Deals 50 physical damage to all enemies; deals 30 physical damage to all enemies per turn for 3 turns; -10 max Critical strike on all enemies for 3 turns."
+    "DescriptionEn": "Elemental Sculpting — shapes elemental forces into a precise, multi-elemental strike.",
+    "DescriptionFr": "Sculpture Élémentaire — façonne les forces élémentaires en une frappe précise et multi-élémentaire.",
+    "DescriptionEffects": "Deals 50 physical damage to all enemies; deals 30 physical damage to all enemies per turn for 3 turns; -10 max Critical strike on all enemies for 3 turns.",
+    "DescriptionEffectsEn": "Deals 50 physical damage to all enemies; deals 30 physical damage to all enemies per turn for 3 turns; -10 max Critical strike on all enemies for 3 turns.",
+    "DescriptionEffectsFr": "Inflige 50 dégâts physiques à tous les ennemis ; inflige 30 dégâts physiques à tous les ennemis par tour pendant 3 tours ; -10 de coup critique max de tous les ennemis pendant 3 tours."
 }

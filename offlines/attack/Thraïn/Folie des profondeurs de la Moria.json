@@ -82,5 +82,9 @@
     "Photo": "default.png",
     "Portée": "Individual",
     "Description": "Moria Madness — a berserk frenzy from the deep, dealing enormous damage.",
-    "DescriptionEffects": "Deals 55 physical damage to one enemy; deals 20% physical damage to self; -10 Dodge for 2 turns; +45 Berserk; 5-turn cooldown."
+    "DescriptionEn": "Moria Madness — a berserk frenzy from the deep, dealing enormous damage.",
+    "DescriptionFr": "Folie des Profondeurs de la Moria — une frénésie enragée venue des profondeurs, infligeant d'énormes dégâts.",
+    "DescriptionEffects": "Deals 55 physical damage to one enemy; deals 20% physical damage to self; -10 Dodge for 2 turns; +45 Berserk; 5-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 55 physical damage to one enemy; deals 20% physical damage to self; -10 Dodge for 2 turns; +45 Berserk; 5-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 55 dégâts physiques à un ennemi ; s'inflige 20 % de dégâts physiques ; -10 d'esquive pendant 2 tours ; +45 Rage ; temps de recharge de 5 tours."
 }

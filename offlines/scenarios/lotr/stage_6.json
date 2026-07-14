@@ -2,8 +2,8 @@
     "name": "Colere du Champion",
     "description": "Le champion orc revient accompagné d'un gobelin éclaireur. Gérer la priorité des cibles est essentiel : éliminez le gobelin rapidement ou risquez d'être débordé.",
     "boss_patterns": {
-        "Champion Orc": [0],
-        "Gobelin Eclaireur": [0]
+        "Champion Orc": [1, 2, 0],
+        "Gobelin Eclaireur": [0, 1]
     },
     "level": 6,
     "loots": [

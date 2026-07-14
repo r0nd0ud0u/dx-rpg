@@ -1,6 +1,6 @@
 {
     "Cible": "Ally",
-    "Coût de mana": 23,
+    "Coût de mana": 37,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -111,5 +111,9 @@
     "Portée": "Zone",
     "Sound": "super-saiyan.mp3",
     "Description": "Forest Awakening — awakens the spirit of the forest for a wide area group heal.",
-    "DescriptionEffects": "+10% max Magic power on all allies for 4 turns; scales with the number of active heal-over-time effects; resets its active effects; heals all allies for 80 per turn for 4 turns; removes one debuff from all allies; 10-turn cooldown; boosts heal-over-time effects by 33%."
+    "DescriptionEn": "Forest Awakening — awakens the spirit of the forest for a wide area group heal.",
+    "DescriptionFr": "Éveil de la Forêt — réveille l'esprit de la forêt pour un soin de groupe à grande échelle.",
+    "DescriptionEffects": "+10% max Magic power on all allies for 4 turns; scales with the number of active heal-over-time effects; resets its active effects; heals all allies for 80 per turn for 4 turns; removes one debuff from all allies; 10-turn cooldown; boosts heal-over-time effects by 33%.",
+    "DescriptionEffectsEn": "+10% max Magic power on all allies for 4 turns; scales with the number of active heal-over-time effects; resets its active effects; heals all allies for 80 per turn for 4 turns; removes one debuff from all allies; 10-turn cooldown; boosts heal-over-time effects by 33%.",
+    "DescriptionEffectsFr": "+10 % de puissance magique max pour tous les alliés pendant 4 tours ; l'effet s'intensifie selon le nombre de soins continus actifs ; réinitialise ses effets actifs ; soigne tous les alliés de 80 PV par tour pendant 4 tours ; retire un affaiblissement de tous les alliés ; temps de recharge de 10 tours ; augmente les soins continus de 33 %."
 }

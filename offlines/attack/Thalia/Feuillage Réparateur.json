@@ -1,6 +1,6 @@
 {
     "Cible": "Ally",
-    "Coût de mana": 13,
+    "Coût de mana": 21,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -54,5 +54,9 @@
     "Photo": "Thalia.png",
     "Portée": "Individual",
     "Description": "Restorative Foliage — healing leaves wrap around the target for gentle ongoing recovery.",
-    "DescriptionEffects": "Heals the targeted ally for 60 per turn for 4 turns; +50% max Mana regeneration on all allies for 4 turns; +10% max Magic power on all allies for 4 turns."
+    "DescriptionEn": "Restorative Foliage — healing leaves wrap around the target for gentle ongoing recovery.",
+    "DescriptionFr": "Feuillage Réparateur — des feuilles curatives enveloppent la cible pour une récupération douce et continue.",
+    "DescriptionEffects": "Heals the targeted ally for 60 per turn for 4 turns; +50% max Mana regeneration on all allies for 4 turns; +10% max Magic power on all allies for 4 turns.",
+    "DescriptionEffectsEn": "Heals the targeted ally for 60 per turn for 4 turns; +50% max Mana regeneration on all allies for 4 turns; +10% max Magic power on all allies for 4 turns.",
+    "DescriptionEffectsFr": "Soigne l'allié ciblé de 60 PV par tour pendant 4 tours ; +50 % de régénération de mana max pour tous les alliés pendant 4 tours ; +10 % de puissance magique max pour tous les alliés pendant 4 tours."
 }

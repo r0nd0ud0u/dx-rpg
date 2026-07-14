@@ -55,5 +55,9 @@
     "Photo": "Thraïn.png",
     "Portée": "Individual",
     "Description": "Stinging Strike — a precise hit that bypasses armor for consistent damage.",
-    "DescriptionEffects": "Deals 35 physical damage to one enemy; +5 Berserk; deals 10 physical damage to one enemy per turn for 3 turns."
+    "DescriptionEn": "Stinging Strike — a precise hit that bypasses armor for consistent damage.",
+    "DescriptionFr": "Frappe Cinglante — un coup précis qui contourne l'armure pour des dégâts constants.",
+    "DescriptionEffects": "Deals 35 physical damage to one enemy; +5 Berserk; deals 10 physical damage to one enemy per turn for 3 turns.",
+    "DescriptionEffectsEn": "Deals 35 physical damage to one enemy; +5 Berserk; deals 10 physical damage to one enemy per turn for 3 turns.",
+    "DescriptionEffectsFr": "Inflige 35 dégâts physiques à un ennemi ; +5 Rage ; inflige 10 dégâts physiques à un ennemi par tour pendant 3 tours."
 }

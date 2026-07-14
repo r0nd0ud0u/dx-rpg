@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 20,
+    "Coût de vigueur": 2000,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -40,5 +40,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Levitates the enemy with telekinesis — deals psychic damage and reduces magical armour.",
-    "DescriptionEffects": "Deals 75 magic damage to one enemy; -25% max Magic armor on enemy for 3 turns."
+    "DescriptionEn": "Levitates the enemy with telekinesis — deals psychic damage and reduces magical armour.",
+    "DescriptionFr": "Fait léviter l'ennemi par télékinésie — inflige des dégâts psychiques et réduit l'armure magique.",
+    "DescriptionEffects": "Deals 75 magic damage to one enemy; -25% max Magic armor on enemy for 3 turns.",
+    "DescriptionEffectsEn": "Deals 75 magic damage to one enemy; -25% max Magic armor on enemy for 3 turns.",
+    "DescriptionEffectsFr": "Inflige 75 dégâts magiques à un ennemi ; -25 % d'armure magique max de l'ennemi pendant 3 tours."
 }

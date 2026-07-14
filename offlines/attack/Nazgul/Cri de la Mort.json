@@ -1,7 +1,7 @@
 {
     "Aggro": 0,
     "Cible": "Enemy",
-    "Coût de mana": 20,
+    "Coût de mana": 2000,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -27,5 +27,9 @@
     "Photo": "Charge.png",
     "Portée": "Zone",
     "Description": "Death Shriek — a terrifying cry that drains life and causes fear.",
-    "DescriptionEffects": "Deals 150 magic damage to all enemies."
+    "DescriptionEn": "Death Shriek — a terrifying cry that drains life and causes fear.",
+    "DescriptionFr": "Cri de la Mort — un hurlement terrifiant qui draine la vie et sème la peur.",
+    "DescriptionEffects": "Deals 150 magic damage to all enemies.",
+    "DescriptionEffectsEn": "Deals 150 magic damage to all enemies.",
+    "DescriptionEffectsFr": "Inflige 150 dégâts magiques à tous les ennemis."
 }

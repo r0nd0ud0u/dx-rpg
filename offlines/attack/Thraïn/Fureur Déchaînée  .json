@@ -55,5 +55,9 @@
     "Photo": "Thraïn.png",
     "Portée": "Individual",
     "Description": "Unleashed Fury — Thraïn flies into a battle frenzy, sharply boosting his might and lethality.",
-    "DescriptionEffects": "+30% max Physical power for 4 turns; +5 Aggro; +15 Critical strike for 3 turns."
+    "DescriptionEn": "Unleashed Fury — Thraïn flies into a battle frenzy, sharply boosting his might and lethality.",
+    "DescriptionFr": "Fureur Déchaînée — Thraïn entre dans une frénésie de combat, augmentant fortement sa puissance et sa létalité.",
+    "DescriptionEffects": "+30% max Physical power for 4 turns; +5 Aggro; +15 Critical strike for 3 turns.",
+    "DescriptionEffectsEn": "+30% max Physical power for 4 turns; +5 Aggro; +15 Critical strike for 3 turns.",
+    "DescriptionEffectsFr": "+30 % de puissance physique max pendant 4 tours ; +5 Aggro ; +15 de coup critique pendant 3 tours."
 }
