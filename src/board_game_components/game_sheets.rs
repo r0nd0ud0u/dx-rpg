@@ -136,7 +136,7 @@ pub fn GameSheets() -> Element {
                 .as_deref()
                 == Some(h.id_name.as_str())
         })
-        .any(|h| !h.stats.is_dead().unwrap_or(false) && h.talents.available() > 0);
+        .any(|h| !h.stats.is_dead().unwrap_or(false) && h.talents.has_unseen_points);
 
     rsx! {
         div { display: "flex", gap: "0.5rem",
@@ -412,7 +412,7 @@ fn TalentsSheet(s: SheetSide) -> Element {
                                 onclick: move |_| active_tab.set(i),
                                 position: "relative",
                                 "{hero.db_full_name}"
-                                if hero.talents.available() > 0 {
+                                if hero.talents.has_unseen_points {
                                     span {
                                         class: "equip-tab-new-badge",
                                         style: "position:absolute;top:2px;right:2px;",

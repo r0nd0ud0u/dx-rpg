@@ -1,6 +1,8 @@
 #[cfg(feature = "server")]
 use crate::auth_manager::{auth::Session, auth::User, db::get_db, model::SqlUser};
-use dioxus::{logger::tracing, prelude::*};
+#[cfg(feature = "server")]
+use dioxus::logger::tracing;
+use dioxus::prelude::*;
 use std::collections::HashSet;
 
 /// Returns whether password authentication is required, driven by the `USE_PASSWORD` env var.

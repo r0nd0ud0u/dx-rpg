@@ -1,5 +1,6 @@
 /// Validates that all Pokemon universe JSON data files are well-formed
-/// and contain the required fields expected by lib_rpg's DataManager.
+/// and contain the required fields expected by lib_rpg's DataManager, plus a
+/// couple of cross-universe data-consistency checks (e.g. loot names).
 #[cfg(test)]
 mod tests {
     use serde_json::Value;
@@ -193,5 +194,50 @@ mod tests {
                 "{path} boss_patterns must not be empty"
             );
         }
+    }
+
+    // ── Cross-universe loot data ──────────────────────────────────────────────
+
+    /// Every `Consumable`-kind loot `name` across every universe's scenarios must
+    /// resolve via `lib_rpg::shop::build_consumable_by_name` — otherwise the reward
+    /// is silently dropped at the end of the scenario (see the "Common potion" vs.
+    /// "potion" casing/wording bug this regression-tests).
+    #[test]
+    fn scenario_consumable_loot_names_resolve() {
+        let scenarios_dir = format!("{OFFLINES}/scenarios");
+        let mut checked = 0;
+        for universe_entry in fs::read_dir(&scenarios_dir)
+            .unwrap_or_else(|e| panic!("Cannot read {scenarios_dir}: {e}"))
+        {
+            let universe_path = universe_entry.unwrap().path();
+            if !universe_path.is_dir() {
+                continue;
+            }
+            for stage_entry in fs::read_dir(&universe_path)
+                .unwrap_or_else(|e| panic!("Cannot read {}: {}", universe_path.display(), e))
+            {
+                let stage_path = stage_entry.unwrap().path();
+                let v = load_json(&stage_path.to_string_lossy());
+                let Some(loots) = v["loots"].as_array() else {
+                    continue;
+                };
+                for loot in loots {
+                    if loot["kind"].as_str() != Some("Consumable") {
+                        continue;
+                    }
+                    let name = loot["name"].as_str().unwrap_or("");
+                    assert!(
+                        lib_rpg::shop::build_consumable_by_name(name).is_some(),
+                        "{}: consumable loot '{name}' does not resolve to a real consumable",
+                        stage_path.display()
+                    );
+                    checked += 1;
+                }
+            }
+        }
+        assert!(
+            checked > 0,
+            "expected to find at least one consumable loot entry to check"
+        );
     }
 }

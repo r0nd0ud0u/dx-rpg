@@ -158,18 +158,19 @@ pub fn RunningGamePage() -> Element {
         let phase = server_data().core_game_data.game_phase.clone();
         let no_overworld = server_data().core_game_data.overworld.is_none();
         let universe = server_data().core_game_data.universe.clone();
-        if phase == GamePhase::Running && no_overworld {
-            if let Some(map_id) = universe_map(&universe) {
-                auto_entered.set(true);
-                let server_name = SERVER_NAME();
-                let map_id = map_id.to_owned();
-                let socket = socket;
-                spawn(async move {
-                    let _ = socket
-                        .send(ClientEvent::EnterOverworld(server_name, map_id))
-                        .await;
-                });
-            }
+        if phase == GamePhase::Running
+            && no_overworld
+            && let Some(map_id) = universe_map(&universe)
+        {
+            auto_entered.set(true);
+            let server_name = SERVER_NAME();
+            let map_id = map_id.to_owned();
+            let socket = socket;
+            spawn(async move {
+                let _ = socket
+                    .send(ClientEvent::EnterOverworld(server_name, map_id))
+                    .await;
+            });
         }
     });
 

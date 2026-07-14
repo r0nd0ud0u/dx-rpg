@@ -90,7 +90,7 @@ pub fn LoadGame() -> Element {
                                                 span { class: "save-slot-mode", {t!("loadgame-mode-solo")} }
                                             } else {
                                                 span { class: "save-slot-mode",
-                                                    {t!("loadgame-mode-multi", players : slot.players_nb as i64)}
+                                                    {t!("loadgame-mode-multi", players : slot.players_nb)}
                                                 }
                                             }
                                             if !slot.universe.is_empty() {

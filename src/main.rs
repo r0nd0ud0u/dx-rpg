@@ -4,7 +4,10 @@ use dioxus::{
     prelude::*,
 };
 use dioxus_i18n::prelude::*;
+#[cfg(all(not(feature = "server"), not(target_arch = "wasm32")))]
+use dioxus_sdk_storage::set_dir;
 use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
+#[cfg(not(target_arch = "wasm32"))]
 use dotenv::dotenv;
 use dx_rpg::{
     common::{
@@ -24,8 +27,9 @@ const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 fn main() {
-    // Reads the .env file
-    #[cfg(feature = "server")]
+    // Reads the .env file. Native builds (server, and native clients below) can have one;
+    // the browser (wasm32) has no filesystem so it never reads one.
+    #[cfg(not(target_arch = "wasm32"))]
     dotenv().ok();
 
     // Init logger
@@ -36,6 +40,23 @@ fn main() {
             .unwrap_or(Level::INFO),
     );
     tracing::info!("Rendering app!");
+
+    // Native clients (desktop, mobile) connect to a remote multiplayer server over the same
+    // websocket/server-fn protocol the web client uses, but — unlike a browser page, which
+    // infers the server from same-origin — they have no origin to infer it from, so the
+    // server URL must be set explicitly before launch.
+    #[cfg(all(not(feature = "server"), not(target_arch = "wasm32")))]
+    {
+        // dioxus-sdk-storage's LocalStorage falls back to a filesystem backend on native
+        // targets and panics if this isn't called before first use — the browser build never
+        // hits this path since it uses the browser's actual localStorage instead.
+        set_dir!();
+
+        let server_url =
+            std::env::var("SERVER_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+        tracing::info!("Native client connecting to server at {server_url}");
+        dioxus::fullstack::set_server_url(Box::leak(server_url.into_boxed_str()));
+    }
 
     // On the client, we simply launch the app as normal, taking over the main thread
     #[cfg(not(feature = "server"))]
@@ -224,14 +245,11 @@ fn App() -> Element {
         i18n.set_language(target);
     });
 
-    // Set the theme to dark on app load
+    // Set the theme to dark on app load.
+    // `document::eval` (not raw web_sys) so this also works on desktop/mobile clients,
+    // which don't compile web_sys (it's a wasm-bindgen crate, native targets don't have it).
     use_effect(|| {
-        if let Some(window) = web_sys::window()
-            && let Some(document) = window.document()
-            && let Some(html) = document.document_element()
-        {
-            html.set_attribute("data-theme", "dark").ok();
-        }
+        document::eval("document.documentElement.setAttribute('data-theme', 'dark');");
     });
     // Receive events from the websocket and update local signals.
     use_future(move || {

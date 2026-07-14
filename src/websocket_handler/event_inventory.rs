@@ -3,7 +3,9 @@ use crate::{
     common::DATA_MANAGER,
     websocket_handler::{common_event::SERVER_MANAGER, event::update_clients_server_data},
 };
+#[cfg(feature = "server")]
 use dioxus::logger::tracing;
+#[cfg(feature = "server")]
 use lib_rpg::server::server_manager::ServerManager;
 
 #[cfg(feature = "server")]

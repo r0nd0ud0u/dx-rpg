@@ -362,6 +362,7 @@ The Load Game page now shows save-slot style cards identical to the Create Serve
 | `USE_PASSWORD` | `false` | Require password on login |
 | `MAX_SAVES` | `3` | Max save slots per user |
 | `ADMIN_ENABLED` | `false` | Enable `/admin` panel |
+| `SERVER_URL` | `http://127.0.0.1:8080` | Client-only, native builds (desktop/mobile): remote multiplayer server to connect to. Ignored by the web client, which infers it from same-origin, and by the server itself. |
 
 ---
 
@@ -543,6 +544,37 @@ dx serve --platform web
 # Open http://localhost:8080
 ```
 
+### Desktop & Mobile Clients
+
+Besides the web/fullstack build (which bundles the Axum server together with the
+WASM client, see [Deployment](#deployment)), the app can also be built as a
+**native client** that connects to a remote dx-rpg server instead of hosting one
+itself — useful for players who want a desktop app or an Android app talking to
+someone else's server.
+
+Native clients compile with the `desktop` or `mobile` Cargo feature instead of the
+default `server` feature, and read the server address from the `SERVER_URL`
+environment variable at startup (defaults to `http://127.0.0.1:8080` if unset):
+
+```bash
+# Desktop, local dev
+dx serve --platform desktop --no-default-features --features desktop
+
+# Point at a remote server
+SERVER_URL=https://your-server.example.com dx serve --platform desktop --no-default-features --features desktop
+```
+
+Release bundles are produced with the same scripts the CI release workflow uses:
+
+```bash
+./scripts/bundle_desktop.sh   # -> bundle-desktop/  (Windows/Linux/macOS native app)
+./scripts/bundle_mobile.sh    # -> bundle-android/   (Android .apk, requires Android SDK/NDK)
+```
+
+Unlike the web bundle, these client-only bundles don't ship `offlines/`, `db.sqlite`,
+or a `.env` file — that data belongs to the server, not the client. Set `SERVER_URL`
+in the environment before launching the built client.
+
 ---
 
 ## Responsive Design
@@ -649,6 +681,17 @@ git tag v1.2.3 && git push origin v1.2.3
 > `docker_build.sh` always passes `--no-cache` to avoid stale cached layers when dependencies or
 > `offlines/` data change between builds. Old dangling images are pruned automatically after each build.
 
+### Native client releases
+
+Pushing a `v*` tag also triggers `.github/workflows/bundle_to_asset.yml`, which
+publishes a GitHub Release with, alongside the existing self-hostable web/server
+bundle (`bundle_linux.zip` / `bundle_windows.zip`):
+- `bundle_desktop_linux.zip` / `bundle_desktop_windows.zip` — native desktop
+  clients (see [Desktop & Mobile Clients](#desktop--mobile-clients))
+- an Android `.apk` — native Android client
+
+Both are client-only builds that expect `SERVER_URL` to point at an already-running
+dx-rpg server (self-hosted via Docker Compose above, or the web bundle).
 ---
 
 ## Screenshots

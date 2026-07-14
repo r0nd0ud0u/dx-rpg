@@ -42,4 +42,6 @@ script = []
 script = []
 
 [bundle]
+identifier = "io.github.r0ndoudou.dxrpg"
+publisher = "r0ndoudou"
 resources = ["assets/*"]

@@ -1,7 +1,11 @@
-use std::{fs, path::PathBuf};
+#[cfg(feature = "server")]
+use std::fs;
+use std::path::PathBuf;
 
+#[cfg(feature = "server")]
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
+#[cfg(feature = "server")]
 use lib_rpg::utils::list_dirs_in_dir;
 use serde::{Deserialize, Serialize};
 
