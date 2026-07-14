@@ -9,9 +9,11 @@ use anyhow::Result;
 #[cfg(feature = "server")]
 use async_std::task::sleep;
 use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
+#[cfg(feature = "server")]
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use lib_rpg::character_mod::character::Character;
+#[cfg(feature = "server")]
 use lib_rpg::common::constants::core_game_data_const::{
     SAVED_CORE_GAME_DATA, SAVED_CORE_GAME_DATA_REPLAY,
 };
@@ -19,16 +21,21 @@ use lib_rpg::common::constants::core_game_data_const::{
 use lib_rpg::common::constants::paths_const::GAMES_DIR;
 use lib_rpg::common::log_data::LogData;
 use lib_rpg::common::overworld::Direction;
+#[cfg(feature = "server")]
 use lib_rpg::common::overworld::Position;
+#[cfg(feature = "server")]
 use lib_rpg::server::core_game_data::CoreGameData;
 use lib_rpg::server::server_manager::OnGoingGame;
 use lib_rpg::server::server_manager::ServerData;
 #[cfg(feature = "server")]
 use lib_rpg::server::server_manager::{GamePhase, ServerManager};
+#[cfg(feature = "server")]
 use lib_rpg::utils;
 use serde::{Deserialize, Serialize};
 
-use std::path::{Path, PathBuf};
+#[cfg(feature = "server")]
+use std::path::Path;
+use std::path::PathBuf;
 #[cfg(feature = "server")]
 use std::{
     collections::HashMap,
@@ -95,6 +102,7 @@ pub enum ClientEvent {
     ExitOverworld(String),                         // server_name
     RequestUnlockTalent(String, String, String),   // server_name, character_id_name, talent_id
     RequestRespecTalents(String, String),          // server_name, character_id_name
+    RequestMarkTalentSeen(String, String),         // server_name, character_id_name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -157,7 +165,7 @@ pub async fn on_rcv_client_event(
                 };
                 use crate::websocket_handler::event_store::{buy_item_handler, sell_item_handler};
                 use crate::websocket_handler::event_talents::{
-                    request_respec_talents, request_unlock_talent,
+                    request_mark_talent_seen, request_respec_talents, request_unlock_talent,
                 };
 
                 tokio::select! {
@@ -344,6 +352,10 @@ pub async fn on_rcv_client_event(
                             Ok(ClientEvent::RequestRespecTalents(server_name, character_id_name)) => {
                                 tracing::info!("Character {} respeccing talents on server {}", character_id_name, server_name);
                                 request_respec_talents(&server_name, &character_id_name);
+                            }
+                            Ok(ClientEvent::RequestMarkTalentSeen(server_name, character_id_name)) => {
+                                tracing::info!("Character {} marking talent points as seen on server {}", character_id_name, server_name);
+                                request_mark_talent_seen(&server_name, &character_id_name);
                             }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
@@ -1881,6 +1893,13 @@ pub async fn process_load_next_scenario(server_name: &str, auto_save: bool) -> R
         server_data.core_game_data.load_next_scenario()?;
         server_data.players_data.owner_player_name.clone()
     };
+    // Debug-only: helps diagnose reports of the Scenarios tab showing stale progress —
+    // confirms the broadcast fires (and with what states_scenarios) right after the
+    // scenario transition completes, not before or not at all.
+    tracing::debug!(
+        "process_load_next_scenario: broadcasting UpdateServerData for server {}",
+        server_name
+    );
     update_clients_server_data(server_name);
     if auto_save && !owner_player_name.is_empty() {
         tracing::info!(
