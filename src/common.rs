@@ -116,17 +116,31 @@ pub fn lang_from_app_lang(app_lang: &str) -> lib_rpg::common::lang::Lang {
 /// If `photo_name` already contains an extension (has a dot), the URL is used
 /// as-is; otherwise `.png` is appended for backward-compat with legacy entries
 /// that stored only the filename stem.
+///
+/// The path is root-relative (`/img-srv/...`), which resolves correctly on web
+/// (same-origin as the Axum server). Native clients (desktop/mobile) have no
+/// same-origin relationship to the game server — their webview loads from a
+/// local asset protocol — so the path must be prefixed with the server's base
+/// URL there. `dioxus::fullstack::get_server_url()` is `""` on web (defaults to
+/// same-origin) and holds the `SERVER_URL` set via `set_server_url()` in
+/// `main.rs` on native, so prefixing only when non-empty covers both cases.
 pub fn photo_src(photo_name: &str) -> String {
-    if photo_name.contains('.') {
+    let path = if photo_name.contains('.') {
         format!("/img-srv/{}", photo_name)
     } else {
         format!("/img-srv/{}.png", photo_name)
+    };
+    let base = dioxus::fullstack::get_server_url();
+    if base.is_empty() {
+        path
+    } else {
+        format!("{base}{path}")
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::lang_from_app_lang;
+    use super::{lang_from_app_lang, photo_src};
     use lib_rpg::common::lang::Lang;
 
     #[test]
@@ -136,5 +150,17 @@ mod tests {
         // Anything unrecognized defaults to English.
         assert_eq!(lang_from_app_lang(""), Lang::En);
         assert_eq!(lang_from_app_lang("fr-FR"), Lang::En);
+    }
+
+    #[test]
+    fn unit_photo_src_appends_png_extension_when_missing() {
+        // No test ever calls `set_server_url()`, so `get_server_url()` stays
+        // "" here — same as on web, which defaults to same-origin.
+        assert_eq!(photo_src("hero_stem"), "/img-srv/hero_stem.png");
+    }
+
+    #[test]
+    fn unit_photo_src_keeps_existing_extension() {
+        assert_eq!(photo_src("hero.jpg"), "/img-srv/hero.jpg");
     }
 }

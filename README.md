@@ -181,7 +181,7 @@ Bought items land in the **bag** (unequipped). To use equipment you must equip i
 | vigor potion | 80 gold |
 | berserk potion | 80 gold |
 
-Consumables have no purchase limit — you can buy as many as you can afford.
+Consumables have no purchase limit — you can buy as many as you can afford. Like equipment, consumable names are bilingual (`name`/`name_fr` on `Consumable`, `name_en`/`name_fr` in the shop catalog) so a potion displays correctly whether it was bought or looted, regardless of the active UI language.
 
 **Equipment price tiers**
 
@@ -339,6 +339,7 @@ Every hero earns skill points as they level up: **+1 per level**, plus a **+1 bo
 - **5 tiers per path**, costing `1, 1, 2, 3, 4` skill points — cheap to start, expensive to finish, so a hero can fully max one path or spread points across two, but never max all three.
 - **Capstones** (tier 5) are **mutually exclusive across a hero's 3 paths** — unlocking one path's capstone locks out the other two until you respec.
 - **Respec is free and unlimited** — a Respec button in the sheet refunds every spent point instantly so players can experiment with builds.
+- **Unspent-points notification**: the 🌳 Talents button shows a badge whenever a hero has skill points the player hasn't seen yet (granted on level-up). Opening the Talents tab for that hero dismisses the badge immediately, even if points are still unspent — it mirrors the Inventory tab's new-equipment badge (`TalentBoard::has_unseen_points`/`mark_points_seen`, `Inventory::has_unseen_equipment`/`mark_equipment_category_seen`).
 
 Talent trees are defined as JSON under `offlines/talents/<universe>/<character-name>.json` (same convention as `offlines/characters/`), one file per hero, each listing its 3 paths and their tiered nodes (id, cost, prerequisites, bilingual name/description, and effects).
 
@@ -692,6 +693,7 @@ bundle (`bundle_linux.zip` / `bundle_windows.zip`):
 
 Both are client-only builds that expect `SERVER_URL` to point at an already-running
 dx-rpg server (self-hosted via Docker Compose above, or the web bundle).
+
 ---
 
 ## Screenshots
