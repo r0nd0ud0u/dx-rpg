@@ -99,9 +99,16 @@ jobs:
         if: runner.os == 'Linux'
         run: chmod +x ./scripts/bundle_desktop.sh
 
+      # Same reasoning as build-mobile below: SERVER_URL/INSECURE_ACCEPT_INVALID_CERTS get
+      # baked in at build time (see src/main.rs's option_env!() fallback and build.rs) so
+      # the released client works out of the box. Override via repo Settings -> Secrets
+      # and variables -> Actions -> Variables without touching this file.
       - name: Build desktop client
         run: ./scripts/bundle_desktop.sh
         shell: bash
+        env:
+          SERVER_URL: ${{ vars.SERVER_URL || 'https://83.228.245.219' }}
+          INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'true' }}
 
       - name: Rename bundle directory
         run: |
