@@ -364,6 +364,7 @@ The Load Game page now shows save-slot style cards identical to the Create Serve
 | `MAX_SAVES` | `3` | Max save slots per user |
 | `ADMIN_ENABLED` | `false` | Enable `/admin` panel |
 | `SERVER_URL` | `http://127.0.0.1:8080` | Client-only, native builds (desktop/mobile): remote multiplayer server to connect to. Ignored by the web client, which infers it from same-origin, and by the server itself. |
+| `INSECURE_ACCEPT_INVALID_CERTS` | `false` | Client-only, native builds: when `true`, disables TLS certificate validation (for a self-signed `SERVER_URL`). Insecure — see [Desktop & Mobile Clients](#desktop--mobile-clients). |
 
 ---
 
@@ -575,6 +576,17 @@ Release bundles are produced with the same scripts the CI release workflow uses:
 Unlike the web bundle, these client-only bundles don't ship `offlines/`, `db.sqlite`,
 or a `.env` file — that data belongs to the server, not the client. Set `SERVER_URL`
 in the environment before launching the built client.
+
+**Self-signed / untrusted TLS certificate:** if `SERVER_URL` is `https://` and the
+server's certificate isn't signed by a trusted CA (e.g. a self-signed cert on a
+home-lab or dev deployment with no domain for Let's Encrypt), the native client's
+HTTP/WebSocket stack rejects the connection outright — there's no browser-style
+"proceed anyway" click-through. The proper fix is a real trusted certificate (see
+[Deploying on a VPS](docs/deploy-vps.md), which covers the Let's Encrypt + domain
+flow). As a stopgap for testing against a self-signed server you control, set
+`INSECURE_ACCEPT_INVALID_CERTS=true` to disable certificate validation for that
+client. This is insecure — anyone on the network path can impersonate the server —
+so only use it against a server and network you trust, never for a real deployment.
 
 ---
 

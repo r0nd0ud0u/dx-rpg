@@ -56,6 +56,27 @@ fn main() {
             std::env::var("SERVER_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
         tracing::info!("Native client connecting to server at {server_url}");
         dioxus::fullstack::set_server_url(Box::leak(server_url.into_boxed_str()));
+
+        // Opt-in escape hatch for a server behind a self-signed/untrusted TLS certificate
+        // (e.g. a dev or home-lab deployment with no real domain for Let's Encrypt). Off by
+        // default: this disables certificate validation for every request the client makes
+        // (server-fn calls *and* the websocket handshake both go through the same underlying
+        // reqwest client), so it must only be used against a server you trust on a network you
+        // trust — it removes protection against a MITM impersonating the server.
+        if std::env::var("INSECURE_ACCEPT_INVALID_CERTS").as_deref() == Ok("true") {
+            tracing::warn!(
+                "INSECURE_ACCEPT_INVALID_CERTS=true — TLS certificate validation is DISABLED for all requests to {}. Do not use this against an untrusted network or server.",
+                dioxus::fullstack::get_server_url()
+            );
+            let client = dioxus::fullstack::reqwest::Client::builder()
+                .danger_accept_invalid_certs(true)
+                .cookie_store(true)
+                .build()
+                .expect("failed to build insecure reqwest client");
+            // Best-effort: if something already initialized the default client (shouldn't
+            // happen this early), fall back to the validated default rather than panicking.
+            let _ = dioxus::fullstack::GLOBAL_REQUEST_CLIENT.set(client);
+        }
     }
 
     // On the client, we simply launch the app as normal, taking over the main thread
