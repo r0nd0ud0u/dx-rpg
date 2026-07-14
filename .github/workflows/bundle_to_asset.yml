@@ -137,17 +137,8 @@ jobs:
           if-no-files-found: error
 
   build-mobile:
-    name: Upload Android Client Asset (${{ matrix.abi }})
+    name: Upload Android Client Asset (arm64-v8a)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          # arm64-v8a covers essentially every real Android phone since ~2019.
-          - target: aarch64-linux-android
-            abi: arm64-v8a
-          # armeabi-v7a covers older/budget 32-bit devices.
-          - target: armv7-linux-androideabi
-            abi: armeabi-v7a
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -155,8 +146,13 @@ jobs:
       - name: Update rust
         run: rustup update stable
 
+      # arm64-v8a covers essentially every real Android phone since ~2019, and is the
+      # only 32-/64-bit split that matters here: dioxus's manganis crate (its asset
+      # macro backend) hard-errors on 32-bit Android targets as of dioxus 0.7.9
+      # ("Only 64-bit Android targets are supported"), so armv7-linux-androideabi
+      # (armeabi-v7a, older 32-bit devices) cannot be built at all with this version.
       - name: Add Android rust target
-        run: rustup target add ${{ matrix.target }}
+        run: rustup target add aarch64-linux-android
 
       # `dx bundle --platform android` also compiles a host-target companion build
       # (visible as `target/server-release`, target x86_64-unknown-linux-gnu) even with
@@ -187,23 +183,21 @@ jobs:
         run: chmod +x ./scripts/bundle_mobile.sh
 
       - name: Build Android client
-        run: ./scripts/bundle_mobile.sh ${{ matrix.target }}
+        run: ./scripts/bundle_mobile.sh aarch64-linux-android
         shell: bash
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
-      # dx names the output apk the same regardless of target/ABI, which would collide
-      # if both matrix legs' artifacts were attached to the same GitHub Release as-is.
       - name: Rename APK with ABI suffix
         run: |
           apk=$(find bundle-android -name '*.apk' | head -n1)
-          mv "$apk" "bundle-android/dx-rpg-${{ matrix.abi }}.apk"
+          mv "$apk" "bundle-android/dx-rpg-arm64-v8a.apk"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: bundle_android_${{ matrix.abi }}
-          path: bundle-android/dx-rpg-${{ matrix.abi }}.apk
+          name: bundle_android_arm64-v8a
+          path: bundle-android/dx-rpg-arm64-v8a.apk
           if-no-files-found: error
 
   release:

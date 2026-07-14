@@ -8,7 +8,9 @@
 # which is not guaranteed to match the device you're installing on and produces an
 # APK that silently fails to install ("app not compatible with this device").
 # Defaults to aarch64-linux-android (arm64-v8a), the ABI on the vast majority of
-# real Android phones since ~2019. Pass armv7-linux-androideabi for older 32-bit
-# devices, or x86_64-linux-android for emulator testing.
+# real Android phones since ~2019. x86_64-linux-android also works, for emulator
+# testing. 32-bit targets (armv7-linux-androideabi, i686-linux-android) do NOT work
+# as of dioxus 0.7.9 — its manganis crate hard-errors with "Only 64-bit Android
+# targets are supported".
 TARGET="${1:-aarch64-linux-android}"
 dx bundle --platform android --release --fullstack false --package-types apk --target "$TARGET" --no-default-features --features mobile --out-dir bundle-android
