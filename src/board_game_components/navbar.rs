@@ -8,17 +8,15 @@ use dioxus::{
     prelude::*,
 };
 use dioxus_i18n::t;
-use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
-use crate::common::{SYNCED_INSECURE_CERTS_KEY, SYNCED_SERVER_URL_KEY};
 use crate::{
     auth_manager::server_fn::logout,
-    common::{ADMIN, CtxAppLang, Route},
+    common::{ADMIN, CtxAppLang, CtxSyncedInsecureCerts, CtxSyncedServerUrl, Route},
     components::{
         alert_dialog::{
-            AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-            AlertDialogRoot, AlertDialogTitle,
+            AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+            AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
         },
         button::{Button, ButtonVariant},
         input::Input,
@@ -38,6 +36,11 @@ pub fn Navbar() -> Element {
     let mut local_login_id_session = use_context::<Signal<i64>>();
     let server_data = use_context::<Signal<ServerData>>();
     let mut app_lang = use_context::<CtxAppLang>().0;
+    // Native clients only — see the doc comment on CtxSyncedServerUrl in common.rs for why
+    // these are declared in App() and consumed here via context rather than called
+    // directly with use_synced_storage in Navbar (a #[layout(...)] component).
+    let mut synced_server_url = use_context::<CtxSyncedServerUrl>().0;
+    let mut synced_insecure_certs = use_context::<CtxSyncedInsecureCerts>().0;
 
     // nav
     let navigator = use_navigator();
@@ -46,26 +49,16 @@ pub fn Navbar() -> Element {
     let mut help_open = use_signal(|| false);
     let mut quit_open = use_signal(|| false);
 
-    // Server connection settings — native only (gated at render time below via
+    // Server connection settings dialog — native only (gated at render time below via
     // `cfg!(target_arch = "wasm32")`, since #[cfg] attributes aren't supported inside
     // rsx!; the hooks themselves must still be called unconditionally on every render,
     // per Dioxus's hook rules, and are harmless no-ops on web). The web client always
-    // infers its server from same-origin, so there's nothing to configure there. See
-    // src/main.rs for how these two persisted keys are read (with higher priority than
-    // the compile-time-baked default, lower than a runtime SERVER_URL env var) on the
-    // *next* launch — the running app can't switch servers live, since
-    // dioxus::fullstack::set_server_url() can only be called once per process.
+    // infers its server from same-origin, so there's nothing to configure there.
     let mut server_settings_open = use_signal(|| false);
-    let mut synced_server_url =
-        use_synced_storage::<LocalStorage, String>(SYNCED_SERVER_URL_KEY.to_owned(), || {
-            dioxus::fullstack::get_server_url().to_owned()
-        });
-    let mut synced_insecure_certs =
-        use_synced_storage::<LocalStorage, bool>(SYNCED_INSECURE_CERTS_KEY.to_owned(), || false);
-    // Draft state so typing doesn't write to storage on every keystroke; reset from the
-    // synced values each time the dialog is opened (see the trigger button below).
-    let mut server_url_draft = use_signal(&*synced_server_url);
-    let mut insecure_certs_draft = use_signal(&*synced_insecure_certs);
+    // Draft state so typing doesn't write to storage on every keystroke; populated from
+    // the synced values each time the dialog is opened (see the trigger button below).
+    let mut server_url_draft = use_signal(String::new);
+    let mut insecure_certs_draft = use_signal(|| false);
     let mut server_saved_message = use_signal(|| false);
 
     // snapshot
@@ -296,10 +289,16 @@ pub fn Navbar() -> Element {
                                 }
                             }
                         }
-                        AlertDialogAction {
+                        AlertDialogActions {
                             AlertDialogCancel { {t!("common-cancel")} }
-                            AlertDialogAction {
-                                on_click: move |_| {
+                            // A plain Button, not AlertDialogAction — that primitive closes
+                            // the dialog on click regardless of the on_click handler, which
+                            // would hide the "Saved" confirmation above before it's ever
+                            // seen. This stays open so the message is visible; Cancel (or
+                            // clicking outside) closes it.
+                            Button {
+                                variant: ButtonVariant::Primary,
+                                onclick: move |_| {
                                     synced_server_url.set(server_url_draft());
                                     synced_insecure_certs.set(insecure_certs_draft());
                                     server_saved_message.set(true);

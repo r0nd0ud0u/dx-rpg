@@ -12,8 +12,9 @@ use dotenv::dotenv;
 use dx_rpg::{
     common::{
         CtxAppLang, CtxAutoSaveScenario, CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy,
-        CtxShowBossHp, CtxShowHeroAggro, CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS,
-        Route, SERVER_NAME,
+        CtxShowBossHp, CtxShowHeroAggro, CtxSyncedInsecureCerts, CtxSyncedServerUrl,
+        CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS, Route, SERVER_NAME,
+        SYNCED_INSECURE_CERTS_KEY, SYNCED_SERVER_URL_KEY,
     },
     websocket_handler::{
         NO_CLIENT_ID,
@@ -281,6 +282,19 @@ fn App() -> Element {
         use_synced_storage::<LocalStorage, String>("synced_app_lang".to_owned(), || {
             "en".to_owned()
         });
+    // Native-only: the server address/TLS-validation override the user can change from
+    // the in-app Server settings dialog (board_game_components/navbar.rs). Declared here
+    // (not in Navbar) and provided via context — calling use_synced_storage directly
+    // inside Navbar (a #[layout(...)] component, not the route root) stack-overflows the
+    // app at startup; this exact pattern (use_synced_storage in App(), consumed via
+    // use_context in Navbar) is how every other piece of Navbar-visible synced state
+    // already works (local_login_name_session, server_data, CtxAppLang, etc. below).
+    let synced_server_url =
+        use_synced_storage::<LocalStorage, String>(SYNCED_SERVER_URL_KEY.to_owned(), || {
+            dioxus::fullstack::get_server_url().to_owned()
+        });
+    let synced_insecure_certs =
+        use_synced_storage::<LocalStorage, bool>(SYNCED_INSECURE_CERTS_KEY.to_owned(), || false);
 
     // Keep dioxus-i18n's active locale synced to the persisted "en"/"fr" value —
     // covers both the initial load from localStorage and every toggle click.
@@ -446,6 +460,10 @@ fn App() -> Element {
     use_context_provider(|| CtxShopEnabled(shop_enabled));
     // UI language ("en"/"fr") — localStorage-backed so it works pre-login
     use_context_provider(|| CtxAppLang(app_lang_local_sync));
+    // Native clients only: server address / TLS-validation override, editable from the
+    // Server settings dialog in Navbar (see the doc comment on CtxSyncedServerUrl above).
+    use_context_provider(|| CtxSyncedServerUrl(synced_server_url));
+    use_context_provider(|| CtxSyncedInsecureCerts(synced_insecure_certs));
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

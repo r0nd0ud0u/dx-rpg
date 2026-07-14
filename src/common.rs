@@ -108,6 +108,21 @@ pub struct CtxShopEnabled(pub Signal<bool>);
 #[derive(Clone, Copy)]
 pub struct CtxAppLang(pub Signal<String>);
 
+/// Native clients only: the user-chosen server address, persisted via
+/// `SYNCED_SERVER_URL_KEY` and read with priority over the compile-time-baked default
+/// on the *next* launch (see `main.rs`). Declared in `App()` and provided via context
+/// rather than called directly in `board_game_components/navbar.rs` — calling
+/// `use_synced_storage` inside a `#[layout(...)]` component instead of the route root
+/// stack-overflows the app at startup.
+#[derive(Clone, Copy)]
+pub struct CtxSyncedServerUrl(pub Signal<String>);
+
+/// Native clients only: whether to accept invalid/self-signed TLS certificates for the
+/// server above. Same persistence/priority and same App()-not-Navbar constraint as
+/// `CtxSyncedServerUrl`.
+#[derive(Clone, Copy)]
+pub struct CtxSyncedInsecureCerts(pub Signal<bool>);
+
 /// Converts the app's "en"/"fr" locale string into lib-rpg's `Lang` enum —
 /// the one conversion boundary between the two crates' locale representations
 /// (lib-rpg has no dioxus/unic_langid dependency).
