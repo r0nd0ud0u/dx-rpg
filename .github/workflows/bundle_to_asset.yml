@@ -68,9 +68,116 @@ jobs:
           name: bundle_windows.zip
           path: bundle_windows.zip
 
+  build-desktop:
+    name: Upload Desktop Client Asset (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Update rust
+        run: rustup update stable
+
+      - name: Install Linux desktop dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev
+
+      - name: Install dioxus-cli
+        run: |
+          cargo install cargo-binstall
+          cargo binstall dioxus-cli@0.7.9 --force
+        shell: bash
+
+      - name: Make bundle script executable (Linux only)
+        if: runner.os == 'Linux'
+        run: chmod +x ./scripts/bundle_desktop.sh
+
+      - name: Build desktop client
+        run: ./scripts/bundle_desktop.sh
+        shell: bash
+
+      - name: Rename bundle directory
+        run: |
+          mv bundle-desktop dx-rpg-desktop_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+        shell: bash
+
+      - name: Zip bundle (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          zip -r bundle_desktop_linux.zip dx-rpg-desktop_linux
+        shell: bash
+
+      - name: Zip bundle (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          Compress-Archive -Path dx-rpg-desktop_windows -DestinationPath bundle_desktop_windows.zip
+        shell: pwsh
+
+      - name: Upload artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle_desktop_linux.zip
+          path: bundle_desktop_linux.zip
+
+      - name: Upload artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle_desktop_windows.zip
+          path: bundle_desktop_windows.zip
+
+  build-mobile:
+    name: Upload Android Client Asset
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Update rust
+        run: rustup update stable
+
+      - name: Add Android rust target
+        run: rustup target add aarch64-linux-android
+
+      # ubuntu-latest ships the Android SDK preinstalled (ANDROID_HOME is already set);
+      # only the NDK needs to be added explicitly.
+      - name: Install Android NDK
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27
+          add-to-path: true
+
+      - name: Install dioxus-cli
+        run: |
+          cargo install cargo-binstall
+          cargo binstall dioxus-cli@0.7.9 --force
+        shell: bash
+
+      - name: Make bundle script executable
+        run: chmod +x ./scripts/bundle_mobile.sh
+
+      - name: Build Android client
+        run: ./scripts/bundle_mobile.sh
+        shell: bash
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle_android
+          path: bundle-android/**/*.apk
+
   release:
     name: Create GitHub Release
-    needs: build
+    needs: [build, build-desktop, build-mobile]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -84,4 +191,6 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: artifacts/**/*.zip
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.apk
