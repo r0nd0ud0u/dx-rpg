@@ -50,6 +50,13 @@ fn main() {
         // dioxus-sdk-storage's LocalStorage falls back to a filesystem backend on native
         // targets and panics if this isn't called before first use — the browser build never
         // hits this path since it uses the browser's actual localStorage instead.
+        //
+        // On Android, `directories::BaseDirs::new()` (used internally by set_dir!()) returns
+        // None because the `directories` crate doesn't support Android — unwrapping it panics
+        // and leaves the screen white. Use the app's known internal data path instead.
+        #[cfg(target_os = "android")]
+        set_dir!("/data/data/io.github.r0ndoudou.dxrpg/files/dx-rpg");
+        #[cfg(not(target_os = "android"))]
         set_dir!();
 
         let server_url =
