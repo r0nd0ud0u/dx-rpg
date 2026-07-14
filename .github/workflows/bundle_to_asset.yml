@@ -145,6 +145,16 @@ jobs:
       - name: Add Android rust target
         run: rustup target add aarch64-linux-android
 
+      # `dx bundle --platform android` also compiles a host-target companion build
+      # (visible as `target/server-release`, target x86_64-unknown-linux-gnu) even with
+      # --fullstack false. That build pulls in dioxus-desktop's Linux GTK bindings
+      # (tao/wry -> glib-sys/gtk-sys), so the same system packages the desktop Linux
+      # build needs are required here too, or the build fails on `glib-2.0` via pkg-config.
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev
+
       # ubuntu-latest ships the Android SDK preinstalled (ANDROID_HOME is already set);
       # only the NDK needs to be added explicitly.
       - name: Install Android NDK
