@@ -4,9 +4,9 @@ use dioxus::{
     prelude::*,
 };
 use dioxus_i18n::prelude::*;
-#[cfg(all(not(feature = "server"), not(target_arch = "wasm32")))]
-use dioxus_sdk_storage::set_dir;
 use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
+#[cfg(all(not(feature = "server"), not(target_arch = "wasm32")))]
+use dioxus_sdk_storage::{StorageBacking, set_dir};
 #[cfg(not(target_arch = "wasm32"))]
 use dotenv::dotenv;
 use dx_rpg::{
@@ -59,8 +59,21 @@ fn main() {
         #[cfg(not(target_os = "android"))]
         set_dir!();
 
-        let server_url =
-            std::env::var("SERVER_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+        // Resolution order: a runtime env var (e.g. `dx serve`) always wins, for dev
+        // convenience; then whatever the user last saved via the in-app Server settings
+        // dialog (board_game_components/navbar.rs) — read straight off disk here since
+        // main() runs before any component/hook exists; then the value baked in at
+        // *compile* time (via `option_env!`, see build.rs) — the only option available to
+        // an installed Android APK, which has no shell to read env vars from and no prior
+        // launch to have saved anything from; then a hardcoded fallback.
+        let persisted_server_url =
+            LocalStorage::get::<String>(&dx_rpg::common::SYNCED_SERVER_URL_KEY.to_owned())
+                .filter(|s: &String| !s.is_empty());
+        let server_url = std::env::var("SERVER_URL")
+            .ok()
+            .or(persisted_server_url)
+            .or_else(|| option_env!("SERVER_URL").map(str::to_owned))
+            .unwrap_or_else(|| "http://127.0.0.1:8080".to_owned());
         tracing::info!("Native client connecting to server at {server_url}");
         dioxus::fullstack::set_server_url(Box::leak(server_url.into_boxed_str()));
 
@@ -69,8 +82,16 @@ fn main() {
         // default: this disables certificate validation for every request the client makes
         // (server-fn calls *and* the websocket handshake both go through the same underlying
         // reqwest client), so it must only be used against a server you trust on a network you
-        // trust — it removes protection against a MITM impersonating the server.
-        if std::env::var("INSECURE_ACCEPT_INVALID_CERTS").as_deref() == Ok("true") {
+        // trust — it removes protection against a MITM impersonating the server. Same
+        // runtime-env, then-persisted, then-compile-time-baked fallback as SERVER_URL above,
+        // for the same reasons.
+        let persisted_insecure_certs =
+            LocalStorage::get::<bool>(&dx_rpg::common::SYNCED_INSECURE_CERTS_KEY.to_owned());
+        let insecure_accept_invalid_certs = std::env::var("INSECURE_ACCEPT_INVALID_CERTS")
+            .ok()
+            .or_else(|| persisted_insecure_certs.map(|b| b.to_string()))
+            .or_else(|| option_env!("INSECURE_ACCEPT_INVALID_CERTS").map(str::to_owned));
+        if insecure_accept_invalid_certs.as_deref() == Some("true") {
             tracing::warn!(
                 "INSECURE_ACCEPT_INVALID_CERTS=true — TLS certificate validation is DISABLED for all requests to {}. Do not use this against an untrusted network or server.",
                 dioxus::fullstack::get_server_url()

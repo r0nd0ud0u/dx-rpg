@@ -11,6 +11,15 @@ common-confirm = Confirm
 quit-dialog-title = Quit Game
 quit-dialog-body = Are you sure you want to quit the game?
 
+navbar-server-settings = 🌐 Server
+server-settings-title = Server Connection
+server-settings-current = Currently connected to: { $url }
+server-settings-placeholder = https://your-server.example.com
+server-settings-insecure-label = Accept invalid certificates (insecure)
+server-settings-insecure-warning = Disables TLS certificate validation for this server. Only use this against a server and network you trust.
+server-settings-save = Save
+server-settings-saved = Saved — restart the app for this to take effect.
+
 help-title = How to play
 
 help-section-getting-started = 🚀 Getting started

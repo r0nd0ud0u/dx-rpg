@@ -8,8 +8,10 @@ use dioxus::{
     prelude::*,
 };
 use dioxus_i18n::t;
+use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
+use crate::common::{SYNCED_INSECURE_CERTS_KEY, SYNCED_SERVER_URL_KEY};
 use crate::{
     auth_manager::server_fn::logout,
     common::{ADMIN, CtxAppLang, Route},
@@ -19,6 +21,7 @@ use crate::{
             AlertDialogRoot, AlertDialogTitle,
         },
         button::{Button, ButtonVariant},
+        input::Input,
     },
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
@@ -42,6 +45,28 @@ pub fn Navbar() -> Element {
     // dialog open states — lifted here so the roots can live outside the navbar div
     let mut help_open = use_signal(|| false);
     let mut quit_open = use_signal(|| false);
+
+    // Server connection settings — native only (gated at render time below via
+    // `cfg!(target_arch = "wasm32")`, since #[cfg] attributes aren't supported inside
+    // rsx!; the hooks themselves must still be called unconditionally on every render,
+    // per Dioxus's hook rules, and are harmless no-ops on web). The web client always
+    // infers its server from same-origin, so there's nothing to configure there. See
+    // src/main.rs for how these two persisted keys are read (with higher priority than
+    // the compile-time-baked default, lower than a runtime SERVER_URL env var) on the
+    // *next* launch — the running app can't switch servers live, since
+    // dioxus::fullstack::set_server_url() can only be called once per process.
+    let mut server_settings_open = use_signal(|| false);
+    let mut synced_server_url =
+        use_synced_storage::<LocalStorage, String>(SYNCED_SERVER_URL_KEY.to_owned(), || {
+            dioxus::fullstack::get_server_url().to_owned()
+        });
+    let mut synced_insecure_certs =
+        use_synced_storage::<LocalStorage, bool>(SYNCED_INSECURE_CERTS_KEY.to_owned(), || false);
+    // Draft state so typing doesn't write to storage on every keystroke; reset from the
+    // synced values each time the dialog is opened (see the trigger button below).
+    let mut server_url_draft = use_signal(&*synced_server_url);
+    let mut insecure_certs_draft = use_signal(&*synced_insecure_certs);
+    let mut server_saved_message = use_signal(|| false);
 
     // snapshot
     let snap_local_login_name_session = local_login_name_session();
@@ -84,6 +109,19 @@ pub fn Navbar() -> Element {
                         variant: ButtonVariant::Outline,
                         onclick: move |_| help_open.set(true),
                         "?"
+                    }
+                    // Server settings trigger (native only)
+                    if !cfg!(target_arch = "wasm32") {
+                        Button {
+                            variant: ButtonVariant::Outline,
+                            onclick: move |_| {
+                                server_url_draft.set(synced_server_url());
+                                insecure_certs_draft.set(synced_insecure_certs());
+                                server_saved_message.set(false);
+                                server_settings_open.set(true);
+                            },
+                            {t!("navbar-server-settings")}
+                        }
                     }
                     // Quit-game trigger (only while a game is running)
                     if server_data().core_game_data.game_phase == GamePhase::Running {
@@ -218,6 +256,57 @@ pub fn Navbar() -> Element {
                     }
                     AlertDialogAction {
                         AlertDialogCancel { {t!("common-close")} }
+                    }
+                }
+            }
+
+            // Server settings dialog (native only)
+            if !cfg!(target_arch = "wasm32") {
+                AlertDialogRoot {
+                    open: server_settings_open(),
+                    on_open_change: move |v| server_settings_open.set(v),
+                    AlertDialogContent {
+                        AlertDialogTitle { {t!("server-settings-title")} }
+                        AlertDialogDescription {
+                            div { style: "text-align:left; display:flex; flex-direction:column; gap:0.75rem;",
+                                p {
+                                    {t!("server-settings-current", url : dioxus::fullstack::get_server_url().to_owned())}
+                                }
+                                Input {
+                                    placeholder: t!("server-settings-placeholder"),
+                                    r#type: "text",
+                                    value: "{server_url_draft}",
+                                    oninput: move |e: FormEvent| server_url_draft.set(e.value()),
+                                }
+                                label { style: "display:flex; align-items:center; gap:0.5rem; cursor:pointer;",
+                                    input {
+                                        r#type: "checkbox",
+                                        checked: insecure_certs_draft(),
+                                        onchange: move |e: FormEvent| insecure_certs_draft.set(e.checked()),
+                                    }
+                                    span { {t!("server-settings-insecure-label")} }
+                                }
+                                p { style: "font-size:0.85em; color:var(--rpg-text-muted);",
+                                    {t!("server-settings-insecure-warning")}
+                                }
+                                if server_saved_message() {
+                                    p { style: "color:var(--rpg-gold); font-weight:600;",
+                                        {t!("server-settings-saved")}
+                                    }
+                                }
+                            }
+                        }
+                        AlertDialogAction {
+                            AlertDialogCancel { {t!("common-cancel")} }
+                            AlertDialogAction {
+                                on_click: move |_| {
+                                    synced_server_url.set(server_url_draft());
+                                    synced_insecure_certs.set(insecure_certs_draft());
+                                    server_saved_message.set(true);
+                                },
+                                {t!("server-settings-save")}
+                            }
+                        }
                     }
                 }
             }

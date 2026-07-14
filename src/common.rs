@@ -62,6 +62,13 @@ pub const DX_COMP_CSS: Asset = asset!("/assets/dx-components-theme.css");
 
 pub const OFFLINE_PATH: &str = "offlines";
 
+/// Native clients only: `dioxus_sdk_storage` keys for the user-chosen server address
+/// and TLS-validation override, shared between `main.rs` (reads them once at startup,
+/// before launch) and `board_game_components/navbar.rs` (the settings UI that writes
+/// them). Kept as constants so the two call sites can't drift apart.
+pub const SYNCED_SERVER_URL_KEY: &str = "synced_server_url";
+pub const SYNCED_INSECURE_CERTS_KEY: &str = "synced_insecure_certs";
+
 // ── Per-setting context newtypes ─────────────────────────────────────────────
 // Each wraps a `Signal<bool>` in a distinct type so that Dioxus context lookup
 // (which is keyed by TypeId) stores and retrieves them independently.

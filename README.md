@@ -585,6 +585,15 @@ Unlike the web bundle, these client-only bundles don't ship `offlines/`, `db.sql
 or a `.env` file — that data belongs to the server, not the client. Set `SERVER_URL`
 in the environment before launching the built client.
 
+**Android is the exception**: an installed APK has no shell to read env vars from at
+runtime the way a desktop process does, so `SERVER_URL` (and `INSECURE_ACCEPT_INVALID_CERTS`
+if needed) must be baked in at *build* time instead — set them before running
+`bundle_mobile.sh`, and they get compiled into the APK:
+
+```bash
+SERVER_URL=https://your-server.example.com ./scripts/bundle_mobile.sh aarch64-linux-android
+```
+
 **Self-signed / untrusted TLS certificate:** if `SERVER_URL` is `https://` and the
 server's certificate isn't signed by a trusted CA (e.g. a self-signed cert on a
 home-lab or dev deployment with no domain for Let's Encrypt), the native client's
@@ -715,6 +724,16 @@ bundle (`bundle_linux.zip` / `bundle_windows.zip`):
 
 Both are client-only builds that expect `SERVER_URL` to point at an already-running
 dx-rpg server (self-hosted via Docker Compose above, or the web bundle).
+
+**The Android APK has `SERVER_URL`/`INSECURE_ACCEPT_INVALID_CERTS` baked in by CI**
+(see [Desktop & Mobile Clients](#desktop--mobile-clients) for why — installed APKs
+have no runtime env to read). By default the workflow bakes in this project's own
+server with certificate validation **disabled**; override either via repo *Settings
+→ Secrets and variables → Actions → Variables* (`SERVER_URL`,
+`INSECURE_ACCEPT_INVALID_CERTS`) without touching the workflow file — e.g. set
+`INSECURE_ACCEPT_INVALID_CERTS` to `false` once the server has a real trusted
+certificate, since shipping every release with cert validation off is only
+appropriate while the server is a self-signed home-lab/test deployment.
 
 ---
 
