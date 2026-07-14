@@ -60,6 +60,7 @@ jobs:
         with:
           name: bundle_linux.zip
           path: bundle_linux.zip
+          if-no-files-found: error
 
       - name: Upload artifact (Windows)
         if: runner.os == 'Windows'
@@ -67,6 +68,7 @@ jobs:
         with:
           name: bundle_windows.zip
           path: bundle_windows.zip
+          if-no-files-found: error
 
   build-desktop:
     name: Upload Desktop Client Asset (${{ matrix.os }})
@@ -124,6 +126,7 @@ jobs:
         with:
           name: bundle_desktop_linux.zip
           path: bundle_desktop_linux.zip
+          if-no-files-found: error
 
       - name: Upload artifact (Windows)
         if: runner.os == 'Windows'
@@ -131,6 +134,7 @@ jobs:
         with:
           name: bundle_desktop_windows.zip
           path: bundle_desktop_windows.zip
+          if-no-files-found: error
 
   build-mobile:
     name: Upload Android Client Asset
@@ -184,6 +188,7 @@ jobs:
         with:
           name: bundle_android
           path: bundle-android/**/*.apk
+          if-no-files-found: error
 
   release:
     name: Create GitHub Release
