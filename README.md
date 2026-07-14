@@ -569,9 +569,15 @@ SERVER_URL=https://your-server.example.com dx serve --platform desktop --no-defa
 Release bundles are produced with the same scripts the CI release workflow uses:
 
 ```bash
-./scripts/bundle_desktop.sh   # -> bundle-desktop/  (Windows/Linux/macOS native app)
-./scripts/bundle_mobile.sh    # -> bundle-android/   (Android .apk, requires Android SDK/NDK)
+./scripts/bundle_desktop.sh                        # -> bundle-desktop/  (Windows/Linux/macOS native app)
+./scripts/bundle_mobile.sh aarch64-linux-android    # -> bundle-android/  (arm64-v8a .apk — most real phones)
+./scripts/bundle_mobile.sh armv7-linux-androideabi  # -> bundle-android/  (armeabi-v7a .apk — older 32-bit devices)
 ```
+
+`bundle_mobile.sh`'s target triple argument matters: without it, `dx bundle` picks its own
+default ABI, which may not match your phone's — the app then simply fails to install
+("app not compatible with this device"). Requires the Android SDK/NDK and the matching
+`rustup target add <triple>`.
 
 Unlike the web bundle, these client-only bundles don't ship `offlines/`, `db.sqlite`,
 or a `.env` file — that data belongs to the server, not the client. Set `SERVER_URL`
@@ -701,7 +707,8 @@ publishes a GitHub Release with, alongside the existing self-hostable web/server
 bundle (`bundle_linux.zip` / `bundle_windows.zip`):
 - `bundle_desktop_linux.zip` / `bundle_desktop_windows.zip` — native desktop
   clients (see [Desktop & Mobile Clients](#desktop--mobile-clients))
-- an Android `.apk` — native Android client
+- `dx-rpg-arm64-v8a.apk` / `dx-rpg-armeabi-v7a.apk` — native Android clients,
+  one per ABI (pick arm64-v8a unless your phone is an older 32-bit device)
 
 Both are client-only builds that expect `SERVER_URL` to point at an already-running
 dx-rpg server (self-hosted via Docker Compose above, or the web bundle).

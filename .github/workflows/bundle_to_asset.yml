@@ -137,8 +137,17 @@ jobs:
           if-no-files-found: error
 
   build-mobile:
-    name: Upload Android Client Asset
+    name: Upload Android Client Asset (${{ matrix.abi }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          # arm64-v8a covers essentially every real Android phone since ~2019.
+          - target: aarch64-linux-android
+            abi: arm64-v8a
+          # armeabi-v7a covers older/budget 32-bit devices.
+          - target: armv7-linux-androideabi
+            abi: armeabi-v7a
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -147,7 +156,7 @@ jobs:
         run: rustup update stable
 
       - name: Add Android rust target
-        run: rustup target add aarch64-linux-android
+        run: rustup target add ${{ matrix.target }}
 
       # `dx bundle --platform android` also compiles a host-target companion build
       # (visible as `target/server-release`, target x86_64-unknown-linux-gnu) even with
@@ -178,16 +187,23 @@ jobs:
         run: chmod +x ./scripts/bundle_mobile.sh
 
       - name: Build Android client
-        run: ./scripts/bundle_mobile.sh
+        run: ./scripts/bundle_mobile.sh ${{ matrix.target }}
         shell: bash
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
+      # dx names the output apk the same regardless of target/ABI, which would collide
+      # if both matrix legs' artifacts were attached to the same GitHub Release as-is.
+      - name: Rename APK with ABI suffix
+        run: |
+          apk=$(find bundle-android -name '*.apk' | head -n1)
+          mv "$apk" "bundle-android/dx-rpg-${{ matrix.abi }}.apk"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: bundle_android
-          path: bundle-android/**/*.apk
+          name: bundle_android_${{ matrix.abi }}
+          path: bundle-android/dx-rpg-${{ matrix.abi }}.apk
           if-no-files-found: error
 
   release:
