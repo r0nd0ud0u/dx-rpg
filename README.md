@@ -735,6 +735,13 @@ server with certificate validation **disabled**; override either via repo *Setti
 certificate, since shipping every release with cert validation off is only
 appropriate while the server is a self-signed home-lab/test deployment.
 
+**The APK is signed with a stable, committed debug keystore** (`android/debug.keystore`)
+so consecutive releases can be installed as an update instead of failing with "package
+conflicts with an existing package" — GitHub Actions runners are ephemeral and would
+otherwise generate a new random debug key on every run. This is a debug-only key (never
+used for Play Store distribution) using Android tooling's well-known public debug
+password by convention, so committing it is intentional, not an oversight.
+
 ---
 
 ## Screenshots
