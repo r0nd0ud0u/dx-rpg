@@ -58,7 +58,7 @@ pub struct CharacterFormData {
 }
 
 /// Returns the list of hero characters for the admin panel.
-#[server]
+#[post("/api/admin_list_characters")]
 pub async fn admin_list_characters() -> Result<Vec<AdminCharacterInfo>, ServerFnError> {
     use crate::common::DATA_MANAGER;
     use lib_rpg::character_mod::character::CharacterKind;
@@ -90,7 +90,7 @@ pub async fn admin_list_characters() -> Result<Vec<AdminCharacterInfo>, ServerFn
 }
 
 /// Returns the list of boss characters for the admin panel.
-#[server]
+#[post("/api/admin_list_bosses")]
 pub async fn admin_list_bosses() -> Result<Vec<AdminCharacterInfo>, ServerFnError> {
     use crate::common::DATA_MANAGER;
     let dm = DATA_MANAGER
@@ -120,7 +120,7 @@ pub async fn admin_list_bosses() -> Result<Vec<AdminCharacterInfo>, ServerFnErro
 }
 
 /// Returns list of available universe names (union of DATA_MANAGER + filesystem scan).
-#[server]
+#[post("/api/list_universes_server")]
 pub async fn list_universes_server() -> Result<Vec<String>, ServerFnError> {
     use crate::common::{DATA_MANAGER, OFFLINE_PATH};
     use std::path::Path;
@@ -155,7 +155,7 @@ pub async fn list_universes_server() -> Result<Vec<String>, ServerFnError> {
 }
 
 /// Returns the raw JSON of a character file for the admin editor.
-#[server]
+#[post("/api/admin_get_character_json")]
 pub async fn admin_get_character_json(
     universe: String,
     character_name: String,
@@ -171,7 +171,7 @@ pub async fn admin_get_character_json(
 }
 
 /// Saves the raw JSON of a character file (validates JSON first) and reloads DATA_MANAGER.
-#[server]
+#[post("/api/admin_save_character_json")]
 pub async fn admin_save_character_json(
     universe: String,
     character_name: String,
@@ -199,7 +199,7 @@ pub async fn admin_save_character_json(
 }
 
 /// Returns the key fields of a character for form-based editing.
-#[server]
+#[post("/api/admin_get_character_form")]
 pub async fn admin_get_character_form(
     universe: String,
     character_name: String,
@@ -265,7 +265,7 @@ pub async fn admin_get_character_form(
 }
 
 /// Saves key character fields back into the JSON file, preserving other fields.
-#[server]
+#[post("/api/admin_save_character_form")]
 pub async fn admin_save_character_form(
     universe: String,
     character_name: String,

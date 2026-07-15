@@ -38,7 +38,7 @@ fn parse_scenario_info(path: &std::path::Path, universe: &str) -> Option<AdminSc
 }
 
 /// Returns the list of all scenarios by scanning the scenarios directory on disk.
-#[server]
+#[post("/api/admin_list_scenarios")]
 pub async fn admin_list_scenarios() -> Result<Vec<AdminScenarioInfo>, ServerFnError> {
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
@@ -86,7 +86,7 @@ pub async fn admin_list_scenarios() -> Result<Vec<AdminScenarioInfo>, ServerFnEr
 }
 
 /// Returns sorted list of distinct universe names (empty string = no universe).
-#[server]
+#[post("/api/get_available_universes")]
 pub async fn get_available_universes() -> Result<Vec<String>, ServerFnError> {
     use crate::common::DATA_MANAGER;
     let dm = DATA_MANAGER
@@ -96,7 +96,7 @@ pub async fn get_available_universes() -> Result<Vec<String>, ServerFnError> {
 }
 
 /// Returns scenario filenames (stems) for a given universe.
-#[server]
+#[post("/api/list_scenarios_for_universe")]
 pub async fn list_scenarios_for_universe(universe: String) -> Result<Vec<String>, ServerFnError> {
     use crate::common::{DATA_MANAGER, OFFLINE_PATH};
     use std::path::Path;
@@ -145,7 +145,7 @@ pub struct ScenarioDetail {
 }
 
 /// Returns a structured ScenarioDetail for the admin edit form.
-#[server]
+#[post("/api/get_scenario_detail")]
 pub async fn get_scenario_detail(
     universe: String,
     file_stem: String,
@@ -217,7 +217,7 @@ pub async fn get_scenario_detail(
 }
 
 /// Saves a scenario from form fields (converts to JSON and writes to disk).
-#[server]
+#[post("/api/save_scenario_detail")]
 pub async fn save_scenario_detail(
     universe: String,
     file_stem: String,
@@ -299,7 +299,7 @@ pub async fn save_scenario_detail(
 }
 
 /// Returns full JSON content of a scenario file.
-#[server]
+#[post("/api/get_scenario_json")]
 pub async fn get_scenario_json(
     universe: String,
     file_stem: String,
@@ -315,7 +315,7 @@ pub async fn get_scenario_json(
 }
 
 /// Saves (creates or overwrites) a scenario JSON file and reloads the data manager.
-#[server]
+#[post("/api/save_scenario_json")]
 pub async fn save_scenario_json(
     universe: String,
     file_stem: String,
@@ -342,7 +342,7 @@ pub async fn save_scenario_json(
 }
 
 /// Deletes a scenario JSON file and reloads the data manager.
-#[server]
+#[post("/api/delete_scenario_json")]
 pub async fn delete_scenario_json(
     universe: String,
     file_stem: String,

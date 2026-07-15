@@ -3,7 +3,7 @@ use crate::auth_manager::{db::get_db, model::SqlUser};
 use dioxus::prelude::*;
 
 /// Returns true if the Admin CRUD panel is enabled (controlled by `ADMIN_ENABLED` env var).
-#[server]
+#[post("/api/is_admin_enabled")]
 pub async fn is_admin_enabled() -> Result<bool, ServerFnError> {
     Ok(std::env::var("ADMIN_ENABLED")
         .unwrap_or_else(|_| "true".to_owned())
@@ -21,7 +21,7 @@ pub struct AdminUserInfo {
 }
 
 /// Returns the list of all users with lightweight metadata, for the admin panel.
-#[server]
+#[post("/api/admin_list_users")]
 pub async fn admin_list_users() -> Result<Vec<AdminUserInfo>, ServerFnError> {
     use crate::common::SAVED_DATA;
     use lib_rpg::{common::constants::paths_const::GAMES_DIR, utils::list_dirs_in_dir};

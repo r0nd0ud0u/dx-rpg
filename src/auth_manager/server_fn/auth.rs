@@ -6,7 +6,7 @@ use dioxus::prelude::*;
 use std::collections::HashSet;
 
 /// Returns whether password authentication is required, driven by the `USE_PASSWORD` env var.
-#[server]
+#[post("/api/get_use_password")]
 pub async fn get_use_password() -> Result<bool, ServerFnError> {
     Ok(std::env::var("USE_PASSWORD")
         .unwrap_or_else(|_| "false".to_owned())
@@ -66,7 +66,7 @@ pub async fn login(
     }
 }
 
-#[server]
+#[post("/api/register")]
 pub async fn register(
     username: String,
     password: String,
@@ -220,7 +220,7 @@ pub async fn set_user_by_id(user_id: i64) -> Result<()> {
 }
 
 #[cfg(feature = "server")]
-#[server]
+#[post("/api/update_connection_status")]
 pub async fn update_connection_status(
     username: String,
     is_connected: bool,
@@ -243,7 +243,7 @@ pub async fn update_connection_status(
 }
 
 #[cfg(feature = "server")]
-#[server]
+#[post("/api/update_all_connection_status")]
 pub async fn update_all_connection_status(is_connected: bool) -> Result<(), ServerFnError> {
     let pool = get_db().await;
     tracing::info!("UPDATE users SET is_connected = {}", is_connected,);
@@ -258,7 +258,7 @@ pub async fn update_all_connection_status(is_connected: bool) -> Result<(), Serv
 }
 
 /// Get a user setting value (returns default_val if not set).
-#[server]
+#[post("/api/get_user_setting")]
 pub async fn get_user_setting(key: String, default_val: String) -> Result<String, ServerFnError> {
     let username = get_user_name()
         .await
@@ -275,7 +275,7 @@ pub async fn get_user_setting(key: String, default_val: String) -> Result<String
 }
 
 /// Save a user setting key/value pair.
-#[server]
+#[post("/api/save_user_setting")]
 pub async fn save_user_setting(key: String, value: String) -> Result<(), ServerFnError> {
     let username = get_user_name()
         .await
