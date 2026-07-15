@@ -107,8 +107,11 @@ jobs:
         run: ./scripts/bundle_desktop.sh
         shell: bash
         env:
-          SERVER_URL: ${{ vars.SERVER_URL || 'https://83.228.245.219' }}
-          INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'true' }}
+          # aogin-world.com has a real Let's Encrypt certificate; the bare IP does not
+          # (the cert's CN is the domain, so connecting via IP fails hostname verification),
+          # so no INSECURE_ACCEPT_INVALID_CERTS override is needed here anymore.
+          SERVER_URL: ${{ vars.SERVER_URL || 'https://aogin-world.com' }}
+          INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'false' }}
 
       - name: Rename bundle directory
         run: |
@@ -215,8 +218,11 @@ jobs:
         shell: bash
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-          SERVER_URL: ${{ vars.SERVER_URL || 'https://83.228.245.219' }}
-          INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'true' }}
+          # aogin-world.com has a real Let's Encrypt certificate; the bare IP does not
+          # (the cert's CN is the domain, so connecting via IP fails hostname verification),
+          # so no INSECURE_ACCEPT_INVALID_CERTS override is needed here anymore.
+          SERVER_URL: ${{ vars.SERVER_URL || 'https://aogin-world.com' }}
+          INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'false' }}
 
       - name: Rename APK with ABI suffix
         run: |

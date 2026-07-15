@@ -728,12 +728,14 @@ dx-rpg server (self-hosted via Docker Compose above, or the web bundle).
 **The Android APK has `SERVER_URL`/`INSECURE_ACCEPT_INVALID_CERTS` baked in by CI**
 (see [Desktop & Mobile Clients](#desktop--mobile-clients) for why — installed APKs
 have no runtime env to read). By default the workflow bakes in this project's own
-server with certificate validation **disabled**; override either via repo *Settings
-→ Secrets and variables → Actions → Variables* (`SERVER_URL`,
+server via its domain name (`https://aogin-world.com`), which has a real Let's
+Encrypt certificate, so certificate validation stays **enabled**. Override either
+via repo *Settings → Secrets and variables → Actions → Variables* (`SERVER_URL`,
 `INSECURE_ACCEPT_INVALID_CERTS`) without touching the workflow file — e.g. set
-`INSECURE_ACCEPT_INVALID_CERTS` to `false` once the server has a real trusted
-certificate, since shipping every release with cert validation off is only
-appropriate while the server is a self-signed home-lab/test deployment.
+`INSECURE_ACCEPT_INVALID_CERTS` to `true` only if pointing at a self-signed
+home-lab/test deployment instead. Note the domain, not the bare IP: a
+certificate's hostname check fails when connecting by IP address even though the
+same server is reached either way.
 
 **The APK is signed with a stable, committed debug keystore** (`android/debug.keystore`)
 so consecutive releases can be installed as an update instead of failing with "package
