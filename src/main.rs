@@ -17,7 +17,7 @@ use dx_rpg::{
     },
     websocket_handler::{
         NO_CLIENT_ID,
-        event::{ClientEvent, CombatUpdate, ServerEvent, on_rcv_client_event},
+        event::{ClientEvent, ServerEvent, on_rcv_client_event},
     },
 };
 // These constants are only used in the native (non-web, non-server) build path where
@@ -505,20 +505,13 @@ fn App() -> Element {
                     ServerEvent::UpdateCombat(combat_update) => {
                         // Patch just the per-attack fields in place — ordinary attacks
                         // deliberately don't send a full ServerData snapshot (see
-                        // ServerEvent::UpdateCombat's doc comment), so leave
+                        // CombatUpdate's doc comment in lib-rpg), so leave
                         // all_scenarios/states_scenarios/current_scenario/game_paths/
                         // end_of_scenario untouched at their last-known values here.
-                        let CombatUpdate {
-                            game_state,
-                            pm,
-                            logs,
-                            last_action_header,
-                        } = *combat_update;
-                        let mut sd = server_data.write();
-                        sd.core_game_data.game_manager.game_state = game_state;
-                        sd.core_game_data.game_manager.pm = pm;
-                        sd.core_game_data.game_manager.logs = logs;
-                        sd.core_game_data.last_action_header = last_action_header;
+                        server_data
+                            .write()
+                            .core_game_data
+                            .apply_combat_update(*combat_update);
                     }
                 }
             }

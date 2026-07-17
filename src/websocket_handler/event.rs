@@ -25,9 +25,8 @@ use lib_rpg::common::overworld::Direction;
 use lib_rpg::common::overworld::Position;
 #[cfg(feature = "server")]
 use lib_rpg::server::core_game_data::CoreGameData;
-use lib_rpg::server::game_state::GameState;
+use lib_rpg::server::core_game_data::CombatUpdate;
 use lib_rpg::server::overworld_manager::OverworldState;
-use lib_rpg::server::players_manager::PlayerManager;
 use lib_rpg::server::server_manager::OnGoingGame;
 use lib_rpg::server::server_manager::ServerData;
 #[cfg(feature = "server")]
@@ -137,15 +136,6 @@ pub enum ServerEvent {
     // the scenario/game still goes through the full UpdateServerData broadcast (see
     // update_core_game_data_after_atk), since end_of_scenario/game_phase change too.
     UpdateCombat(Box<CombatUpdate>),
-}
-
-/// Payload for `ServerEvent::UpdateCombat` — see that variant's doc comment.
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CombatUpdate {
-    pub game_state: GameState,
-    pub pm: PlayerManager,
-    pub logs: Vec<LogData>,
-    pub last_action_header: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1205,12 +1195,7 @@ pub fn update_clients_combat(server_name: &str) {
         );
         return;
     };
-    let update = CombatUpdate {
-        game_state: server_data.core_game_data.game_manager.game_state,
-        pm: server_data.core_game_data.game_manager.pm,
-        logs: server_data.core_game_data.game_manager.logs,
-        last_action_header: server_data.core_game_data.last_action_header,
-    };
+    let update = server_data.core_game_data.to_combat_update();
     send_server_event_to_clients(server_name, &ServerEvent::UpdateCombat(Box::new(update)));
 }
 
