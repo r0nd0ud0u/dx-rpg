@@ -25,7 +25,9 @@ use lib_rpg::common::overworld::Direction;
 use lib_rpg::common::overworld::Position;
 #[cfg(feature = "server")]
 use lib_rpg::server::core_game_data::CoreGameData;
+use lib_rpg::server::game_state::GameState;
 use lib_rpg::server::overworld_manager::OverworldState;
+use lib_rpg::server::players_manager::PlayerManager;
 use lib_rpg::server::server_manager::OnGoingGame;
 use lib_rpg::server::server_manager::ServerData;
 #[cfg(feature = "server")]
@@ -125,6 +127,25 @@ pub enum ServerEvent {
     // triggers a fight (MoveResult::Encounter) still goes through the full
     // UpdateServerData broadcast, since that also changes game_phase/scenario/boss state.
     UpdateOverworld(Box<OverworldState>),
+    // Lightweight combat-only update sent after an ordinary attack that doesn't end the
+    // scenario/game — carries just the GameManager sub-fields that actually change
+    // per-attack (character stats/buffs/turn state, combat log) plus the one
+    // CoreGameData-level field that also changes per-attack (last_action_header).
+    // Skips all_scenarios/states_scenarios/current_scenario/game_paths/end_of_scenario,
+    // which are static for the whole duration of a fight and would otherwise be
+    // re-cloned and re-sent, unchanged, on every single attack. An attack that DOES end
+    // the scenario/game still goes through the full UpdateServerData broadcast (see
+    // update_core_game_data_after_atk), since end_of_scenario/game_phase change too.
+    UpdateCombat(Box<CombatUpdate>),
+}
+
+/// Payload for `ServerEvent::UpdateCombat` — see that variant's doc comment.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CombatUpdate {
+    pub game_state: GameState,
+    pub pm: PlayerManager,
+    pub logs: Vec<LogData>,
+    pub last_action_header: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1176,6 +1197,24 @@ pub fn update_clients_server_data(server_name: &str) {
 }
 
 #[cfg(feature = "server")]
+pub fn update_clients_combat(server_name: &str) {
+    let Some(server_data) = get_server_data_by_server_name(server_name) else {
+        tracing::error!(
+            "update_clients_combat: No server data found for server name: {}",
+            server_name
+        );
+        return;
+    };
+    let update = CombatUpdate {
+        game_state: server_data.core_game_data.game_manager.game_state,
+        pm: server_data.core_game_data.game_manager.pm,
+        logs: server_data.core_game_data.game_manager.logs,
+        last_action_header: server_data.core_game_data.last_action_header,
+    };
+    send_server_event_to_clients(server_name, &ServerEvent::UpdateCombat(Box::new(update)));
+}
+
+#[cfg(feature = "server")]
 pub fn update_clients_overworld(server_name: &str) {
     let Some(server_data) = get_server_data_by_server_name(server_name) else {
         tracing::error!(
@@ -1286,6 +1325,7 @@ pub async fn update_core_game_data_after_atk(
     use lib_rpg::server::game_state::GameStatus;
     let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
     let logs: Vec<LogData>;
+    let status_after_atk: GameStatus;
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         // launch attack
         // case several ennemy-auto-atk in a row and one atk ended the game, the next atk should not reach.
@@ -1321,6 +1361,12 @@ pub async fn update_core_game_data_after_atk(
             .atk_name
             .clone();
         let header_sent = server_data.core_game_data.last_action_header.clone();
+        status_after_atk = server_data
+            .core_game_data
+            .game_manager
+            .game_state
+            .status
+            .clone();
         tracing::info!(
             "update_core_game_data_after_atk server={} atk={:?} logs={} last_atk_name={:?} header={:?}",
             server_name,
@@ -1341,7 +1387,17 @@ pub async fn update_core_game_data_after_atk(
 
     // update clients
     update_clients_end_of_atk_animation(server_name, true);
-    update_clients_server_data(server_name);
+    // An attack that ends the scenario/game also changes end_of_scenario/game_phase
+    // (see GameManager::eval_end_of_round -> process_end_of_scenario), which the
+    // lightweight combat-only update doesn't carry — fall back to the full snapshot.
+    if matches!(
+        status_after_atk,
+        GameStatus::EndOfScenario | GameStatus::EndOfGame
+    ) {
+        update_clients_server_data(server_name);
+    } else {
+        update_clients_combat(server_name);
+    }
     // spawn
     let server_name = server_name.to_owned(); // if it was &str
     tokio::spawn(async move {
