@@ -235,9 +235,7 @@ pub fn RunningGamePage() -> Element {
                                 div { class: "scenario-section",
                                     h3 { class: "scenario-section-title", "{title}" }
                                     if last_atk.is_dot_kill && !dying_last.is_empty() {
-                                        p { class: "dot-kill-info",
-                                            {t!("startgame-enemy-last-attack", name : dying_last.clone())}
-                                        }
+                                        p { class: "dot-kill-info", {t!("startgame-enemy-last-attack", name : dying_last.clone())} }
                                     }
                                     if !last_atk.new_game_atk_effects.is_empty() {
                                         div { class: "scenario-last-atk",
@@ -319,8 +317,8 @@ pub fn RunningGamePage() -> Element {
                             {
                                 t!(
                                     "startgame-turn-round", turn : server_data().core_game_data.game_manager
-                                    .game_state.current_turn_nb as i64, round : server_data()
-                                    .core_game_data.game_manager.game_state.current_round as i64
+                                    .game_state.current_turn_nb as i64, round : server_data().core_game_data
+                                    .game_manager.game_state.current_round as i64
                                 )
                             }
                         }

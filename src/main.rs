@@ -376,8 +376,7 @@ fn App() -> Element {
                 // First call after hydration: restore the saved session (do NOT save yet,
                 // to avoid overwriting localStorage with the default "not connected" value)
                 restored.set(true);
-                if let Some(saved) =
-                    LocalStorage::get::<String>(&"synced_user_sql_name".to_owned())
+                if let Some(saved) = LocalStorage::get::<String>(&"synced_user_sql_name".to_owned())
                 {
                     if !saved.is_empty() && saved != *DISCONNECTED_USER {
                         login_name_session_local_sync.set(saved);

@@ -269,7 +269,9 @@ fn CharCardItem(
             }
             if is_taken {
                 if let Some(taker) = taken_by.clone() {
-                    div { class: "char-card-taken-label", {t!("char-card-taken-by", taker : taker.clone())} }
+                    div { class: "char-card-taken-label",
+                        {t!("char-card-taken-by", taker : taker.clone())}
+                    }
                 }
             } else if is_selected() {
                 div { class: "char-card-action char-card-action-selected", {t!("char-card-remove")} }

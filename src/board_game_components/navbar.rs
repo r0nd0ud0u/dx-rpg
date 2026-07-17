@@ -212,22 +212,52 @@ pub fn Navbar() -> Element {
                                 {t!("help-section-overworld")}
                             }
                             p { {t!("help-step-13")} }
-                            p { "    " {t!("help-overworld-move")} }
-                            p { "    " {t!("help-overworld-interact")} }
-                            p { "    " {t!("help-overworld-encounter")} }
-                            p { "    " {t!("help-overworld-boss")} }
-                            p { "    " {t!("help-overworld-unlock")} }
-                            p { "    " {t!("help-overworld-back")} }
+                            p {
+                                "    "
+                                {t!("help-overworld-move")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-overworld-interact")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-overworld-encounter")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-overworld-boss")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-overworld-unlock")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-overworld-back")}
+                            }
 
                             // Store
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
                                 {t!("help-section-store")}
                             }
                             p { {t!("help-step-14")} }
-                            p { "    " {t!("help-store-equipment")} }
-                            p { "    " {t!("help-store-consumables")} }
-                            p { "    " {t!("help-store-bag")} }
-                            p { "    " {t!("help-store-gold")} }
+                            p {
+                                "    "
+                                {t!("help-store-equipment")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-store-consumables")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-store-bag")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-store-gold")}
+                            }
 
                             // Progression
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
@@ -243,9 +273,18 @@ pub fn Navbar() -> Element {
                                 {t!("help-section-admin")}
                             }
                             p { {t!("help-step-19")} }
-                            p { "    " {t!("help-admin-users")} }
-                            p { "    " {t!("help-admin-characters")} }
-                            p { "    " {t!("help-admin-scenarios")} }
+                            p {
+                                "    "
+                                {t!("help-admin-users")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-admin-characters")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-admin-scenarios")}
+                            }
                         }
                     }
                     AlertDialogAction {
@@ -264,7 +303,12 @@ pub fn Navbar() -> Element {
                         AlertDialogDescription {
                             div { style: "text-align:left; display:flex; flex-direction:column; gap:0.75rem;",
                                 p {
-                                    {t!("server-settings-current", url : dioxus::fullstack::get_server_url().to_owned())}
+                                    {
+                                        t!(
+                                            "server-settings-current", url : dioxus::fullstack::get_server_url()
+                                            .to_owned()
+                                        )
+                                    }
                                 }
                                 Input {
                                     placeholder: t!("server-settings-placeholder"),

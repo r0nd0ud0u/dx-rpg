@@ -92,7 +92,7 @@ pub fn LoginPage() -> Element {
                             tracing::info!("Attempting to log in with username: {}", username());
                             match login(username(), password(), use_pw()).await {
                                 Ok(()) => {
-                                    logon_answer.set(t!("login-success", username: username()));
+                                    logon_answer.set(t!("login-success", username : username()));
                                     match get_user_id().await {
                                         Ok(sql_id) => {
                                             *local_login_id_session.write() = sql_id;

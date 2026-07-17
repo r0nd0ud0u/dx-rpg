@@ -89,7 +89,9 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
 
     rsx! {
         div { class: "admin-full-card",
-            p { class: "admin-section-title", {t!("admin-atk-title", character : char_name.clone())} }
+            p { class: "admin-section-title",
+                {t!("admin-atk-title", character : char_name.clone())}
+            }
 
             if attacks_list().is_empty() {
                 p { style: "color:var(--rpg-text-muted);", {t!("admin-atk-empty")} }
@@ -113,7 +115,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                                     attack_json.set(json);
                                                     edit_attack_name.set(Some(n));
                                                 }
-                                                Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
+                                                Err(e) => attack_feedback.set(t!("admin-error", error : e.to_string())),
                                             }
                                         });
                                     },
@@ -448,7 +450,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         spawn(async move {
                                             match admin_save_attack_form(c, n, form).await {
                                                 Ok(()) => attack_feedback.set(t!("admin-equip-saved")),
-                                                Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
+                                                Err(e) => attack_feedback.set(t!("admin-error", error : e.to_string())),
                                             }
                                         });
                                     },
@@ -468,7 +470,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                                         attacks_list.set(list);
                                                     }
                                                 }
-                                                Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
+                                                Err(e) => attack_feedback.set(t!("admin-error", error : e.to_string())),
                                             }
                                         });
                                     },
@@ -514,7 +516,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                                     atk_effet.set(form.effet_json);
                                                     attack_edit_form_mode.set(true);
                                                 }
-                                                Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
+                                                Err(e) => attack_feedback.set(t!("admin-error", error : e.to_string())),
                                             }
                                         });
                                     },
@@ -537,7 +539,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                         spawn(async move {
                                             match admin_save_attack_json(c, n, json).await {
                                                 Ok(()) => attack_feedback.set(t!("admin-equip-saved")),
-                                                Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
+                                                Err(e) => attack_feedback.set(t!("admin-error", error : e.to_string())),
                                             }
                                         });
                                     },
@@ -557,7 +559,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                                         attacks_list.set(list);
                                                     }
                                                 }
-                                                Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
+                                                Err(e) => attack_feedback.set(t!("admin-error", error : e.to_string())),
                                             }
                                         });
                                     },
@@ -611,7 +613,7 @@ pub fn AdminAttacksPanel(char_name: String, attacks_list: Signal<Vec<String>>) -
                                             attacks_list.set(list);
                                         }
                                     }
-                                    Err(e) => attack_feedback.set(t!("admin-error", error: e.to_string())),
+                                    Err(e) => attack_feedback.set(t!("admin-error", error : e.to_string())),
                                 }
                             });
                         },

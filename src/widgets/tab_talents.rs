@@ -208,8 +208,7 @@ fn TalentNode(
     let character_id_name = character.id_name.clone();
 
     rsx! {
-        div {
-            class: if talent.is_capstone { "talent-node-row talent-node-row--capstone" } else { "talent-node-row" },
+        div { class: if talent.is_capstone { "talent-node-row talent-node-row--capstone" } else { "talent-node-row" },
             Tooltip {
                 TooltipTrigger {
                     div {

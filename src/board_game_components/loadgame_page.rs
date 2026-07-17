@@ -77,8 +77,8 @@ pub fn LoadGame() -> Element {
                                             span { class: "save-slot-scenario",
                                                 {
                                                     t!(
-                                                        "loadgame-slot-scenario", scenario : slot.current_scenario
-                                                        .clone(), level : slot.scenario_level as i64
+                                                        "loadgame-slot-scenario", scenario : slot.current_scenario.clone(), level :
+                                                        slot.scenario_level as i64
                                                     )
                                                 }
                                             }
@@ -88,9 +88,7 @@ pub fn LoadGame() -> Element {
                                             if slot.is_single_player {
                                                 span { class: "save-slot-mode", {t!("loadgame-mode-solo")} }
                                             } else {
-                                                span { class: "save-slot-mode",
-                                                    {t!("loadgame-mode-multi", players : slot.players_nb)}
-                                                }
+                                                span { class: "save-slot-mode", {t!("loadgame-mode-multi", players : slot.players_nb)} }
                                             }
                                             if !slot.universe.is_empty() {
                                                 span { class: "save-slot-universe",

@@ -118,8 +118,8 @@ pub fn CreateServer() -> Element {
                                         span { class: "save-slot-scenario",
                                             {
                                                 t!(
-                                                    "loadgame-slot-scenario", scenario : slot.current_scenario
-                                                    .clone(), level : slot.scenario_level as i64
+                                                    "loadgame-slot-scenario", scenario : slot.current_scenario.clone(), level :
+                                                    slot.scenario_level as i64
                                                 )
                                             }
                                         }

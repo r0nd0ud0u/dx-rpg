@@ -31,7 +31,7 @@ pub fn Home() -> Element {
                 div { class: "rotate-scale-up",
                     h1 { class: "rpg-title", {t!("home-title")} }
                 }
-                p { class: "rpg-subtitle", {t!("home-welcome", user_name: user_name.clone())} }
+                p { class: "rpg-subtitle", {t!("home-welcome", user_name : user_name.clone())} }
                 div { class: "action-grid",
                     div { class: "action-card",
                         span { class: "action-icon", "🏰" }

@@ -264,9 +264,9 @@ pub fn OverworldMap() -> Element {
                             tile_zoom.set(new_zoom);
                             spawn(async move {
                                 let _ = save_user_setting(
-                                    SETTING_OVERWORLD_ZOOM.to_string(),
-                                    new_zoom.to_string(),
-                                )
+                                        SETTING_OVERWORLD_ZOOM.to_string(),
+                                        new_zoom.to_string(),
+                                    )
                                     .await;
                             });
                         },
@@ -281,9 +281,9 @@ pub fn OverworldMap() -> Element {
                             tile_zoom.set(new_zoom);
                             spawn(async move {
                                 let _ = save_user_setting(
-                                    SETTING_OVERWORLD_ZOOM.to_string(),
-                                    new_zoom.to_string(),
-                                )
+                                        SETTING_OVERWORLD_ZOOM.to_string(),
+                                        new_zoom.to_string(),
+                                    )
                                     .await;
                             });
                         },
