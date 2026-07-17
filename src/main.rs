@@ -494,6 +494,14 @@ fn App() -> Element {
                         tracing::info!("[client] OverworldEntered: {}", map_id);
                         overworld_map_id.set(Some(map_id));
                     }
+                    ServerEvent::UpdateOverworld(overworld_update) => {
+                        // Patch just the overworld sub-field in place — plain movement
+                        // steps deliberately don't send a full ServerData snapshot (see
+                        // ServerEvent::UpdateOverworld's doc comment), so don't replace
+                        // the rest of server_data (characters, inventories, logs, etc.)
+                        // with a stale/absent copy here.
+                        server_data.write().core_game_data.overworld = Some(*overworld_update);
+                    }
                 }
             }
             tracing::warn!("[client] ws-loop EXITED — deserialization error or socket closed");

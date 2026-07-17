@@ -25,6 +25,7 @@ use lib_rpg::common::overworld::Direction;
 use lib_rpg::common::overworld::Position;
 #[cfg(feature = "server")]
 use lib_rpg::server::core_game_data::CoreGameData;
+use lib_rpg::server::overworld_manager::OverworldState;
 use lib_rpg::server::server_manager::OnGoingGame;
 use lib_rpg::server::server_manager::ServerData;
 #[cfg(feature = "server")]
@@ -117,6 +118,13 @@ pub enum ServerEvent {
     LogOut,
     SetAtkAnimation(bool),    // true to set atk animation, false to reset it
     OverworldEntered(String), // map_id — lightweight trigger; no complex types
+    // Lightweight overworld-only update (player position, active dialog, pending
+    // encounter/fight) for plain movement steps that don't touch combat state — avoids
+    // re-sending the whole ServerData (every character's full stats/inventory/talents,
+    // shop catalog, logs, etc.) on every single tile the player walks. Movement that
+    // triggers a fight (MoveResult::Encounter) still goes through the full
+    // UpdateServerData broadcast, since that also changes game_phase/scenario/boss state.
+    UpdateOverworld(Box<OverworldState>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -928,7 +936,11 @@ fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction, 
     let lang = crate::common::lang_from_app_lang(lang);
 
     enum PostAction {
-        Broadcast,
+        // Plain movement/blocked step: only overworld sub-state changed, so only that
+        // needs to reach clients (see ServerEvent::UpdateOverworld's doc comment).
+        BroadcastOverworldOnly,
+        // Combat state changed too (new scenario/boss/turn) — needs the full snapshot.
+        BroadcastFull,
         EnterMap(String, Position),
     }
 
@@ -965,25 +977,26 @@ fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction, 
             MoveResult::Blocked => {
                 // Persist state so active_dialog (locked-door hint) reaches clients.
                 server_data.core_game_data.overworld = Some(manager.state);
-                PostAction::Broadcast
+                PostAction::BroadcastOverworldOnly
             }
             MoveResult::Moved => {
                 server_data.core_game_data.overworld = Some(manager.state);
-                PostAction::Broadcast
+                PostAction::BroadcastOverworldOnly
             }
             MoveResult::Encounter(scenario_id) => {
                 server_data.core_game_data.overworld = Some(manager.state);
                 server_data
                     .core_game_data
                     .exit_overworld_to_fight(&scenario_id);
-                PostAction::Broadcast
+                PostAction::BroadcastFull
             }
             MoveResult::MapTransition(target_map, spawn) => PostAction::EnterMap(target_map, spawn),
         }
     }; // SERVER_MANAGER lock released here
 
     match action {
-        PostAction::Broadcast => update_clients_server_data(server_name),
+        PostAction::BroadcastOverworldOnly => update_clients_overworld(server_name),
+        PostAction::BroadcastFull => update_clients_server_data(server_name),
         PostAction::EnterMap(map_id, spawn) => {
             // Ordinary map-to-map door transition — not tied to finishing a
             // scenario, so deliberately not auto-saved here.
@@ -1159,6 +1172,28 @@ pub fn update_clients_server_data(server_name: &str) {
     send_server_event_to_clients(
         server_name,
         &ServerEvent::UpdateServerData(Box::new(server_data.clone())),
+    );
+}
+
+#[cfg(feature = "server")]
+pub fn update_clients_overworld(server_name: &str) {
+    let Some(server_data) = get_server_data_by_server_name(server_name) else {
+        tracing::error!(
+            "update_clients_overworld: No server data found for server name: {}",
+            server_name
+        );
+        return;
+    };
+    let Some(overworld) = server_data.core_game_data.overworld else {
+        tracing::error!(
+            "update_clients_overworld: No overworld state for server name: {}",
+            server_name
+        );
+        return;
+    };
+    send_server_event_to_clients(
+        server_name,
+        &ServerEvent::UpdateOverworld(Box::new(overworld)),
     );
 }
 
