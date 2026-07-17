@@ -20,9 +20,8 @@ pub fn LoadGame() -> Element {
     let mut error_msg: Signal<String> = use_signal(String::new);
     let navigator = use_navigator();
 
-    let player = local_login_name_session();
     use_effect(move || {
-        let player_name = player.clone();
+        let player_name = local_login_name_session();
         spawn(async move {
             match get_save_slots(player_name).await {
                 Ok(s) => slots.set(s.into_iter().filter(|s| !s.name.is_empty()).collect()),

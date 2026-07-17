@@ -133,6 +133,8 @@ loadgame-delete-button = 🗑 Delete
 
 ## login page
 login-sign-in-title = Sign In
+login-empty-username = Please enter a username.
+login-empty-fields = Please enter a username and password.
 login-username-placeholder = Your username
 login-password-placeholder = Password
 login-success = { $username } logged in

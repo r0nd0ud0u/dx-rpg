@@ -14,15 +14,24 @@ use dx_rpg::{
         CtxAppLang, CtxAutoSaveScenario, CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy,
         CtxShowBossHp, CtxShowHeroAggro, CtxSyncedInsecureCerts, CtxSyncedServerUrl,
         CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS, Route, SERVER_NAME,
-        SYNCED_INSECURE_CERTS_KEY, SYNCED_SERVER_URL_KEY,
     },
     websocket_handler::{
         NO_CLIENT_ID,
         event::{ClientEvent, ServerEvent, on_rcv_client_event},
     },
 };
+// These constants are only used in the native (non-web, non-server) build path where
+// CtxSyncedServerUrl / CtxSyncedInsecureCerts are backed by use_synced_storage.
+#[cfg(all(not(feature = "server"), not(target_arch = "wasm32")))]
+use dx_rpg::common::{SYNCED_INSECURE_CERTS_KEY, SYNCED_SERVER_URL_KEY};
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 use unic_langid::langid;
+// StorageBacking is needed on wasm32 to call LocalStorage::get / LocalStorage::set
+// (trait methods) inside the login-restore effect.  On native it is already
+// imported above via the #[cfg(all(not(feature="server"),not(target_arch="wasm32")))]
+// block; on the server binary the effect block doesn't compile at all.
+#[cfg(target_arch = "wasm32")]
+use dioxus_sdk_storage::StorageBacking;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -272,6 +281,15 @@ fn App() -> Element {
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
     // synced storage
+    // login_name drives which page is rendered (LoginPage vs home content). Starting with
+    // the server default (DISCONNECTED_USER) on both the server binary and the WASM client
+    // ensures the hydration render produces the same component tree on both sides — avoiding
+    // a known Dioxus SSR hydration bug (https://github.com/DioxusLabs/dioxus/issues/3583)
+    // that mis-aligns the SSR data stream when the client renders different components than
+    // the server.  On native (desktop/mobile), use_synced_storage handles everything.
+    #[cfg(any(target_arch = "wasm32", feature = "server"))]
+    let mut login_name_session_local_sync = use_signal(|| DISCONNECTED_USER.clone());
+    #[cfg(all(not(target_arch = "wasm32"), not(feature = "server")))]
     let mut login_name_session_local_sync =
         use_synced_storage::<LocalStorage, String>("synced_user_sql_name".to_owned(), || {
             DISCONNECTED_USER.clone()
@@ -289,12 +307,36 @@ fn App() -> Element {
     // app at startup; this exact pattern (use_synced_storage in App(), consumed via
     // use_context in Navbar) is how every other piece of Navbar-visible synced state
     // already works (local_login_name_session, server_data, CtxAppLang, etc. below).
+    // CtxSyncedServerUrl / CtxSyncedInsecureCerts are native-clients-only settings (see
+    // their doc comments in common.rs) — the Navbar UI that reads/writes them is hidden
+    // behind `!cfg!(target_arch == "wasm32")`, so on the web build they're never
+    // displayed or edited. They're still declared here unconditionally (not skipped)
+    // because App()'s hooks must run in the same order on every platform. But
+    // `use_synced_storage` participates in Dioxus's SSR hydration handoff, and the web
+    // build's two halves — the native `feature = "server"` binary that renders the
+    // initial HTML, and the wasm32 client that hydrates it — go through that handoff
+    // for every use_synced_storage call. For most of them the server and the wasm32
+    // client are on the same page (both are the "client" from dioxus_sdk_storage's
+    // point of view). These two are the outlier: their real value only matters to a
+    // desktop/mobile *native* binary that never does SSR at all, so keep them as
+    // real synced storage there, but fall back to an inert local signal for both the
+    // web client and the server (a known Dioxus hydration bug —
+    // https://github.com/DioxusLabs/dioxus/issues/3583 — otherwise throws "Error
+    // deserializing data: Semantic(Some(0), \"expected bool\")" and breaks page
+    // interactivity on every web page load).
+    #[cfg(all(not(target_arch = "wasm32"), not(feature = "server")))]
     let synced_server_url =
         use_synced_storage::<LocalStorage, String>(SYNCED_SERVER_URL_KEY.to_owned(), || {
             dioxus::fullstack::get_server_url().to_owned()
         });
+    #[cfg(any(target_arch = "wasm32", feature = "server"))]
+    let synced_server_url = use_signal(|| dioxus::fullstack::get_server_url().to_owned());
+
+    #[cfg(all(not(target_arch = "wasm32"), not(feature = "server")))]
     let synced_insecure_certs =
         use_synced_storage::<LocalStorage, bool>(SYNCED_INSECURE_CERTS_KEY.to_owned(), || false);
+    #[cfg(any(target_arch = "wasm32", feature = "server"))]
+    let synced_insecure_certs = use_signal(|| false);
 
     // Keep dioxus-i18n's active locale synced to the persisted "en"/"fr" value —
     // covers both the initial load from localStorage and every toggle click.
@@ -314,6 +356,37 @@ fn App() -> Element {
     use_effect(|| {
         document::eval("document.documentElement.setAttribute('data-theme', 'dark');");
     });
+
+    // On web: restore login_name from localStorage after the initial hydration render, then
+    // persist any future changes.  The first call of the effect (immediately after hydration)
+    // reads localStorage and updates the signal if a saved session exists — triggering a
+    // re-render that shows the correct page.  Subsequent calls (on signal changes) persist
+    // the new value so it survives page reloads.  An Rc<Cell<bool>> flag guards the
+    // first-vs-subsequent distinction within the same browser session.
+    #[cfg(target_arch = "wasm32")]
+    {
+        use std::{cell::Cell, rc::Rc};
+        let restored = use_hook(|| Rc::new(Cell::new(false)));
+        use_effect(move || {
+            let name = login_name_session_local_sync(); // subscribe so effect re-runs on changes
+            if restored.get() {
+                // After initial restoration: persist any changes to localStorage
+                LocalStorage::set("synced_user_sql_name".to_owned(), &name);
+            } else {
+                // First call after hydration: restore the saved session (do NOT save yet,
+                // to avoid overwriting localStorage with the default "not connected" value)
+                restored.set(true);
+                if let Some(saved) =
+                    LocalStorage::get::<String>(&"synced_user_sql_name".to_owned())
+                {
+                    if !saved.is_empty() && saved != *DISCONNECTED_USER {
+                        login_name_session_local_sync.set(saved);
+                    }
+                }
+            }
+        });
+    }
+
     // Receive events from the websocket and update local signals.
     use_future(move || {
         let mut socket = socket;

@@ -36,9 +36,21 @@ pub fn LoginPage() -> Element {
     let set_register = move |e: FormEvent| register_name.set(e.value());
     let set_register_pw = move |e: FormEvent| register_password.set(e.value());
 
-    // fetch USE_PASSWORD flag from server
-    let use_pw_res = use_resource(|| async { get_use_password().await.unwrap_or(false) });
-    let use_pw = use_pw_res().unwrap_or(false);
+    // Fetch the USE_PASSWORD flag from the server. Deliberately a client-only
+    // use_effect + spawn (not use_resource): use_resource's value gets resolved during
+    // SSR and embedded in the page for hydration, which hits a known Dioxus hydration
+    // bug (https://github.com/DioxusLabs/dioxus/issues/3583) that crashes the client
+    // with "Error deserializing data: Semantic(Some(0), \"expected bool\")" and leaves
+    // the whole page unresponsive (can't type, clicks land on stale handlers). This
+    // mirrors the same pattern already used for `is_admin_enabled` in admin_page.rs.
+    let mut use_pw = use_signal(|| false);
+    use_effect(move || {
+        spawn(async move {
+            if let Ok(v) = get_use_password().await {
+                use_pw.set(v);
+            }
+        });
+    });
 
     rsx! {
         div { class: "home-container",
@@ -55,7 +67,7 @@ pub fn LoginPage() -> Element {
                         value: "{username}",
                         oninput: set_username,
                     }
-                    if use_pw {
+                    if use_pw() {
                         Input {
                             placeholder: t!("login-password-placeholder"),
                             r#type: "password",
@@ -66,8 +78,19 @@ pub fn LoginPage() -> Element {
                     Button {
                         variant: ButtonVariant::Primary,
                         onclick: move |_| async move {
+                            if username().trim().is_empty() || (use_pw() && password().trim().is_empty()) {
+                                logon_answer
+                                    .set(
+                                        if use_pw() {
+                                            t!("login-empty-fields")
+                                        } else {
+                                            t!("login-empty-username")
+                                        },
+                                    );
+                                return;
+                            }
                             tracing::info!("Attempting to log in with username: {}", username());
-                            match login(username(), password(), use_pw).await {
+                            match login(username(), password(), use_pw()).await {
                                 Ok(()) => {
                                     logon_answer.set(t!("login-success", username: username()));
                                     match get_user_id().await {
@@ -108,7 +131,7 @@ pub fn LoginPage() -> Element {
                         value: "{register_name}",
                         oninput: set_register,
                     }
-                    if use_pw {
+                    if use_pw() {
                         Input {
                             placeholder: t!("login-choose-password-placeholder"),
                             r#type: "password",
@@ -119,9 +142,22 @@ pub fn LoginPage() -> Element {
                     Button {
                         variant: ButtonVariant::Secondary,
                         onclick: move |_| async move {
-                            match register(register_name(), register_password(), use_pw).await {
+                            if register_name().trim().is_empty()
+                                || (use_pw() && register_password().trim().is_empty())
+                            {
+                                register_answer
+                                    .set(
+                                        if use_pw() {
+                                            t!("login-empty-fields")
+                                        } else {
+                                            t!("login-empty-username")
+                                        },
+                                    );
+                                return;
+                            }
+                            match register(register_name(), register_password(), use_pw()).await {
                                 Ok(()) => {
-                                    match login(register_name(), register_password(), use_pw).await {
+                                    match login(register_name(), register_password(), use_pw()).await {
                                         Ok(()) => {
                                             *local_login_name_session.write() = register_name();
                                             *local_login_id_session.write() = (get_user_id().await)

@@ -133,6 +133,8 @@ loadgame-delete-button = 🗑 Supprimer
 
 ## login page
 login-sign-in-title = Connexion
+login-empty-username = Veuillez saisir un nom d'utilisateur.
+login-empty-fields = Veuillez saisir un nom d'utilisateur et un mot de passe.
 login-username-placeholder = Votre nom d'utilisateur
 login-password-placeholder = Mot de passe
 login-success = { $username } connecté(e)

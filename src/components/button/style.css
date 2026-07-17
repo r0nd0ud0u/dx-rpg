@@ -71,7 +71,12 @@
 .button[data-style="atk-name"] {
   background-color: var(--grey-color-1);
   color: var(--primary-color);
-  width: 300px;
+  width: 100%;
+  max-width: 300px;
+  box-sizing: border-box;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.2;
 }
 
 .button[data-style="atk-name"]:hover {
@@ -81,7 +86,12 @@
 .button[data-style="atk-name-blocked"] {
   background-color: var(--black-color-1);
   color: var(--primary-color);
-  width: 300px;
+  width: 100%;
+  max-width: 300px;
+  box-sizing: border-box;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.2;
   opacity: 0.5;
   cursor: not-allowed;
 }

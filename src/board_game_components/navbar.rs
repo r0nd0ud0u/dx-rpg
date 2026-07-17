@@ -103,8 +103,9 @@ pub fn Navbar() -> Element {
                         onclick: move |_| help_open.set(true),
                         "?"
                     }
-                    // Server settings trigger (native only)
-                    if !cfg!(target_arch = "wasm32") {
+                    // Server settings trigger (native only — excluded from web-server SSR
+                    // so the hydration stream matches the wasm32 client's render)
+                    if cfg!(all(not(target_arch = "wasm32"), not(feature = "server"))) {
                         Button {
                             variant: ButtonVariant::Outline,
                             onclick: move |_| {
@@ -253,8 +254,8 @@ pub fn Navbar() -> Element {
                 }
             }
 
-            // Server settings dialog (native only)
-            if !cfg!(target_arch = "wasm32") {
+            // Server settings dialog (native only — excluded from web-server SSR)
+            if cfg!(all(not(target_arch = "wasm32"), not(feature = "server"))) {
                 AlertDialogRoot {
                     open: server_settings_open(),
                     on_open_change: move |v| server_settings_open.set(v),
