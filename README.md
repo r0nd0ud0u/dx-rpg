@@ -355,11 +355,15 @@ The Load Game page now shows save-slot style cards identical to the Create Serve
 
 ## Configuration (`.env`)
 
+`.env` is entirely optional — every variable below has a code-level default, and `.env`
+is not committed to git or shipped in release bundles. To override any of them locally,
+copy the template and edit it: `cp .env_template .env`.
+
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `IP` | `0.0.0.0` | Bind address |
 | `PORT` | `8080` | HTTP port |
-| `DATABASE_URL` | `sqlite:db.sqlite` | SQLite connection string |
+| `DATABASE_URL` | `sqlite://db.sqlite` | SQLite connection string |
 | `USE_PASSWORD` | `false` | Require password on login |
 | `MAX_SAVES` | `3` | Max save slots per user |
 | `ADMIN_ENABLED` | `false` | Enable `/admin` panel |
