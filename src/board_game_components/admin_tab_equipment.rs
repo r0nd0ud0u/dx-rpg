@@ -132,7 +132,7 @@ pub fn AdminEquipmentTab() -> Element {
                                                         selected_item.set(Some(n.clone()));
                                                     }
                                                     Err(e) => {
-                                                        feedback.set(t!("admin-error", error: e.to_string()));
+                                                        feedback.set(t!("admin-error", error : e.to_string()));
                                                         return;
                                                     }
                                                 }
@@ -143,7 +143,7 @@ pub fn AdminEquipmentTab() -> Element {
                                                         eq_categorie.set(form.categorie);
                                                         eq_stats.set(form.stats);
                                                     }
-                                                    Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
+                                                    Err(e) => feedback.set(t!("admin-error", error : e.to_string())),
                                                 }
                                             });
                                         },
@@ -166,7 +166,7 @@ pub fn AdminEquipmentTab() -> Element {
                                                                 eq_items.set(items);
                                                             }
                                                         }
-                                                        Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
+                                                        Err(e) => feedback.set(t!("admin-error", error : e.to_string())),
                                                     }
                                                 });
                                             },
@@ -242,7 +242,7 @@ pub fn AdminEquipmentTab() -> Element {
                                 spawn(async move {
                                     match admin_create_equipment(t.clone(), c.clone(), n.clone()).await {
                                         Ok(()) => {
-                                            feedback.set(t!("admin-equip-created", name: n.clone()));
+                                            feedback.set(t!("admin-equip-created", name : n.clone()));
                                             show_create_form.set(false);
                                             new_item_name.set(String::new());
                                             if let Ok(items) = admin_list_equipment_items(t.clone(), c.clone())
@@ -267,8 +267,8 @@ pub fn AdminEquipmentTab() -> Element {
                                                 eq_stats.set(form.stats);
                                                 eq_form_mode.set(true);
                                             }
-                        }
-                                        Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
+                                        }
+                                        Err(e) => feedback.set(t!("admin-error", error : e.to_string())),
                                     }
                                 });
                             },
@@ -401,7 +401,7 @@ pub fn AdminEquipmentTab() -> Element {
                                         spawn(async move {
                                             match admin_save_equipment_form(t, c, n, form).await {
                                                 Ok(()) => feedback.set(t!("admin-equip-saved")),
-                                                Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
+                                                Err(e) => feedback.set(t!("admin-error", error : e.to_string())),
                                             }
                                         });
                                     },
@@ -434,7 +434,7 @@ pub fn AdminEquipmentTab() -> Element {
                                         spawn(async move {
                                             match admin_save_equipment_json(t, c, n, json).await {
                                                 Ok(()) => feedback.set(t!("admin-equip-saved")),
-                                                Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
+                                                Err(e) => feedback.set(t!("admin-error", error : e.to_string())),
                                             }
                                         });
                                     },

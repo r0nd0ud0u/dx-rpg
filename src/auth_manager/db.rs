@@ -15,9 +15,6 @@ use tokio::sync::OnceCell;
 static DB: OnceCell<Pool<Sqlite>> = OnceCell::const_new();
 
 #[cfg(feature = "server")]
-use std::env;
-
-#[cfg(feature = "server")]
 use dioxus::logger::tracing;
 
 #[cfg(feature = "server")]
@@ -84,7 +81,7 @@ pub async fn get_db() -> &'static Pool<Sqlite> {
     DB.get_or_init(db).await
 }
 
-#[server]
+#[post("/api/get_db_url")]
 async fn get_db_url() -> Result<String, ServerFnError> {
     match std::env::var("DATABASE_URL") {
         Ok(url) => Ok(url),

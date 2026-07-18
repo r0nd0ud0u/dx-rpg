@@ -3,7 +3,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 8,
+    "Coût de vigueur": 800,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -27,5 +27,9 @@
     "Photo": "Charge.png",
     "Portée": "Individual",
     "Description": "Scratch — quick claws raking across flesh for minor damage.",
-    "DescriptionEffects": "Deals 35 physical damage to one enemy."
+    "DescriptionEn": "Scratch — quick claws raking across flesh for minor damage.",
+    "DescriptionFr": "Griffure — des griffes rapides qui lacèrent la chair pour de légers dégâts.",
+    "DescriptionEffects": "Deals 35 physical damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 35 physical damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 35 dégâts physiques à un ennemi."
 }

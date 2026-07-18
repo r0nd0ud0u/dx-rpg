@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 30,
+    "Coût de vigueur": 3000,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -54,5 +54,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Summons a psychic storm — persistent magical damage for 5 turns with armour reduction.",
-    "DescriptionEffects": "Deals 20 magic damage to one enemy per turn for 5 turns; -30% max Magic armor on enemy for 4 turns; 6-turn cooldown."
+    "DescriptionEn": "Summons a psychic storm — persistent magical damage for 5 turns with armour reduction.",
+    "DescriptionFr": "Invoque une tempête psychique — dégâts magiques persistants pendant 5 tours avec réduction d'armure.",
+    "DescriptionEffects": "Deals 20 magic damage to one enemy per turn for 5 turns; -30% max Magic armor on enemy for 4 turns; 6-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 20 magic damage to one enemy per turn for 5 turns; -30% max Magic armor on enemy for 4 turns; 6-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 20 dégâts magiques à un ennemi par tour pendant 5 tours ; -30 % d'armure magique max de l'ennemi pendant 4 tours ; temps de recharge de 6 tours."
 }

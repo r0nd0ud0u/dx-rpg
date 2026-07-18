@@ -5,27 +5,41 @@ use dioxus::{
 };
 use dioxus_i18n::prelude::*;
 use dioxus_sdk_storage::{LocalStorage, use_synced_storage};
+#[cfg(all(not(feature = "server"), not(target_arch = "wasm32")))]
+use dioxus_sdk_storage::{StorageBacking, set_dir};
+#[cfg(not(target_arch = "wasm32"))]
 use dotenv::dotenv;
 use dx_rpg::{
     common::{
         CtxAppLang, CtxAutoSaveScenario, CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy,
-        CtxShowBossHp, CtxShowHeroAggro, CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS,
-        Route, SERVER_NAME,
+        CtxShowBossHp, CtxShowHeroAggro, CtxSyncedInsecureCerts, CtxSyncedServerUrl,
+        CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS, Route, SERVER_NAME,
     },
     websocket_handler::{
         NO_CLIENT_ID,
         event::{ClientEvent, ServerEvent, on_rcv_client_event},
     },
 };
+// These constants are only used in the native (non-web, non-server) build path where
+// CtxSyncedServerUrl / CtxSyncedInsecureCerts are backed by use_synced_storage.
+#[cfg(all(not(feature = "server"), not(target_arch = "wasm32")))]
+use dx_rpg::common::{SYNCED_INSECURE_CERTS_KEY, SYNCED_SERVER_URL_KEY};
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 use unic_langid::langid;
+// StorageBacking is needed on wasm32 to call LocalStorage::get / LocalStorage::set
+// (trait methods) inside the login-restore effect.  On native it is already
+// imported above via the #[cfg(all(not(feature="server"),not(target_arch="wasm32")))]
+// block; on the server binary the effect block doesn't compile at all.
+#[cfg(target_arch = "wasm32")]
+use dioxus_sdk_storage::StorageBacking;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 fn main() {
-    // Reads the .env file
-    #[cfg(feature = "server")]
+    // Reads the .env file. Native builds (server, and native clients below) can have one;
+    // the browser (wasm32) has no filesystem so it never reads one.
+    #[cfg(not(target_arch = "wasm32"))]
     dotenv().ok();
 
     // Init logger
@@ -36,6 +50,72 @@ fn main() {
             .unwrap_or(Level::INFO),
     );
     tracing::info!("Rendering app!");
+
+    // Native clients (desktop, mobile) connect to a remote multiplayer server over the same
+    // websocket/server-fn protocol the web client uses, but — unlike a browser page, which
+    // infers the server from same-origin — they have no origin to infer it from, so the
+    // server URL must be set explicitly before launch.
+    #[cfg(all(not(feature = "server"), not(target_arch = "wasm32")))]
+    {
+        // dioxus-sdk-storage's LocalStorage falls back to a filesystem backend on native
+        // targets and panics if this isn't called before first use — the browser build never
+        // hits this path since it uses the browser's actual localStorage instead.
+        //
+        // On Android, `directories::BaseDirs::new()` (used internally by set_dir!()) returns
+        // None because the `directories` crate doesn't support Android — unwrapping it panics
+        // and leaves the screen white. Use the app's known internal data path instead.
+        #[cfg(target_os = "android")]
+        set_dir!("/data/data/io.github.r0ndoudou.dxrpg/files/dx-rpg");
+        #[cfg(not(target_os = "android"))]
+        set_dir!();
+
+        // Resolution order: a runtime env var (e.g. `dx serve`) always wins, for dev
+        // convenience; then whatever the user last saved via the in-app Server settings
+        // dialog (board_game_components/navbar.rs) — read straight off disk here since
+        // main() runs before any component/hook exists; then the value baked in at
+        // *compile* time (via `option_env!`, see build.rs) — the only option available to
+        // an installed Android APK, which has no shell to read env vars from and no prior
+        // launch to have saved anything from; then a hardcoded fallback.
+        let persisted_server_url =
+            LocalStorage::get::<String>(&dx_rpg::common::SYNCED_SERVER_URL_KEY.to_owned())
+                .filter(|s: &String| !s.is_empty());
+        let server_url = std::env::var("SERVER_URL")
+            .ok()
+            .or(persisted_server_url)
+            .or_else(|| option_env!("SERVER_URL").map(str::to_owned))
+            .unwrap_or_else(|| "http://127.0.0.1:8080".to_owned());
+        tracing::info!("Native client connecting to server at {server_url}");
+        dioxus::fullstack::set_server_url(Box::leak(server_url.into_boxed_str()));
+
+        // Opt-in escape hatch for a server behind a self-signed/untrusted TLS certificate
+        // (e.g. a dev or home-lab deployment with no real domain for Let's Encrypt). Off by
+        // default: this disables certificate validation for every request the client makes
+        // (server-fn calls *and* the websocket handshake both go through the same underlying
+        // reqwest client), so it must only be used against a server you trust on a network you
+        // trust — it removes protection against a MITM impersonating the server. Same
+        // runtime-env, then-persisted, then-compile-time-baked fallback as SERVER_URL above,
+        // for the same reasons.
+        let persisted_insecure_certs =
+            LocalStorage::get::<bool>(&dx_rpg::common::SYNCED_INSECURE_CERTS_KEY.to_owned());
+        let insecure_accept_invalid_certs = std::env::var("INSECURE_ACCEPT_INVALID_CERTS")
+            .ok()
+            .or_else(|| persisted_insecure_certs.map(|b| b.to_string()))
+            .or_else(|| option_env!("INSECURE_ACCEPT_INVALID_CERTS").map(str::to_owned));
+        if insecure_accept_invalid_certs.as_deref() == Some("true") {
+            tracing::warn!(
+                "INSECURE_ACCEPT_INVALID_CERTS=true — TLS certificate validation is DISABLED for all requests to {}. Do not use this against an untrusted network or server.",
+                dioxus::fullstack::get_server_url()
+            );
+            let client = dioxus::fullstack::reqwest::Client::builder()
+                .danger_accept_invalid_certs(true)
+                .cookie_store(true)
+                .build()
+                .expect("failed to build insecure reqwest client");
+            // Best-effort: if something already initialized the default client (shouldn't
+            // happen this early), fall back to the validated default rather than panicking.
+            let _ = dioxus::fullstack::GLOBAL_REQUEST_CLIENT.set(client);
+        }
+    }
 
     // On the client, we simply launch the app as normal, taking over the main thread
     #[cfg(not(feature = "server"))]
@@ -201,6 +281,15 @@ fn App() -> Element {
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
     // synced storage
+    // login_name drives which page is rendered (LoginPage vs home content). Starting with
+    // the server default (DISCONNECTED_USER) on both the server binary and the WASM client
+    // ensures the hydration render produces the same component tree on both sides — avoiding
+    // a known Dioxus SSR hydration bug (https://github.com/DioxusLabs/dioxus/issues/3583)
+    // that mis-aligns the SSR data stream when the client renders different components than
+    // the server.  On native (desktop/mobile), use_synced_storage handles everything.
+    #[cfg(any(target_arch = "wasm32", feature = "server"))]
+    let mut login_name_session_local_sync = use_signal(|| DISCONNECTED_USER.clone());
+    #[cfg(all(not(target_arch = "wasm32"), not(feature = "server")))]
     let mut login_name_session_local_sync =
         use_synced_storage::<LocalStorage, String>("synced_user_sql_name".to_owned(), || {
             DISCONNECTED_USER.clone()
@@ -211,6 +300,26 @@ fn App() -> Element {
         use_synced_storage::<LocalStorage, String>("synced_app_lang".to_owned(), || {
             "en".to_owned()
         });
+    // Native-only server URL/TLS-validation override, editable from the Navbar's Server
+    // settings dialog; declared here (not in Navbar) since use_synced_storage there
+    // stack-overflows the app (Navbar is a #[layout] component, not the route root).
+    // Hooks must run in the same order on every platform, so these are declared
+    // unconditionally but fall back to an inert signal off native — a real
+    // use_synced_storage there hits a Dioxus SSR hydration bug
+    // (https://github.com/DioxusLabs/dioxus/issues/3583).
+    #[cfg(all(not(target_arch = "wasm32"), not(feature = "server")))]
+    let synced_server_url =
+        use_synced_storage::<LocalStorage, String>(SYNCED_SERVER_URL_KEY.to_owned(), || {
+            dioxus::fullstack::get_server_url().to_owned()
+        });
+    #[cfg(any(target_arch = "wasm32", feature = "server"))]
+    let synced_server_url = use_signal(|| dioxus::fullstack::get_server_url().to_owned());
+
+    #[cfg(all(not(target_arch = "wasm32"), not(feature = "server")))]
+    let synced_insecure_certs =
+        use_synced_storage::<LocalStorage, bool>(SYNCED_INSECURE_CERTS_KEY.to_owned(), || false);
+    #[cfg(any(target_arch = "wasm32", feature = "server"))]
+    let synced_insecure_certs = use_signal(|| false);
 
     // Keep dioxus-i18n's active locale synced to the persisted "en"/"fr" value —
     // covers both the initial load from localStorage and every toggle click.
@@ -224,15 +333,42 @@ fn App() -> Element {
         i18n.set_language(target);
     });
 
-    // Set the theme to dark on app load
+    // Set the theme to dark on app load.
+    // `document::eval` (not raw web_sys) so this also works on desktop/mobile clients,
+    // which don't compile web_sys (it's a wasm-bindgen crate, native targets don't have it).
     use_effect(|| {
-        if let Some(window) = web_sys::window()
-            && let Some(document) = window.document()
-            && let Some(html) = document.document_element()
-        {
-            html.set_attribute("data-theme", "dark").ok();
-        }
+        document::eval("document.documentElement.setAttribute('data-theme', 'dark');");
     });
+
+    // On web: restore login_name from localStorage after the initial hydration render, then
+    // persist any future changes.  The first call of the effect (immediately after hydration)
+    // reads localStorage and updates the signal if a saved session exists — triggering a
+    // re-render that shows the correct page.  Subsequent calls (on signal changes) persist
+    // the new value so it survives page reloads.  An Rc<Cell<bool>> flag guards the
+    // first-vs-subsequent distinction within the same browser session.
+    #[cfg(target_arch = "wasm32")]
+    {
+        use std::{cell::Cell, rc::Rc};
+        let restored = use_hook(|| Rc::new(Cell::new(false)));
+        use_effect(move || {
+            let name = login_name_session_local_sync(); // subscribe so effect re-runs on changes
+            if restored.get() {
+                // After initial restoration: persist any changes to localStorage
+                LocalStorage::set("synced_user_sql_name".to_owned(), &name);
+            } else {
+                // First call after hydration: restore the saved session (do NOT save yet,
+                // to avoid overwriting localStorage with the default "not connected" value)
+                restored.set(true);
+                if let Some(saved) = LocalStorage::get::<String>(&"synced_user_sql_name".to_owned())
+                {
+                    if !saved.is_empty() && saved != *DISCONNECTED_USER {
+                        login_name_session_local_sync.set(saved);
+                    }
+                }
+            }
+        });
+    }
+
     // Receive events from the websocket and update local signals.
     use_future(move || {
         let mut socket = socket;
@@ -341,6 +477,15 @@ fn App() -> Element {
                         tracing::info!("[client] OverworldEntered: {}", map_id);
                         overworld_map_id.set(Some(map_id));
                     }
+                    ServerEvent::UpdateOverworld(overworld_update) => {
+                        server_data.write().core_game_data.overworld = Some(*overworld_update);
+                    }
+                    ServerEvent::UpdateCombat(combat_update) => {
+                        server_data
+                            .write()
+                            .core_game_data
+                            .apply_combat_update(*combat_update);
+                    }
                 }
             }
             tracing::warn!("[client] ws-loop EXITED — deserialization error or socket closed");
@@ -379,6 +524,10 @@ fn App() -> Element {
     use_context_provider(|| CtxShopEnabled(shop_enabled));
     // UI language ("en"/"fr") — localStorage-backed so it works pre-login
     use_context_provider(|| CtxAppLang(app_lang_local_sync));
+    // Native clients only: server address / TLS-validation override, editable from the
+    // Server settings dialog in Navbar (see the doc comment on CtxSyncedServerUrl above).
+    use_context_provider(|| CtxSyncedServerUrl(synced_server_url));
+    use_context_provider(|| CtxSyncedInsecureCerts(synced_insecure_certs));
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

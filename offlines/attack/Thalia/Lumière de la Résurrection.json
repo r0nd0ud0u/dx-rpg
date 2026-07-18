@@ -1,6 +1,6 @@
 {
     "Cible": "Ally",
-    "Coût de mana": 15,
+    "Coût de mana": 24,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -26,5 +26,9 @@
     "Photo": "Thalia.png",
     "Portée": "Individual",
     "Description": "Light of Resurrection — channels pure nature energy to revive a fallen ally with 50 vitality.",
-    "DescriptionEffects": "Resurrects a dead hero with 50 vitality."
+    "DescriptionEn": "Light of Resurrection — channels pure nature energy to revive a fallen ally with 50 vitality.",
+    "DescriptionFr": "Lumière de la Résurrection — canalise une pure énergie naturelle pour ranimer un allié tombé avec 50 PV.",
+    "DescriptionEffects": "Resurrects a dead hero with 50 vitality.",
+    "DescriptionEffectsEn": "Resurrects a dead hero with 50 vitality.",
+    "DescriptionEffectsFr": "Ressuscite un héros mort avec 50 PV."
 }

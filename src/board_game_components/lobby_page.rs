@@ -213,10 +213,7 @@ pub fn LobbyPage() -> Element {
                 }
             }
         } else if server_data_snap.core_game_data.game_phase == GamePhase::Ended {
-            ButtonLink {
-                target: Route::Home {}.into(),
-                name: t!("lobby-game-ended"),
-            }
+            ButtonLink { target: Route::Home {}.into(), name: t!("lobby-game-ended") }
         } else if server_data_snap.core_game_data.game_phase == GamePhase::Default {
 
         }

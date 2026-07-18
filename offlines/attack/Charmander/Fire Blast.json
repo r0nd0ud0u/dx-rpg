@@ -1,7 +1,7 @@
 {
     "Cible": "Enemy",
     "Coût de mana": 0,
-    "Coût de rage": 22,
+    "Coût de rage": 18,
     "Coût de vigueur": 0,
     "Effet": [
         {
@@ -54,5 +54,9 @@
     "Photo": "charmander.png",
     "Portée": "Individual",
     "Description": "Fires an enormous five-pointed flame. Costs high rage but deals massive fire damage.",
-    "DescriptionEffects": "Deals 110 magic damage to one enemy; +10% max Berserk; 6-turn cooldown."
+    "DescriptionEn": "Fires an enormous five-pointed flame. Costs high rage but deals massive fire damage.",
+    "DescriptionFr": "Tire une énorme flamme à cinq branches. Coûte beaucoup de rage mais inflige d'immenses dégâts de feu.",
+    "DescriptionEffects": "Deals 110 magic damage to one enemy; +10% max Berserk; 6-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 110 magic damage to one enemy; +10% max Berserk; 6-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 110 dégâts magiques à un ennemi ; +10 % de Rage max ; temps de recharge de 6 tours."
 }

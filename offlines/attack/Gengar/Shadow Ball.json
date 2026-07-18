@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 15,
+    "Coût de vigueur": 1500,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -40,5 +40,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Hurls a ball of shadowy energy that reduces magical armour.",
-    "DescriptionEffects": "Deals 65 magic damage to one enemy; -20% max Magic armor on enemy for 2 turns."
+    "DescriptionEn": "Hurls a ball of shadowy energy that reduces magical armour.",
+    "DescriptionFr": "Lance une sphère d'énergie ténébreuse qui réduit l'armure magique.",
+    "DescriptionEffects": "Deals 65 magic damage to one enemy; -20% max Magic armor on enemy for 2 turns.",
+    "DescriptionEffectsEn": "Deals 65 magic damage to one enemy; -20% max Magic armor on enemy for 2 turns.",
+    "DescriptionEffectsFr": "Inflige 65 dégâts magiques à un ennemi ; -20 % d'armure magique max de l'ennemi pendant 2 tours."
 }

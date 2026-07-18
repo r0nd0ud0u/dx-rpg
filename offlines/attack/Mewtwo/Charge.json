@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 15,
+    "Coût de vigueur": 1500,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -26,5 +26,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Psychic pulse.",
-    "DescriptionEffects": "Deals 55 magic damage to one enemy."
+    "DescriptionEn": "Psychic pulse.",
+    "DescriptionFr": "Impulsion psychique.",
+    "DescriptionEffects": "Deals 55 magic damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 55 magic damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 55 dégâts magiques à un ennemi."
 }

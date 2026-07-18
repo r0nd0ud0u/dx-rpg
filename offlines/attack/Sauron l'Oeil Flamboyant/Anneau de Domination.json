@@ -1,7 +1,7 @@
 {
     "Aggro": 0,
     "Cible": "Enemy",
-    "Coût de mana": 25,
+    "Coût de mana": 2500,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -27,5 +27,9 @@
     "Photo": "Charge.png",
     "Portée": "Zone",
     "Description": "Ring of Domination — corrupts and dominates a hero, weakening their will.",
-    "DescriptionEffects": "Deals 250 magic damage to all enemies."
+    "DescriptionEn": "Ring of Domination — corrupts and dominates a hero, weakening their will.",
+    "DescriptionFr": "Anneau de Domination — corrompt et domine un héros, affaiblissant sa volonté.",
+    "DescriptionEffects": "Deals 250 magic damage to all enemies.",
+    "DescriptionEffectsEn": "Deals 250 magic damage to all enemies.",
+    "DescriptionEffectsFr": "Inflige 250 dégâts magiques à tous les ennemis."
 }

@@ -54,5 +54,9 @@
     "Photo": "Thraïn.png",
     "Portée": "Individual",
     "Description": "Dwarven Protection — dwarven endurance greatly increases an ally's defense.",
-    "DescriptionEffects": "+15 Berserk; +150% max Physical armor for 2 turns; +150% max Magic armor for 2 turns."
+    "DescriptionEn": "Dwarven Protection — dwarven endurance greatly increases an ally's defense.",
+    "DescriptionFr": "Protection Naine — l'endurance naine augmente fortement la défense d'un allié.",
+    "DescriptionEffects": "+15 Berserk; +150% max Physical armor for 2 turns; +150% max Magic armor for 2 turns.",
+    "DescriptionEffectsEn": "+15 Berserk; +150% max Physical armor for 2 turns; +150% max Magic armor for 2 turns.",
+    "DescriptionEffectsFr": "+15 Rage ; +150 % d'armure physique max pendant 2 tours ; +150 % d'armure magique max pendant 2 tours."
 }

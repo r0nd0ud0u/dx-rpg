@@ -12,13 +12,14 @@ use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
     auth_manager::server_fn::logout,
-    common::{ADMIN, CtxAppLang, Route},
+    common::{ADMIN, CtxAppLang, CtxSyncedInsecureCerts, CtxSyncedServerUrl, Route},
     components::{
         alert_dialog::{
-            AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-            AlertDialogRoot, AlertDialogTitle,
+            AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+            AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
         },
         button::{Button, ButtonVariant},
+        input::Input,
     },
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
@@ -35,6 +36,11 @@ pub fn Navbar() -> Element {
     let mut local_login_id_session = use_context::<Signal<i64>>();
     let server_data = use_context::<Signal<ServerData>>();
     let mut app_lang = use_context::<CtxAppLang>().0;
+    // Native clients only — see the doc comment on CtxSyncedServerUrl in common.rs for why
+    // these are declared in App() and consumed here via context rather than called
+    // directly with use_synced_storage in Navbar (a #[layout(...)] component).
+    let mut synced_server_url = use_context::<CtxSyncedServerUrl>().0;
+    let mut synced_insecure_certs = use_context::<CtxSyncedInsecureCerts>().0;
 
     // nav
     let navigator = use_navigator();
@@ -42,6 +48,16 @@ pub fn Navbar() -> Element {
     // dialog open states — lifted here so the roots can live outside the navbar div
     let mut help_open = use_signal(|| false);
     let mut quit_open = use_signal(|| false);
+
+    // Server connection settings dialog — native only (gated at render time below via
+    // `cfg!(target_arch = "wasm32")`, since #[cfg] attributes aren't supported inside
+    // rsx!;).
+    let mut server_settings_open = use_signal(|| false);
+    // Draft state so typing doesn't write to storage on every keystroke; populated from
+    // the synced values each time the dialog is opened (see the trigger button below).
+    let mut server_url_draft = use_signal(String::new);
+    let mut insecure_certs_draft = use_signal(|| false);
+    let mut server_saved_message = use_signal(|| false);
 
     // snapshot
     let snap_local_login_name_session = local_login_name_session();
@@ -84,6 +100,20 @@ pub fn Navbar() -> Element {
                         variant: ButtonVariant::Outline,
                         onclick: move |_| help_open.set(true),
                         "?"
+                    }
+                    // Server settings trigger (native only — excluded from web-server SSR
+                    // so the hydration stream matches the wasm32 client's render)
+                    if cfg!(all(not(target_arch = "wasm32"), not(feature = "server"))) {
+                        Button {
+                            variant: ButtonVariant::Outline,
+                            onclick: move |_| {
+                                server_url_draft.set(synced_server_url());
+                                insecure_certs_draft.set(synced_insecure_certs());
+                                server_saved_message.set(false);
+                                server_settings_open.set(true);
+                            },
+                            {t!("navbar-server-settings")}
+                        }
                     }
                     // Quit-game trigger (only while a game is running)
                     if server_data().core_game_data.game_phase == GamePhase::Running {
@@ -180,22 +210,52 @@ pub fn Navbar() -> Element {
                                 {t!("help-section-overworld")}
                             }
                             p { {t!("help-step-13")} }
-                            p { "    " {t!("help-overworld-move")} }
-                            p { "    " {t!("help-overworld-interact")} }
-                            p { "    " {t!("help-overworld-encounter")} }
-                            p { "    " {t!("help-overworld-boss")} }
-                            p { "    " {t!("help-overworld-unlock")} }
-                            p { "    " {t!("help-overworld-back")} }
+                            p {
+                                "    "
+                                {t!("help-overworld-move")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-overworld-interact")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-overworld-encounter")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-overworld-boss")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-overworld-unlock")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-overworld-back")}
+                            }
 
                             // Store
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
                                 {t!("help-section-store")}
                             }
                             p { {t!("help-step-14")} }
-                            p { "    " {t!("help-store-equipment")} }
-                            p { "    " {t!("help-store-consumables")} }
-                            p { "    " {t!("help-store-bag")} }
-                            p { "    " {t!("help-store-gold")} }
+                            p {
+                                "    "
+                                {t!("help-store-equipment")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-store-consumables")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-store-bag")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-store-gold")}
+                            }
 
                             // Progression
                             p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
@@ -211,13 +271,79 @@ pub fn Navbar() -> Element {
                                 {t!("help-section-admin")}
                             }
                             p { {t!("help-step-19")} }
-                            p { "    " {t!("help-admin-users")} }
-                            p { "    " {t!("help-admin-characters")} }
-                            p { "    " {t!("help-admin-scenarios")} }
+                            p {
+                                "    "
+                                {t!("help-admin-users")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-admin-characters")}
+                            }
+                            p {
+                                "    "
+                                {t!("help-admin-scenarios")}
+                            }
                         }
                     }
                     AlertDialogAction {
                         AlertDialogCancel { {t!("common-close")} }
+                    }
+                }
+            }
+
+            // Server settings dialog (native only — excluded from web-server SSR)
+            if cfg!(all(not(target_arch = "wasm32"), not(feature = "server"))) {
+                AlertDialogRoot {
+                    open: server_settings_open(),
+                    on_open_change: move |v| server_settings_open.set(v),
+                    AlertDialogContent {
+                        AlertDialogTitle { {t!("server-settings-title")} }
+                        AlertDialogDescription {
+                            div { style: "text-align:left; display:flex; flex-direction:column; gap:0.75rem;",
+                                p {
+                                    {
+                                        t!(
+                                            "server-settings-current", url : dioxus::fullstack::get_server_url()
+                                            .to_owned()
+                                        )
+                                    }
+                                }
+                                Input {
+                                    placeholder: t!("server-settings-placeholder"),
+                                    r#type: "text",
+                                    value: "{server_url_draft}",
+                                    oninput: move |e: FormEvent| server_url_draft.set(e.value()),
+                                }
+                                label { style: "display:flex; align-items:center; gap:0.5rem; cursor:pointer;",
+                                    input {
+                                        r#type: "checkbox",
+                                        checked: insecure_certs_draft(),
+                                        onchange: move |e: FormEvent| insecure_certs_draft.set(e.checked()),
+                                    }
+                                    span { {t!("server-settings-insecure-label")} }
+                                }
+                                p { style: "font-size:0.85em; color:var(--rpg-text-muted);",
+                                    {t!("server-settings-insecure-warning")}
+                                }
+                                if server_saved_message() {
+                                    p { style: "color:var(--rpg-gold); font-weight:600;",
+                                        {t!("server-settings-saved")}
+                                    }
+                                }
+                            }
+                        }
+                        AlertDialogActions {
+                            AlertDialogCancel { {t!("common-cancel")} }
+                            Button {
+                                variant: ButtonVariant::Primary,
+                                onclick: move |_| {
+                                    synced_server_url.set(server_url_draft());
+                                    synced_insecure_certs.set(insecure_certs_draft());
+                                    server_saved_message.set(true);
+                                },
+                                {t!("server-settings-save")}
+                            }
+                        }
                     }
                 }
             }

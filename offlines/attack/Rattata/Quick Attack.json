@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 5,
+    "Coût de vigueur": 500,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -26,5 +26,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "A lightning-fast tackle that always strikes first.",
-    "DescriptionEffects": "Deals 28 physical damage to one enemy."
+    "DescriptionEn": "A lightning-fast tackle that always strikes first.",
+    "DescriptionFr": "Un plaquage éclair qui frappe toujours en premier.",
+    "DescriptionEffects": "Deals 28 physical damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 28 physical damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 28 dégâts physiques à un ennemi."
 }

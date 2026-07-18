@@ -158,18 +158,19 @@ pub fn RunningGamePage() -> Element {
         let phase = server_data().core_game_data.game_phase.clone();
         let no_overworld = server_data().core_game_data.overworld.is_none();
         let universe = server_data().core_game_data.universe.clone();
-        if phase == GamePhase::Running && no_overworld {
-            if let Some(map_id) = universe_map(&universe) {
-                auto_entered.set(true);
-                let server_name = SERVER_NAME();
-                let map_id = map_id.to_owned();
-                let socket = socket;
-                spawn(async move {
-                    let _ = socket
-                        .send(ClientEvent::EnterOverworld(server_name, map_id))
-                        .await;
-                });
-            }
+        if phase == GamePhase::Running
+            && no_overworld
+            && let Some(map_id) = universe_map(&universe)
+        {
+            auto_entered.set(true);
+            let server_name = SERVER_NAME();
+            let map_id = map_id.to_owned();
+            let socket = socket;
+            spawn(async move {
+                let _ = socket
+                    .send(ClientEvent::EnterOverworld(server_name, map_id))
+                    .await;
+            });
         }
     });
 
@@ -234,9 +235,7 @@ pub fn RunningGamePage() -> Element {
                                 div { class: "scenario-section",
                                     h3 { class: "scenario-section-title", "{title}" }
                                     if last_atk.is_dot_kill && !dying_last.is_empty() {
-                                        p { class: "dot-kill-info",
-                                            {t!("startgame-enemy-last-attack", name : dying_last.clone())}
-                                        }
+                                        p { class: "dot-kill-info", {t!("startgame-enemy-last-attack", name : dying_last.clone())} }
                                     }
                                     if !last_atk.new_game_atk_effects.is_empty() {
                                         div { class: "scenario-last-atk",
@@ -318,8 +317,8 @@ pub fn RunningGamePage() -> Element {
                             {
                                 t!(
                                     "startgame-turn-round", turn : server_data().core_game_data.game_manager
-                                    .game_state.current_turn_nb as i64, round : server_data()
-                                    .core_game_data.game_manager.game_state.current_round as i64
+                                    .game_state.current_turn_nb as i64, round : server_data().core_game_data
+                                    .game_manager.game_state.current_round as i64
                                 )
                             }
                         }

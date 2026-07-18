@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 /// Returns a list of top-level equipment type directories (e.g. "body", "characters").
-#[server]
+#[post("/api/admin_list_equipment_types")]
 pub async fn admin_list_equipment_types() -> Result<Vec<String>, ServerFnError> {
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
@@ -22,7 +22,7 @@ pub async fn admin_list_equipment_types() -> Result<Vec<String>, ServerFnError> 
 }
 
 /// Returns category subdirectories for a given equipment type.
-#[server]
+#[post("/api/admin_list_equipment_categories")]
 pub async fn admin_list_equipment_categories(
     eq_type: String,
 ) -> Result<Vec<String>, ServerFnError> {
@@ -48,7 +48,7 @@ pub async fn admin_list_equipment_categories(
 }
 
 /// Returns the list of equipment item stems for a given type and category.
-#[server]
+#[post("/api/admin_list_equipment_items")]
 pub async fn admin_list_equipment_items(
     eq_type: String,
     category: String,
@@ -85,7 +85,7 @@ pub async fn admin_list_equipment_items(
 }
 
 /// Returns the raw JSON of an equipment item file.
-#[server]
+#[post("/api/admin_get_equipment_json")]
 pub async fn admin_get_equipment_json(
     eq_type: String,
     category: String,
@@ -106,7 +106,7 @@ pub async fn admin_get_equipment_json(
 }
 
 /// Saves the raw JSON of an equipment item file (validates JSON first).
-#[server]
+#[post("/api/admin_save_equipment_json")]
 pub async fn admin_save_equipment_json(
     eq_type: String,
     category: String,
@@ -132,7 +132,7 @@ pub async fn admin_save_equipment_json(
 }
 
 /// Deletes an equipment item file.
-#[server]
+#[post("/api/admin_delete_equipment")]
 pub async fn admin_delete_equipment(
     eq_type: String,
     category: String,
@@ -155,7 +155,7 @@ pub async fn admin_delete_equipment(
 /// Creates a new equipment item, copying the stats template from an existing
 /// item in the same category (so every stat key is present at zero).
 /// Returns `Err` if the item already exists.
-#[server]
+#[post("/api/admin_create_equipment")]
 pub async fn admin_create_equipment(
     eq_type: String,
     category: String,
@@ -226,7 +226,7 @@ pub async fn admin_create_equipment(
 
 /// Returns a list of available image filenames.
 /// Reads from PHOTOS_PATH env var (default: "photos").
-#[server]
+#[post("/api/list_available_images")]
 pub async fn list_available_images() -> Result<Vec<String>, ServerFnError> {
     let photos_dir = std::env::var("PHOTOS_PATH").unwrap_or_else(|_| "photos".to_owned());
     let mut names: Vec<String> = match std::fs::read_dir(&photos_dir) {
@@ -270,7 +270,7 @@ pub struct EquipmentFormData {
 }
 
 /// Returns the key fields of an equipment item for form-based editing.
-#[server]
+#[post("/api/admin_get_equipment_form")]
 pub async fn admin_get_equipment_form(
     eq_type: String,
     category: String,
@@ -316,7 +316,7 @@ pub async fn admin_get_equipment_form(
 }
 
 /// Saves an equipment item from form fields, preserving any extra JSON fields.
-#[server]
+#[post("/api/admin_save_equipment_form")]
 pub async fn admin_save_equipment_form(
     eq_type: String,
     category: String,
@@ -360,7 +360,7 @@ pub async fn admin_save_equipment_form(
 // ── Universe creation ─────────────────────────────────────────────────────────
 
 /// Creates a new universe directory under characters/ and scenarios/.
-#[server]
+#[post("/api/admin_create_universe")]
 pub async fn admin_create_universe(universe_name: String) -> Result<(), ServerFnError> {
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
@@ -384,7 +384,7 @@ pub async fn admin_create_universe(universe_name: String) -> Result<(), ServerFn
 /// Uploads a photo to the images directory.
 /// `file_data_base64` must be a standard base64-encoded string of the image bytes.
 /// The filename must have a valid image extension and no path separators.
-#[server]
+#[post("/api/upload_photo")]
 pub async fn upload_photo(
     file_name: String,
     file_data_base64: String,

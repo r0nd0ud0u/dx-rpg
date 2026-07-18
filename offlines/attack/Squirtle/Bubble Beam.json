@@ -54,5 +54,9 @@
     "Photo": "squirtle.png",
     "Portée": "Individual",
     "Description": "Launches a stream of bubbles — deals damage and reduces enemy speed regeneration.",
-    "DescriptionEffects": "Deals 50 magic damage to one enemy; -25% max Speed regeneration on enemy for 3 turns; 3-turn cooldown."
+    "DescriptionEn": "Launches a stream of bubbles — deals damage and reduces enemy speed regeneration.",
+    "DescriptionFr": "Lance un jet de bulles — inflige des dégâts et réduit la régénération de vitesse ennemie.",
+    "DescriptionEffects": "Deals 50 magic damage to one enemy; -25% max Speed regeneration on enemy for 3 turns; 3-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 50 magic damage to one enemy; -25% max Speed regeneration on enemy for 3 turns; 3-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 50 dégâts magiques à un ennemi ; -25 % de régénération de vitesse max de l'ennemi pendant 3 tours ; temps de recharge de 3 tours."
 }

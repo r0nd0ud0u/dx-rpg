@@ -1,6 +1,6 @@
 {
     "Cible": "Enemy",
-    "Coût de mana": 15,
+    "Coût de mana": 10,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -54,5 +54,9 @@
     "Photo": "Azrak Ombresang.png",
     "Portée": "Individual",
     "Description": "Chains of Rage — iron chains infused with dark energy that bind and damage the enemy.",
-    "DescriptionEffects": "Deals 80 magic damage to one enemy; -10 Speed regeneration on enemy for 6 turns; deals 35 magic damage to the target."
+    "DescriptionEn": "Chains of Rage — iron chains infused with dark energy that bind and damage the enemy.",
+    "DescriptionFr": "Chaînes de la Rage — des chaînes de fer infusées d'énergie ténébreuse qui entravent et blessent l'ennemi.",
+    "DescriptionEffects": "Deals 80 magic damage to one enemy; -10 Speed regeneration on enemy for 6 turns; deals 35 magic damage to the target.",
+    "DescriptionEffectsEn": "Deals 80 magic damage to one enemy; -10 Speed regeneration on enemy for 6 turns; deals 35 magic damage to the target.",
+    "DescriptionEffectsFr": "Inflige 80 dégâts magiques à un ennemi ; -10 de régénération de vitesse de l'ennemi pendant 6 tours ; inflige 35 dégâts magiques supplémentaires à la cible."
 }

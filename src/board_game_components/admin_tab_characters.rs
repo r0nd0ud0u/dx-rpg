@@ -190,7 +190,7 @@ pub fn AdminCharactersTab() -> Element {
                                     universe_feedback.set(t!("admin-chars-universe-created"));
                                     new_universe_name.set(String::new());
                                 }
-                                Err(e) => universe_feedback.set(t!("admin-error", error: e.to_string())),
+                                Err(e) => universe_feedback.set(t!("admin-error", error : e.to_string())),
                             }
                         });
                     },
@@ -232,7 +232,9 @@ pub fn AdminCharactersTab() -> Element {
             if loading() {
                 p { style: "color:var(--rpg-text-muted);", {t!("common-loading")} }
             } else if displayed.is_empty() {
-                p { style: "color:var(--rpg-text-muted);", {t!("admin-chars-none-found", kind : kind_label.clone())} }
+                p { style: "color:var(--rpg-text-muted);",
+                    {t!("admin-chars-none-found", kind : kind_label.clone())}
+                }
             } else {
                 div { class: "admin-char-grid",
                     for c in displayed {
@@ -256,7 +258,9 @@ pub fn AdminCharactersTab() -> Element {
                                                 span { class: "admin-char-class", "{c.class}" }
                                                 span { class: "admin-char-level", {t!("common-level", level : c.level as i64)} }
                                                 if !c.universe.is_empty() {
-                                                    span { class: "admin-char-universe", {t!("loadgame-universe", universe : c.universe.clone())} }
+                                                    span { class: "admin-char-universe",
+                                                        {t!("loadgame-universe", universe : c.universe.clone())}
+                                                    }
                                                 }
                                             }
                                         }
@@ -310,7 +314,7 @@ pub fn AdminCharactersTab() -> Element {
                                                             edit_char_name.set(Some(n));
                                                             attacks_char.set(None);
                                                         }
-                                                        Err(e) => char_feedback.set(t!("admin-error", error: e.to_string())),
+                                                        Err(e) => char_feedback.set(t!("admin-error", error : e.to_string())),
                                                     }
                                                 });
                                             },
@@ -330,7 +334,7 @@ pub fn AdminCharactersTab() -> Element {
                                                             edit_char_name.set(Some(n));
                                                             attacks_char.set(None);
                                                         }
-                                                        Err(e) => char_feedback.set(t!("admin-error", error: e.to_string())),
+                                                        Err(e) => char_feedback.set(t!("admin-error", error : e.to_string())),
                                                     }
                                                 });
                                             },
@@ -373,7 +377,9 @@ pub fn AdminCharactersTab() -> Element {
                     div { class: "admin-full-card",
                         if char_edit_form_mode() {
                             div { style: "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;",
-                                p { class: "admin-section-title", style: "margin:0;", {t!("admin-chars-form-title", name : cname.clone())} }
+                                p { class: "admin-section-title", style: "margin:0;",
+                                    {t!("admin-chars-form-title", name : cname.clone())}
+                                }
                                 Button {
                                     variant: ButtonVariant::Secondary,
                                     onclick: move |_| {
@@ -434,7 +440,9 @@ pub fn AdminCharactersTab() -> Element {
                                             selected: form_class() == "Standard",
                                             {t!("admin-atk-form-standard")}
                                         }
-                                        option { value: "Warrior", selected: form_class() == "Warrior", {t!("class-warrior")} }
+                                        option { value: "Warrior", selected: form_class() == "Warrior",
+                                            {t!("class-warrior")}
+                                        }
                                         option { value: "Mage", selected: form_class() == "Mage", {t!("class-mage")} }
                                         option { value: "Healer", selected: form_class() == "Healer", {t!("class-healer")} }
                                         option {
@@ -492,8 +500,12 @@ pub fn AdminCharactersTab() -> Element {
                                         class: "admin-select",
                                         value: "{form_char_type}",
                                         onchange: move |e| form_char_type.set(e.value()),
-                                        option { value: "Hero", selected: form_char_type() == "Hero", {t!("admin-chars-type-hero")} }
-                                        option { value: "Boss", selected: form_char_type() == "Boss", {t!("admin-chars-type-boss")} }
+                                        option { value: "Hero", selected: form_char_type() == "Hero",
+                                            {t!("admin-chars-type-hero")}
+                                        }
+                                        option { value: "Boss", selected: form_char_type() == "Boss",
+                                            {t!("admin-chars-type-boss")}
+                                        }
                                     }
                                 }
                                 div { class: "admin-form-field",
@@ -694,7 +706,7 @@ pub fn AdminCharactersTab() -> Element {
                                                         boss_characters.set(b);
                                                     }
                                                 }
-                                                Err(e) => char_feedback.set(t!("admin-error", error: e.to_string())),
+                                                Err(e) => char_feedback.set(t!("admin-error", error : e.to_string())),
                                             }
                                         });
                                     },
@@ -711,7 +723,9 @@ pub fn AdminCharactersTab() -> Element {
                             }
                         } else {
                             div { style: "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;",
-                                p { class: "admin-section-title", style: "margin:0;", {t!("admin-chars-json-title", name : cname.clone())} }
+                                p { class: "admin-section-title", style: "margin:0;",
+                                    {t!("admin-chars-json-title", name : cname.clone())}
+                                }
                                 Button {
                                     variant: ButtonVariant::Secondary,
                                     onclick: move |_| {
@@ -764,7 +778,7 @@ pub fn AdminCharactersTab() -> Element {
                                                         boss_characters.set(b);
                                                     }
                                                 }
-                                                Err(e) => char_feedback.set(t!("admin-error", error: e.to_string())),
+                                                Err(e) => char_feedback.set(t!("admin-error", error : e.to_string())),
                                             }
                                         });
                                     },

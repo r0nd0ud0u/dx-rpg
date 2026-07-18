@@ -3,7 +3,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 20,
+    "Coût de vigueur": 2000,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -27,5 +27,9 @@
     "Photo": "Charge.png",
     "Portée": "Zone",
     "Description": "War Cry — a fearsome battle roar that weakens enemy morale and defenses.",
-    "DescriptionEffects": "Deals 40 physical damage to all enemies."
+    "DescriptionEn": "War Cry — a fearsome battle roar that weakens enemy morale and defenses.",
+    "DescriptionFr": "Rugissement de Guerre — un cri de guerre terrifiant qui affaiblit le moral et les défenses ennemies.",
+    "DescriptionEffects": "Deals 40 physical damage to all enemies.",
+    "DescriptionEffectsEn": "Deals 40 physical damage to all enemies.",
+    "DescriptionEffectsFr": "Inflige 40 dégâts physiques à tous les ennemis."
 }

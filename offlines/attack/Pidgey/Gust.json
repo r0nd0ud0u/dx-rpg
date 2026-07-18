@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 10,
+    "Coût de vigueur": 1000,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -40,5 +40,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Flaps its wings to generate a gust — deals wind damage and reduces enemy speed.",
-    "DescriptionEffects": "Deals 35 magic damage to one enemy; -20% max Speed regeneration on enemy for 2 turns."
+    "DescriptionEn": "Flaps its wings to generate a gust — deals wind damage and reduces enemy speed.",
+    "DescriptionFr": "Bat des ailes pour générer une rafale — inflige des dégâts de vent et réduit la vitesse ennemie.",
+    "DescriptionEffects": "Deals 35 magic damage to one enemy; -20% max Speed regeneration on enemy for 2 turns.",
+    "DescriptionEffectsEn": "Deals 35 magic damage to one enemy; -20% max Speed regeneration on enemy for 2 turns.",
+    "DescriptionEffectsFr": "Inflige 35 dégâts magiques à un ennemi ; -20 % de régénération de vitesse max de l'ennemi pendant 2 tours."
 }

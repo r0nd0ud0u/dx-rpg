@@ -8,7 +8,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.103"
 dioxus = { version = "0.7.9", features = ["router", "fullstack"] }
-lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "d8e22c51cbc2de4394526985df4a4829dce4a706" }
+lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "0e79ec8cc9c0d8e76da293a3ee63deca13c6cd0f" }
 serde = "1.0.228"
 dioxus-desktop = { version = "0.7.9", optional = true }
 dioxus-html = "0.7.9"
@@ -75,6 +75,7 @@ server = [
 ]
 web = ["dioxus/web"]
 desktop = ["dioxus/desktop"]
+mobile = ["dioxus/mobile"]
 
 [profile]
 

@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 12,
+    "Coût de vigueur": 1200,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -40,5 +40,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "A paralysing lick that drains energy and reduces speed.",
-    "DescriptionEffects": "Deals 40 magic damage to one enemy; -30% max Speed regeneration on enemy for 3 turns."
+    "DescriptionEn": "A paralysing lick that drains energy and reduces speed.",
+    "DescriptionFr": "Un coup de langue paralysant qui draine l'énergie et réduit la vitesse.",
+    "DescriptionEffects": "Deals 40 magic damage to one enemy; -30% max Speed regeneration on enemy for 3 turns.",
+    "DescriptionEffectsEn": "Deals 40 magic damage to one enemy; -30% max Speed regeneration on enemy for 3 turns.",
+    "DescriptionEffectsFr": "Inflige 40 dégâts magiques à un ennemi ; -30 % de régénération de vitesse max de l'ennemi pendant 3 tours."
 }

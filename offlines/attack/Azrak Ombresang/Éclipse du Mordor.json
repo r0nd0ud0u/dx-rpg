@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 25,
+    "Coût de vigueur": 32,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -69,5 +69,9 @@
     "Portée": "Zone",
     "Sound": "kamehameha.mp3",
     "Description": "Mordor Eclipse — cloaks the battlefield in shadow, dealing dark damage and reducing enemy accuracy.",
-    "DescriptionEffects": "Deals 280 physical damage to all enemies; +15% damage taken by all allies for 3 turns; 10-turn cooldown; +25% healing dealt for 3 turns."
+    "DescriptionEn": "Mordor Eclipse — cloaks the battlefield in shadow, dealing dark damage and reducing enemy accuracy.",
+    "DescriptionFr": "Éclipse du Mordor — plonge le champ de bataille dans l'ombre, infligeant des dégâts ténébreux et réduisant la précision ennemie.",
+    "DescriptionEffects": "Deals 280 physical damage to all enemies; +15% damage taken by all allies for 3 turns; 10-turn cooldown; +25% healing dealt for 3 turns.",
+    "DescriptionEffectsEn": "Deals 280 physical damage to all enemies; +15% damage taken by all allies for 3 turns; 10-turn cooldown; +25% healing dealt for 3 turns.",
+    "DescriptionEffectsFr": "Inflige 280 dégâts physiques à tous les ennemis ; +15 % de dégâts subis par tous les alliés pendant 3 tours ; temps de recharge de 10 tours ; +25 % de soins prodigués pendant 3 tours."
 }

@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 18,
+    "Coût de vigueur": 1800,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -40,5 +40,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Delivers a powerful double chop with both arms.",
-    "DescriptionEffects": "Deals 60 physical damage to one enemy; 3-turn cooldown."
+    "DescriptionEn": "Delivers a powerful double chop with both arms.",
+    "DescriptionFr": "Assène un puissant double coup tranchant des deux bras.",
+    "DescriptionEffects": "Deals 60 physical damage to one enemy; 3-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 60 physical damage to one enemy; 3-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 60 dégâts physiques à un ennemi ; temps de recharge de 3 tours."
 }

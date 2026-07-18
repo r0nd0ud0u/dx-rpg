@@ -20,9 +20,8 @@ pub fn LoadGame() -> Element {
     let mut error_msg: Signal<String> = use_signal(String::new);
     let navigator = use_navigator();
 
-    let player = local_login_name_session();
     use_effect(move || {
-        let player_name = player.clone();
+        let player_name = local_login_name_session();
         spawn(async move {
             match get_save_slots(player_name).await {
                 Ok(s) => slots.set(s.into_iter().filter(|s| !s.name.is_empty()).collect()),
@@ -78,8 +77,8 @@ pub fn LoadGame() -> Element {
                                             span { class: "save-slot-scenario",
                                                 {
                                                     t!(
-                                                        "loadgame-slot-scenario", scenario : slot.current_scenario
-                                                        .clone(), level : slot.scenario_level as i64
+                                                        "loadgame-slot-scenario", scenario : slot.current_scenario.clone(), level :
+                                                        slot.scenario_level as i64
                                                     )
                                                 }
                                             }
@@ -89,9 +88,7 @@ pub fn LoadGame() -> Element {
                                             if slot.is_single_player {
                                                 span { class: "save-slot-mode", {t!("loadgame-mode-solo")} }
                                             } else {
-                                                span { class: "save-slot-mode",
-                                                    {t!("loadgame-mode-multi", players : slot.players_nb as i64)}
-                                                }
+                                                span { class: "save-slot-mode", {t!("loadgame-mode-multi", players : slot.players_nb)} }
                                             }
                                             if !slot.universe.is_empty() {
                                                 span { class: "save-slot-universe",

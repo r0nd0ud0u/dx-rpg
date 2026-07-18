@@ -136,7 +136,7 @@ pub fn GameSheets() -> Element {
                 .as_deref()
                 == Some(h.id_name.as_str())
         })
-        .any(|h| !h.stats.is_dead().unwrap_or(false) && h.talents.available() > 0);
+        .any(|h| !h.stats.is_dead().unwrap_or(false) && h.talents.has_unseen_points);
 
     rsx! {
         div { display: "flex", gap: "0.5rem",
@@ -412,7 +412,7 @@ fn TalentsSheet(s: SheetSide) -> Element {
                                 onclick: move |_| active_tab.set(i),
                                 position: "relative",
                                 "{hero.db_full_name}"
-                                if hero.talents.available() > 0 {
+                                if hero.talents.has_unseen_points {
                                     span {
                                         class: "equip-tab-new-badge",
                                         style: "position:absolute;top:2px;right:2px;",
@@ -526,7 +526,12 @@ fn GameStatsSheet(s: SheetSide) -> Element {
                         div { class: "stats-section-title", {t!("gs-scenario-progress-title")} }
                         div { class: "stats-progress-bar-wrap",
                             div { class: "stats-progress-text",
-                                {t!("gs-scenarios-completed", completed : completed as i64, total : total_scenarios as i64)}
+                                {
+                                    t!(
+                                        "gs-scenarios-completed", completed : completed as i64, total :
+                                        total_scenarios as i64
+                                    )
+                                }
                             }
                             div { class: "stats-progress-outer",
                                 div {
@@ -970,12 +975,12 @@ pub fn StoreSheet(s: SheetSide) -> Element {
     rsx! {
         SheetContent { side: s,
             SheetHeader {
-                SheetTitle { {t!("gs-store-title", name: character.db_full_name.clone())} }
+                SheetTitle { {t!("gs-store-title", name : character.db_full_name.clone())} }
                 SheetDescription {
-                    {t!("common-level", level: character.level as i64)}
+                    {t!("common-level", level : character.level as i64)}
                     " · "
                     span { style: "color: var(--rpg-gold, #c9a227); font-weight: 700;",
-                        {t!("gs-gold-amount", amount: gold as i64)}
+                        {t!("gs-gold-amount", amount : gold as i64)}
                     }
                 }
             }
@@ -1074,17 +1079,17 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                     }
                                                 }
                                                 span { style: "font-size:0.75rem;color:var(--rpg-text-muted);",
-                                                    {t!("gs-store-slot", category: category_label.clone())}
+                                                    {t!("gs-store-slot", category : category_label.clone())}
                                                 }
                                                 span { style: "font-size:0.78rem;color:var(--rpg-text-secondary,var(--rpg-text-muted));",
                                                     "{item.description}"
                                                 }
                                                 div { style: "display:flex;align-items:center;justify-content:space-between;margin-top:0.25rem;",
                                                     span { style: "color:var(--rpg-gold,#c9a227);font-weight:600;font-size:0.85rem;",
-                                                        {t!("gs-gold-amount", amount: item.price as i64)}
+                                                        {t!("gs-gold-amount", amount : item.price as i64)}
                                                         if bag_count > 0 {
                                                             span { style: "margin-left:0.4rem;font-size:0.75rem;color:var(--rpg-text-muted);",
-                                                                {t!("gs-store-in-bag", count: bag_count as i64)}
+                                                                {t!("gs-store-in-bag", count : bag_count as i64)}
                                                             }
                                                         }
                                                     }
@@ -1168,10 +1173,10 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                 }
                                                 div { style: "display:flex;align-items:center;justify-content:space-between;margin-top:0.25rem;",
                                                     span { style: "color:var(--rpg-gold,#c9a227);font-weight:600;font-size:0.85rem;",
-                                                        {t!("gs-gold-amount", amount: item.price as i64)}
+                                                        {t!("gs-gold-amount", amount : item.price as i64)}
                                                         if bag_count > 0 {
                                                             span { style: "margin-left:0.4rem;font-size:0.75rem;color:var(--rpg-text-muted);",
-                                                                {t!("gs-store-in-bag", count: bag_count as i64)}
+                                                                {t!("gs-store-in-bag", count : bag_count as i64)}
                                                             }
                                                         }
                                                     }
@@ -1290,12 +1295,12 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                             div { display: "flex", flex_direction: "column",
                                                                 span { style: "font-weight:600;font-size:0.85rem;", "{display_name}" }
                                                                 span { style: "font-size:0.75rem;color:var(--rpg-text-muted);",
-                                                                    {t!("gs-store-slot", category: cat_label.clone())}
+                                                                    {t!("gs-store-slot", category : cat_label.clone())}
                                                                 }
                                                             }
                                                             div { display: "flex", align_items: "center", gap: "0.5rem",
                                                                 span { style: "color:var(--rpg-gold,#c9a227);font-size:0.8rem;font-weight:600;white-space:nowrap;",
-                                                                    {t!("gs-gold-amount", amount: refund as i64)}
+                                                                    {t!("gs-gold-amount", amount : refund as i64)}
                                                                 }
                                                                 Button {
                                                                     variant: ButtonVariant::Destructive,
@@ -1353,7 +1358,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                             }
                                                             div { display: "flex", align_items: "center", gap: "0.5rem",
                                                                 span { style: "color:var(--rpg-gold,#c9a227);font-size:0.8rem;font-weight:600;white-space:nowrap;",
-                                                                    {t!("gs-gold-amount", amount: refund as i64)}
+                                                                    {t!("gs-gold-amount", amount : refund as i64)}
                                                                 }
                                                                 Button {
                                                                     variant: ButtonVariant::Destructive,
@@ -1417,7 +1422,7 @@ pub fn StoreSheet(s: SheetSide) -> Element {
                                                             }
                                                             div { display: "flex", align_items: "center", gap: "0.5rem",
                                                                 span { style: "color:var(--rpg-gold,#c9a227);font-size:0.8rem;font-weight:600;white-space:nowrap;",
-                                                                    {t!("gs-gold-amount", amount: refund as i64)}
+                                                                    {t!("gs-gold-amount", amount : refund as i64)}
                                                                 }
                                                                 Button {
                                                                     variant: ButtonVariant::Destructive,
@@ -1538,9 +1543,7 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 div { class: "settings-row",
                     div { class: "settings-label-group",
                         span { class: "settings-label", {t!("gs-settings-tooltips-label")} }
-                        span { class: "settings-hint",
-                            {t!("gs-settings-tooltips-hint")}
-                        }
+                        span { class: "settings-hint", {t!("gs-settings-tooltips-hint")} }
                     }
                     label { class: "toggle-switch",
                         input {
@@ -1626,9 +1629,7 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 div { class: "settings-row",
                     div { class: "settings-label-group",
                         span { class: "settings-label", {t!("gs-settings-boss-hp-label")} }
-                        span { class: "settings-hint",
-                            {t!("gs-settings-boss-hp-hint")}
-                        }
+                        span { class: "settings-hint", {t!("gs-settings-boss-hp-hint")} }
                     }
                     label { class: "toggle-switch",
                         input {
@@ -1656,9 +1657,7 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 div { class: "settings-row",
                     div { class: "settings-label-group",
                         span { class: "settings-label", {t!("gs-settings-autosave-label")} }
-                        span { class: "settings-hint",
-                            {t!("gs-settings-autosave-hint")}
-                        }
+                        span { class: "settings-hint", {t!("gs-settings-autosave-hint")} }
                     }
                     label { class: "toggle-switch",
                         input {
@@ -1686,9 +1685,7 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 div { class: "settings-row",
                     div { class: "settings-label-group",
                         span { class: "settings-label", {t!("gs-settings-shop-label")} }
-                        span { class: "settings-hint",
-                            {t!("gs-settings-shop-hint")}
-                        }
+                        span { class: "settings-hint", {t!("gs-settings-shop-hint")} }
                     }
                     label { class: "toggle-switch",
                         input {

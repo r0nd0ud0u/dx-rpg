@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 9,
+    "Coût de vigueur": 12,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -41,5 +41,9 @@
     "Portée": "Individual",
     "Sound": "final-flash.mp3",
     "Description": "Fusion Blade — a blade imbued with elemental power, dealing boosted damage.",
-    "DescriptionEffects": "Deals 35 physical damage to one enemy; +10 max Speed regeneration for 6 turns."
+    "DescriptionEn": "Fusion Blade — a blade imbued with elemental power, dealing boosted damage.",
+    "DescriptionFr": "Lame Fusionnelle — une lame imprégnée de pouvoir élémentaire, infligeant des dégâts accrus.",
+    "DescriptionEffects": "Deals 35 physical damage to one enemy; +10 max Speed regeneration for 6 turns.",
+    "DescriptionEffectsEn": "Deals 35 physical damage to one enemy; +10 max Speed regeneration for 6 turns.",
+    "DescriptionEffectsFr": "Inflige 35 dégâts physiques à un ennemi ; +10 de régénération de vitesse max pendant 6 tours."
 }

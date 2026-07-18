@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 15,
+    "Coût de vigueur": 20,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -82,5 +82,9 @@
     "Photo": "Azrak Ombresang.png",
     "Portée": "Individual",
     "Description": "Morgul Blade — a cursed strike dealing damage over time; grants dodge but costs self-HP.",
-    "DescriptionEffects": "Deals 30 physical damage to one enemy; +40 max Dodge for 2 turns; +20% damage taken by self for 4 turns; deals 75 physical damage to one enemy per turn for 4 turns; 5-turn cooldown."
+    "DescriptionEn": "Morgul Blade — a cursed strike dealing damage over time; grants dodge but costs self-HP.",
+    "DescriptionFr": "Lame de Morgul — une frappe maudite infligeant des dégâts dans la durée ; accorde de l'esquive mais coûte des PV.",
+    "DescriptionEffects": "Deals 30 physical damage to one enemy; +40 max Dodge for 2 turns; +20% damage taken by self for 4 turns; deals 75 physical damage to one enemy per turn for 4 turns; 5-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 30 physical damage to one enemy; +40 max Dodge for 2 turns; +20% damage taken by self for 4 turns; deals 75 physical damage to one enemy per turn for 4 turns; 5-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 30 dégâts physiques à un ennemi ; +40 d'esquive max pendant 2 tours ; +20 % de dégâts subis par soi-même pendant 4 tours ; inflige 75 dégâts physiques à un ennemi par tour pendant 4 tours ; temps de recharge de 5 tours."
 }

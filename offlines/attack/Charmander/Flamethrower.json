@@ -1,7 +1,7 @@
 {
     "Cible": "Enemy",
     "Coût de mana": 0,
-    "Coût de rage": 12,
+    "Coût de rage": 10,
     "Coût de vigueur": 0,
     "Effet": [
         {
@@ -54,5 +54,9 @@
     "Photo": "charmander.png",
     "Portée": "Individual",
     "Description": "Breathes a stream of intense flames — boosts own physical power after use.",
-    "DescriptionEffects": "Deals 70 magic damage to one enemy; +15% max Physical power for 2 turns; 4-turn cooldown."
+    "DescriptionEn": "Breathes a stream of intense flames — boosts own physical power after use.",
+    "DescriptionFr": "Souffle un torrent de flammes intenses — augmente ensuite sa propre puissance physique.",
+    "DescriptionEffects": "Deals 70 magic damage to one enemy; +15% max Physical power for 2 turns; 4-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 70 magic damage to one enemy; +15% max Physical power for 2 turns; 4-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 70 dégâts magiques à un ennemi ; +15 % de puissance physique max pendant 2 tours ; temps de recharge de 4 tours."
 }

@@ -120,14 +120,14 @@ pub fn OverworldMap() -> Element {
         };
     };
 
-    // Clone socket + context values for the D-pad closures (each needs its own copy).
-    let socket_up = socket.clone();
-    let socket_down = socket.clone();
-    let socket_left = socket.clone();
-    let socket_right = socket.clone();
-    let socket_interact = socket.clone();
-    let socket_confirm_fight = socket.clone();
-    let socket_dismiss = socket.clone();
+    // Copy socket (it's `Copy`) + other context values for the D-pad closures (each needs its own copy).
+    let socket_up = socket;
+    let socket_down = socket;
+    let socket_left = socket;
+    let socket_right = socket;
+    let socket_interact = socket;
+    let socket_confirm_fight = socket;
+    let socket_dismiss = socket;
 
     rsx! {
         div {
@@ -264,9 +264,9 @@ pub fn OverworldMap() -> Element {
                             tile_zoom.set(new_zoom);
                             spawn(async move {
                                 let _ = save_user_setting(
-                                    SETTING_OVERWORLD_ZOOM.to_string(),
-                                    new_zoom.to_string(),
-                                )
+                                        SETTING_OVERWORLD_ZOOM.to_string(),
+                                        new_zoom.to_string(),
+                                    )
                                     .await;
                             });
                         },
@@ -281,9 +281,9 @@ pub fn OverworldMap() -> Element {
                             tile_zoom.set(new_zoom);
                             spawn(async move {
                                 let _ = save_user_setting(
-                                    SETTING_OVERWORLD_ZOOM.to_string(),
-                                    new_zoom.to_string(),
-                                )
+                                        SETTING_OVERWORLD_ZOOM.to_string(),
+                                        new_zoom.to_string(),
+                                    )
                                     .await;
                             });
                         },
@@ -307,7 +307,7 @@ pub fn OverworldMap() -> Element {
                                         let sn = SERVER_NAME();
                                         let pn = local_login_name_session();
                                         let lang = app_lang();
-                                        let sock = socket_confirm_fight.clone();
+                                        let sock = socket_confirm_fight;
                                         async move {
                                             let _ = sock
                                                 .send(ClientEvent::Interact(sn, pn, lang))
@@ -322,7 +322,7 @@ pub fn OverworldMap() -> Element {
                                     onclick: move |_| {
                                         let sn = SERVER_NAME();
                                         let pn = local_login_name_session();
-                                        let sock = socket_dismiss.clone();
+                                        let sock = socket_dismiss;
                                         async move {
                                             let _ = sock.send(ClientEvent::DismissDialog(sn, pn)).await;
                                         }
@@ -359,7 +359,7 @@ pub fn OverworldMap() -> Element {
                                 let sn = sn_up.clone();
                                 let pn = pn_up.clone();
                                 let lang = app_lang();
-                                let sock = socket_up.clone();
+                                let sock = socket_up;
                                 async move {
                                     let _ = sock
                                         .send(ClientEvent::MovePlayer(sn, pn, Direction::Up, lang))
@@ -377,7 +377,7 @@ pub fn OverworldMap() -> Element {
                                 let sn = sn_left.clone();
                                 let pn = pn_left.clone();
                                 let lang = app_lang();
-                                let sock = socket_left.clone();
+                                let sock = socket_left;
                                 async move {
                                     let _ = sock
                                         .send(ClientEvent::MovePlayer(sn, pn, Direction::Left, lang))
@@ -393,7 +393,7 @@ pub fn OverworldMap() -> Element {
                                 let sn = sn_int.clone();
                                 let pn = pn_int.clone();
                                 let lang = app_lang();
-                                let sock = socket_interact.clone();
+                                let sock = socket_interact;
                                 async move {
                                     let _ = sock.send(ClientEvent::Interact(sn, pn, lang)).await;
                                 }
@@ -407,7 +407,7 @@ pub fn OverworldMap() -> Element {
                                 let sn = sn_right.clone();
                                 let pn = pn_right.clone();
                                 let lang = app_lang();
-                                let sock = socket_right.clone();
+                                let sock = socket_right;
                                 async move {
                                     let _ = sock
                                         .send(ClientEvent::MovePlayer(sn, pn, Direction::Right, lang))
@@ -425,7 +425,7 @@ pub fn OverworldMap() -> Element {
                                 let sn = sn_down.clone();
                                 let pn = pn_down.clone();
                                 let lang = app_lang();
-                                let sock = socket_down.clone();
+                                let sock = socket_down;
                                 async move {
                                     let _ = sock
                                         .send(ClientEvent::MovePlayer(sn, pn, Direction::Down, lang))

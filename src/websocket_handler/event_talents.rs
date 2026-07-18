@@ -1,5 +1,6 @@
 #[cfg(feature = "server")]
 use crate::websocket_handler::{common_event::SERVER_MANAGER, event::update_clients_server_data};
+#[cfg(feature = "server")]
 use dioxus::logger::tracing;
 #[cfg(feature = "server")]
 use lib_rpg::server::server_manager::ServerManager;
@@ -90,6 +91,25 @@ pub fn request_respec_talents(server_name: &str, character_id_name: &str) {
         }
         if pm.current_player.id_name == character_id_name {
             apply(&mut pm.current_player, &tree);
+        }
+    }
+    drop(sm);
+    update_clients_server_data(server_name);
+}
+
+/// Clear the talent notification badge for `character_id_name` — call when the
+/// player opens the Talents tab, mirroring `request_mark_equip_seen`.
+#[cfg(feature = "server")]
+pub fn request_mark_talent_seen(server_name: &str, character_id_name: &str) {
+    let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
+
+    if let Some(server_data) = sm.servers_data.get_mut(server_name) {
+        let pm = &mut server_data.core_game_data.game_manager.pm;
+        if let Some(character) = pm.get_mut_active_hero_character(character_id_name) {
+            character.talents.mark_points_seen();
+        }
+        if pm.current_player.id_name == character_id_name {
+            pm.current_player.talents.mark_points_seen();
         }
     }
     drop(sm);

@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 20,
+    "Coût de vigueur": 2000,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -54,5 +54,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Grabs and slams — deals heavy damage but recoils from the impact.",
-    "DescriptionEffects": "Deals 75 physical damage to one enemy; deals 12 physical damage to self; 3-turn cooldown."
+    "DescriptionEn": "Grabs and slams — deals heavy damage but recoils from the impact.",
+    "DescriptionFr": "Saisit et plaque au sol — inflige de lourds dégâts mais subit le contrecoup de l'impact.",
+    "DescriptionEffects": "Deals 75 physical damage to one enemy; deals 12 physical damage to self; 3-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 75 physical damage to one enemy; deals 12 physical damage to self; 3-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 75 dégâts physiques à un ennemi ; s'inflige 12 dégâts physiques ; temps de recharge de 3 tours."
 }

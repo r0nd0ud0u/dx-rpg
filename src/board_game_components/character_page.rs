@@ -171,7 +171,7 @@ pub fn CharacterPanel(
                 // Header: name + level + attack button
                 div { class: "char-header",
                     span { class: "char-name-text", "{c.db_full_name}" }
-                    span { class: "char-level", {t!("character-page-lvl", level: c.level as i64)} }
+                    span { class: "char-level", {t!("character-page-lvl", level : c.level as i64)} }
                     if extra_rounds > 0 {
                         span {
                             class: "char-extra-rounds",

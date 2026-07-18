@@ -40,5 +40,9 @@
     "Photo": "squirtle.png",
     "Portée": "Individual",
     "Description": "Fires a pressurised jet of water dealing magical damage.",
-    "DescriptionEffects": "Deals 40 magic damage to one enemy; 2-turn cooldown."
+    "DescriptionEn": "Fires a pressurised jet of water dealing magical damage.",
+    "DescriptionFr": "Tire un jet d'eau sous pression infligeant des dégâts magiques.",
+    "DescriptionEffects": "Deals 40 magic damage to one enemy; 2-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 40 magic damage to one enemy; 2-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 40 dégâts magiques à un ennemi ; temps de recharge de 2 tours."
 }

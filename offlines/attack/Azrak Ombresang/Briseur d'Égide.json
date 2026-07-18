@@ -1,6 +1,6 @@
 {
     "Cible": "Enemy",
-    "Coût de mana": 16,
+    "Coût de mana": 11,
     "Coût de rage": 0,
     "Coût de vigueur": 0,
     "Effet": [
@@ -40,5 +40,9 @@
     "Photo": "Azrak Ombresang.png",
     "Portée": "Individual",
     "Description": "Shield Breaker — shatters the target's protective barrier, reducing their defenses.",
-    "DescriptionEffects": "Deals 40 magic damage to one enemy; -20% max Magic armor on enemy for 4 turns."
+    "DescriptionEn": "Shield Breaker — shatters the target's protective barrier, reducing their defenses.",
+    "DescriptionFr": "Briseur d'Égide — brise la barrière protectrice de la cible, réduisant ses défenses.",
+    "DescriptionEffects": "Deals 40 magic damage to one enemy; -20% max Magic armor on enemy for 4 turns.",
+    "DescriptionEffectsEn": "Deals 40 magic damage to one enemy; -20% max Magic armor on enemy for 4 turns.",
+    "DescriptionEffectsFr": "Inflige 40 dégâts magiques à un ennemi ; -20 % d'armure magique max de l'ennemi pendant 4 tours."
 }

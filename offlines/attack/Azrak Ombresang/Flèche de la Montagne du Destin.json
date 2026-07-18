@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 13,
+    "Coût de vigueur": 17,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -82,5 +82,9 @@
     "Photo": "Azrak Ombresang.png",
     "Portée": "Individual",
     "Description": "Doom Mountain Arrow — an arrow guided by dark fate that deals piercing damage and applies a curse.",
-    "DescriptionEffects": "Deals 120 physical damage to one enemy; deals 40 physical damage to one enemy per turn for 4 turns; 4-turn cooldown; +60% damage taken by self; +20 Physical power."
+    "DescriptionEn": "Doom Mountain Arrow — an arrow guided by dark fate that deals piercing damage and applies a curse.",
+    "DescriptionFr": "Flèche de la Montagne du Destin — une flèche guidée par un destin funeste qui perce et maudit sa cible.",
+    "DescriptionEffects": "Deals 120 physical damage to one enemy; deals 40 physical damage to one enemy per turn for 4 turns; 4-turn cooldown; +60% damage taken by self; +20 Physical power.",
+    "DescriptionEffectsEn": "Deals 120 physical damage to one enemy; deals 40 physical damage to one enemy per turn for 4 turns; 4-turn cooldown; +60% damage taken by self; +20 Physical power.",
+    "DescriptionEffectsFr": "Inflige 120 dégâts physiques à un ennemi ; inflige 40 dégâts physiques à un ennemi par tour pendant 4 tours ; temps de recharge de 4 tours ; +60 % de dégâts subis par soi-même ; +20 de puissance physique."
 }

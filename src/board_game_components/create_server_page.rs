@@ -26,9 +26,11 @@ pub fn CreateServer() -> Element {
 
     let mut is_single_player: Signal<bool> = use_signal(|| false);
 
-    let player = local_login_name_session();
+    // Reading local_login_name_session() *inside* the effect (not captured outside)
+    // subscribes the effect to the signal so it re-runs whenever the login name
+    // changes — including when it is restored from localStorage after SSR hydration.
     use_effect(move || {
-        let player_name = player.clone();
+        let player_name = local_login_name_session();
         spawn(async move {
             match get_save_slots(player_name).await {
                 Ok(s) => slots.set(s),
@@ -116,8 +118,8 @@ pub fn CreateServer() -> Element {
                                         span { class: "save-slot-scenario",
                                             {
                                                 t!(
-                                                    "loadgame-slot-scenario", scenario : slot.current_scenario
-                                                    .clone(), level : slot.scenario_level as i64
+                                                    "loadgame-slot-scenario", scenario : slot.current_scenario.clone(), level :
+                                                    slot.scenario_level as i64
                                                 )
                                             }
                                         }
@@ -128,7 +130,7 @@ pub fn CreateServer() -> Element {
                                             span { class: "save-slot-mode", {t!("loadgame-mode-solo")} }
                                         } else {
                                             span { class: "save-slot-mode",
-                                                {t!("loadgame-mode-multi", players : slot.players_nb as i64)}
+                                                {t!("loadgame-mode-multi", players : slot.players_nb)}
                                             }
                                         }
                                         if !slot.universe.is_empty() {

@@ -3,7 +3,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 22,
+    "Coût de vigueur": 2200,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -27,5 +27,9 @@
     "Photo": "Charge.png",
     "Portée": "Individual",
     "Description": "Corrupted Strike — a dark energy strike that corrodes and drains life.",
-    "DescriptionEffects": "Deals 350 physical damage to one enemy."
+    "DescriptionEn": "Corrupted Strike — a dark energy strike that corrodes and drains life.",
+    "DescriptionFr": "Frappe Corrompue — une frappe d'énergie ténébreuse qui corrode et draine la vie.",
+    "DescriptionEffects": "Deals 350 physical damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 350 physical damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 350 dégâts physiques à un ennemi."
 }

@@ -92,5 +92,9 @@
     "Photo": "Azrak Ombresang.png",
     "Portée": "Individual",
     "Description": "Mordor Recovery — draws on the death of slain enemies to restore strength and vitality.",
-    "DescriptionEffects": "For each enemy killed last turn: +10% Physical power (direct, lasts 2 turns); +10% HP, +10% Vigor, +10% Mana (instant recovery)."
+    "DescriptionEn": "Mordor Recovery — draws on the death of slain enemies to restore strength and vitality.",
+    "DescriptionFr": "Récupération Mordorienne — puise dans la mort des ennemis vaincus pour restaurer force et vitalité.",
+    "DescriptionEffects": "For each enemy killed last turn: +10% Physical power (direct, lasts 2 turns); +10% HP, +10% Vigor, +10% Mana (instant recovery).",
+    "DescriptionEffectsEn": "For each enemy killed last turn: +10% Physical power (direct, lasts 2 turns); +10% HP, +10% Vigor, +10% Mana (instant recovery).",
+    "DescriptionEffectsFr": "Pour chaque ennemi vaincu au tour précédent : +10 % de puissance physique (immédiat, dure 2 tours) ; +10 % de PV, +10 % de Vigueur, +10 % de Mana (récupération instantanée)."
 }

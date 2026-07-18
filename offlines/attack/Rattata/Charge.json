@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 8,
+    "Coût de vigueur": 800,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -26,5 +26,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "A quick bite.",
-    "DescriptionEffects": "Deals 22 physical damage to one enemy."
+    "DescriptionEn": "A quick bite.",
+    "DescriptionFr": "Une morsure rapide.",
+    "DescriptionEffects": "Deals 22 physical damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 22 physical damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 22 dégâts physiques à un ennemi."
 }

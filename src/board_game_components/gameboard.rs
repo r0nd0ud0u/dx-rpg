@@ -199,12 +199,7 @@ pub fn GameBoard() -> Element {
                                 }
                                 if !ra.logs_end_of_round.is_empty() {
                                     div { class: "round-log-header",
-                                        {
-                                            t!(
-                                                "gameboard-turn-round", turn : ra.turn_nb, round : ra
-                                                .round_nb
-                                            )
-                                        }
+                                        {t!("gameboard-turn-round", turn : ra.turn_nb, round : ra.round_nb)}
                                     }
                                 }
                             }

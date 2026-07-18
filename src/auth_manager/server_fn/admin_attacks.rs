@@ -25,7 +25,7 @@ pub struct AttackFormData {
 }
 
 /// Returns the list of attack file stems for a given character.
-#[server]
+#[post("/api/admin_list_attacks")]
 pub async fn admin_list_attacks(character_name: String) -> Result<Vec<String>, ServerFnError> {
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
@@ -48,7 +48,7 @@ pub async fn admin_list_attacks(character_name: String) -> Result<Vec<String>, S
 }
 
 /// Returns the raw JSON of an attack file.
-#[server]
+#[post("/api/admin_get_attack_json")]
 pub async fn admin_get_attack_json(
     character_name: String,
     attack_name: String,
@@ -64,7 +64,7 @@ pub async fn admin_get_attack_json(
 }
 
 /// Saves the raw JSON of an attack file (validates JSON first).
-#[server]
+#[post("/api/admin_save_attack_json")]
 pub async fn admin_save_attack_json(
     character_name: String,
     attack_name: String,
@@ -83,7 +83,7 @@ pub async fn admin_save_attack_json(
 }
 
 /// Deletes an attack file for a character.
-#[server]
+#[post("/api/admin_delete_attack")]
 pub async fn admin_delete_attack(
     character_name: String,
     attack_name: String,
@@ -99,7 +99,7 @@ pub async fn admin_delete_attack(
 }
 
 /// Returns the key fields of an attack for form-based editing.
-#[server]
+#[post("/api/admin_get_attack_form")]
 pub async fn admin_get_attack_form(
     character_name: String,
     attack_name: String,
@@ -142,7 +142,7 @@ pub async fn admin_get_attack_form(
 }
 
 /// Saves an attack from form fields, reconstructing the full JSON.
-#[server]
+#[post("/api/admin_save_attack_form")]
 pub async fn admin_save_attack_form(
     character_name: String,
     attack_name: String,

@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 12,
+    "Coût de vigueur": 1200,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -40,5 +40,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Sweeps the enemy's legs — deals damage and reduces physical armour.",
-    "DescriptionEffects": "Deals 45 physical damage to one enemy; -15% max Physical armor on enemy for 2 turns."
+    "DescriptionEn": "Sweeps the enemy's legs — deals damage and reduces physical armour.",
+    "DescriptionFr": "Balaye les jambes de l'ennemi — inflige des dégâts et réduit l'armure physique.",
+    "DescriptionEffects": "Deals 45 physical damage to one enemy; -15% max Physical armor on enemy for 2 turns.",
+    "DescriptionEffectsEn": "Deals 45 physical damage to one enemy; -15% max Physical armor on enemy for 2 turns.",
+    "DescriptionEffectsFr": "Inflige 45 dégâts physiques à un ennemi ; -15 % d'armure physique max de l'ennemi pendant 2 tours."
 }

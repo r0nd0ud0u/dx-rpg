@@ -3,7 +3,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 10,
+    "Coût de vigueur": 1000,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -27,5 +27,9 @@
     "Photo": "Charge.png",
     "Portée": "Individual",
     "Description": "Club Strike — a crude but effective blow that deals solid physical damage.",
-    "DescriptionEffects": "Deals 40 physical damage to one enemy."
+    "DescriptionEn": "Club Strike — a crude but effective blow that deals solid physical damage.",
+    "DescriptionFr": "Coup de Massue — un coup brut mais efficace qui inflige de solides dégâts physiques.",
+    "DescriptionEffects": "Deals 40 physical damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 40 physical damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 40 dégâts physiques à un ennemi."
 }

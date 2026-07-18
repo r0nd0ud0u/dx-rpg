@@ -55,5 +55,9 @@
     "Photo": "Thraïn.png",
     "Portée": "Zone",
     "Description": "Hammer Crash — a devastating hammer strike that can be lethal at low HP.",
-    "DescriptionEffects": "+10 Berserk; deals 35 physical damage to all enemies; +10 Aggro."
+    "DescriptionEn": "Hammer Crash — a devastating hammer strike that can be lethal at low HP.",
+    "DescriptionFr": "Fracas Marteau — une frappe de marteau dévastatrice qui peut être fatale à faibles PV.",
+    "DescriptionEffects": "+10 Berserk; deals 35 physical damage to all enemies; +10 Aggro.",
+    "DescriptionEffectsEn": "+10 Berserk; deals 35 physical damage to all enemies; +10 Aggro.",
+    "DescriptionEffectsFr": "+10 Rage ; inflige 35 dégâts physiques à tous les ennemis ; +10 Aggro."
 }

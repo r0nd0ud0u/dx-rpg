@@ -54,5 +54,9 @@
     "Photo": "bulbasaur.png",
     "Portée": "Individual",
     "Description": "Charges solar energy and unleashes a devastating beam — boosts own magical power afterward.",
-    "DescriptionEffects": "Deals 95 magic damage to one enemy; +20% max Magic power for 2 turns; 5-turn cooldown."
+    "DescriptionEn": "Charges solar energy and unleashes a devastating beam — boosts own magical power afterward.",
+    "DescriptionFr": "Charge l'énergie solaire et libère un rayon dévastateur — augmente ensuite sa propre puissance magique.",
+    "DescriptionEffects": "Deals 95 magic damage to one enemy; +20% max Magic power for 2 turns; 5-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 95 magic damage to one enemy; +20% max Magic power for 2 turns; 5-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 95 dégâts magiques à un ennemi ; +20 % de puissance magique max pendant 2 tours ; temps de recharge de 5 tours."
 }

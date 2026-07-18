@@ -54,5 +54,9 @@
     "Photo": "squirtle.png",
     "Portée": "Individual",
     "Description": "Rides a massive wave — deals heavy water damage and absorbs a little health back.",
-    "DescriptionEffects": "Deals 75 magic damage to one enemy; heals self for 8% HP; 4-turn cooldown."
+    "DescriptionEn": "Rides a massive wave — deals heavy water damage and absorbs a little health back.",
+    "DescriptionFr": "Chevauche une vague massive — inflige de lourds dégâts d'eau et récupère un peu de vitalité.",
+    "DescriptionEffects": "Deals 75 magic damage to one enemy; heals self for 8% HP; 4-turn cooldown.",
+    "DescriptionEffectsEn": "Deals 75 magic damage to one enemy; heals self for 8% HP; 4-turn cooldown.",
+    "DescriptionEffectsFr": "Inflige 75 dégâts magiques à un ennemi ; se soigne de 8 % des PV ; temps de recharge de 4 tours."
 }

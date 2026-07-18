@@ -2,7 +2,7 @@
     "name": "Rituel des Tenebres",
     "description": "Le nécromancien a invoqué un gobelin pour protéger son rituel. Interrompez le rituel en éliminant le nécromancien avant que sa malédiction ne consume votre groupe.",
     "boss_patterns": {
-        "Necromancien du Mordor": [0],
+        "Necromancien du Mordor": [0, 1],
         "Gobelin Eclaireur": [0]
     },
     "level": 8,

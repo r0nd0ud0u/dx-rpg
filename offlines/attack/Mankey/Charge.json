@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 10,
+    "Coût de vigueur": 1000,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -26,5 +26,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Claws at the target.",
-    "DescriptionEffects": "Deals 30 physical damage to one enemy."
+    "DescriptionEn": "Claws at the target.",
+    "DescriptionFr": "Griffe la cible.",
+    "DescriptionEffects": "Deals 30 physical damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 30 physical damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 30 dégâts physiques à un ennemi."
 }

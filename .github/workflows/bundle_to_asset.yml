@@ -60,6 +60,7 @@ jobs:
         with:
           name: bundle_linux.zip
           path: bundle_linux.zip
+          if-no-files-found: error
 
       - name: Upload artifact (Windows)
         if: runner.os == 'Windows'
@@ -67,10 +68,177 @@ jobs:
         with:
           name: bundle_windows.zip
           path: bundle_windows.zip
+          if-no-files-found: error
+
+  build-desktop:
+    name: Upload Desktop Client Asset (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Update rust
+        run: rustup update stable
+
+      - name: Install Linux desktop dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev
+
+      - name: Install dioxus-cli
+        run: |
+          cargo install cargo-binstall
+          cargo binstall dioxus-cli@0.7.9 --force
+        shell: bash
+
+      - name: Make bundle script executable (Linux only)
+        if: runner.os == 'Linux'
+        run: chmod +x ./scripts/bundle_desktop.sh
+
+      # Same reasoning as build-mobile below: SERVER_URL/INSECURE_ACCEPT_INVALID_CERTS get
+      # baked in at build time (see src/main.rs's option_env!() fallback and build.rs) so
+      # the released client works out of the box. Override via repo Settings -> Secrets
+      # and variables -> Actions -> Variables without touching this file.
+      - name: Build desktop client
+        run: ./scripts/bundle_desktop.sh
+        shell: bash
+        env:
+          # aogin-world.com has a real Let's Encrypt certificate; the bare IP does not
+          # (the cert's CN is the domain, so connecting via IP fails hostname verification),
+          # so no INSECURE_ACCEPT_INVALID_CERTS override is needed here anymore.
+          SERVER_URL: ${{ vars.SERVER_URL || 'https://aogin-world.com' }}
+          INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'false' }}
+
+      - name: Rename bundle directory
+        run: |
+          mv bundle-desktop dx-rpg-desktop_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+        shell: bash
+
+      - name: Zip bundle (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          zip -r bundle_desktop_linux.zip dx-rpg-desktop_linux
+        shell: bash
+
+      - name: Zip bundle (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          Compress-Archive -Path dx-rpg-desktop_windows -DestinationPath bundle_desktop_windows.zip
+        shell: pwsh
+
+      - name: Upload artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle_desktop_linux.zip
+          path: bundle_desktop_linux.zip
+          if-no-files-found: error
+
+      - name: Upload artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle_desktop_windows.zip
+          path: bundle_desktop_windows.zip
+          if-no-files-found: error
+
+  build-mobile:
+    name: Upload Android Client Asset (arm64-v8a)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Update rust
+        run: rustup update stable
+
+      # arm64-v8a covers essentially every real Android phone since ~2019, and is the
+      # only 32-/64-bit split that matters here: dioxus's manganis crate (its asset
+      # macro backend) hard-errors on 32-bit Android targets as of dioxus 0.7.9
+      # ("Only 64-bit Android targets are supported"), so armv7-linux-androideabi
+      # (armeabi-v7a, older 32-bit devices) cannot be built at all with this version.
+      - name: Add Android rust target
+        run: rustup target add aarch64-linux-android
+
+      # `dx bundle --platform android` also compiles a host-target companion build
+      # (visible as `target/server-release`, target x86_64-unknown-linux-gnu) even with
+      # --fullstack false. That build pulls in dioxus-desktop's Linux GTK bindings
+      # (tao/wry -> glib-sys/gtk-sys), so the same system packages the desktop Linux
+      # build needs are required here too, or the build fails on `glib-2.0` via pkg-config.
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev
+
+      # ubuntu-latest ships the Android SDK preinstalled (ANDROID_HOME is already set);
+      # only the NDK needs to be added explicitly.
+      - name: Install Android NDK
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27
+          add-to-path: true
+
+      - name: Install dioxus-cli
+        run: |
+          cargo install cargo-binstall
+          cargo binstall dioxus-cli@0.7.9 --force
+        shell: bash
+
+      - name: Make bundle script executable
+        run: chmod +x ./scripts/bundle_mobile.sh
+
+      # Without this, every CI run signs the APK with a fresh, randomly-generated debug
+      # key (GHA runners are ephemeral, so there's no persistent ~/.android/debug.keystore
+      # the way there is on a dev machine). Android refuses to install an APK over an
+      # existing install if the signature changed ("package conflicts with an existing
+      # package"), forcing an uninstall before every single update. android/debug.keystore
+      # is committed in-repo *by design* — it's a debug-only signing key (never used for
+      # Play Store distribution), and Android tooling's debug keystores always use the
+      # well-known public password "android" by convention, so there's nothing secret to
+      # protect here; keeping it out of git would defeat the point (every CI run needs the
+      # exact same file).
+      - name: Install stable debug keystore
+        run: |
+          mkdir -p ~/.android
+          cp android/debug.keystore ~/.android/debug.keystore
+
+      # An installed APK has no shell to read env vars from at runtime (unlike the
+      # desktop client), so SERVER_URL/INSECURE_ACCEPT_INVALID_CERTS must be baked in
+      # at build time here — see src/main.rs's option_env!() fallback and build.rs.
+      # Override via repo Settings -> Secrets and variables -> Actions -> Variables
+      # (SERVER_URL / INSECURE_ACCEPT_INVALID_CERTS) without touching this file; these
+      # hardcoded values are just the fallback if no such variable is set.
+      - name: Build Android client
+        run: ./scripts/bundle_mobile.sh aarch64-linux-android
+        shell: bash
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          # aogin-world.com has a real Let's Encrypt certificate; the bare IP does not
+          # (the cert's CN is the domain, so connecting via IP fails hostname verification),
+          # so no INSECURE_ACCEPT_INVALID_CERTS override is needed here anymore.
+          SERVER_URL: ${{ vars.SERVER_URL || 'https://aogin-world.com' }}
+          INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'false' }}
+
+      - name: Rename APK with ABI suffix
+        run: |
+          apk=$(find bundle-android -name '*.apk' | head -n1)
+          mv "$apk" "bundle-android/dx-rpg-arm64-v8a.apk"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle_android_arm64-v8a
+          path: bundle-android/dx-rpg-arm64-v8a.apk
+          if-no-files-found: error
 
   release:
     name: Create GitHub Release
-    needs: build
+    needs: [build, build-desktop, build-mobile]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -84,4 +252,6 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: artifacts/**/*.zip
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.apk

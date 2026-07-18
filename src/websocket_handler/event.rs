@@ -9,9 +9,11 @@ use anyhow::Result;
 #[cfg(feature = "server")]
 use async_std::task::sleep;
 use dioxus::fullstack::{CborEncoding, WebSocketOptions, Websocket};
+#[cfg(feature = "server")]
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use lib_rpg::character_mod::character::Character;
+#[cfg(feature = "server")]
 use lib_rpg::common::constants::core_game_data_const::{
     SAVED_CORE_GAME_DATA, SAVED_CORE_GAME_DATA_REPLAY,
 };
@@ -19,16 +21,23 @@ use lib_rpg::common::constants::core_game_data_const::{
 use lib_rpg::common::constants::paths_const::GAMES_DIR;
 use lib_rpg::common::log_data::LogData;
 use lib_rpg::common::overworld::Direction;
+#[cfg(feature = "server")]
 use lib_rpg::common::overworld::Position;
+use lib_rpg::server::core_game_data::CombatUpdate;
+#[cfg(feature = "server")]
 use lib_rpg::server::core_game_data::CoreGameData;
+use lib_rpg::server::overworld_manager::OverworldState;
 use lib_rpg::server::server_manager::OnGoingGame;
 use lib_rpg::server::server_manager::ServerData;
 #[cfg(feature = "server")]
 use lib_rpg::server::server_manager::{GamePhase, ServerManager};
+#[cfg(feature = "server")]
 use lib_rpg::utils;
 use serde::{Deserialize, Serialize};
 
-use std::path::{Path, PathBuf};
+#[cfg(feature = "server")]
+use std::path::Path;
+use std::path::PathBuf;
 #[cfg(feature = "server")]
 use std::{
     collections::HashMap,
@@ -95,6 +104,7 @@ pub enum ClientEvent {
     ExitOverworld(String),                         // server_name
     RequestUnlockTalent(String, String, String),   // server_name, character_id_name, talent_id
     RequestRespecTalents(String, String),          // server_name, character_id_name
+    RequestMarkTalentSeen(String, String),         // server_name, character_id_name
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -109,6 +119,8 @@ pub enum ServerEvent {
     LogOut,
     SetAtkAnimation(bool),    // true to set atk animation, false to reset it
     OverworldEntered(String), // map_id — lightweight trigger; no complex types
+    UpdateOverworld(Box<OverworldState>), // Lightweight update for plain movement steps that don't touch combat state
+    UpdateCombat(Box<CombatUpdate>), // Lightweight combat-only update sent after an ordinary attack
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -157,7 +169,7 @@ pub async fn on_rcv_client_event(
                 };
                 use crate::websocket_handler::event_store::{buy_item_handler, sell_item_handler};
                 use crate::websocket_handler::event_talents::{
-                    request_respec_talents, request_unlock_talent,
+                    request_mark_talent_seen, request_respec_talents, request_unlock_talent,
                 };
 
                 tokio::select! {
@@ -344,6 +356,10 @@ pub async fn on_rcv_client_event(
                             Ok(ClientEvent::RequestRespecTalents(server_name, character_id_name)) => {
                                 tracing::info!("Character {} respeccing talents on server {}", character_id_name, server_name);
                                 request_respec_talents(&server_name, &character_id_name);
+                            }
+                            Ok(ClientEvent::RequestMarkTalentSeen(server_name, character_id_name)) => {
+                                tracing::info!("Character {} marking talent points as seen on server {}", character_id_name, server_name);
+                                request_mark_talent_seen(&server_name, &character_id_name);
                             }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
@@ -916,7 +932,11 @@ fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction, 
     let lang = crate::common::lang_from_app_lang(lang);
 
     enum PostAction {
-        Broadcast,
+        // Plain movement/blocked step: only overworld sub-state changed, so only that
+        // needs to reach clients (see ServerEvent::UpdateOverworld's doc comment).
+        BroadcastOverworldOnly,
+        // Combat state changed too (new scenario/boss/turn) — needs the full snapshot.
+        BroadcastFull,
         EnterMap(String, Position),
     }
 
@@ -953,25 +973,26 @@ fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction, 
             MoveResult::Blocked => {
                 // Persist state so active_dialog (locked-door hint) reaches clients.
                 server_data.core_game_data.overworld = Some(manager.state);
-                PostAction::Broadcast
+                PostAction::BroadcastOverworldOnly
             }
             MoveResult::Moved => {
                 server_data.core_game_data.overworld = Some(manager.state);
-                PostAction::Broadcast
+                PostAction::BroadcastOverworldOnly
             }
             MoveResult::Encounter(scenario_id) => {
                 server_data.core_game_data.overworld = Some(manager.state);
                 server_data
                     .core_game_data
                     .exit_overworld_to_fight(&scenario_id);
-                PostAction::Broadcast
+                PostAction::BroadcastFull
             }
             MoveResult::MapTransition(target_map, spawn) => PostAction::EnterMap(target_map, spawn),
         }
     }; // SERVER_MANAGER lock released here
 
     match action {
-        PostAction::Broadcast => update_clients_server_data(server_name),
+        PostAction::BroadcastOverworldOnly => update_clients_overworld(server_name),
+        PostAction::BroadcastFull => update_clients_server_data(server_name),
         PostAction::EnterMap(map_id, spawn) => {
             // Ordinary map-to-map door transition — not tied to finishing a
             // scenario, so deliberately not auto-saved here.
@@ -1151,6 +1172,41 @@ pub fn update_clients_server_data(server_name: &str) {
 }
 
 #[cfg(feature = "server")]
+pub fn update_clients_combat(server_name: &str) {
+    let Some(server_data) = get_server_data_by_server_name(server_name) else {
+        tracing::error!(
+            "update_clients_combat: No server data found for server name: {}",
+            server_name
+        );
+        return;
+    };
+    let update = server_data.core_game_data.to_combat_update();
+    send_server_event_to_clients(server_name, &ServerEvent::UpdateCombat(Box::new(update)));
+}
+
+#[cfg(feature = "server")]
+pub fn update_clients_overworld(server_name: &str) {
+    let Some(server_data) = get_server_data_by_server_name(server_name) else {
+        tracing::error!(
+            "update_clients_overworld: No server data found for server name: {}",
+            server_name
+        );
+        return;
+    };
+    let Some(overworld) = server_data.core_game_data.overworld else {
+        tracing::error!(
+            "update_clients_overworld: No overworld state for server name: {}",
+            server_name
+        );
+        return;
+    };
+    send_server_event_to_clients(
+        server_name,
+        &ServerEvent::UpdateOverworld(Box::new(overworld)),
+    );
+}
+
+#[cfg(feature = "server")]
 pub fn update_clients_end_of_atk_animation(server_name: &str, is_animated: bool) {
     send_server_event_to_clients(server_name, &ServerEvent::SetAtkAnimation(is_animated));
 }
@@ -1239,6 +1295,7 @@ pub async fn update_core_game_data_after_atk(
     use lib_rpg::server::game_state::GameStatus;
     let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
     let logs: Vec<LogData>;
+    let status_after_atk: GameStatus;
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         // launch attack
         // case several ennemy-auto-atk in a row and one atk ended the game, the next atk should not reach.
@@ -1274,6 +1331,12 @@ pub async fn update_core_game_data_after_atk(
             .atk_name
             .clone();
         let header_sent = server_data.core_game_data.last_action_header.clone();
+        status_after_atk = server_data
+            .core_game_data
+            .game_manager
+            .game_state
+            .status
+            .clone();
         tracing::info!(
             "update_core_game_data_after_atk server={} atk={:?} logs={} last_atk_name={:?} header={:?}",
             server_name,
@@ -1294,7 +1357,17 @@ pub async fn update_core_game_data_after_atk(
 
     // update clients
     update_clients_end_of_atk_animation(server_name, true);
-    update_clients_server_data(server_name);
+    // An attack that ends the scenario/game also changes end_of_scenario/game_phase
+    // (see GameManager::eval_end_of_round -> process_end_of_scenario), which the
+    // lightweight combat-only update doesn't carry — fall back to the full snapshot.
+    if matches!(
+        status_after_atk,
+        GameStatus::EndOfScenario | GameStatus::EndOfGame
+    ) {
+        update_clients_server_data(server_name);
+    } else {
+        update_clients_combat(server_name);
+    }
     // spawn
     let server_name = server_name.to_owned(); // if it was &str
     tokio::spawn(async move {
@@ -1881,6 +1954,11 @@ pub async fn process_load_next_scenario(server_name: &str, auto_save: bool) -> R
         server_data.core_game_data.load_next_scenario()?;
         server_data.players_data.owner_player_name.clone()
     };
+    // Debug-only: helps diagnose reports of the Scenarios tab showing stale progress
+    tracing::debug!(
+        "process_load_next_scenario: broadcasting UpdateServerData for server {}",
+        server_name
+    );
     update_clients_server_data(server_name);
     if auto_save && !owner_player_name.is_empty() {
         tracing::info!(

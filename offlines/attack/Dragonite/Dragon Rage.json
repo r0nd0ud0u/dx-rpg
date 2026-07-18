@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 22,
+    "Coût de vigueur": 2200,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -40,5 +40,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Unleashes draconic wrath — cracks enemy armour.",
-    "DescriptionEffects": "Deals 80 physical damage to one enemy; -20% max Physical armor on enemy for 3 turns."
+    "DescriptionEn": "Unleashes draconic wrath — cracks enemy armour.",
+    "DescriptionFr": "Libère une colère draconique — fissure l'armure ennemie.",
+    "DescriptionEffects": "Deals 80 physical damage to one enemy; -20% max Physical armor on enemy for 3 turns.",
+    "DescriptionEffectsEn": "Deals 80 physical damage to one enemy; -20% max Physical armor on enemy for 3 turns.",
+    "DescriptionEffectsFr": "Inflige 80 dégâts physiques à un ennemi ; -20 % d'armure physique max de l'ennemi pendant 3 tours."
 }

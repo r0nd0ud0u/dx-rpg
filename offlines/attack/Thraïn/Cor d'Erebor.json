@@ -83,5 +83,9 @@
     "Photo": "default.png",
     "Portée": "Zone",
     "Description": "Horn of Erebor — a rallying war horn that boosts allies' morale and combat effectiveness.",
-    "DescriptionEffects": "+5 Berserk; +15% max health for all allies for 2 turns; +25% max Magic armor on all allies for 2 turns; +25% max Physical armor on all allies for 2 turns; 5-turn cooldown."
+    "DescriptionEn": "Horn of Erebor — a rallying war horn that boosts allies' morale and combat effectiveness.",
+    "DescriptionFr": "Cor d'Erebor — un cor de guerre ralliant qui renforce le moral et l'efficacité au combat des alliés.",
+    "DescriptionEffects": "+5 Berserk; +15% max health for all allies for 2 turns; +25% max Magic armor on all allies for 2 turns; +25% max Physical armor on all allies for 2 turns; 5-turn cooldown.",
+    "DescriptionEffectsEn": "+5 Berserk; +15% max health for all allies for 2 turns; +25% max Magic armor on all allies for 2 turns; +25% max Physical armor on all allies for 2 turns; 5-turn cooldown.",
+    "DescriptionEffectsFr": "+5 Rage ; +15 % de PV max pour tous les alliés pendant 2 tours ; +25 % d'armure magique max pour tous les alliés pendant 2 tours ; +25 % d'armure physique max pour tous les alliés pendant 2 tours ; temps de recharge de 5 tours."
 }

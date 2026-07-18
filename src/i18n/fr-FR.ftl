@@ -11,6 +11,15 @@ common-confirm = Confirmer
 quit-dialog-title = Quitter la partie
 quit-dialog-body = Êtes-vous sûr de vouloir quitter la partie ?
 
+navbar-server-settings = 🌐 Serveur
+server-settings-title = Connexion au serveur
+server-settings-current = Actuellement connecté à : { $url }
+server-settings-placeholder = https://votre-serveur.exemple.com
+server-settings-insecure-label = Accepter les certificats invalides (non sécurisé)
+server-settings-insecure-warning = Désactive la validation du certificat TLS pour ce serveur. À n'utiliser qu'avec un serveur et un réseau de confiance.
+server-settings-save = Enregistrer
+server-settings-saved = Enregistré — redémarrez l'application pour appliquer ce changement.
+
 help-title = Comment jouer
 
 help-section-getting-started = 🚀 Pour commencer
@@ -124,6 +133,8 @@ loadgame-delete-button = 🗑 Supprimer
 
 ## login page
 login-sign-in-title = Connexion
+login-empty-username = Veuillez saisir un nom d'utilisateur.
+login-empty-fields = Veuillez saisir un nom d'utilisateur et un mot de passe.
 login-username-placeholder = Votre nom d'utilisateur
 login-password-placeholder = Mot de passe
 login-success = { $username } connecté(e)

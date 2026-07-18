@@ -3,7 +3,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 10,
+    "Coût de vigueur": 13,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -55,5 +55,9 @@
     "Photo": "Azrak Ombresang.png",
     "Portée": "Zone",
     "Description": "Abyss Crash — a devastating blow channeling the power of the deep.",
-    "DescriptionEffects": "Deals 70 physical damage to all enemies; -5 Dodge on all enemies for 3 turns; restores 20 Vigor."
+    "DescriptionEn": "Abyss Crash — a devastating blow channeling the power of the deep.",
+    "DescriptionFr": "Fracas des Abysses — un coup dévastateur canalisant la puissance des abysses.",
+    "DescriptionEffects": "Deals 70 physical damage to all enemies; -5 Dodge on all enemies for 3 turns; restores 20 Vigor.",
+    "DescriptionEffectsEn": "Deals 70 physical damage to all enemies; -5 Dodge on all enemies for 3 turns; restores 20 Vigor.",
+    "DescriptionEffectsFr": "Inflige 70 dégâts physiques à tous les ennemis ; -5 d'esquive de tous les ennemis pendant 3 tours ; restaure 20 Vigueur."
 }

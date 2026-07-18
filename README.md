@@ -181,7 +181,7 @@ Bought items land in the **bag** (unequipped). To use equipment you must equip i
 | vigor potion | 80 gold |
 | berserk potion | 80 gold |
 
-Consumables have no purchase limit — you can buy as many as you can afford.
+Consumables have no purchase limit — you can buy as many as you can afford. Like equipment, consumable names are bilingual (`name`/`name_fr` on `Consumable`, `name_en`/`name_fr` in the shop catalog) so a potion displays correctly whether it was bought or looted, regardless of the active UI language.
 
 **Equipment price tiers**
 
@@ -339,6 +339,7 @@ Every hero earns skill points as they level up: **+1 per level**, plus a **+1 bo
 - **5 tiers per path**, costing `1, 1, 2, 3, 4` skill points — cheap to start, expensive to finish, so a hero can fully max one path or spread points across two, but never max all three.
 - **Capstones** (tier 5) are **mutually exclusive across a hero's 3 paths** — unlocking one path's capstone locks out the other two until you respec.
 - **Respec is free and unlimited** — a Respec button in the sheet refunds every spent point instantly so players can experiment with builds.
+- **Unspent-points notification**: the 🌳 Talents button shows a badge whenever a hero has skill points the player hasn't seen yet (granted on level-up). Opening the Talents tab for that hero dismisses the badge immediately, even if points are still unspent — it mirrors the Inventory tab's new-equipment badge (`TalentBoard::has_unseen_points`/`mark_points_seen`, `Inventory::has_unseen_equipment`/`mark_equipment_category_seen`).
 
 Talent trees are defined as JSON under `offlines/talents/<universe>/<character-name>.json` (same convention as `offlines/characters/`), one file per hero, each listing its 3 paths and their tiered nodes (id, cost, prerequisites, bilingual name/description, and effects).
 
@@ -362,6 +363,8 @@ The Load Game page now shows save-slot style cards identical to the Create Serve
 | `USE_PASSWORD` | `false` | Require password on login |
 | `MAX_SAVES` | `3` | Max save slots per user |
 | `ADMIN_ENABLED` | `false` | Enable `/admin` panel |
+| `SERVER_URL` | `http://127.0.0.1:8080` | Client-only, native builds (desktop/mobile): remote multiplayer server to connect to. Ignored by the web client, which infers it from same-origin, and by the server itself. |
+| `INSECURE_ACCEPT_INVALID_CERTS` | `false` | Client-only, native builds: when `true`, disables TLS certificate validation (for a self-signed `SERVER_URL`). Insecure — see [Desktop & Mobile Clients](#desktop--mobile-clients). |
 
 ---
 
@@ -543,6 +546,65 @@ dx serve --platform web
 # Open http://localhost:8080
 ```
 
+### Desktop & Mobile Clients
+
+Besides the web/fullstack build (which bundles the Axum server together with the
+WASM client, see [Deployment](#deployment)), the app can also be built as a
+**native client** that connects to a remote dx-rpg server instead of hosting one
+itself — useful for players who want a desktop app or an Android app talking to
+someone else's server.
+
+Native clients compile with the `desktop` or `mobile` Cargo feature instead of the
+default `server` feature, and read the server address from the `SERVER_URL`
+environment variable at startup (defaults to `http://127.0.0.1:8080` if unset):
+
+```bash
+# Desktop, local dev
+dx serve --platform desktop --no-default-features --features desktop
+
+# Point at a remote server
+SERVER_URL=https://your-server.example.com dx serve --platform desktop --no-default-features --features desktop
+```
+
+Release bundles are produced with the same scripts the CI release workflow uses:
+
+```bash
+./scripts/bundle_desktop.sh                       # -> bundle-desktop/  (Windows/Linux/macOS native app)
+./scripts/bundle_mobile.sh aarch64-linux-android   # -> bundle-android/  (arm64-v8a .apk — real phones)
+```
+
+`bundle_mobile.sh`'s target triple argument matters: without it, `dx bundle` picks its own
+default ABI, which may not match your phone's — the app then simply fails to install
+("app not compatible with this device"). Requires the Android SDK/NDK and the matching
+`rustup target add <triple>`. arm64-v8a (`aarch64-linux-android`) covers essentially every
+real Android phone since ~2019; `x86_64-linux-android` also works, for emulator testing.
+32-bit targets (`armv7-linux-androideabi`, older devices) don't build — `dioxus`'s
+`manganis` crate hard-requires a 64-bit Android target as of dioxus 0.7.9.
+
+Unlike the web bundle, these client-only bundles don't ship `offlines/`, `db.sqlite`,
+or a `.env` file — that data belongs to the server, not the client. Set `SERVER_URL`
+in the environment before launching the built client.
+
+**Android is the exception**: an installed APK has no shell to read env vars from at
+runtime the way a desktop process does, so `SERVER_URL` (and `INSECURE_ACCEPT_INVALID_CERTS`
+if needed) must be baked in at *build* time instead — set them before running
+`bundle_mobile.sh`, and they get compiled into the APK:
+
+```bash
+SERVER_URL=https://your-server.example.com ./scripts/bundle_mobile.sh aarch64-linux-android
+```
+
+**Self-signed / untrusted TLS certificate:** if `SERVER_URL` is `https://` and the
+server's certificate isn't signed by a trusted CA (e.g. a self-signed cert on a
+home-lab or dev deployment with no domain for Let's Encrypt), the native client's
+HTTP/WebSocket stack rejects the connection outright — there's no browser-style
+"proceed anyway" click-through. The proper fix is a real trusted certificate (see
+[Deploying on a VPS](docs/deploy-vps.md), which covers the Let's Encrypt + domain
+flow). As a stopgap for testing against a self-signed server you control, set
+`INSECURE_ACCEPT_INVALID_CERTS=true` to disable certificate validation for that
+client. This is insecure — anyone on the network path can impersonate the server —
+so only use it against a server and network you trust, never for a real deployment.
+
 ---
 
 ## Responsive Design
@@ -648,6 +710,39 @@ git tag v1.2.3 && git push origin v1.2.3
 
 > `docker_build.sh` always passes `--no-cache` to avoid stale cached layers when dependencies or
 > `offlines/` data change between builds. Old dangling images are pruned automatically after each build.
+
+### Native client releases
+
+Pushing a `v*` tag also triggers `.github/workflows/bundle_to_asset.yml`, which
+publishes a GitHub Release with, alongside the existing self-hostable web/server
+bundle (`bundle_linux.zip` / `bundle_windows.zip`):
+- `bundle_desktop_linux.zip` / `bundle_desktop_windows.zip` — native desktop
+  clients (see [Desktop & Mobile Clients](#desktop--mobile-clients))
+- `dx-rpg-arm64-v8a.apk` — native Android client (arm64-v8a; see
+  [Desktop & Mobile Clients](#desktop--mobile-clients) for why older 32-bit
+  devices aren't supported)
+
+Both are client-only builds that expect `SERVER_URL` to point at an already-running
+dx-rpg server (self-hosted via Docker Compose above, or the web bundle).
+
+**The Android APK has `SERVER_URL`/`INSECURE_ACCEPT_INVALID_CERTS` baked in by CI**
+(see [Desktop & Mobile Clients](#desktop--mobile-clients) for why — installed APKs
+have no runtime env to read). By default the workflow bakes in this project's own
+server via its domain name (`https://aogin-world.com`), which has a real Let's
+Encrypt certificate, so certificate validation stays **enabled**. Override either
+via repo *Settings → Secrets and variables → Actions → Variables* (`SERVER_URL`,
+`INSECURE_ACCEPT_INVALID_CERTS`) without touching the workflow file — e.g. set
+`INSECURE_ACCEPT_INVALID_CERTS` to `true` only if pointing at a self-signed
+home-lab/test deployment instead. Note the domain, not the bare IP: a
+certificate's hostname check fails when connecting by IP address even though the
+same server is reached either way.
+
+**The APK is signed with a stable, committed debug keystore** (`android/debug.keystore`)
+so consecutive releases can be installed as an update instead of failing with "package
+conflicts with an existing package" — GitHub Actions runners are ephemeral and would
+otherwise generate a new random debug key on every run. This is a debug-only key (never
+used for Play Store distribution) using Android tooling's well-known public debug
+password by convention, so committing it is intentional, not an oversight.
 
 ---
 

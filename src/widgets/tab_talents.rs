@@ -43,6 +43,32 @@ pub fn TabTalents(c: Character) -> Element {
     let app_lang = use_context::<CtxAppLang>().0;
     let server_name = SERVER_NAME();
     let lang = lang_from_app_lang(&app_lang());
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+
+    // Mark this hero's talent points as seen as soon as their tab is shown, clearing
+    // the notification badge.
+    let char_id_eff = c.id_name.clone();
+    let server_name_eff = server_name.clone();
+    use_effect(move || {
+        let has_unseen = server_data()
+            .core_game_data
+            .game_manager
+            .pm
+            .active_heroes
+            .iter()
+            .find(|h| h.id_name == char_id_eff)
+            .map(|h| h.talents.has_unseen_points)
+            .unwrap_or(false);
+        if has_unseen {
+            let cid = char_id_eff.clone();
+            let srv = server_name_eff.clone();
+            spawn(async move {
+                let _ = socket
+                    .send(ClientEvent::RequestMarkTalentSeen(srv, cid))
+                    .await;
+            });
+        }
+    });
 
     let tree = server_data()
         .core_game_data
@@ -179,8 +205,7 @@ fn TalentNode(
     let character_id_name = character.id_name.clone();
 
     rsx! {
-        div {
-            class: if talent.is_capstone { "talent-node-row talent-node-row--capstone" } else { "talent-node-row" },
+        div { class: if talent.is_capstone { "talent-node-row talent-node-row--capstone" } else { "talent-node-row" },
             Tooltip {
                 TooltipTrigger {
                     div {

@@ -2,7 +2,7 @@
     "Cible": "Enemy",
     "Coût de mana": 0,
     "Coût de rage": 0,
-    "Coût de vigueur": 15,
+    "Coût de vigueur": 1500,
     "Effet": [
         {
             "Cible": "Enemy",
@@ -26,5 +26,9 @@
     "Photo": "Angmar.png",
     "Portée": "Individual",
     "Description": "Tail sweep.",
-    "DescriptionEffects": "Deals 50 physical damage to one enemy."
+    "DescriptionEn": "Tail sweep.",
+    "DescriptionFr": "Balayage de la queue.",
+    "DescriptionEffects": "Deals 50 physical damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 50 physical damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 50 dégâts physiques à un ennemi."
 }

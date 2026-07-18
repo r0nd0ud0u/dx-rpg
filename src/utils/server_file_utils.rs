@@ -1,7 +1,11 @@
-use std::{fs, path::PathBuf};
+#[cfg(feature = "server")]
+use std::fs;
+use std::path::PathBuf;
 
+#[cfg(feature = "server")]
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
+#[cfg(feature = "server")]
 use lib_rpg::utils::list_dirs_in_dir;
 use serde::{Deserialize, Serialize};
 
@@ -26,7 +30,7 @@ pub struct SaveSlotInfo {
     pub players_nb: i64,
 }
 
-#[server]
+#[post("/api/save")]
 pub async fn save(path: PathBuf, value: String) -> Result<(), ServerFnError> {
     match fs::write(path, value) {
         Ok(_) => Ok(()),
@@ -34,7 +38,7 @@ pub async fn save(path: PathBuf, value: String) -> Result<(), ServerFnError> {
     }
 }
 
-#[server]
+#[post("/api/create_dir")]
 pub async fn create_dir(path: PathBuf) -> Result<(), ServerFnError> {
     match fs::create_dir_all(path) {
         Ok(_) => Ok(()),
@@ -42,7 +46,7 @@ pub async fn create_dir(path: PathBuf) -> Result<(), ServerFnError> {
     }
 }
 
-#[server]
+#[post("/api/get_game_list")]
 pub async fn get_game_list(game_dir_path: PathBuf) -> Result<Vec<PathBuf>, ServerFnError> {
     let games_list = match list_dirs_in_dir(&game_dir_path) {
         Ok(list) => list,
@@ -58,7 +62,7 @@ pub async fn get_game_list(game_dir_path: PathBuf) -> Result<Vec<PathBuf>, Serve
     Ok(games_list)
 }
 
-#[server]
+#[post("/api/delete_game")]
 pub async fn delete_game(game_path: PathBuf) -> Result<(), ServerFnError> {
     tracing::info!("Deleting game from: {:?}", game_path);
     match fs::remove_dir_all(&game_path) {
@@ -70,7 +74,7 @@ pub async fn delete_game(game_path: PathBuf) -> Result<(), ServerFnError> {
 
 /// Returns the configured maximum number of save slots from the `MAX_SAVES` environment variable.
 /// Defaults to 3 if the variable is absent or cannot be parsed.
-#[server]
+#[post("/api/get_max_saves")]
 pub async fn get_max_saves() -> Result<usize, ServerFnError> {
     let max = std::env::var("MAX_SAVES")
         .ok()
@@ -81,7 +85,7 @@ pub async fn get_max_saves() -> Result<usize, ServerFnError> {
 
 /// Returns metadata for all saved game slots belonging to `player_name`.
 /// At most `MAX_SAVES` slots are returned.
-#[server]
+#[post("/api/get_save_slots")]
 pub async fn get_save_slots(player_name: String) -> Result<Vec<SaveSlotInfo>, ServerFnError> {
     use crate::common::SAVED_DATA;
     use lib_rpg::common::constants::{

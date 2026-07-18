@@ -26,5 +26,9 @@
     "Photo": "bulbasaur.png",
     "Portée": "Individual",
     "Description": "A basic vine slap dealing light magical damage.",
-    "DescriptionEffects": "Deals 22 magic damage to one enemy."
+    "DescriptionEn": "A basic vine slap dealing light magical damage.",
+    "DescriptionFr": "Une gifle de liane basique infligeant de légers dégâts magiques.",
+    "DescriptionEffects": "Deals 22 magic damage to one enemy.",
+    "DescriptionEffectsEn": "Deals 22 magic damage to one enemy.",
+    "DescriptionEffectsFr": "Inflige 22 dégâts magiques à un ennemi."
 }

@@ -93,9 +93,7 @@ pub fn AdminScenariosTab() -> Element {
                 if loading() {
                     p { style: "color:var(--rpg-text-muted);", {t!("common-loading")} }
                 } else if scenarios().is_empty() {
-                    p { style: "color:var(--rpg-text-muted);",
-                        {t!("admin-scenarios-empty")}
-                    }
+                    p { style: "color:var(--rpg-text-muted);", {t!("admin-scenarios-empty")} }
                 } else {
                     table { class: "admin-table",
                         thead {
@@ -103,7 +101,9 @@ pub fn AdminScenariosTab() -> Element {
                                 th { class: "col-level", {t!("admin-scenarios-col-level")} }
                                 th { class: "col-name", {t!("admin-equip-name-label")} }
                                 th { class: "col-bosses", {t!("admin-scenarios-col-bosses")} }
-                                th { class: "col-description", {t!("admin-scenarios-col-description")} }
+                                th { class: "col-description",
+                                    {t!("admin-scenarios-col-description")}
+                                }
                                 th { class: "col-file", {t!("admin-scenarios-col-file")} }
                                 th { {t!("admin-scenarios-col-actions")} }
                             }
@@ -152,7 +152,7 @@ pub fn AdminScenariosTab() -> Element {
                                                                         edit_file_stem.set(fs);
                                                                         edit_mode.set(ScenarioEditMode::Edit(fs_for_mode));
                                                                     }
-                                                                    Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
+                                                                    Err(e) => feedback.set(t!("admin-error", error : e.to_string())),
                                                                 }
                                                             });
                                                         },
@@ -177,7 +177,7 @@ pub fn AdminScenariosTab() -> Element {
                                                                             }
                                                                         }
                                                                         Err(e) => {
-                                                                            feedback.set(t!("admin-error", error: e.to_string()));
+                                                                            feedback.set(t!("admin-error", error : e.to_string()));
                                                                             confirm_delete.set(String::new());
                                                                         }
                                                                     }
@@ -341,7 +341,9 @@ pub fn AdminScenariosTab() -> Element {
                                                 edit_loots.set(loots);
                                             },
                                             option { value: "Equipment", selected: loot.kind == "Equipment", {t!("loot-kind-equipment")} }
-                                            option { value: "Consumable", selected: loot.kind == "Consumable", {t!("loot-kind-consumable")} }
+                                            option { value: "Consumable", selected: loot.kind == "Consumable",
+                                                {t!("loot-kind-consumable")}
+                                            }
                                             option { value: "Material", selected: loot.kind == "Material", {t!("loot-kind-material")} }
                                             option { value: "Currency", selected: loot.kind == "Currency", {t!("loot-kind-currency")} }
                                         }
@@ -356,7 +358,9 @@ pub fn AdminScenariosTab() -> Element {
                                                 edit_loots.set(loots);
                                             },
                                             option { value: "Common", selected: loot.rank == "Common", {t!("rank-common")} }
-                                            option { value: "Intermediate", selected: loot.rank == "Intermediate", {t!("rank-intermediate")} }
+                                            option { value: "Intermediate", selected: loot.rank == "Intermediate",
+                                                {t!("rank-intermediate")}
+                                            }
                                             option { value: "Advanced", selected: loot.rank == "Advanced", {t!("rank-advanced")} }
                                         }
                                         Input {
@@ -448,7 +452,7 @@ pub fn AdminScenariosTab() -> Element {
                                                 scenarios.set(s);
                                             }
                                         }
-                                        Err(e) => feedback.set(t!("admin-error", error: e.to_string())),
+                                        Err(e) => feedback.set(t!("admin-error", error : e.to_string())),
                                     }
                                 });
                             },

@@ -106,11 +106,7 @@ pub fn TabEquipment(c: Character) -> Element {
                                         }
                                     }
                                     if has_new {
-                                        span {
-                                            class: "equip-tab-new-badge",
-                                            title: t!("equip-new-item"),
-                                            "!"
-                                        }
+                                        span { class: "equip-tab-new-badge", title: t!("equip-new-item"), "!" }
                                     }
                                 }
                             }
