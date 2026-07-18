@@ -3,6 +3,11 @@ use dioxus_primitives::dialog::{
     self, DialogCtx, DialogDescriptionProps, DialogRootProps, DialogTitleProps,
 };
 
+// Loaded once from the app root (main.rs) instead of via a nested document::Link here —
+// dioxus-desktop doesn't inject document::Link stylesheets declared inside a child
+// component's own render into <head>, only ones declared at the App() root.
+pub const STYLE_CSS: Asset = asset!("./style.css");
+
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub enum SheetSide {
     Top,
@@ -41,7 +46,6 @@ pub fn Sheet(props: DialogRootProps) -> Element {
 #[component]
 fn SheetRoot(props: DialogRootProps) -> Element {
     rsx! {
-        document::Link { rel: "stylesheet", href: asset!("./style.css") }
         dialog::DialogRoot {
             class: "sheet-root",
             "data-slot": "sheet-root",

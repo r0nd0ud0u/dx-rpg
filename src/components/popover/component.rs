@@ -3,10 +3,14 @@ use dioxus_primitives::popover::{
     self, PopoverContentProps, PopoverRootProps, PopoverTriggerProps,
 };
 
+// Loaded once from the app root (main.rs) instead of via a nested document::Link here —
+// dioxus-desktop doesn't inject document::Link stylesheets declared inside a child
+// component's own render into <head>, only ones declared at the App() root.
+pub const STYLE_CSS: Asset = asset!("./style.css");
+
 #[component]
 pub fn PopoverRoot(props: PopoverRootProps) -> Element {
     rsx! {
-        document::Link { rel: "stylesheet", href: asset!("./style.css") }
         popover::PopoverRoot {
             class: "popover",
             is_modal: props.is_modal,

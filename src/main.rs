@@ -15,6 +15,9 @@ use dx_rpg::{
         CtxShowBossHp, CtxShowHeroAggro, CtxSyncedInsecureCerts, CtxSyncedServerUrl,
         CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS, Route, SERVER_NAME,
     },
+    components::{
+        alert_dialog, button, input, label, popover, select, separator, sheet, tabs, tooltip,
+    },
     websocket_handler::{
         NO_CLIENT_ID,
         event::{ClientEvent, ServerEvent, on_rcv_client_event},
@@ -577,6 +580,20 @@ fn App() -> Element {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: DX_COMP_CSS }
+        // Shared dx-components-library stylesheets: loaded here (app root) rather than via
+        // a document::Link nested inside each component's own render — dioxus-desktop only
+        // injects document::Link stylesheets declared at the App() root into <head>, not
+        // ones declared inside a child component (see each component's STYLE_CSS comment).
+        document::Link { rel: "stylesheet", href: alert_dialog::STYLE_CSS }
+        document::Link { rel: "stylesheet", href: button::STYLE_CSS }
+        document::Link { rel: "stylesheet", href: input::STYLE_CSS }
+        document::Link { rel: "stylesheet", href: label::STYLE_CSS }
+        document::Link { rel: "stylesheet", href: popover::STYLE_CSS }
+        document::Link { rel: "stylesheet", href: select::STYLE_CSS }
+        document::Link { rel: "stylesheet", href: separator::STYLE_CSS }
+        document::Link { rel: "stylesheet", href: sheet::STYLE_CSS }
+        document::Link { rel: "stylesheet", href: tabs::STYLE_CSS }
+        document::Link { rel: "stylesheet", href: tooltip::STYLE_CSS }
 
         Router::<Route> {}
     }
