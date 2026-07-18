@@ -300,30 +300,13 @@ fn App() -> Element {
         use_synced_storage::<LocalStorage, String>("synced_app_lang".to_owned(), || {
             "en".to_owned()
         });
-    // Native-only: the server address/TLS-validation override the user can change from
-    // the in-app Server settings dialog (board_game_components/navbar.rs). Declared here
-    // (not in Navbar) and provided via context — calling use_synced_storage directly
-    // inside Navbar (a #[layout(...)] component, not the route root) stack-overflows the
-    // app at startup; this exact pattern (use_synced_storage in App(), consumed via
-    // use_context in Navbar) is how every other piece of Navbar-visible synced state
-    // already works (local_login_name_session, server_data, CtxAppLang, etc. below).
-    // CtxSyncedServerUrl / CtxSyncedInsecureCerts are native-clients-only settings (see
-    // their doc comments in common.rs) — the Navbar UI that reads/writes them is hidden
-    // behind `!cfg!(target_arch == "wasm32")`, so on the web build they're never
-    // displayed or edited. They're still declared here unconditionally (not skipped)
-    // because App()'s hooks must run in the same order on every platform. But
-    // `use_synced_storage` participates in Dioxus's SSR hydration handoff, and the web
-    // build's two halves — the native `feature = "server"` binary that renders the
-    // initial HTML, and the wasm32 client that hydrates it — go through that handoff
-    // for every use_synced_storage call. For most of them the server and the wasm32
-    // client are on the same page (both are the "client" from dioxus_sdk_storage's
-    // point of view). These two are the outlier: their real value only matters to a
-    // desktop/mobile *native* binary that never does SSR at all, so keep them as
-    // real synced storage there, but fall back to an inert local signal for both the
-    // web client and the server (a known Dioxus hydration bug —
-    // https://github.com/DioxusLabs/dioxus/issues/3583 — otherwise throws "Error
-    // deserializing data: Semantic(Some(0), \"expected bool\")" and breaks page
-    // interactivity on every web page load).
+    // Native-only server URL/TLS-validation override, editable from the Navbar's Server
+    // settings dialog; declared here (not in Navbar) since use_synced_storage there
+    // stack-overflows the app (Navbar is a #[layout] component, not the route root).
+    // Hooks must run in the same order on every platform, so these are declared
+    // unconditionally but fall back to an inert signal off native — a real
+    // use_synced_storage there hits a Dioxus SSR hydration bug
+    // (https://github.com/DioxusLabs/dioxus/issues/3583).
     #[cfg(all(not(target_arch = "wasm32"), not(feature = "server")))]
     let synced_server_url =
         use_synced_storage::<LocalStorage, String>(SYNCED_SERVER_URL_KEY.to_owned(), || {
@@ -495,19 +478,9 @@ fn App() -> Element {
                         overworld_map_id.set(Some(map_id));
                     }
                     ServerEvent::UpdateOverworld(overworld_update) => {
-                        // Patch just the overworld sub-field in place — plain movement
-                        // steps deliberately don't send a full ServerData snapshot (see
-                        // ServerEvent::UpdateOverworld's doc comment), so don't replace
-                        // the rest of server_data (characters, inventories, logs, etc.)
-                        // with a stale/absent copy here.
                         server_data.write().core_game_data.overworld = Some(*overworld_update);
                     }
                     ServerEvent::UpdateCombat(combat_update) => {
-                        // Patch just the per-attack fields in place — ordinary attacks
-                        // deliberately don't send a full ServerData snapshot (see
-                        // CombatUpdate's doc comment in lib-rpg), so leave
-                        // all_scenarios/states_scenarios/current_scenario/game_paths/
-                        // end_of_scenario untouched at their last-known values here.
                         server_data
                             .write()
                             .core_game_data

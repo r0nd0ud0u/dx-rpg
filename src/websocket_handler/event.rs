@@ -119,23 +119,8 @@ pub enum ServerEvent {
     LogOut,
     SetAtkAnimation(bool),    // true to set atk animation, false to reset it
     OverworldEntered(String), // map_id — lightweight trigger; no complex types
-    // Lightweight overworld-only update (player position, active dialog, pending
-    // encounter/fight) for plain movement steps that don't touch combat state — avoids
-    // re-sending the whole ServerData (every character's full stats/inventory/talents,
-    // shop catalog, logs, etc.) on every single tile the player walks. Movement that
-    // triggers a fight (MoveResult::Encounter) still goes through the full
-    // UpdateServerData broadcast, since that also changes game_phase/scenario/boss state.
-    UpdateOverworld(Box<OverworldState>),
-    // Lightweight combat-only update sent after an ordinary attack that doesn't end the
-    // scenario/game — carries just the GameManager sub-fields that actually change
-    // per-attack (character stats/buffs/turn state, combat log) plus the one
-    // CoreGameData-level field that also changes per-attack (last_action_header).
-    // Skips all_scenarios/states_scenarios/current_scenario/game_paths/end_of_scenario,
-    // which are static for the whole duration of a fight and would otherwise be
-    // re-cloned and re-sent, unchanged, on every single attack. An attack that DOES end
-    // the scenario/game still goes through the full UpdateServerData broadcast (see
-    // update_core_game_data_after_atk), since end_of_scenario/game_phase change too.
-    UpdateCombat(Box<CombatUpdate>),
+    UpdateOverworld(Box<OverworldState>), // Lightweight update for plain movement steps that don't touch combat state
+    UpdateCombat(Box<CombatUpdate>), // Lightweight combat-only update sent after an ordinary attack
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1969,9 +1954,7 @@ pub async fn process_load_next_scenario(server_name: &str, auto_save: bool) -> R
         server_data.core_game_data.load_next_scenario()?;
         server_data.players_data.owner_player_name.clone()
     };
-    // Debug-only: helps diagnose reports of the Scenarios tab showing stale progress —
-    // confirms the broadcast fires (and with what states_scenarios) right after the
-    // scenario transition completes, not before or not at all.
+    // Debug-only: helps diagnose reports of the Scenarios tab showing stale progress
     tracing::debug!(
         "process_load_next_scenario: broadcasting UpdateServerData for server {}",
         server_name
