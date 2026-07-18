@@ -46,10 +46,7 @@ pub fn TabTalents(c: Character) -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
 
     // Mark this hero's talent points as seen as soon as their tab is shown, clearing
-    // the notification badge. Mirrors TabEquipment's mark-seen-on-tab-change effect:
-    // read server_data() inside use_effect so the effect is reactive and fires both
-    // on mount and whenever talent points are granted. The has_unseen_points guard
-    // prevents sending the event more than once (no loop).
+    // the notification badge.
     let char_id_eff = c.id_name.clone();
     let server_name_eff = server_name.clone();
     use_effect(move || {

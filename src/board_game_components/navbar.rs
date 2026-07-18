@@ -51,9 +51,7 @@ pub fn Navbar() -> Element {
 
     // Server connection settings dialog — native only (gated at render time below via
     // `cfg!(target_arch = "wasm32")`, since #[cfg] attributes aren't supported inside
-    // rsx!; the hooks themselves must still be called unconditionally on every render,
-    // per Dioxus's hook rules, and are harmless no-ops on web). The web client always
-    // infers its server from same-origin, so there's nothing to configure there.
+    // rsx!;).
     let mut server_settings_open = use_signal(|| false);
     // Draft state so typing doesn't write to storage on every keystroke; populated from
     // the synced values each time the dialog is opened (see the trigger button below).
@@ -336,11 +334,6 @@ pub fn Navbar() -> Element {
                         }
                         AlertDialogActions {
                             AlertDialogCancel { {t!("common-cancel")} }
-                            // A plain Button, not AlertDialogAction — that primitive closes
-                            // the dialog on click regardless of the on_click handler, which
-                            // would hide the "Saved" confirmation above before it's ever
-                            // seen. This stays open so the message is visible; Cancel (or
-                            // clicking outside) closes it.
                             Button {
                                 variant: ButtonVariant::Primary,
                                 onclick: move |_| {
