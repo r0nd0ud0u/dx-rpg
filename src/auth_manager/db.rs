@@ -15,9 +15,6 @@ use tokio::sync::OnceCell;
 static DB: OnceCell<Pool<Sqlite>> = OnceCell::const_new();
 
 #[cfg(feature = "server")]
-use std::env;
-
-#[cfg(feature = "server")]
 use dioxus::logger::tracing;
 
 #[cfg(feature = "server")]
