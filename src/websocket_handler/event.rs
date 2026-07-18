@@ -23,9 +23,9 @@ use lib_rpg::common::log_data::LogData;
 use lib_rpg::common::overworld::Direction;
 #[cfg(feature = "server")]
 use lib_rpg::common::overworld::Position;
+use lib_rpg::server::core_game_data::CombatUpdate;
 #[cfg(feature = "server")]
 use lib_rpg::server::core_game_data::CoreGameData;
-use lib_rpg::server::core_game_data::CombatUpdate;
 use lib_rpg::server::overworld_manager::OverworldState;
 use lib_rpg::server::server_manager::OnGoingGame;
 use lib_rpg::server::server_manager::ServerData;
