@@ -83,13 +83,5 @@ pub async fn get_db() -> &'static Pool<Sqlite> {
 
 #[post("/api/get_db_url")]
 async fn get_db_url() -> Result<String, ServerFnError> {
-    match std::env::var("DATABASE_URL") {
-        Ok(url) => Ok(url),
-        Err(e) => {
-            tracing::error!("DATABASE_URL environment variable not set: {}", e);
-            Err(ServerFnError::new(
-                "DATABASE_URL environment variable not set".to_owned(),
-            ))
-        }
-    }
+    Ok(std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://db.sqlite".to_owned()))
 }

@@ -202,13 +202,18 @@ fn resolve_static_img(filename: &str) -> std::path::PathBuf {
 }
 
 #[cfg(feature = "server")]
+fn is_safe_filename(filename: &str) -> bool {
+    !filename.contains("..") && !filename.contains('/') && !filename.contains('\\')
+}
+
+#[cfg(feature = "server")]
 pub async fn serve_img_handler(
     axum::extract::Path(filename): axum::extract::Path<String>,
 ) -> axum::response::Response {
     use axum::http::{StatusCode, header};
     use axum::response::IntoResponse;
     // Security: reject any path traversal attempt
-    if filename.contains("..") || filename.contains('/') || filename.contains('\\') {
+    if !is_safe_filename(&filename) {
         return (
             StatusCode::BAD_REQUEST,
             [(header::CONTENT_TYPE, "text/plain")],
@@ -256,6 +261,45 @@ pub async fn init_data_manager() {
         dm.all_heroes.len()
     );
     drop(dm);
+}
+
+#[cfg(all(test, feature = "server"))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn is_safe_filename_rejects_traversal_and_separators() {
+        assert!(!is_safe_filename("../secret.png"));
+        assert!(!is_safe_filename("a/b.png"));
+        assert!(!is_safe_filename("a\\b.png"));
+        assert!(!is_safe_filename(".."));
+    }
+
+    #[test]
+    fn is_safe_filename_accepts_plain_names() {
+        assert!(is_safe_filename("Elara.png"));
+        assert!(is_safe_filename("some-file_1.jpg"));
+    }
+
+    #[test]
+    fn resolve_static_img_finds_dev_asset() {
+        // assets/img/Elara.png ships in the repo, so cargo test's CWD (crate root) finds it.
+        let path = resolve_static_img("Elara.png");
+        assert_eq!(path, std::path::Path::new("assets/img").join("Elara.png"));
+        assert!(path.exists());
+    }
+
+    #[test]
+    fn resolve_static_img_falls_back_to_dev_path_when_missing() {
+        // No public/assets/img-*/ directory exists in a source checkout, so a filename
+        // that isn't in assets/img/ either should fall back to the (non-existent) dev path.
+        let path = resolve_static_img("does-not-exist-anywhere.png");
+        assert_eq!(
+            path,
+            std::path::Path::new("assets/img").join("does-not-exist-anywhere.png")
+        );
+        assert!(!path.exists());
+    }
 }
 
 #[component]
