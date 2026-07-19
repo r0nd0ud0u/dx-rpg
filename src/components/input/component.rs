@@ -1,5 +1,10 @@
 use dioxus::prelude::*;
 
+// Loaded once from the app root (main.rs) instead of via a nested document::Link here —
+// dioxus-desktop doesn't inject document::Link stylesheets declared inside a child
+// component's own render into <head>, only ones declared at the App() root.
+pub const STYLE_CSS: Asset = asset!("./style.css");
+
 #[component]
 pub fn Input(
     oninput: Option<EventHandler<FormEvent>>,
@@ -26,7 +31,6 @@ pub fn Input(
     children: Element,
 ) -> Element {
     rsx! {
-        document::Link { rel: "stylesheet", href: asset!("./style.css") }
         input {
             class: "input",
             oninput: move |e| _ = oninput.map(|callback| callback(e)),

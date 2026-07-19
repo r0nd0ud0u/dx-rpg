@@ -5,10 +5,14 @@ use dioxus_primitives::alert_dialog::{
     AlertDialogTitleProps,
 };
 
+// Loaded once from the app root (main.rs) instead of via a nested document::Link here —
+// dioxus-desktop doesn't inject document::Link stylesheets declared inside a child
+// component's own render into <head>, only ones declared at the App() root.
+pub const STYLE_CSS: Asset = asset!("./style.css");
+
 #[component]
 pub fn AlertDialogRoot(props: AlertDialogRootProps) -> Element {
     rsx! {
-        document::Link { rel: "stylesheet", href: asset!("./style.css") }
         alert_dialog::AlertDialogRoot {
             class: "alert-dialog-backdrop",
             id: props.id,
