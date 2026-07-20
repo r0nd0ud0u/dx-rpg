@@ -11,6 +11,9 @@ services:
       PORT: "8080"
       IP: "0.0.0.0"
       DATABASE_URL: "sqlite:///data/db.sqlite"
+      # This compose stack is the one authoritative deployment of the app, so it's safe
+      # for it to reset every user's is_connected status on startup.
+      IS_MAIN_SERVER: "true"
       # LOG_LEVEL: "debug"
     env_file:
       - path: .env

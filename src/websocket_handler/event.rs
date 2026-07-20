@@ -70,7 +70,7 @@ static CLIENTS: Lazy<SharedClients> = Lazy::new(|| Arc::new(Mutex::new(HashMap::
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ClientEvent {
-    LoginAllSessions(String, i64), // `String`: username, `i64`: sql-id
+    LoginAllSessions(String, i64, String), // username, sql-id, device_token
     RequestLogOut(String),         // `String`: username
     InitializeGame(String, String, String, bool), // server_name, player_name, universe, is_single_player
     AddCharacterOnServerData(String, String, String), // `String`: server_name, `String`: player_name, `String`: character_name
@@ -78,7 +78,7 @@ pub enum ClientEvent {
     StartGame(String),                                // `String`: server_name
     SetUniverse(String, String),                      // server_name, universe
     LaunchAttack(String, String),                     // `String`: server_name, `String`: atk name
-    AddPlayer(String),                                // `String`: username
+    AddPlayer(String, String),                        // username, device_token
     JoinServerData(String, String), // `String`: server_name, `String`: player_name
     RequestSavedGameList(String),   // `String`: player_name
     RequestOnGoingGamesList,
@@ -203,13 +203,13 @@ pub async fn on_rcv_client_event(
                     res = socket.recv() => {
                         tracing::info!("Receiving message from client {}, message: {:?}", client_id, res);
                         match res {
-                            Ok(ClientEvent::LoginAllSessions(username, sql_id)) => {
+                            Ok(ClientEvent::LoginAllSessions(username, sql_id, device_token)) => {
                                 tracing::info!("Received set_name request from client {}: {:?}", sql_id, username);
-                                login_all_sessions(username, sql_id);
+                                login_all_sessions(username, sql_id, device_token);
                             }
-                            Ok(ClientEvent::AddPlayer(username)) => {
+                            Ok(ClientEvent::AddPlayer(username, device_token)) => {
                                 tracing::info!("Adding new player from client {}: {:?}", client_id, username);
-                                add_player(username, client_id);
+                                add_player(username, client_id, device_token);
                             }
                             Ok(ClientEvent::RequestLogOut(user_name)) => {
                                 tracing::info!("{} is logged out", user_name);
@@ -382,15 +382,43 @@ pub async fn on_rcv_client_event(
     }))
 }
 
+/// Registers `id` under `name` in `sm.players`, but only if `device_token` matches the
+/// device currently recognized as owning the login for `name` — or no device is recognized
+/// yet, in which case this call claims the lock. Rejects (no-op) a mismatched device_token,
+/// which is how a stale client with a cached session for `name` on a different device gets
+/// blocked from silently rejoining once another device has genuinely logged in as `name`
+/// (see `login_all_sessions`, which resets the lock on every fresh login).
 #[cfg(feature = "server")]
-pub fn add_player(name: String, id: u32) {
+pub fn add_player(name: String, id: u32, device_token: String) {
     let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
-    sm.players.entry(name.clone()).or_default().push(id);
-    tracing::info!("All connected players: {:?}", sm.players);
+    match sm.device_tokens.get(&name) {
+        Some(owner) if owner != &device_token => {
+            tracing::warn!(
+                "Rejected AddPlayer for {} from client {}: owned by a different device",
+                name,
+                id
+            );
+        }
+        _ => {
+            sm.device_tokens.insert(name.clone(), device_token);
+            sm.players.entry(name.clone()).or_default().push(id);
+            tracing::info!("All connected players: {:?}", sm.players);
+        }
+    }
 }
 
 #[cfg(feature = "server")]
-pub fn login_all_sessions(username: String, sql_id: i64) {
+pub fn login_all_sessions(username: String, sql_id: i64, device_token: String) {
+    {
+        // A fresh login only reaches here once the DB `is_connected` gate in auth.rs's
+        // login() has passed, which only happens when no other session was already live for
+        // this username — so any players/device_tokens entries still present are stale
+        // leftovers (e.g. a client that crashed or never called logout). Reset them so this
+        // login's device becomes the sole recognized owner going forward.
+        let mut sm = SERVER_MANAGER.lock().unwrap();
+        sm.players.remove(&username);
+        sm.device_tokens.insert(username.clone(), device_token);
+    }
     let clients = CLIENTS.lock().unwrap();
     for (&_other_id, sender) in clients.iter() {
         let _ = sender.send(ServerEvent::ReconnectAllSessions(username.clone(), sql_id));
@@ -453,7 +481,7 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
     // ----------------------------------------
     //  Extract username + mutate players
     // ----------------------------------------
-    let username = {
+    let (username, has_other_connections) = {
         let mut sm = SERVER_MANAGER.lock().unwrap();
 
         let username = sm
@@ -464,10 +492,12 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
 
         tracing::info!("Player {} with id {} is disconnecting", username, client_id);
 
+        let mut has_other_connections = false;
         sm.players.retain(|player_name, ids| {
             if player_name == &username {
                 ids.retain(|&id| id != client_id);
-                !ids.is_empty()
+                has_other_connections = !ids.is_empty();
+                has_other_connections
             } else {
                 true
             }
@@ -475,16 +505,26 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
 
         tracing::info!("All connected players: {:?}", sm.players);
 
-        username
+        (username, has_other_connections)
     }; // LOCK DROPPED HERE
 
     // ----------------------------------------
     //  DB update (no locks held)
     // ----------------------------------------
-    match update_connection_status(username.clone(), false).await {
-        Ok(_) => tracing::info!("{} disconnected from db", username),
-        Err(e) => tracing::error!("DB error: {:?}", e),
-    };
+    // Only clear is_connected once the LAST connection for this username drops —
+    // otherwise a single tab/device reconnect blip frees up the "already connected"
+    // slot while other sessions for the same user are still live.
+    if has_other_connections {
+        tracing::info!(
+            "{} still has other active connections, not clearing is_connected",
+            username
+        );
+    } else {
+        match update_connection_status(username.clone(), false).await {
+            Ok(_) => tracing::info!("{} disconnected from db", username),
+            Err(e) => tracing::error!("DB error: {:?}", e),
+        };
+    }
 
     // ----------------------------------------
     //  Modify server data

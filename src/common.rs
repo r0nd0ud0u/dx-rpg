@@ -69,6 +69,12 @@ pub const OFFLINE_PATH: &str = "offlines";
 pub const SYNCED_SERVER_URL_KEY: &str = "synced_server_url";
 pub const SYNCED_INSECURE_CERTS_KEY: &str = "synced_insecure_certs";
 
+/// Per-device/browser random token, generated once and persisted locally (both web and
+/// native). Sent alongside `LoginAllSessions`/`AddPlayer` so the server can tell a genuine
+/// reconnect of the same device apart from a different device that still has a stale cached
+/// session for the same username (see `websocket_handler::event::add_player`).
+pub const SYNCED_DEVICE_TOKEN_KEY: &str = "synced_device_token";
+
 // ── Per-setting context newtypes ─────────────────────────────────────────────
 // Each wraps a `Signal<bool>` in a distinct type so that Dioxus context lookup
 // (which is keyed by TypeId) stores and retrieves them independently.
@@ -122,6 +128,11 @@ pub struct CtxSyncedServerUrl(pub Signal<String>);
 /// `CtxSyncedServerUrl`.
 #[derive(Clone, Copy)]
 pub struct CtxSyncedInsecureCerts(pub Signal<bool>);
+
+/// This device/browser's persistent random token — see `SYNCED_DEVICE_TOKEN_KEY`. Provided
+/// via context (declared in `App()`) for the same reasons as `CtxSyncedServerUrl`.
+#[derive(Clone, Copy)]
+pub struct CtxDeviceToken(pub Signal<String>);
 
 /// Converts the app's "en"/"fr" locale string into lib-rpg's `Lang` enum —
 /// the one conversion boundary between the two crates' locale representations
