@@ -71,7 +71,7 @@ static CLIENTS: Lazy<SharedClients> = Lazy::new(|| Arc::new(Mutex::new(HashMap::
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ClientEvent {
     LoginAllSessions(String, i64, String), // username, sql-id, device_token
-    RequestLogOut(String),         // `String`: username
+    RequestLogOut(String),                 // `String`: username
     InitializeGame(String, String, String, bool), // server_name, player_name, universe, is_single_player
     AddCharacterOnServerData(String, String, String), // `String`: server_name, `String`: player_name, `String`: character_name
     RemoveCharacterOnServerData(String, String),      // `String`: server_name, `String`: player_key
