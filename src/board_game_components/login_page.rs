@@ -8,7 +8,7 @@ use crate::websocket_handler::NO_CLIENT_ID;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::{
     auth_manager::server_fn::{get_use_password, login, register},
-    common::Route,
+    common::{CtxDeviceToken, Route},
     components::{
         button::{Button, ButtonVariant},
         input::Input,
@@ -21,6 +21,7 @@ pub fn LoginPage() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let mut local_login_name_session = use_context::<Signal<String>>();
     let mut local_login_id_session = use_context::<Signal<i64>>();
+    let device_token = use_context::<CtxDeviceToken>().0;
     // nav
     let navigator = use_navigator();
     // logon
@@ -99,7 +100,13 @@ pub fn LoginPage() -> Element {
                                             *local_login_name_session.write() = username();
                                             let _ = socket
                                                 .clone()
-                                                .send(ClientEvent::LoginAllSessions(username(), sql_id))
+                                                .send(
+                                                    ClientEvent::LoginAllSessions(
+                                                        username(),
+                                                        sql_id,
+                                                        device_token(),
+                                                    ),
+                                                )
                                                 .await;
                                             navigator.push(Route::Home {});
                                             sql_id

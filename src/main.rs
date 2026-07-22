@@ -11,9 +11,10 @@ use dioxus_sdk_storage::{StorageBacking, set_dir};
 use dotenv::dotenv;
 use dx_rpg::{
     common::{
-        CtxAppLang, CtxAutoSaveScenario, CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy,
-        CtxShowBossHp, CtxShowHeroAggro, CtxSyncedInsecureCerts, CtxSyncedServerUrl,
-        CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS, Route, SERVER_NAME,
+        CtxAppLang, CtxAutoSaveScenario, CtxDeviceToken, CtxShopEnabled, CtxShowAtkTooltips,
+        CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro, CtxSyncedInsecureCerts,
+        CtxSyncedServerUrl, CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS, Route,
+        SERVER_NAME, SYNCED_DEVICE_TOKEN_KEY,
     },
     components::{
         alert_dialog, button, input, label, popover, select, separator, sheet, tabs, tooltip,
@@ -140,8 +141,28 @@ fn main() {
             websocket_handler::STARTING_CLIENT_ID,
         };
 
-        // on server start, set all users to disconnected in db to avoid stale connection status
-        update_all_connection_status(false).await.unwrap();
+        let bind_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_owned());
+        let bind_port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_owned());
+        let is_main_server = std::env::var("IS_MAIN_SERVER")
+            .unwrap_or_else(|_| "false".to_owned())
+            .trim()
+            .to_lowercase()
+            == "true";
+        tracing::info!(
+            "dx-rpg server starting on {}:{} (main server: {})",
+            bind_ip,
+            bind_port,
+            is_main_server
+        );
+
+        // Only the designated main/local server instance resets connection status for
+        // every user at start (to avoid stale is_connected from a previous run). A second
+        // server process pointed at the same database (e.g. a secondary/staging instance)
+        // must NOT do this — it would wipe out is_connected for users genuinely connected
+        // to the main instance right now.
+        if is_main_server {
+            update_all_connection_status(false).await.unwrap();
+        }
         // create db pool for session store
         let pool = get_db().await;
 
@@ -325,6 +346,16 @@ fn App() -> Element {
     // Set to Some(map_id) by the lightweight OverworldEntered event.
     let mut overworld_map_id: Signal<Option<String>> = use_signal(|| None);
 
+    // Log which server URL this client is about to talk to (server-fn calls + websocket) —
+    // same-origin implicit on web/server, explicit remote target on native — to make
+    // connectivity issues visible without needing native-only debugging.
+    use_effect(|| {
+        tracing::info!(
+            "[client] connecting to server at {}",
+            dioxus::fullstack::get_server_url()
+        );
+    });
+
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
     // synced storage
@@ -343,6 +374,12 @@ fn App() -> Element {
         });
     let mut login_id_session_local_sync =
         use_synced_storage::<LocalStorage, i64>("synced_user_sql_id".to_owned(), || NO_CLIENT_ID); // from db, integer primary key not null and from 1 upwards
+    // Persistent per-device/browser random token — generated once, lazily, on first read.
+    // See CtxDeviceToken / SYNCED_DEVICE_TOKEN_KEY doc comments in common.rs.
+    let device_token_local_sync =
+        use_synced_storage::<LocalStorage, String>(SYNCED_DEVICE_TOKEN_KEY.to_owned(), || {
+            format!("{:032x}", rand::random::<u128>())
+        });
     let app_lang_local_sync =
         use_synced_storage::<LocalStorage, String>("synced_app_lang".to_owned(), || {
             "en".to_owned()
@@ -436,6 +473,7 @@ fn App() -> Element {
                                 .clone()
                                 .send(ClientEvent::AddPlayer(
                                     login_name_session_local_sync.clone(),
+                                    device_token_local_sync(),
                                 ))
                                 .await;
                             tracing::info!(
@@ -489,6 +527,7 @@ fn App() -> Element {
                                 .clone()
                                 .send(ClientEvent::AddPlayer(
                                     login_name_session_local_sync.clone(),
+                                    device_token_local_sync(),
                                 ))
                                 .await;
                         } else {
@@ -543,6 +582,7 @@ fn App() -> Element {
     use_context_provider(|| player_client_id);
     use_context_provider(|| login_name_session_local_sync);
     use_context_provider(|| login_id_session_local_sync);
+    use_context_provider(|| CtxDeviceToken(device_token_local_sync));
     use_context_provider(|| server_data);
     use_context_provider(|| overworld_map_id);
     use_context_provider(|| ongoing_games);
