@@ -554,17 +554,47 @@ platform actually connects to):
 dx serve --platform web
 # Open http://localhost:8080
 
-# Desktop (native client — connects to SERVER_URL, see below)
+# Desktop (native client — defaults to SERVER_URL=http://127.0.0.1:8080, so it
+# just works against the web server above with no extra setup)
 dx serve --platform desktop --no-default-features --features desktop
 
 # Android (native client — requires a connected device/emulator over adb,
 # plus the Android SDK/NDK — see below). The default SERVER_URL
 # (http://127.0.0.1:8080) does NOT work here: 127.0.0.1 on the device/emulator
-# means itself, not your dev machine. Use 10.0.2.2 for the standard Android
-# emulator (its alias for the host's localhost), or your dev machine's LAN IP
-# for a real physical device on the same network:
+# means itself, not your dev machine.
+#
+# Standard Android emulator (10.0.2.2 is its alias for the host's loopback —
+# works even though the web server above is bound to 127.0.0.1):
 SERVER_URL=http://10.0.2.2:8080 dx serve --platform android --no-default-features --features mobile
+
+# Real physical device on the same LAN instead of an emulator: bind the web
+# server wider than loopback (IP=0.0.0.0), then point the device at your dev
+# machine's LAN IP:
+IP=0.0.0.0 dx serve --platform web
+SERVER_URL=http://<your-lan-ip>:8080 dx serve --platform android --no-default-features --features mobile
 ```
+
+`IP` and `SERVER_URL` passed on the command line always win over `.env` — `dotenv()`
+(`src/main.rs`) only fills in variables that aren't already set in the environment,
+so there's no need to edit `.env` for a one-off run.
+
+#### Dev loop across terminals (emulator + web server + desktop/Android clients)
+
+`scripts/dev_emulator.sh`, `scripts/dev_web.sh`, `scripts/dev_desktop.sh`, and
+`scripts/dev_android.sh` wrap the commands above for running everything side by side:
+
+```bash
+./scripts/dev_emulator.sh Pixel_4    # terminal 1: boot the AVD (see: emulator -list-avds)
+./scripts/dev_web.sh                 # terminal 2: main server (IP=0.0.0.0)
+./scripts/dev_desktop.sh             # terminal 3: desktop client -> local server
+./scripts/dev_android.sh             # terminal 4: Android client -> 10.0.2.2
+# Real device instead of the emulator:
+SERVER_URL=http://<your-lan-ip>:8080 ./scripts/dev_android.sh
+```
+
+In VS Code, run the **Dev: Start All (Web, Desktop, Android, Emulator)** task
+(Terminal > Run Task...) to launch all four in their own terminal panels at once,
+or run any of the individual `Dev: ...` tasks on their own.
 
 ### Desktop & Mobile Clients
 
