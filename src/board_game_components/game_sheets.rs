@@ -29,6 +29,7 @@ use crate::{
             Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetSide,
             SheetTitle,
         },
+        sidebar::{Sidebar, SidebarTrigger},
         tabs::{TabContent, TabList, TabTrigger, Tabs},
     },
     websocket_handler::{
@@ -70,10 +71,29 @@ enum SheetKind {
     Store,
 }
 
+/// Whether a hero counts toward a toolbar notification badge: in single-player
+/// every active hero counts, in multiplayer only the logged-in player's own
+/// character does. Shared by the "new equipment" and "unspent talent points"
+/// checks below, which were previously two copies of this same filter.
+fn hero_matches_current_player(
+    is_single_player: bool,
+    current_players_character: Option<&str>,
+    hero_id_name: &str,
+) -> bool {
+    if is_single_player {
+        return true;
+    }
+    current_players_character == Some(hero_id_name)
+}
+
 #[component]
 pub fn GameSheets() -> Element {
     let mut open = use_signal(|| false);
     let mut sheet_kind: Signal<SheetKind> = use_signal(|| SheetKind::Menu);
+    // Mobile-only toolbar drawer — the desktop button row is duplicated into it
+    // (CSS-gated visibility, see .game-toolbar-desktop/.game-toolbar-mobile-trigger
+    // in main.css) so narrow screens get a proper drawer instead of a wrapped row.
+    let mut mobile_toolbar_open = use_signal(|| false);
     let mut is_saved: Signal<bool> = use_signal(|| false);
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
@@ -111,13 +131,13 @@ pub fn GameSheets() -> Element {
         .active_heroes
         .iter()
         .filter(|h| {
-            if is_single_player {
-                return true;
-            }
-            snap.players_data
-                .get_first_character_name(&local_login_name_session())
-                .as_deref()
-                == Some(h.id_name.as_str())
+            hero_matches_current_player(
+                is_single_player,
+                snap.players_data
+                    .get_first_character_name(&local_login_name_session())
+                    .as_deref(),
+                &h.id_name,
+            )
         })
         .any(|h| !h.stats.is_dead().unwrap_or(false) && h.inventory.has_unseen_equipment());
 
@@ -128,23 +148,33 @@ pub fn GameSheets() -> Element {
         .active_heroes
         .iter()
         .filter(|h| {
-            if is_single_player {
-                return true;
-            }
-            snap.players_data
-                .get_first_character_name(&local_login_name_session())
-                .as_deref()
-                == Some(h.id_name.as_str())
+            hero_matches_current_player(
+                is_single_player,
+                snap.players_data
+                    .get_first_character_name(&local_login_name_session())
+                    .as_deref(),
+                &h.id_name,
+            )
         })
         .any(|h| !h.stats.is_dead().unwrap_or(false) && h.talents.has_unseen_points);
 
     rsx! {
-        div { display: "flex", gap: "0.5rem",
-            Button {
-                variant: ButtonVariant::Outline,
-                onclick: open_sheet(SheetKind::Menu),
-                {t!("gs-menu")}
+        div { display: "flex", gap: "0.5rem", align_items: "center",
+            // Mobile-only hamburger trigger — opens the Sidebar drawer below.
+            // Hidden on desktop, shown ≤768px (see .game-toolbar-mobile-trigger
+            // in main.css).
+            div { class: "game-toolbar-mobile-trigger",
+                SidebarTrigger { open: mobile_toolbar_open, label: t!("gs-toolbar-open") }
             }
+            div {
+                class: "game-toolbar-desktop",
+                display: "flex",
+                gap: "0.5rem",
+                Button {
+                    variant: ButtonVariant::Outline,
+                    onclick: open_sheet(SheetKind::Menu),
+                    {t!("gs-menu")}
+                }
             Button {
                 variant: ButtonVariant::Outline,
                 onclick: open_sheet(SheetKind::Talents),
@@ -191,12 +221,13 @@ pub fn GameSheets() -> Element {
                 onclick: open_sheet(SheetKind::Settings),
                 {t!("gs-settings")}
             }
-            Button {
-                variant: ButtonVariant::Outline,
-                disabled: !shop_enabled(),
-                title: if shop_enabled() { String::new() } else { t!("gs-store-disabled-hint") },
-                onclick: open_sheet(SheetKind::Store),
-                {t!("gs-store")}
+                Button {
+                    variant: ButtonVariant::Outline,
+                    disabled: !shop_enabled(),
+                    title: if shop_enabled() { String::new() } else { t!("gs-store-disabled-hint") },
+                    onclick: open_sheet(SheetKind::Store),
+                    {t!("gs-store")}
+                }
             }
         }
         Sheet { open: open(), on_open_change: move |v| open.set(v),
@@ -225,6 +256,103 @@ pub fn GameSheets() -> Element {
                 SheetKind::Store => rsx! {
                     StoreSheet { s: SheetSide::Right }
                 },
+            }
+        }
+
+        // ── Mobile toolbar drawer ────────────────────────────────────────────
+        // Duplicates the desktop button row above for narrow screens (see
+        // .game-toolbar-desktop / .game-toolbar-mobile-trigger in main.css) —
+        // every action also closes the drawer after firing.
+        Sidebar { open: mobile_toolbar_open, title: Some(t!("gs-toolbar-title")),
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: move |_| {
+                    sheet_kind.set(SheetKind::Menu);
+                    open.set(true);
+                    mobile_toolbar_open.set(false);
+                },
+                {t!("gs-menu")}
+            }
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: move |_| {
+                    sheet_kind.set(SheetKind::Talents);
+                    open.set(true);
+                    mobile_toolbar_open.set(false);
+                },
+                position: "relative",
+                {t!("gs-talents")}
+                if has_unspent_talent_points {
+                    span {
+                        class: "equip-tab-new-badge",
+                        style: "position:absolute;top:2px;right:2px;",
+                        title: t!("gs-talents-unspent-points"),
+                    }
+                }
+            }
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: move |_| {
+                    sheet_kind.set(SheetKind::Inventory);
+                    open.set(true);
+                    mobile_toolbar_open.set(false);
+                },
+                position: "relative",
+                {t!("gs-inventory")}
+                if has_new_equipment {
+                    span {
+                        class: "equip-tab-new-badge",
+                        style: "position:absolute;top:2px;right:2px;",
+                        title: t!("gs-new-equipment"),
+                    }
+                }
+            }
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: move |_| {
+                    sheet_kind.set(SheetKind::Logs);
+                    open.set(true);
+                    mobile_toolbar_open.set(false);
+                },
+                {t!("gs-logs")}
+            }
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: move |_| {
+                    sheet_kind.set(SheetKind::Stats);
+                    open.set(true);
+                    mobile_toolbar_open.set(false);
+                },
+                {t!("gs-game-stats")}
+            }
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: move |_| {
+                    sheet_kind.set(SheetKind::Scenarios);
+                    open.set(true);
+                    mobile_toolbar_open.set(false);
+                },
+                {t!("gs-scenarios")}
+            }
+            Button {
+                variant: ButtonVariant::Outline,
+                onclick: move |_| {
+                    sheet_kind.set(SheetKind::Settings);
+                    open.set(true);
+                    mobile_toolbar_open.set(false);
+                },
+                {t!("gs-settings")}
+            }
+            Button {
+                variant: ButtonVariant::Outline,
+                disabled: !shop_enabled(),
+                title: if shop_enabled() { String::new() } else { t!("gs-store-disabled-hint") },
+                onclick: move |_| {
+                    sheet_kind.set(SheetKind::Store);
+                    open.set(true);
+                    mobile_toolbar_open.set(false);
+                },
+                {t!("gs-store")}
             }
         }
     }
@@ -1722,5 +1850,27 @@ fn SettingsSheet(s: SheetSide) -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn single_player_always_matches() {
+        assert!(hero_matches_current_player(true, None, "hero-a"));
+        assert!(hero_matches_current_player(true, Some("hero-b"), "hero-a"));
+    }
+
+    #[test]
+    fn multiplayer_matches_only_the_current_players_own_character() {
+        assert!(hero_matches_current_player(false, Some("hero-a"), "hero-a"));
+        assert!(!hero_matches_current_player(
+            false,
+            Some("hero-b"),
+            "hero-a"
+        ));
+        assert!(!hero_matches_current_player(false, None, "hero-a"));
     }
 }

@@ -76,6 +76,11 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 .navbar-lang-select:hover { background-color: var(--primary-color-4); }
 .navbar-lang-select:focus-visible { box-shadow: 0 0 0 2px var(--focused-border-color); }
 
+/* Mobile nav drawer trigger — hidden by default, shown ≤768px (see media query
+   below), where .navbar-desktop-group is hidden and this becomes the entry
+   point into the Sidebar drawer instead. */
+.navbar-mobile-trigger { display: none; }
+
 /* LAYOUT */
 .rpg-page {
     min-height: calc(100vh - 56px);
@@ -437,6 +442,10 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     color: var(--rpg-gold) !important;
     background: rgba(201,162,39,.08) !important;
 }
+/* Mobile toolbar drawer trigger — hidden by default, shown ≤768px (see media
+   query below), where .game-toolbar-desktop is hidden and this becomes the
+   entry point into the Sidebar drawer instead. */
+.game-toolbar-mobile-trigger { display: none; }
 .turn-badge {
     margin-left:auto;
     background: rgba(201,162,39,.12);
@@ -1611,8 +1620,10 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     /* Navbar */
     .navbar         { padding: 0 var(--sp-sm); height: 52px; }
     .navbar-brand   { font-size: 1rem; }
-    /* Hide the username chip to reclaim horizontal space */
-    .navbar-user    { display: none; }
+    /* Collapse the controls group behind a hamburger + Sidebar drawer instead
+       of cramming/wrapping them (src/components/sidebar/). */
+    .navbar-desktop-group { display: none; }
+    .navbar-mobile-trigger { display: inline-flex; }
 
     /* Page wrappers */
     .rpg-page       { padding: var(--sp-lg) var(--sp-sm); }
@@ -1627,8 +1638,10 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     /* Character panel: release the fixed 260 px width */
     .character { width: 100%; min-width: 0; }
 
-    /* Game toolbar: allow wrapping onto a second row */
-    .game-toolbar { flex-wrap: wrap; height: auto; }
+    /* Game toolbar: collapse behind a hamburger + Sidebar drawer instead of
+       wrapping onto a second row (src/components/sidebar/). */
+    .game-toolbar-desktop { display: none; }
+    .game-toolbar-mobile-trigger { display: inline-flex; }
 
     /* Lobby */
     .lobby-page     { padding: var(--sp-md) var(--sp-sm); }

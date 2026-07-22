@@ -398,7 +398,7 @@ graph TD
 graph LR
     subgraph Frontend["Frontend (WASM)"]
         Pages["board_game_components/\nhome · lobby · gameboard\ncharacter · admin · login"]
-        Components["components/\nbutton · input · select\ndialog · popover · tabs"]
+        Components["components/\nbutton · input · select\ndialog · popover · tabs · sidebar"]
         Widgets["widgets/\ncharts · tab_equipment\nalert_dialog"]
     end
 
@@ -622,7 +622,7 @@ stacked on top of the existing desktop-first styles.
 | Breakpoint | Target | Key changes |
 |------------|--------|-------------|
 | ≥ 769 px (default) | Desktop | Full 3-column game board, fixed navbar, all sidebars visible |
-| ≤ 768 px | Tablet / landscape phone | Game board collapses to single column (heroes → log → bosses stacked), reduced padding & font sizes, toolbar wraps, username badge hidden |
+| ≤ 768 px | Tablet / landscape phone | Game board collapses to single column (heroes → log → bosses stacked), reduced padding & font sizes; the navbar's controls and the in-game toolbar collapse behind a hamburger button that opens a slide-in navigation drawer instead of wrapping/cramming |
 | ≤ 480 px | Portrait phone | Action grid forces 2 columns, save-slot cards go 1-column, mode-toggle and action buttons stack vertically, character portrait shrinks to 56 px |
 
 ### What is already responsive (no media queries needed)
@@ -632,11 +632,28 @@ stacked on top of the existing desktop-first styles.
 - The footer and lobby info bar use `flex-wrap: wrap`.
 - The viewport meta tag (`width=device-width, initial-scale=1`) is present in `index.html`.
 
+### Mobile navigation drawer
+
+Below 768px, the navbar's right-hand controls (language, help, server settings,
+quit game, sign in/out) and the in-game toolbar (menu / talents / inventory /
+logs / stats / scenarios / settings / store) each switch from their desktop
+inline layout to a hamburger-triggered `Sidebar` drawer (`src/components/sidebar/`).
+The mechanism is entirely CSS `display` toggling — both the desktop group and
+the mobile trigger/drawer are always present in the DOM; there is no runtime
+viewport/JS detection. `Sidebar` is a thin wrapper around the existing `Sheet`
+primitive (`SheetSide::Left`), so it reuses the same overlay/slide-in animation
+already used elsewhere; call sites (`Navbar`, `GameSheets`) duplicate their
+existing action closures into the drawer's content rather than introducing new
+business logic, and every drawer action also closes the drawer after firing.
+Desktop (≥ 769px) is unaffected — the inline controls/toolbar render exactly as
+before.
+
 ### Touch-friendliness notes
 
 - All interactive buttons are `≥ 44 px` tall in their default (desktop) state.
 - Attack target buttons use absolute positioning and remain tappable as circular hit-areas.
 - Sheet overlays (Dioxus `Sheet` component) occupy the full screen width on narrow viewports.
+- The mobile navigation drawer (`Sidebar`, built on the same `Sheet` primitive, `SheetSide::Left`) is the touch entry point for navbar/toolbar actions below 768px — see "Mobile navigation drawer" above.
 
 ---
 
@@ -650,7 +667,7 @@ The UI supports English and French via [`dioxus-i18n`](https://github.com/dioxus
 - Components call the `t!("key")` macro (from `dioxus_i18n::t`) instead of hardcoding text; each key must exist in both `.ftl` files (enforced by `unit_locale_files_have_matching_keys` in `src/i18n.rs`).
 - The current locale is a `CtxAppLang(pub Signal<String>)` context (`"en"` / `"fr"`, see `src/common.rs`), synced to browser `localStorage` via `dioxus-sdk-storage`'s `use_synced_storage` — the same pattern used for login-session persistence, so the choice survives a reload and works **before** logging in (unlike the SQLite-backed `CtxShow*` settings, which require an authenticated session).
 - A `use_effect` in `main.rs` keeps `dioxus-i18n`'s active locale synced to `CtxAppLang` on both initial hydration and every dropdown change.
-- Every `board_game_components/*.rs` and `widgets/*.rs` file has been converted to `t!()`. The navbar's own auth/quit buttons use a fixed CSS width (`.navbar-btn-auth`/`.navbar-btn-quit` in `assets/main.css`) sized for the longer of the two languages' text, so they don't resize when the language is switched.
+- Every `board_game_components/*.rs` and `widgets/*.rs` file has been converted to `t!()`. The navbar's own auth/quit buttons use a fixed inline `style:` width (see `navbar.rs`) sized for the longer of the two languages' text, so they don't resize when the language is switched.
 - Deliberately left untranslated: dynamic backend-generated content (combat log text, shop/equipment item `name`/`description`, aggregated attack-stat labels in `widgets/charts.rs` and the gameboard's last-attack banner — these carry only a plain `atk_name: String`, not an `AttackType`, so there's no bilingual field to resolve), enum-backed `<select>` `value:` attributes, and brand/logo strings.
 
 ### Game-data content — bilingual descriptions and names

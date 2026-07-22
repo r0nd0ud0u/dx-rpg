@@ -2,6 +2,8 @@ navbar-admin-panel = 🛡️ Panneau
 navbar-quit-game = Quitter la partie
 navbar-sign-in = Se connecter
 navbar-sign-out = Se déconnecter
+navbar-menu-title = Menu
+navbar-menu-open = Ouvrir le menu
 lang-select-label = Langue
 
 common-close = Fermer
@@ -444,6 +446,8 @@ gs-scenarios-completed = { $completed } / { $total } terminés
 gs-heroes-status-title = État des héros
 gs-menu-title = Menu
 gs-menu-desc = Contrôles de la session de jeu.
+gs-toolbar-title = Menu
+gs-toolbar-open = Ouvrir le menu
 gs-menu-server-label = Serveur
 gs-menu-active-player-label = Joueur actif
 gs-menu-players-label = Joueurs

@@ -17,7 +17,8 @@ use dx_rpg::{
         SERVER_NAME, SYNCED_DEVICE_TOKEN_KEY,
     },
     components::{
-        alert_dialog, button, input, label, popover, select, separator, sheet, tabs, tooltip,
+        alert_dialog, button, input, label, popover, select, separator, sheet, sidebar, tabs,
+        tooltip,
     },
     websocket_handler::{
         NO_CLIENT_ID,
@@ -632,6 +633,7 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: select::STYLE_CSS }
         document::Link { rel: "stylesheet", href: separator::STYLE_CSS }
         document::Link { rel: "stylesheet", href: sheet::STYLE_CSS }
+        document::Link { rel: "stylesheet", href: sidebar::STYLE_CSS }
         document::Link { rel: "stylesheet", href: tabs::STYLE_CSS }
         document::Link { rel: "stylesheet", href: tooltip::STYLE_CSS }
 
