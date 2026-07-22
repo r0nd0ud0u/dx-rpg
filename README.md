@@ -545,9 +545,21 @@ rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
 
 ### Run locally
 
+Basic dev-serve command per platform (`dx serve` gives hot-reload; see
+[Desktop & Mobile Clients](#desktop--mobile-clients) below for what each
+platform actually connects to):
+
 ```bash
+# Web (fullstack: serves the WASM client + Axum server together)
 dx serve --platform web
 # Open http://localhost:8080
+
+# Desktop (native client — connects to SERVER_URL, see below)
+dx serve --platform desktop --no-default-features --features desktop
+
+# Android (native client — connects to SERVER_URL; requires a connected
+# device/emulator over adb, plus the Android SDK/NDK — see below)
+dx serve --platform android --no-default-features --features mobile
 ```
 
 ### Desktop & Mobile Clients
@@ -563,12 +575,13 @@ default `server` feature, and read the server address from the `SERVER_URL`
 environment variable at startup (defaults to `http://127.0.0.1:8080` if unset):
 
 ```bash
-# Desktop, local dev
-dx serve --platform desktop --no-default-features --features desktop
-
-# Point at a remote server
+# Point the desktop dev client at a remote server
 SERVER_URL=https://your-server.example.com dx serve --platform desktop --no-default-features --features desktop
 ```
+
+Android dev-serving needs the same Android SDK/NDK + `rustup target add
+aarch64-linux-android` toolchain as `bundle_mobile.sh` below, plus a connected
+device or running emulator visible to `adb devices`.
 
 Release bundles are produced with the same scripts the CI release workflow uses:
 
