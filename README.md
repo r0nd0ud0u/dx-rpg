@@ -557,9 +557,13 @@ dx serve --platform web
 # Desktop (native client — connects to SERVER_URL, see below)
 dx serve --platform desktop --no-default-features --features desktop
 
-# Android (native client — connects to SERVER_URL; requires a connected
-# device/emulator over adb, plus the Android SDK/NDK — see below)
-dx serve --platform android --no-default-features --features mobile
+# Android (native client — requires a connected device/emulator over adb,
+# plus the Android SDK/NDK — see below). The default SERVER_URL
+# (http://127.0.0.1:8080) does NOT work here: 127.0.0.1 on the device/emulator
+# means itself, not your dev machine. Use 10.0.2.2 for the standard Android
+# emulator (its alias for the host's localhost), or your dev machine's LAN IP
+# for a real physical device on the same network:
+SERVER_URL=http://10.0.2.2:8080 dx serve --platform android --no-default-features --features mobile
 ```
 
 ### Desktop & Mobile Clients
