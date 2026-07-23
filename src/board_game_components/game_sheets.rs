@@ -166,10 +166,7 @@ pub fn GameSheets() -> Element {
             div { class: "game-toolbar-mobile-trigger",
                 SidebarTrigger { open: mobile_toolbar_open, label: t!("gs-toolbar-open") }
             }
-            div {
-                class: "game-toolbar-desktop",
-                display: "flex",
-                gap: "0.5rem",
+            div { class: "game-toolbar-desktop",
                 Button {
                     variant: ButtonVariant::Outline,
                     onclick: open_sheet(SheetKind::Menu),

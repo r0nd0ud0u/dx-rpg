@@ -113,9 +113,7 @@ pub fn Navbar() -> Element {
                 // Right: trigger buttons only (no dialog roots here). Hidden on mobile —
                 // see .navbar-desktop-group in main.css — and duplicated into the Sidebar
                 // drawer below for narrow screens.
-                div {
-                    class: "navbar-desktop-group",
-                    style: "display: flex; flex-direction: row; align-items: center; gap: 0.75rem;",
+                div { class: "navbar-desktop-group",
                     // Language dropdown — current language is the selected option.
                     select {
                         class: "navbar-lang-select",

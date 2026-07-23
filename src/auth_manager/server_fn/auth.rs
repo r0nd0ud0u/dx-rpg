@@ -3,7 +3,22 @@ use crate::auth_manager::{auth::Session, auth::User, db::get_db, model::SqlUser}
 #[cfg(feature = "server")]
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
+#[cfg(feature = "server")]
+use once_cell::sync::Lazy;
 use std::collections::HashSet;
+#[cfg(feature = "server")]
+use std::{collections::HashMap, sync::Mutex};
+
+/// Per-username, server-issued secret handed out only as `login()`'s return value once a real
+/// login (password-checked or not, per `USE_PASSWORD`) has succeeded. The websocket's
+/// `AddPlayer`/`LoginAllSessions` events require the caller to present this exact value (as
+/// their `device_token`) before they're allowed to claim that username's live player slot —
+/// without it, a raw websocket connection could otherwise claim to be any username just by
+/// naming it, with no authentication at all. Overwritten on every fresh login, which is what
+/// invalidates a stale/tampered client-side copy from an earlier session.
+#[cfg(feature = "server")]
+pub static LOGIN_PROOFS: Lazy<Mutex<HashMap<String, String>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// Returns whether password authentication is required, driven by the `USE_PASSWORD` env var.
 #[post("/api/get_use_password")]
@@ -20,7 +35,7 @@ pub async fn login(
     username: String,
     password: String,
     use_password: bool,
-) -> Result<(), ServerFnError> {
+) -> Result<String, ServerFnError> {
     if username.trim() == "" || (password.is_empty() && use_password) {
         Err(ServerFnError::new(
             "Username or Password can't be empty!".to_owned(),
@@ -40,17 +55,32 @@ pub async fn login(
             )))
         } else {
             let is_valid = bcrypt::verify(password, &rows[0].password).is_ok();
-            if rows[0].is_connected {
+            // Check the DB flag AND the real-time live-connection state: the DB flag can lag
+            // behind (grace-period timing) or outlive (a crash that skipped clean disconnect)
+            // the actual set of live websocket connections, and trusting it alone would let a
+            // second real device log in as a user who is still actually connected elsewhere.
+            let db_says_connected = rows[0].is_connected;
+            let live_says_connected =
+                crate::websocket_handler::event::is_username_connected(&username);
+            tracing::info!(
+                "login({}): db_is_connected={} live_is_connected={}",
+                username,
+                db_says_connected,
+                live_says_connected
+            );
+            if db_says_connected || live_says_connected {
                 return Err(ServerFnError::new(
                     "That user is already connected.".to_owned(),
                 ));
             }
             if !use_password || is_valid {
                 tracing::info!("{}", format!("{:?}", rows[0].id));
-                match update_connection_status(username, true).await {
+                match update_connection_status(username.clone(), true).await {
                     Ok(()) => {
                         auth.login_user(rows[0].id);
-                        Ok(())
+                        let proof = format!("{:032x}", rand::random::<u128>());
+                        LOGIN_PROOFS.lock().unwrap().insert(username, proof.clone());
+                        Ok(proof)
                     }
                     Err(e) => {
                         tracing::info!("{}", e);
@@ -194,9 +224,10 @@ pub async fn logout() -> Result<(), ServerFnError> {
         Ok(name) => name,
         Err(e) => return Err(ServerFnError::new(format!("{}", e))),
     };
-    match update_connection_status(name, false).await {
+    match update_connection_status(name.clone(), false).await {
         Ok(()) => {
             auth.logout_user();
+            LOGIN_PROOFS.lock().unwrap().remove(&name);
             Ok(())
         }
         Err(_) => Err(ServerFnError::new("abord logout")),
@@ -211,12 +242,6 @@ pub async fn get_user_name() -> Result<String> {
 #[post("/api/get/user/id", auth: Session)]
 pub async fn get_user_id() -> Result<i64> {
     Ok(auth.current_user.unwrap().id)
-}
-
-#[post("/api/set/user", auth: Session)]
-pub async fn set_user_by_id(user_id: i64) -> Result<()> {
-    auth.login_user(user_id);
-    Ok(())
 }
 
 #[cfg(feature = "server")]

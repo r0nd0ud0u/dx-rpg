@@ -560,16 +560,29 @@ dx serve --platform desktop --no-default-features --features desktop
 
 # Android (native client — requires a connected device/emulator over adb,
 # plus the Android SDK/NDK — see below). The default SERVER_URL
-# (http://127.0.0.1:8080) does NOT work here: 127.0.0.1 on the device/emulator
-# means itself, not your dev machine.
-#
-# Standard Android emulator (10.0.2.2 is its alias for the host's loopback —
-# works even though the web server above is bound to 127.0.0.1):
+# (http://127.0.0.1:8080) does NOT work here as-is: 127.0.0.1 on the
+# device/emulator means itself, not your dev machine. `adb reverse` fixes
+# that by tunneling the device's own 127.0.0.1:8080 to your dev machine's
+# 127.0.0.1:8080 — works for both the emulator and a real device over USB,
+# and (unlike the 10.0.2.2 emulator alias below) also satisfies Android's
+# default WebView network security config, which only allows cleartext
+# (plain http) traffic to 127.0.0.1. That matters for character images:
+# <img> tags are rendered by the WebView (subject to that policy), while
+# server-fn/websocket calls go through Rust's own reqwest client (not
+# subject to it) — so without the reverse tunnel, images silently fail to
+# load even though login and gameplay work fine.
+adb reverse tcp:8080 tcp:8080
+dx serve --platform android --no-default-features --features mobile
+
+# Fallback if `adb reverse` isn't available (e.g. wifi-adb on a different
+# subnet): the 10.0.2.2 emulator alias for the host's loopback works for
+# connectivity, but images will be blocked by the WebView's cleartext
+# policy unless you also add 10.0.2.2 to a custom network security config.
 SERVER_URL=http://10.0.2.2:8080 dx serve --platform android --no-default-features --features mobile
 
-# Real physical device on the same LAN instead of an emulator: bind the web
+# Real physical device on the same LAN, without adb reverse: bind the web
 # server wider than loopback (IP=0.0.0.0), then point the device at your dev
-# machine's LAN IP:
+# machine's LAN IP. Same WebView cleartext caveat as above applies here too.
 IP=0.0.0.0 dx serve --platform web
 SERVER_URL=http://<your-lan-ip>:8080 dx serve --platform android --no-default-features --features mobile
 ```
@@ -587,7 +600,7 @@ so there's no need to edit `.env` for a one-off run.
 ./scripts/dev_emulator.sh Pixel_4    # terminal 1: boot the AVD (see: emulator -list-avds)
 ./scripts/dev_web.sh                 # terminal 2: main server (IP=0.0.0.0)
 ./scripts/dev_desktop.sh             # terminal 3: desktop client -> local server
-./scripts/dev_android.sh             # terminal 4: Android client -> 10.0.2.2
+./scripts/dev_android.sh             # terminal 4: Android client -> 127.0.0.1 via adb reverse
 # Real device instead of the emulator:
 SERVER_URL=http://<your-lan-ip>:8080 ./scripts/dev_android.sh
 ```

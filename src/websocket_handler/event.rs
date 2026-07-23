@@ -382,14 +382,54 @@ pub async fn on_rcv_client_event(
     }))
 }
 
+/// Whether `name` currently has at least one live, registered websocket connection —
+/// the real-time source of truth `login()` checks in addition to the DB's `is_connected`
+/// flag, since that flag can lag behind (or outlive) the actual live connection state
+/// (a crash that skipped clean disconnect, a reconnect racing the grace-period timer, etc.).
+#[cfg(feature = "server")]
+pub fn is_username_connected(name: &str) -> bool {
+    SERVER_MANAGER
+        .lock()
+        .unwrap()
+        .players
+        .get(name)
+        .is_some_and(|ids| !ids.is_empty())
+}
+
 /// Registers `id` under `name` in `sm.players`, but only if `device_token` matches the
 /// device currently recognized as owning the login for `name` — or no device is recognized
 /// yet, in which case this call claims the lock. Rejects (no-op) a mismatched device_token,
 /// which is how a stale client with a cached session for `name` on a different device gets
 /// blocked from silently rejoining once another device has genuinely logged in as `name`
 /// (see `login_all_sessions`, which resets the lock on every fresh login).
+///
+/// `device_token` must also match `name`'s current entry in `LOGIN_PROOFS` — a secret the
+/// server only ever hands out from a successful `login()` call — otherwise this is a raw
+/// websocket connection (or a tampered/stale client) trying to claim a username it never
+/// actually authenticated as, and the call is rejected outright.
 #[cfg(feature = "server")]
 pub fn add_player(name: String, id: u32, device_token: String) {
+    use crate::auth_manager::server_fn::auth::LOGIN_PROOFS;
+    let proof_ok = LOGIN_PROOFS
+        .lock()
+        .unwrap()
+        .get(&name)
+        .is_some_and(|proof| proof == &device_token);
+    if !proof_ok {
+        tracing::warn!(
+            "Rejected AddPlayer for {} from client {}: device_token does not match a live login proof for this user",
+            name,
+            id
+        );
+        // Tell this specific client its reconnect was refused so it drops the stale local
+        // session and falls back to the login page, instead of silently sitting there
+        // showing a "connected" UI that the server never actually accepted.
+        let clients = CLIENTS.lock().unwrap();
+        if let Some(sender) = clients.get(&(id as usize)) {
+            let _ = sender.send(ServerEvent::LogOut);
+        }
+        return;
+    }
     let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
     match sm.device_tokens.get(&name) {
         Some(owner) if owner != &device_token => {
@@ -407,8 +447,25 @@ pub fn add_player(name: String, id: u32, device_token: String) {
     }
 }
 
+/// Requires `device_token` to match `username`'s current `LOGIN_PROOFS` entry — i.e. the caller
+/// must have actually just completed a real `login()` call for this username — otherwise a raw
+/// websocket connection could broadcast a fake reconnect for (and seize the device-token lock
+/// on) any username with no authentication at all.
 #[cfg(feature = "server")]
 pub fn login_all_sessions(username: String, sql_id: i64, device_token: String) {
+    use crate::auth_manager::server_fn::auth::LOGIN_PROOFS;
+    let proof_ok = LOGIN_PROOFS
+        .lock()
+        .unwrap()
+        .get(&username)
+        .is_some_and(|proof| proof == &device_token);
+    if !proof_ok {
+        tracing::warn!(
+            "Rejected LoginAllSessions for {}: device_token does not match a live login proof for this user",
+            username
+        );
+        return;
+    }
     {
         // A fresh login only reaches here once the DB `is_connected` gate in auth.rs's
         // login() has passed, which only happens when no other session was already live for
@@ -520,10 +577,36 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
             username
         );
     } else {
-        match update_connection_status(username.clone(), false).await {
-            Ok(_) => tracing::info!("{} disconnected from db", username),
-            Err(e) => tracing::error!("DB error: {:?}", e),
-        };
+        // Grace period: a page reload (F5) closes this socket and opens a brand new one
+        // within milliseconds, briefly dropping the connection count to zero even though
+        // the same user is about to reconnect. Clearing is_connected immediately would open
+        // a window where a second browser's login() sees "not connected" and is allowed to
+        // log in as this user while the original session is still alive (mid-reload).
+        // Defer the clear, and skip it entirely if `username` has reconnected by the time
+        // the grace period elapses.
+        use crate::auth_manager::server_fn::auth::LOGIN_PROOFS;
+        let username_for_grace = username.clone();
+        tokio::spawn(async move {
+            sleep(std::time::Duration::from_secs(3)).await;
+            let reconnected = {
+                let sm = SERVER_MANAGER.lock().unwrap();
+                sm.players.contains_key(&username_for_grace)
+            };
+            if reconnected {
+                tracing::info!(
+                    "{} reconnected within the grace period, not clearing is_connected",
+                    username_for_grace
+                );
+                return;
+            }
+            match update_connection_status(username_for_grace.clone(), false).await {
+                Ok(_) => tracing::info!("{} disconnected from db", username_for_grace),
+                Err(e) => tracing::error!("DB error: {:?}", e),
+            };
+            // Also invalidate the login proof so a stale client can't silently rejoin via
+            // AddPlayer later without going through a fresh login() call.
+            LOGIN_PROOFS.lock().unwrap().remove(&username_for_grace);
+        });
     }
 
     // ----------------------------------------
