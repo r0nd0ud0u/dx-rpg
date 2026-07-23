@@ -21,7 +21,7 @@ pub fn LoginPage() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let mut local_login_name_session = use_context::<Signal<String>>();
     let mut local_login_id_session = use_context::<Signal<i64>>();
-    let device_token = use_context::<CtxDeviceToken>().0;
+    let mut device_token = use_context::<CtxDeviceToken>().0;
     // nav
     let navigator = use_navigator();
     // logon
@@ -92,8 +92,13 @@ pub fn LoginPage() -> Element {
                             }
                             tracing::info!("Attempting to log in with username: {}", username());
                             match login(username(), password(), use_pw()).await {
-                                Ok(()) => {
+                                Ok(proof) => {
                                     logon_answer.set(t!("login-success", username : username()));
+                                    // The server only just handed us this proof because a real
+                                    // login succeeded — persist it as our device_token so
+                                    // AddPlayer/LoginAllSessions can prove to the websocket that
+                                    // we're actually allowed to claim this username.
+                                    device_token.set(proof.clone());
                                     match get_user_id().await {
                                         Ok(sql_id) => {
                                             *local_login_id_session.write() = sql_id;
@@ -104,7 +109,7 @@ pub fn LoginPage() -> Element {
                                                     ClientEvent::LoginAllSessions(
                                                         username(),
                                                         sql_id,
-                                                        device_token(),
+                                                        proof.clone(),
                                                     ),
                                                 )
                                                 .await;
@@ -165,10 +170,22 @@ pub fn LoginPage() -> Element {
                             match register(register_name(), register_password(), use_pw()).await {
                                 Ok(()) => {
                                     match login(register_name(), register_password(), use_pw()).await {
-                                        Ok(()) => {
+                                        Ok(proof) => {
+                                            device_token.set(proof.clone());
                                             *local_login_name_session.write() = register_name();
-                                            *local_login_id_session.write() = (get_user_id().await)
+                                            let sql_id = (get_user_id().await)
                                                 .unwrap_or(NO_CLIENT_ID);
+                                            *local_login_id_session.write() = sql_id;
+                                            let _ = socket
+                                                .clone()
+                                                .send(
+                                                    ClientEvent::LoginAllSessions(
+                                                        register_name(),
+                                                        sql_id,
+                                                        proof,
+                                                    ),
+                                                )
+                                                .await;
                                             navigator.push(Route::Home {});
                                         }
                                         Err(e) => {

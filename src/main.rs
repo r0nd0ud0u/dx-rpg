@@ -17,7 +17,8 @@ use dx_rpg::{
         SERVER_NAME, SYNCED_DEVICE_TOKEN_KEY,
     },
     components::{
-        alert_dialog, button, input, label, popover, select, separator, sheet, tabs, tooltip,
+        alert_dialog, button, input, label, popover, select, separator, sheet, sidebar, tabs,
+        tooltip,
     },
     websocket_handler::{
         NO_CLIENT_ID,
@@ -424,6 +425,30 @@ fn App() -> Element {
         document::eval("document.documentElement.setAttribute('data-theme', 'dark');");
     });
 
+    // Android's WebView (used by the native mobile client) never enables "wide viewport"
+    // mode, so it ignores <meta name="viewport"> and evaluates every `@media (max-width:
+    // ...)` rule in main.css against a fake ~980px layout — the mobile nav/toolbar
+    // hamburger breakpoint (see .navbar-desktop-group/.navbar-mobile-trigger and
+    // .game-toolbar-desktop/.game-toolbar-mobile-trigger) never matches there no matter how
+    // narrow the phone screen actually is. window.screen.width reports the real device
+    // width regardless of that bug, so toggle a class on <html> from it as a fallback the
+    // CSS in main.css (the `html.force-mobile-nav` rules) also hooks into. Harmless no-op
+    // on platforms where the media query already works correctly (screen.width there
+    // matches the real viewport too, so this just redundantly confirms the same state).
+    use_effect(|| {
+        document::eval(
+            r#"
+            function applyForceMobileNav() {
+                var w = (window.screen && window.screen.width) ? window.screen.width : window.innerWidth;
+                document.documentElement.classList.toggle('force-mobile-nav', w <= 768);
+            }
+            applyForceMobileNav();
+            window.addEventListener('resize', applyForceMobileNav);
+            window.addEventListener('orientationchange', applyForceMobileNav);
+            "#,
+        );
+    });
+
     // On web: restore login_name from localStorage after the initial hydration render, then
     // persist any future changes.  The first call of the effect (immediately after hydration)
     // reads localStorage and updates the signal if a saved session exists — triggering a
@@ -632,6 +657,7 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: select::STYLE_CSS }
         document::Link { rel: "stylesheet", href: separator::STYLE_CSS }
         document::Link { rel: "stylesheet", href: sheet::STYLE_CSS }
+        document::Link { rel: "stylesheet", href: sidebar::STYLE_CSS }
         document::Link { rel: "stylesheet", href: tabs::STYLE_CSS }
         document::Link { rel: "stylesheet", href: tooltip::STYLE_CSS }
 

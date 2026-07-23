@@ -20,12 +20,29 @@ use crate::{
         },
         button::{Button, ButtonVariant},
         input::Input,
+        sidebar::{Sidebar, SidebarTrigger},
     },
     websocket_handler::{
         event::{ClientEvent, ServerEvent},
         msg_from_client::send_disconnect_from_server_data as send_quit,
     },
 };
+
+/// Whether the admin-panel link should be shown for this logged-in username.
+fn is_admin_link_visible(username: &str) -> bool {
+    username == ADMIN.as_str()
+}
+
+/// Whether the "Quit game" trigger should be shown for this game phase.
+fn is_quit_visible(phase: &GamePhase) -> bool {
+    *phase == GamePhase::Running
+}
+
+/// Whether the current username represents a signed-in user (vs. the
+/// disconnected placeholder), i.e. whether the sign-out label/state applies.
+fn is_signed_in(username: &str) -> bool {
+    username != DISCONNECTED_USER.as_str()
+}
 
 /// Shared navbar component.
 #[component]
@@ -53,6 +70,10 @@ pub fn Navbar() -> Element {
     // `cfg!(target_arch = "wasm32")`, since #[cfg] attributes aren't supported inside
     // rsx!;).
     let mut server_settings_open = use_signal(|| false);
+    // Mobile-only nav drawer (Sidebar) — the desktop controls group is duplicated
+    // into it (CSS-gated visibility, see .navbar-desktop-group/.navbar-mobile-trigger
+    // in main.css) so narrow screens get a proper drawer instead of a cramped row.
+    let mut mobile_nav_open = use_signal(|| false);
     // Draft state so typing doesn't write to storage on every keystroke; populated from
     // the synced values each time the dialog is opened (see the trigger button below).
     let mut server_url_draft = use_signal(String::new);
@@ -76,7 +97,7 @@ pub fn Navbar() -> Element {
                         },
                         "⚔️ RPG"
                     }
-                    if snap_local_login_name_session == ADMIN.to_string() {
+                    if is_admin_link_visible(&snap_local_login_name_session) {
                         Link {
                             class: "navbar-admin-link",
                             to: Route::AdminPage {},
@@ -84,8 +105,15 @@ pub fn Navbar() -> Element {
                         }
                     }
                 }
-                // Right: trigger buttons only (no dialog roots here)
-                div { style: "display: flex; flex-direction: row; align-items: center; gap: 0.75rem;",
+                // Mobile-only hamburger trigger — opens the Sidebar drawer below.
+                // Hidden on desktop, shown ≤768px (see .navbar-mobile-trigger in main.css).
+                div { class: "navbar-mobile-trigger",
+                    SidebarTrigger { open: mobile_nav_open, label: t!("navbar-menu-open") }
+                }
+                // Right: trigger buttons only (no dialog roots here). Hidden on mobile —
+                // see .navbar-desktop-group in main.css — and duplicated into the Sidebar
+                // drawer below for narrow screens.
+                div { class: "navbar-desktop-group",
                     // Language dropdown — current language is the selected option.
                     select {
                         class: "navbar-lang-select",
@@ -116,7 +144,7 @@ pub fn Navbar() -> Element {
                         }
                     }
                     // Quit-game trigger (only while a game is running)
-                    if server_data().core_game_data.game_phase == GamePhase::Running {
+                    if is_quit_visible(&server_data().core_game_data.game_phase) {
                         Button {
                             style: "width: 190px; box-sizing: border-box; text-align: center; white-space: nowrap;",
                             onclick: move |_| quit_open.set(true),
@@ -124,12 +152,12 @@ pub fn Navbar() -> Element {
                             {t!("navbar-quit-game")}
                         }
                     }
-                    if snap_local_login_name_session != *DISCONNECTED_USER {
+                    if is_signed_in(&snap_local_login_name_session) {
                         span { class: "navbar-user", "👤 {snap_local_login_name_session}" }
                     }
                     Button {
                         style: "width: 160px; box-sizing: border-box; text-align: center; white-space: nowrap;",
-                        variant: if snap_local_login_name_session == *DISCONNECTED_USER { ButtonVariant::Secondary } else { ButtonVariant::Destructive },
+                        variant: if is_signed_in(&snap_local_login_name_session) { ButtonVariant::Destructive } else { ButtonVariant::Secondary },
                         onclick: move |_| async move {
                             if local_login_name_session() != *DISCONNECTED_USER {
                                 match logout().await {
@@ -149,10 +177,10 @@ pub fn Navbar() -> Element {
                             }
                             navigator.push(Route::Home {});
                         },
-                        if snap_local_login_name_session == *DISCONNECTED_USER {
-                            {t!("navbar-sign-in")}
-                        } else {
+                        if is_signed_in(&snap_local_login_name_session) {
                             {t!("navbar-sign-out")}
+                        } else {
+                            {t!("navbar-sign-in")}
                         }
                     }
                 }
@@ -369,6 +397,84 @@ pub fn Navbar() -> Element {
                 }
             }
 
+            // ── Mobile navigation drawer ─────────────────────────────────────────
+            // Duplicates the desktop controls group above for narrow screens (see
+            // .navbar-desktop-group / .navbar-mobile-trigger in main.css) — every
+            // action also closes the drawer after firing.
+            Sidebar { open: mobile_nav_open, title: Some(t!("navbar-menu-title")),
+                select {
+                    class: "navbar-lang-select",
+                    "aria-label": t!("lang-select-label"),
+                    value: "{app_lang()}",
+                    onchange: move |e| app_lang.set(e.value()),
+                    option { value: "en", "🇬🇧 English" }
+                    option { value: "fr", "🇫🇷 Français" }
+                }
+                Button {
+                    variant: ButtonVariant::Outline,
+                    onclick: move |_| {
+                        help_open.set(true);
+                        mobile_nav_open.set(false);
+                    },
+                    {t!("help-title")}
+                }
+                if cfg!(all(not(target_arch = "wasm32"), not(feature = "server"))) {
+                    Button {
+                        variant: ButtonVariant::Outline,
+                        onclick: move |_| {
+                            server_url_draft.set(synced_server_url());
+                            insecure_certs_draft.set(synced_insecure_certs());
+                            server_saved_message.set(false);
+                            server_settings_open.set(true);
+                            mobile_nav_open.set(false);
+                        },
+                        {t!("navbar-server-settings")}
+                    }
+                }
+                if is_quit_visible(&server_data().core_game_data.game_phase) {
+                    Button {
+                        onclick: move |_| {
+                            quit_open.set(true);
+                            mobile_nav_open.set(false);
+                        },
+                        r#type: "button",
+                        {t!("navbar-quit-game")}
+                    }
+                }
+                if is_signed_in(&snap_local_login_name_session) {
+                    span { class: "navbar-user", "👤 {snap_local_login_name_session}" }
+                }
+                Button {
+                    variant: if is_signed_in(&snap_local_login_name_session) { ButtonVariant::Destructive } else { ButtonVariant::Secondary },
+                    onclick: move |_| async move {
+                        if local_login_name_session() != *DISCONNECTED_USER {
+                            match logout().await {
+                                Ok(_) => {
+                                    tracing::info!("{} is logged out", local_login_name_session());
+                                    let _ = socket
+                                        .clone()
+                                        .send(ClientEvent::RequestLogOut(local_login_name_session()))
+                                        .await;
+                                    *local_login_name_session.write() = (*DISCONNECTED_USER).to_string();
+                                    *local_login_id_session.write() = NO_CLIENT_ID;
+                                }
+                                Err(_) => {
+                                    tracing::info!("Error on {} logout", local_login_name_session())
+                                }
+                            }
+                        }
+                        mobile_nav_open.set(false);
+                        let navigator = use_navigator();
+                        navigator.push(Route::Home {});
+                    },
+                    if is_signed_in(&snap_local_login_name_session) {
+                        {t!("navbar-sign-out")}
+                    } else {
+                        {t!("navbar-sign-in")}
+                    }
+                }
+            }
+
             Outlet::<Route> {}
 
             // ── Footer ────────────────────────────────────────────────────────────
@@ -425,5 +531,33 @@ pub fn Navbar() -> Element {
                 }
             }
         } // end page-layout
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn admin_link_visible_only_for_admin() {
+        assert!(is_admin_link_visible(ADMIN.as_str()));
+        assert!(!is_admin_link_visible("someone-else"));
+        assert!(!is_admin_link_visible(DISCONNECTED_USER.as_str()));
+    }
+
+    #[test]
+    fn quit_visible_only_while_running() {
+        assert!(is_quit_visible(&GamePhase::Running));
+        assert!(!is_quit_visible(&GamePhase::Default));
+        assert!(!is_quit_visible(&GamePhase::InitGame));
+        assert!(!is_quit_visible(&GamePhase::Loading));
+        assert!(!is_quit_visible(&GamePhase::Overworld));
+        assert!(!is_quit_visible(&GamePhase::Ended));
+    }
+
+    #[test]
+    fn signed_in_is_the_inverse_of_disconnected_placeholder() {
+        assert!(is_signed_in("some-user"));
+        assert!(!is_signed_in(DISCONNECTED_USER.as_str()));
     }
 }

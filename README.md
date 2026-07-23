@@ -398,7 +398,7 @@ graph TD
 graph LR
     subgraph Frontend["Frontend (WASM)"]
         Pages["board_game_components/\nhome · lobby · gameboard\ncharacter · admin · login"]
-        Components["components/\nbutton · input · select\ndialog · popover · tabs"]
+        Components["components/\nbutton · input · select\ndialog · popover · tabs · sidebar"]
         Widgets["widgets/\ncharts · tab_equipment\nalert_dialog"]
     end
 
@@ -545,10 +545,77 @@ rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
 
 ### Run locally
 
+Basic dev-serve command per platform (`dx serve` gives hot-reload; see
+[Desktop & Mobile Clients](#desktop--mobile-clients) below for what each
+platform actually connects to):
+
 ```bash
+# Web (fullstack: serves the WASM client + Axum server together)
 dx serve --platform web
 # Open http://localhost:8080
+
+# Desktop (native client — defaults to SERVER_URL=http://127.0.0.1:8080, so it
+# just works against the web server above with no extra setup)
+dx serve --platform desktop --no-default-features --features desktop
+
+# Android (native client — requires a connected device/emulator over adb,
+# plus the Android SDK/NDK — see below). The default SERVER_URL
+# (http://127.0.0.1:8080) does NOT work here as-is: 127.0.0.1 on the
+# device/emulator means itself, not your dev machine. `adb reverse` fixes
+# that by tunneling the device's own 127.0.0.1:8080 to your dev machine's
+# 127.0.0.1:8080 — works for both the emulator and a real device over USB,
+# and (unlike the 10.0.2.2 emulator alias below) also satisfies Android's
+# default WebView network security config, which only allows cleartext
+# (plain http) traffic to 127.0.0.1. That matters for character images:
+# <img> tags are rendered by the WebView (subject to that policy), while
+# server-fn/websocket calls go through Rust's own reqwest client (not
+# subject to it) — so without the reverse tunnel, images silently fail to
+# load even though login and gameplay work fine.
+adb reverse tcp:8080 tcp:8080
+dx serve --platform android --no-default-features --features mobile
+
+# Fallback if `adb reverse` isn't available (e.g. wifi-adb on a different
+# subnet): the 10.0.2.2 emulator alias for the host's loopback works for
+# connectivity, but images will be blocked by the WebView's cleartext
+# policy unless you also add 10.0.2.2 to a custom network security config.
+SERVER_URL=http://10.0.2.2:8080 dx serve --platform android --no-default-features --features mobile
+
+# Real physical device on the same LAN, without adb reverse: bind the web
+# server wider than loopback (IP=0.0.0.0), then point the device at your dev
+# machine's LAN IP. Same WebView cleartext caveat as above applies here too.
+IP=0.0.0.0 dx serve --platform web
+SERVER_URL=http://<your-lan-ip>:8080 dx serve --platform android --no-default-features --features mobile
 ```
+
+**Still seeing broken images after fixing `SERVER_URL`?** The env var only wins if nothing
+was saved from a previous run. The native client resolves its server address in this
+order (`src/main.rs`): env var → value persisted by the in-app **Server settings** dialog
+(`navbar.rs`, stored in on-device LocalStorage, survives reinstalls) → compile-time-baked
+value → hardcoded `127.0.0.1` fallback. A bad value saved there earlier (e.g. `10.0.2.2`)
+keeps winning over a corrected `SERVER_URL`/script default until you open that dialog and
+fix or clear it.
+
+`IP` and `SERVER_URL` passed on the command line always win over `.env` — `dotenv()`
+(`src/main.rs`) only fills in variables that aren't already set in the environment,
+so there's no need to edit `.env` for a one-off run.
+
+#### Dev loop across terminals (emulator + web server + desktop/Android clients)
+
+`scripts/dev_emulator.sh`, `scripts/dev_web.sh`, `scripts/dev_desktop.sh`, and
+`scripts/dev_android.sh` wrap the commands above for running everything side by side:
+
+```bash
+./scripts/dev_emulator.sh Pixel_4    # terminal 1: boot the AVD (see: emulator -list-avds)
+./scripts/dev_web.sh                 # terminal 2: main server (IP=0.0.0.0)
+./scripts/dev_desktop.sh             # terminal 3: desktop client -> local server
+./scripts/dev_android.sh             # terminal 4: Android client -> 127.0.0.1 via adb reverse
+# Real device instead of the emulator:
+SERVER_URL=http://<your-lan-ip>:8080 ./scripts/dev_android.sh
+```
+
+In VS Code, run the **Dev: Start All (Web, Desktop, Android, Emulator)** task
+(Terminal > Run Task...) to launch all four in their own terminal panels at once,
+or run any of the individual `Dev: ...` tasks on their own.
 
 ### Desktop & Mobile Clients
 
@@ -563,12 +630,13 @@ default `server` feature, and read the server address from the `SERVER_URL`
 environment variable at startup (defaults to `http://127.0.0.1:8080` if unset):
 
 ```bash
-# Desktop, local dev
-dx serve --platform desktop --no-default-features --features desktop
-
-# Point at a remote server
+# Point the desktop dev client at a remote server
 SERVER_URL=https://your-server.example.com dx serve --platform desktop --no-default-features --features desktop
 ```
+
+Android dev-serving needs the same Android SDK/NDK + `rustup target add
+aarch64-linux-android` toolchain as `bundle_mobile.sh` below, plus a connected
+device or running emulator visible to `adb devices`.
 
 Release bundles are produced with the same scripts the CI release workflow uses:
 
@@ -622,7 +690,7 @@ stacked on top of the existing desktop-first styles.
 | Breakpoint | Target | Key changes |
 |------------|--------|-------------|
 | ≥ 769 px (default) | Desktop | Full 3-column game board, fixed navbar, all sidebars visible |
-| ≤ 768 px | Tablet / landscape phone | Game board collapses to single column (heroes → log → bosses stacked), reduced padding & font sizes, toolbar wraps, username badge hidden |
+| ≤ 768 px | Tablet / landscape phone | Game board collapses to single column (heroes → log → bosses stacked), reduced padding & font sizes; the navbar's controls and the in-game toolbar collapse behind a hamburger button that opens a slide-in navigation drawer instead of wrapping/cramming |
 | ≤ 480 px | Portrait phone | Action grid forces 2 columns, save-slot cards go 1-column, mode-toggle and action buttons stack vertically, character portrait shrinks to 56 px |
 
 ### What is already responsive (no media queries needed)
@@ -632,11 +700,28 @@ stacked on top of the existing desktop-first styles.
 - The footer and lobby info bar use `flex-wrap: wrap`.
 - The viewport meta tag (`width=device-width, initial-scale=1`) is present in `index.html`.
 
+### Mobile navigation drawer
+
+Below 768px, the navbar's right-hand controls (language, help, server settings,
+quit game, sign in/out) and the in-game toolbar (menu / talents / inventory /
+logs / stats / scenarios / settings / store) each switch from their desktop
+inline layout to a hamburger-triggered `Sidebar` drawer (`src/components/sidebar/`).
+The mechanism is entirely CSS `display` toggling — both the desktop group and
+the mobile trigger/drawer are always present in the DOM; there is no runtime
+viewport/JS detection. `Sidebar` is a thin wrapper around the existing `Sheet`
+primitive (`SheetSide::Left`), so it reuses the same overlay/slide-in animation
+already used elsewhere; call sites (`Navbar`, `GameSheets`) duplicate their
+existing action closures into the drawer's content rather than introducing new
+business logic, and every drawer action also closes the drawer after firing.
+Desktop (≥ 769px) is unaffected — the inline controls/toolbar render exactly as
+before.
+
 ### Touch-friendliness notes
 
 - All interactive buttons are `≥ 44 px` tall in their default (desktop) state.
 - Attack target buttons use absolute positioning and remain tappable as circular hit-areas.
 - Sheet overlays (Dioxus `Sheet` component) occupy the full screen width on narrow viewports.
+- The mobile navigation drawer (`Sidebar`, built on the same `Sheet` primitive, `SheetSide::Left`) is the touch entry point for navbar/toolbar actions below 768px — see "Mobile navigation drawer" above.
 
 ---
 
@@ -650,7 +735,7 @@ The UI supports English and French via [`dioxus-i18n`](https://github.com/dioxus
 - Components call the `t!("key")` macro (from `dioxus_i18n::t`) instead of hardcoding text; each key must exist in both `.ftl` files (enforced by `unit_locale_files_have_matching_keys` in `src/i18n.rs`).
 - The current locale is a `CtxAppLang(pub Signal<String>)` context (`"en"` / `"fr"`, see `src/common.rs`), synced to browser `localStorage` via `dioxus-sdk-storage`'s `use_synced_storage` — the same pattern used for login-session persistence, so the choice survives a reload and works **before** logging in (unlike the SQLite-backed `CtxShow*` settings, which require an authenticated session).
 - A `use_effect` in `main.rs` keeps `dioxus-i18n`'s active locale synced to `CtxAppLang` on both initial hydration and every dropdown change.
-- Every `board_game_components/*.rs` and `widgets/*.rs` file has been converted to `t!()`. The navbar's own auth/quit buttons use a fixed CSS width (`.navbar-btn-auth`/`.navbar-btn-quit` in `assets/main.css`) sized for the longer of the two languages' text, so they don't resize when the language is switched.
+- Every `board_game_components/*.rs` and `widgets/*.rs` file has been converted to `t!()`. The navbar's own auth/quit buttons use a fixed inline `style:` width (see `navbar.rs`) sized for the longer of the two languages' text, so they don't resize when the language is switched.
 - Deliberately left untranslated: dynamic backend-generated content (combat log text, shop/equipment item `name`/`description`, aggregated attack-stat labels in `widgets/charts.rs` and the gameboard's last-attack banner — these carry only a plain `atk_name: String`, not an `AttackType`, so there's no bilingual field to resolve), enum-backed `<select>` `value:` attributes, and brand/logo strings.
 
 ### Game-data content — bilingual descriptions and names
