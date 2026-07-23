@@ -587,6 +587,14 @@ IP=0.0.0.0 dx serve --platform web
 SERVER_URL=http://<your-lan-ip>:8080 dx serve --platform android --no-default-features --features mobile
 ```
 
+**Still seeing broken images after fixing `SERVER_URL`?** The env var only wins if nothing
+was saved from a previous run. The native client resolves its server address in this
+order (`src/main.rs`): env var → value persisted by the in-app **Server settings** dialog
+(`navbar.rs`, stored in on-device LocalStorage, survives reinstalls) → compile-time-baked
+value → hardcoded `127.0.0.1` fallback. A bad value saved there earlier (e.g. `10.0.2.2`)
+keeps winning over a corrected `SERVER_URL`/script default until you open that dialog and
+fix or clear it.
+
 `IP` and `SERVER_URL` passed on the command line always win over `.env` — `dotenv()`
 (`src/main.rs`) only fills in variables that aren't already set in the environment,
 so there's no need to edit `.env` for a one-off run.
