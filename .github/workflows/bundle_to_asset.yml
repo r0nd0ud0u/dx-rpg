@@ -213,6 +213,13 @@ jobs:
       # Override via repo Settings -> Secrets and variables -> Actions -> Variables
       # (SERVER_URL / INSECURE_ACCEPT_INVALID_CERTS) without touching this file; these
       # hardcoded values are just the fallback if no such variable is set.
+      #
+      # Note: dx bundle only runs `gradle assembleRelease` when Dioxus.toml has a
+      # [bundle.android] signing config; this repo has none, so --release silently
+      # falls back to `assembleDebug` (dioxus-cli src/build/android.rs). That's fine
+      # for a debug-signed distribution build, but it means the APK's signature is
+      # entirely governed by ~/.android/debug.keystore above — hence the fingerprint
+      # check below, to catch it immediately if that ever drifts again.
       - name: Build Android client
         run: ./scripts/bundle_mobile.sh aarch64-linux-android
         shell: bash
@@ -224,16 +231,30 @@ jobs:
           SERVER_URL: ${{ vars.SERVER_URL || 'https://aogin-world.com' }}
           INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'false' }}
 
-      - name: Rename APK with ABI suffix
+      - name: Rename APK with version and ABI suffix
         run: |
           apk=$(find bundle-android -name '*.apk' | head -n1)
-          mv "$apk" "bundle-android/dx-rpg-arm64-v8a.apk"
+          version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          mv "$apk" "bundle-android/dx-rpg-v${version}-arm64-v8a.apk"
+
+      # Guards against a repeat of the "package conflicts with an existing package"
+      # install failure this step is named after: if the debug keystore ever stops
+      # being the committed android/debug.keystore (e.g. a future workflow edit drops
+      # the "Install stable debug keystore" step, or a runner image change resets
+      # ~/.android), the signing certificate's fingerprint changes and this print
+      # makes that visible in the run log immediately, instead of surfacing only as
+      # a broken install on someone's phone. Compare this SHA-256 across runs if a
+      # user reports the install conflict again.
+      - name: Print APK signing certificate fingerprint
+        run: |
+          apk=$(find bundle-android -name '*.apk' | head -n1)
+          keytool -printcert -jarfile "$apk" | grep -A1 "SHA256:"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: bundle_android_arm64-v8a
-          path: bundle-android/dx-rpg-arm64-v8a.apk
+          path: bundle-android/dx-rpg-v*-arm64-v8a.apk
           if-no-files-found: error
 
   release:
