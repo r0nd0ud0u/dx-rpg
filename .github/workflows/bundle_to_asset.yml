@@ -237,15 +237,6 @@ jobs:
           version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
           mv "$apk" "bundle-android/dx-rpg-v${version}-arm64-v8a.apk"
 
-      # ubuntu-latest doesn't guarantee a JDK (and thus `keytool`) is on PATH without
-      # an explicit setup step, even though one is implicitly available for Gradle.
-      - name: Ensure keytool is available
-        run: |
-          if ! command -v keytool >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y openjdk-17-jre-headless
-          fi
-
       # Guards against a repeat of the "package conflicts with an existing package"
       # install failure this step is named after: if the debug keystore ever stops
       # being the committed android/debug.keystore (e.g. a future workflow edit drops
@@ -254,10 +245,18 @@ jobs:
       # makes that visible in the run log immediately, instead of surfacing only as
       # a broken install on someone's phone. Compare this SHA-256 across runs if a
       # user reports the install conflict again.
+      #
+      # Uses apksigner, not keytool: this APK is signed with APK Signature Scheme
+      # v2/v3 only (no META-INF/*.RSA entries), which `keytool -printcert -jarfile`
+      # can't read at all (it only understands the old JAR-signing convention) — it
+      # silently finds nothing and exits non-zero. apksigner (Android SDK
+      # build-tools, already on this runner via ANDROID_HOME per the comment above)
+      # is the tool that actually understands v2/v3 signatures.
       - name: Print APK signing certificate fingerprint
         run: |
           apk=$(find bundle-android -name '*.apk' | head -n1)
-          keytool -printcert -jarfile "$apk" | grep -A1 "SHA256:"
+          apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n1)
+          "$apksigner" verify --print-certs "$apk"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
