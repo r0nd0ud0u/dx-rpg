@@ -533,6 +533,7 @@ pub fn send_logout_to_server(user_name: String, client_id: u32) {
 
 #[cfg(feature = "server")]
 pub async fn send_disconnection_to_server_manager(client_id: u32) {
+    use crate::auth_manager::server_fn::auth::LOGIN_PROOFS;
     use crate::auth_manager::server_fn::update_connection_status;
 
     // ----------------------------------------
@@ -565,113 +566,133 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
         (username, has_other_connections)
     }; // LOCK DROPPED HERE
 
-    // ----------------------------------------
-    //  DB update (no locks held)
-    // ----------------------------------------
-    // Only clear is_connected once the LAST connection for this username drops —
-    // otherwise a single tab/device reconnect blip frees up the "already connected"
-    // slot while other sessions for the same user are still live.
+    // Only proceed to server-data/is_connected cleanup once the LAST connection
+    // for this username drops — otherwise a single tab/device reconnect blip (or
+    // the owner having a second tab open on the same game) would tear things down
+    // while other sessions for the same user are still live.
     if has_other_connections {
         tracing::info!(
-            "{} still has other active connections, not clearing is_connected",
+            "{} still has other active connections, not closing anything",
             username
         );
-    } else {
-        // Grace period: a page reload (F5) closes this socket and opens a brand new one
-        // within milliseconds, briefly dropping the connection count to zero even though
-        // the same user is about to reconnect. Clearing is_connected immediately would open
-        // a window where a second browser's login() sees "not connected" and is allowed to
-        // log in as this user while the original session is still alive (mid-reload).
-        // Defer the clear, and skip it entirely if `username` has reconnected by the time
-        // the grace period elapses.
-        use crate::auth_manager::server_fn::auth::LOGIN_PROOFS;
-        let username_for_grace = username.clone();
-        tokio::spawn(async move {
-            sleep(std::time::Duration::from_secs(3)).await;
-            let reconnected = {
-                let sm = SERVER_MANAGER.lock().unwrap();
-                sm.players.contains_key(&username_for_grace)
-            };
-            if reconnected {
-                tracing::info!(
-                    "{} reconnected within the grace period, not clearing is_connected",
-                    username_for_grace
-                );
-                return;
-            }
-            match update_connection_status(username_for_grace.clone(), false).await {
-                Ok(_) => tracing::info!("{} disconnected from db", username_for_grace),
-                Err(e) => tracing::error!("DB error: {:?}", e),
-            };
-            // Also invalidate the login proof so a stale client can't silently rejoin via
-            // AddPlayer later without going through a fresh login() call.
-            LOGIN_PROOFS.lock().unwrap().remove(&username_for_grace);
-        });
+        return;
     }
 
     // ----------------------------------------
-    //  Modify server data
+    //  Modify server data (best-effort — a disconnecting user might not currently
+    //  be in any game, e.g. still on the lobby/menu, hence the Option)
     // ----------------------------------------
-    let (other_clients, affected_server_name, is_owner) = {
+    let game_info: Option<(Vec<u32>, String, bool)> = {
         let mut sm = SERVER_MANAGER.lock().unwrap();
 
-        let mut server_data = match sm.get_server_data_by_player_id(client_id) {
-            Some(sd) => sd,
+        match sm.get_server_data_by_player_id(client_id) {
+            Some(mut server_data) => {
+                let server_name = server_data.players_data.owner_player_name.clone();
+                let is_owner = server_data.players_data.owner_player_name == username;
+
+                server_data
+                    .players_data
+                    .players_info
+                    .retain(|player_name, pl| {
+                        if player_name == &username {
+                            pl.player_ids.retain(|&id| id != client_id);
+                            !pl.player_ids.is_empty()
+                        } else {
+                            true
+                        }
+                    });
+
+                // Collect affected client IDs before unlocking
+                let ids = server_data
+                    .players_data
+                    .players_info
+                    .values()
+                    .flat_map(|p| p.player_ids.iter().copied())
+                    .collect::<Vec<u32>>();
+
+                sm.ongoing_games.retain(|g| g.server_name != username);
+
+                Some((ids, server_name, is_owner))
+            }
             None => {
-                tracing::error!(
-                    "Player {} with id {} disconnecting, no server data found",
+                tracing::info!(
+                    "Player {} with id {} disconnecting, not currently in any game",
                     username,
                     client_id
                 );
-                return;
-            }
-        };
-
-        let server_name = server_data.players_data.owner_player_name.clone();
-        let is_owner = server_data.players_data.owner_player_name == username;
-
-        server_data
-            .players_data
-            .players_info
-            .retain(|player_name, pl| {
-                if player_name == &username {
-                    pl.player_ids.retain(|&id| id != client_id);
-                    !pl.player_ids.is_empty()
-                } else {
-                    true
-                }
-            });
-
-        // Collect affected client IDs before unlocking
-        let ids = server_data
-            .players_data
-            .players_info
-            .values()
-            .flat_map(|p| p.player_ids.iter().copied())
-            .collect::<Vec<u32>>();
-
-        sm.ongoing_games.retain(|g| g.server_name != username);
-
-        (ids, server_name, is_owner)
-    }; // LOCK DROPPED HERE
-
-    // ----------------------------------------
-    //  Notify clients (separate lock)
-    // ----------------------------------------
-    if is_owner {
-        // Owner left → kick everyone else out
-        let clients = CLIENTS.lock().unwrap();
-        for other_id in other_clients {
-            if let Some(sender) = clients.get(&(other_id as usize)) {
-                let _ = sender.send(ServerEvent::ResetClientFromServerData);
+                None
             }
         }
-    } else {
-        // Non-owner left → just refresh player list for remaining clients
-        update_clients_server_data(&affected_server_name);
+    }; // LOCK DROPPED HERE
+
+    if let Some((_, ref affected_server_name, is_owner)) = game_info {
+        if !is_owner {
+            // Non-owner leaving doesn't end the game — refresh the lobby's player
+            // list right away, no need to wait out a reconnect grace period for that.
+            update_clients_server_data(affected_server_name);
+        }
+        update_clients_ongoing_games();
     }
 
-    update_clients_ongoing_games();
+    // ----------------------------------------
+    //  Grace period (no locks held)
+    // ----------------------------------------
+    // A page reload (F5) closes this socket and opens a brand new one within
+    // milliseconds, briefly dropping the connection count to zero even though the
+    // same user is about to reconnect. Clearing is_connected immediately would open
+    // a window where a second browser's login() sees "not connected" and is allowed
+    // to log in as this user while the original session is still alive (mid-reload);
+    // closing the game immediately would do the same for the in-progress session.
+    // Defer both, and skip them entirely if `username` has reconnected (anywhere —
+    // checked via `sm.players`, not `servers_data.players_info`, which reconnecting
+    // via `add_player_to_server` does update but the retain() above does not: it
+    // mutates a clone returned by `get_server_data_by_player_id`, not the real
+    // entry in `sm.servers_data`) by the time the grace period elapses.
+    let username_for_grace = username.clone();
+    tokio::spawn(async move {
+        sleep(std::time::Duration::from_secs(3)).await;
+        let reconnected = {
+            let sm = SERVER_MANAGER.lock().unwrap();
+            sm.players.contains_key(&username_for_grace)
+        };
+        if reconnected {
+            tracing::info!(
+                "{} reconnected within the grace period, not closing anything",
+                username_for_grace
+            );
+            return;
+        }
+
+        if let Some((other_clients, affected_server_name, true)) = game_info {
+            tracing::info!(
+                "Owner {} did not reconnect within the grace period, closing game {}",
+                username_for_grace,
+                affected_server_name
+            );
+            {
+                let clients = CLIENTS.lock().unwrap();
+                for other_id in &other_clients {
+                    if let Some(sender) = clients.get(&(*other_id as usize)) {
+                        let _ = sender.send(ServerEvent::ResetClientFromServerData);
+                    }
+                }
+            }
+            SERVER_MANAGER
+                .lock()
+                .unwrap()
+                .servers_data
+                .remove(&affected_server_name);
+            update_clients_ongoing_games();
+        }
+
+        match update_connection_status(username_for_grace.clone(), false).await {
+            Ok(_) => tracing::info!("{} disconnected from db", username_for_grace),
+            Err(e) => tracing::error!("DB error: {:?}", e),
+        };
+        // Also invalidate the login proof so a stale client can't silently rejoin via
+        // AddPlayer later without going through a fresh login() call.
+        LOGIN_PROOFS.lock().unwrap().remove(&username_for_grace);
+    });
 }
 
 #[cfg(feature = "server")]
