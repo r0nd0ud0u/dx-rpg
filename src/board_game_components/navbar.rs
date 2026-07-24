@@ -452,11 +452,11 @@ pub fn Navbar() -> Element {
                                         return;
                                     }
                                     match change_password(
-                                        local_login_name_session(),
-                                        old_password_draft(),
-                                        new_password_draft(),
-                                        use_pw(),
-                                    )
+                                            local_login_name_session(),
+                                            old_password_draft(),
+                                            new_password_draft(),
+                                            use_pw(),
+                                        )
                                         .await
                                     {
                                         Ok(()) => {
