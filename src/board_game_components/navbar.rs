@@ -11,7 +11,7 @@ use dioxus_i18n::t;
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
-    auth_manager::server_fn::logout,
+    auth_manager::server_fn::{change_password, get_use_password, logout},
     common::{ADMIN, CtxAppLang, CtxSyncedInsecureCerts, CtxSyncedServerUrl, Route},
     components::{
         alert_dialog::{
@@ -80,6 +80,22 @@ pub fn Navbar() -> Element {
     let mut insecure_certs_draft = use_signal(|| false);
     let mut server_saved_message = use_signal(|| false);
 
+    // Change-password dialog — only relevant while USE_PASSWORD is on (see login_page.rs
+    // for why this is fetched client-side via use_effect + spawn rather than use_resource).
+    let mut use_pw = use_signal(|| false);
+    use_effect(move || {
+        spawn(async move {
+            if let Ok(v) = get_use_password().await {
+                use_pw.set(v);
+            }
+        });
+    });
+    let mut change_password_open = use_signal(|| false);
+    let mut old_password_draft = use_signal(String::new);
+    let mut new_password_draft = use_signal(String::new);
+    let mut confirm_password_draft = use_signal(String::new);
+    let mut change_password_answer = use_signal(String::new);
+
     // snapshot
     let snap_local_login_name_session = local_login_name_session();
 
@@ -141,6 +157,20 @@ pub fn Navbar() -> Element {
                                 server_settings_open.set(true);
                             },
                             {t!("navbar-server-settings")}
+                        }
+                    }
+                    // Change-password trigger (signed-in users, only while USE_PASSWORD is on)
+                    if is_signed_in(&snap_local_login_name_session) && use_pw() {
+                        Button {
+                            variant: ButtonVariant::Outline,
+                            onclick: move |_| {
+                                old_password_draft.set(String::new());
+                                new_password_draft.set(String::new());
+                                confirm_password_draft.set(String::new());
+                                change_password_answer.set(String::new());
+                                change_password_open.set(true);
+                            },
+                            {t!("navbar-change-password")}
                         }
                     }
                     // Quit-game trigger (only while a game is running)
@@ -376,6 +406,77 @@ pub fn Navbar() -> Element {
                 }
             }
 
+            // Change-password dialog
+            if is_signed_in(&snap_local_login_name_session) && use_pw() {
+                AlertDialogRoot {
+                    open: change_password_open(),
+                    on_open_change: move |v| change_password_open.set(v),
+                    AlertDialogContent {
+                        AlertDialogTitle { {t!("change-password-title")} }
+                        AlertDialogDescription {
+                            div { style: "text-align:left; display:flex; flex-direction:column; gap:0.75rem;",
+                                Input {
+                                    placeholder: t!("change-password-current-placeholder"),
+                                    r#type: "password",
+                                    value: "{old_password_draft}",
+                                    oninput: move |e: FormEvent| old_password_draft.set(e.value()),
+                                }
+                                Input {
+                                    placeholder: t!("change-password-new-placeholder"),
+                                    r#type: "password",
+                                    value: "{new_password_draft}",
+                                    oninput: move |e: FormEvent| new_password_draft.set(e.value()),
+                                }
+                                Input {
+                                    placeholder: t!("change-password-confirm-placeholder"),
+                                    r#type: "password",
+                                    value: "{confirm_password_draft}",
+                                    oninput: move |e: FormEvent| confirm_password_draft.set(e.value()),
+                                }
+                                if !change_password_answer().is_empty() {
+                                    p { class: "rpg-answer", "{change_password_answer}" }
+                                }
+                            }
+                        }
+                        AlertDialogActions {
+                            AlertDialogCancel { {t!("common-cancel")} }
+                            Button {
+                                variant: ButtonVariant::Primary,
+                                onclick: move |_| async move {
+                                    if new_password_draft().trim().is_empty() {
+                                        change_password_answer.set(t!("change-password-empty"));
+                                        return;
+                                    }
+                                    if new_password_draft() != confirm_password_draft() {
+                                        change_password_answer.set(t!("change-password-mismatch"));
+                                        return;
+                                    }
+                                    match change_password(
+                                        local_login_name_session(),
+                                        old_password_draft(),
+                                        new_password_draft(),
+                                        use_pw(),
+                                    )
+                                        .await
+                                    {
+                                        Ok(()) => {
+                                            change_password_answer.set(t!("change-password-saved"));
+                                            old_password_draft.set(String::new());
+                                            new_password_draft.set(String::new());
+                                            confirm_password_draft.set(String::new());
+                                        }
+                                        Err(e) => {
+                                            change_password_answer.set(format!("{}", e.to_owned()));
+                                        }
+                                    }
+                                },
+                                {t!("change-password-save")}
+                            }
+                        }
+                    }
+                }
+            }
+
             // Quit-game confirmation dialog
             AlertDialogRoot { open: quit_open(), on_open_change: move |v| quit_open.set(v),
                 AlertDialogContent {
@@ -439,6 +540,20 @@ pub fn Navbar() -> Element {
                         },
                         r#type: "button",
                         {t!("navbar-quit-game")}
+                    }
+                }
+                if is_signed_in(&snap_local_login_name_session) && use_pw() {
+                    Button {
+                        variant: ButtonVariant::Outline,
+                        onclick: move |_| {
+                            old_password_draft.set(String::new());
+                            new_password_draft.set(String::new());
+                            confirm_password_draft.set(String::new());
+                            change_password_answer.set(String::new());
+                            change_password_open.set(true);
+                            mobile_nav_open.set(false);
+                        },
+                        {t!("navbar-change-password")}
                     }
                 }
                 if is_signed_in(&snap_local_login_name_session) {
