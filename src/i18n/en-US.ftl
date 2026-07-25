@@ -22,6 +22,16 @@ server-settings-insecure-warning = Disables TLS certificate validation for this 
 server-settings-save = Save
 server-settings-saved = Saved — restart the app for this to take effect.
 
+navbar-change-password = 🔑 Password
+change-password-title = Change Password
+change-password-current-placeholder = Current password
+change-password-new-placeholder = New password
+change-password-confirm-placeholder = Confirm new password
+change-password-save = Save
+change-password-saved = Password changed successfully.
+change-password-mismatch = New passwords don't match.
+change-password-empty = New password can't be empty.
+
 help-title = How to play
 
 help-section-getting-started = 🚀 Getting started

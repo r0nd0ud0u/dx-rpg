@@ -22,6 +22,16 @@ server-settings-insecure-warning = Désactive la validation du certificat TLS po
 server-settings-save = Enregistrer
 server-settings-saved = Enregistré — redémarrez l'application pour appliquer ce changement.
 
+navbar-change-password = 🔑 Mot de passe
+change-password-title = Changer le mot de passe
+change-password-current-placeholder = Mot de passe actuel
+change-password-new-placeholder = Nouveau mot de passe
+change-password-confirm-placeholder = Confirmer le nouveau mot de passe
+change-password-save = Enregistrer
+change-password-saved = Mot de passe changé avec succès.
+change-password-mismatch = Les nouveaux mots de passe ne correspondent pas.
+change-password-empty = Le nouveau mot de passe ne peut pas être vide.
+
 help-title = Comment jouer
 
 help-section-getting-started = 🚀 Pour commencer

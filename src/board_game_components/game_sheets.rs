@@ -172,52 +172,52 @@ pub fn GameSheets() -> Element {
                     onclick: open_sheet(SheetKind::Menu),
                     {t!("gs-menu")}
                 }
-            Button {
-                variant: ButtonVariant::Outline,
-                onclick: open_sheet(SheetKind::Talents),
-                position: "relative",
-                {t!("gs-talents")}
-                if has_unspent_talent_points {
-                    span {
-                        class: "equip-tab-new-badge",
-                        style: "position:absolute;top:2px;right:2px;",
-                        title: t!("gs-talents-unspent-points"),
+                Button {
+                    variant: ButtonVariant::Outline,
+                    onclick: open_sheet(SheetKind::Talents),
+                    position: "relative",
+                    {t!("gs-talents")}
+                    if has_unspent_talent_points {
+                        span {
+                            class: "equip-tab-new-badge",
+                            style: "position:absolute;top:2px;right:2px;",
+                            title: t!("gs-talents-unspent-points"),
+                        }
                     }
                 }
-            }
-            Button {
-                variant: ButtonVariant::Outline,
-                onclick: open_sheet(SheetKind::Inventory),
-                position: "relative",
-                {t!("gs-inventory")}
-                if has_new_equipment {
-                    span {
-                        class: "equip-tab-new-badge",
-                        style: "position:absolute;top:2px;right:2px;",
-                        title: t!("gs-new-equipment"),
+                Button {
+                    variant: ButtonVariant::Outline,
+                    onclick: open_sheet(SheetKind::Inventory),
+                    position: "relative",
+                    {t!("gs-inventory")}
+                    if has_new_equipment {
+                        span {
+                            class: "equip-tab-new-badge",
+                            style: "position:absolute;top:2px;right:2px;",
+                            title: t!("gs-new-equipment"),
+                        }
                     }
                 }
-            }
-            Button {
-                variant: ButtonVariant::Outline,
-                onclick: open_sheet(SheetKind::Logs),
-                {t!("gs-logs")}
-            }
-            Button {
-                variant: ButtonVariant::Outline,
-                onclick: open_sheet(SheetKind::Stats),
-                {t!("gs-game-stats")}
-            }
-            Button {
-                variant: ButtonVariant::Outline,
-                onclick: open_sheet(SheetKind::Scenarios),
-                {t!("gs-scenarios")}
-            }
-            Button {
-                variant: ButtonVariant::Outline,
-                onclick: open_sheet(SheetKind::Settings),
-                {t!("gs-settings")}
-            }
+                Button {
+                    variant: ButtonVariant::Outline,
+                    onclick: open_sheet(SheetKind::Logs),
+                    {t!("gs-logs")}
+                }
+                Button {
+                    variant: ButtonVariant::Outline,
+                    onclick: open_sheet(SheetKind::Stats),
+                    {t!("gs-game-stats")}
+                }
+                Button {
+                    variant: ButtonVariant::Outline,
+                    onclick: open_sheet(SheetKind::Scenarios),
+                    {t!("gs-scenarios")}
+                }
+                Button {
+                    variant: ButtonVariant::Outline,
+                    onclick: open_sheet(SheetKind::Settings),
+                    {t!("gs-settings")}
+                }
                 Button {
                     variant: ButtonVariant::Outline,
                     disabled: !shop_enabled(),

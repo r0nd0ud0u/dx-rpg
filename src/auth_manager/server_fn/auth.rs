@@ -54,7 +54,14 @@ pub async fn login(
                 username
             )))
         } else {
-            let is_valid = bcrypt::verify(password, &rows[0].password).is_ok();
+            // A `None`/empty password means this account was created (or migrated from)
+            // before USE_PASSWORD was enabled and has no real password to check against
+            // yet — let it through regardless of what was typed. It's on the user to set
+            // a real password afterward via change_password().
+            let is_valid = match rows[0].password.as_deref() {
+                Some(hash) if !hash.is_empty() => bcrypt::verify(password, hash).is_ok(),
+                _ => true,
+            };
             // Check the DB flag AND the real-time live-connection state: the DB flag can lag
             // behind (grace-period timing) or outlive (a crash that skipped clean disconnect)
             // the actual set of live websocket connections, and trusting it alone would let a
@@ -120,11 +127,15 @@ pub async fn register(
             )))
         } else if use_password {
             let hash_password = bcrypt::hash(password, 10).unwrap();
-            match sqlx::query("INSERT INTO users (username, password) VALUES (?1, ?2)")
-                .bind(&username)
-                .bind(&hash_password)
-                .execute(pool)
-                .await
+            match sqlx::query(
+                "INSERT INTO users (anonymous, username, password, is_connected) VALUES (?1, ?2, ?3, ?4)",
+            )
+            .bind(false)
+            .bind(&username)
+            .bind(&hash_password)
+            .bind(false)
+            .execute(pool)
+            .await
             {
                 Ok(_) => Ok(()),
                 Err(e) => Err(ServerFnError::new(format!("{}", e))),
@@ -144,6 +155,60 @@ pub async fn register(
             }
         }
     }
+}
+
+/// Lets a signed-in user set/change their password. If the account already has a real
+/// password (and `use_password` is true), `old_password` must match it. A legacy account
+/// with no password yet (created before USE_PASSWORD was enabled) has nothing to verify
+/// against, so any `old_password` is accepted — this is how such accounts get migrated
+/// onto a real password after logging in once via the no-password-set bypass in `login()`.
+#[post("/api/user/change_password")]
+pub async fn change_password(
+    username: String,
+    old_password: String,
+    new_password: String,
+    use_password: bool,
+) -> Result<(), ServerFnError> {
+    if new_password.trim().is_empty() {
+        return Err(ServerFnError::new(
+            "New password can't be empty!".to_owned(),
+        ));
+    }
+    let pool = get_db().await;
+    let rows: Vec<SqlUser> = sqlx::query_as("SELECT * FROM users WHERE username = ?1")
+        .bind(&username)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| ServerFnError::new(format!("{}", e)))?;
+
+    let Some(row) = rows.into_iter().next() else {
+        return Err(ServerFnError::new(format!(
+            "Username {} is not registered!",
+            username
+        )));
+    };
+
+    let old_password_ok = match row.password.as_deref() {
+        Some(hash) if use_password && !hash.is_empty() => {
+            bcrypt::verify(&old_password, hash).is_ok()
+        }
+        _ => true,
+    };
+    if !old_password_ok {
+        return Err(ServerFnError::new(
+            "Current password is not correct!".to_owned(),
+        ));
+    }
+
+    let hash_password =
+        bcrypt::hash(&new_password, 10).map_err(|e| ServerFnError::new(format!("{}", e)))?;
+    sqlx::query("UPDATE users SET password = ?1 WHERE username = ?2")
+        .bind(&hash_password)
+        .bind(&username)
+        .execute(pool)
+        .await
+        .map_err(|e| ServerFnError::new(format!("{}", e)))?;
+    Ok(())
 }
 
 #[post("/api/user/delete_user")]
@@ -170,7 +235,10 @@ pub async fn delete_user(
             let msg = format!("Username {} is not registered!", username);
             Err(ServerFnError::new(msg))
         } else {
-            let is_valid = bcrypt::verify(&password, &rows[0].password).is_ok();
+            let is_valid = match rows[0].password.as_deref() {
+                Some(hash) if !hash.is_empty() => bcrypt::verify(&password, hash).is_ok(),
+                _ => true,
+            };
 
             if use_password {
                 if is_valid {

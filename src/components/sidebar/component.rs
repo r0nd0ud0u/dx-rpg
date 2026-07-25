@@ -46,13 +46,18 @@ pub fn Sidebar(
 ) -> Element {
     rsx! {
         Sheet { open: open(), on_open_change: move |v| open.set(v),
-            SheetContent { side: SheetSide::Left, class: Some("sidebar-content".to_owned()),
+            SheetContent {
+                side: SheetSide::Left,
+                class: Some("sidebar-content".to_owned()),
                 if let Some(t) = title {
                     SheetHeader {
                         SheetTitle { "{t}" }
                     }
                 }
-                ScrollArea { direction: ScrollDirection::Vertical, width: "100%", height: "100%",
+                ScrollArea {
+                    direction: ScrollDirection::Vertical,
+                    width: "100%",
+                    height: "100%",
                     div { class: "sidebar-nav", {children} }
                 }
             }
