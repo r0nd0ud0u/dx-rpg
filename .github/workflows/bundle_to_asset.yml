@@ -87,6 +87,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Sync package version to git tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag_version="${GITHUB_REF#refs/tags/v}"
+          sed -i "0,/^version = \".*\"/s//version = \"${tag_version}\"/" Cargo.toml
+          grep -m1 '^version' Cargo.toml
+        shell: bash
+
       - name: Update rust
         run: rustup update stable
 
@@ -159,6 +167,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+
+      - name: Sync package version to git tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag_version="${GITHUB_REF#refs/tags/v}"
+          sed -i "0,/^version = \".*\"/s//version = \"${tag_version}\"/" Cargo.toml
+          grep -m1 '^version' Cargo.toml
+        shell: bash
 
       - name: Update rust
         run: rustup update stable
