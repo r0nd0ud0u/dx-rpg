@@ -91,6 +91,15 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           tag_version="${GITHUB_REF#refs/tags/v}"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            # NSIS's VIProductVersion field requires a strict X.X.X.X numeric
+            # format and rejects semver prerelease suffixes outright ("Error:
+            # invalid VIProductVersion format, should be X.X.X.X"), so an rc tag
+            # like v0.5.6-rc4 fails the Windows installer build. Strip the
+            # suffix for this leg only; the Linux desktop build has no such
+            # constraint and keeps the full tag.
+            tag_version="${tag_version%%-*}"
+          fi
           sed -i "0,/^version = \".*\"/s//version = \"${tag_version}\"/" Cargo.toml
           grep -m1 '^version' Cargo.toml
         shell: bash
