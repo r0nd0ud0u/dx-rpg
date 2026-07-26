@@ -239,10 +239,14 @@ pub async fn on_rcv_client_event(
                                 remove_character_on_server_data(&server_name, &player_key);
                             }
                             Ok(ClientEvent::LaunchAttack(server_name, selected_atk)) => {
-                                tracing::info!("A new atk has been launched with atk {} for server {}", selected_atk, server_name);
-                                update_core_game_data_after_atk(&server_name, Some(&selected_atk), tx_server.clone()).await;
-                                // is ennemy turn ? 
-                                process_ennemy_atk(&server_name, tx_server.clone()).await;
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("A new atk has been launched with atk {} for server {}", selected_atk, server_name);
+                                    update_core_game_data_after_atk(&server_name, Some(&selected_atk), tx_server.clone()).await;
+                                    // is ennemy turn ?
+                                    process_ennemy_atk(&server_name, tx_server.clone()).await;
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::JoinServerData(server_name, player_name)) => {
                                 tracing::info!("Player {} with id {} is joining server data for server {}", player_name, client_id, server_name);
@@ -269,61 +273,109 @@ pub async fn on_rcv_client_event(
                                 send_disconnection_to_server_data(client_id, &server_name, &player_name).await;
                             }
                             Ok(ClientEvent::RequestTargetedCharacter(server_name, launcher_name, atk_name)) => {
-                                tracing::info!("Client {} requested update target with target {} and atk {}", client_id, launcher_name, atk_name);
-                                request_set_targeted_characters(&server_name, &launcher_name, &atk_name);
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Client {} requested update target with target {} and atk {}", client_id, launcher_name, atk_name);
+                                    request_set_targeted_characters(&server_name, &launcher_name, &atk_name);
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::RequestSetOneTarget(server_name, launcher_name, atk_name, target_name)) => {
-                                tracing::info!("Client {} requested update target with target {} and atk {}", client_id, launcher_name, atk_name);
-                                request_set_one_target(&server_name, &launcher_name, &atk_name, &target_name);
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Client {} requested update target with target {} and atk {}", client_id, launcher_name, atk_name);
+                                    request_set_one_target(&server_name, &launcher_name, &atk_name, &target_name);
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::SaveGame(server_name, player_name)) => {
-                                tracing::info!("Client {} requested save game by {}", client_id, player_name);
-                                process_save_game(&server_name, &player_name).await;
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Client {} requested save game by {}", client_id, player_name);
+                                    process_save_game(&server_name, &player_name).await;
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::AddLog(server_name, logs)) => {
-                                tracing::info!("Client {} requested to add logs, len: {}", client_id, logs.len());
-                                add_log_to_app(&server_name, logs);
-                                update_clients_server_data(&server_name);
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Client {} requested to add logs, len: {}", client_id, logs.len());
+                                    add_log_to_app(&server_name, logs);
+                                    update_clients_server_data(&server_name);
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::RequestToggleEquip(equipment_unique_name, character_id_name, server_name)) => {
-                                tracing::info!("Client {} requested to toggle equip for equipment {} by character {} on server {}", client_id, equipment_unique_name, character_id_name, server_name);
-                                request_toggle_equip(&equipment_unique_name, &character_id_name, &server_name).await;
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Client {} requested to toggle equip for equipment {} by character {} on server {}", client_id, equipment_unique_name, character_id_name, server_name);
+                                    request_toggle_equip(&equipment_unique_name, &character_id_name, &server_name).await;
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::RequestMarkEquipSeen(category_key, character_id_name, server_name)) => {
-                                tracing::info!("Client {} marking equip category {} as seen for character {} on server {}", client_id, category_key, character_id_name, server_name);
-                                request_mark_equip_seen(&category_key, &character_id_name, &server_name);
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Client {} marking equip category {} as seen for character {} on server {}", client_id, category_key, character_id_name, server_name);
+                                    request_mark_equip_seen(&category_key, &character_id_name, &server_name);
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::LoadNextScenario(server_name, auto_save)) => {
-                                tracing::info!("Client {} requested to load next scenario for server {} (auto_save={auto_save})", client_id, server_name);
-                                let _ = process_load_next_scenario(&server_name, auto_save).await;
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Client {} requested to load next scenario for server {} (auto_save={auto_save})", client_id, server_name);
+                                    let _ = process_load_next_scenario(&server_name, auto_save).await;
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::RequestTargetForConsumable(server_name, player_name, consumable_name, is_party)) => {
-                                tracing::info!("Player {} requesting targets for consumable {} (party={}) on server {}", player_name, consumable_name, is_party, server_name);
-                                request_target_for_consumable_handler(&server_name, &player_name, &consumable_name, is_party);
-                                update_clients_server_data(&server_name);
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Player {} requesting targets for consumable {} (party={}) on server {}", player_name, consumable_name, is_party, server_name);
+                                    request_target_for_consumable_handler(&server_name, &player_name, &consumable_name, is_party);
+                                    update_clients_server_data(&server_name);
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::UsePotion(server_name, player_name, potion_name, target_id_name)) => {
-                                tracing::info!("Player {} using potion {} on target {} on server {}", player_name, potion_name, target_id_name, server_name);
-                                use_potion_handler(&server_name, &player_name, &potion_name, &target_id_name);
-                                // Using a potion counts as the turn action — advance the turn
-                                update_core_game_data_after_atk(&server_name, None, tx_server.clone()).await;
-                                process_ennemy_atk(&server_name, tx_server.clone()).await;
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Player {} using potion {} on target {} on server {}", player_name, potion_name, target_id_name, server_name);
+                                    use_potion_handler(&server_name, &player_name, &potion_name, &target_id_name);
+                                    // Using a potion counts as the turn action — advance the turn
+                                    update_core_game_data_after_atk(&server_name, None, tx_server.clone()).await;
+                                    process_ennemy_atk(&server_name, tx_server.clone()).await;
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::UsePartyPotion(server_name, player_name, potion_name, target_id_name)) => {
-                                tracing::info!("Player {} using party potion {} on target {} on server {}", player_name, potion_name, target_id_name, server_name);
-                                use_party_potion_handler(&server_name, &player_name, &potion_name, &target_id_name);
-                                update_core_game_data_after_atk(&server_name, None, tx_server.clone()).await;
-                                process_ennemy_atk(&server_name, tx_server.clone()).await;
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Player {} using party potion {} on target {} on server {}", player_name, potion_name, target_id_name, server_name);
+                                    use_party_potion_handler(&server_name, &player_name, &potion_name, &target_id_name);
+                                    update_core_game_data_after_atk(&server_name, None, tx_server.clone()).await;
+                                    process_ennemy_atk(&server_name, tx_server.clone()).await;
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::BuyItem(server_name, character_id_name, item_name, item_kind)) => {
-                                tracing::info!("Character {} buying '{}' ({}) on server {}", character_id_name, item_name, item_kind, server_name);
-                                buy_item_handler(&server_name, &character_id_name, &item_name, &item_kind);
-                                update_clients_server_data(&server_name);
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Character {} buying '{}' ({}) on server {}", character_id_name, item_name, item_kind, server_name);
+                                    buy_item_handler(&server_name, &character_id_name, &item_name, &item_kind);
+                                    update_clients_server_data(&server_name);
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::SellItem(server_name, character_id_name, item_name, item_kind)) => {
-                                tracing::info!("Character {} selling '{}' ({}) on server {}", character_id_name, item_name, item_kind, server_name);
-                                sell_item_handler(&server_name, &character_id_name, &item_name, &item_kind);
-                                update_clients_server_data(&server_name);
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Character {} selling '{}' ({}) on server {}", character_id_name, item_name, item_kind, server_name);
+                                    sell_item_handler(&server_name, &character_id_name, &item_name, &item_kind);
+                                    update_clients_server_data(&server_name);
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::MovePlayer(server_name, player_name, dir, lang)) => {
                                 tracing::debug!("Player {} moving {:?} on server {}", player_name, dir, server_name);
@@ -338,28 +390,48 @@ pub async fn on_rcv_client_event(
                                 overworld_dismiss_dialog_handler(&server_name, &player_name);
                             }
                             Ok(ClientEvent::EnterOverworld(server_name, map_id)) => {
-                                tracing::info!("Entering overworld map '{}' on server {}", map_id, server_name);
-                                // Auto-save on returning to (or entering) the overworld so a
-                                // reload resumes here instead of at the last manual save.
-                                if let Some(owner) = overworld_enter_handler(&server_name, &map_id, None) {
-                                    process_save_game(&server_name, &owner).await;
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Entering overworld map '{}' on server {}", map_id, server_name);
+                                    // Auto-save on returning to (or entering) the overworld so a
+                                    // reload resumes here instead of at the last manual save.
+                                    if let Some(owner) = overworld_enter_handler(&server_name, &map_id, None) {
+                                        process_save_game(&server_name, &owner).await;
+                                    }
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
                                 }
                             }
                             Ok(ClientEvent::ExitOverworld(server_name)) => {
-                                tracing::info!("Exiting overworld on server {}", server_name);
-                                overworld_exit_handler(&server_name);
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Exiting overworld on server {}", server_name);
+                                    overworld_exit_handler(&server_name);
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::RequestUnlockTalent(server_name, character_id_name, talent_id)) => {
-                                tracing::info!("Character {} unlocking talent '{}' on server {}", character_id_name, talent_id, server_name);
-                                request_unlock_talent(&server_name, &character_id_name, &talent_id);
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Character {} unlocking talent '{}' on server {}", character_id_name, talent_id, server_name);
+                                    request_unlock_talent(&server_name, &character_id_name, &talent_id);
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::RequestRespecTalents(server_name, character_id_name)) => {
-                                tracing::info!("Character {} respeccing talents on server {}", character_id_name, server_name);
-                                request_respec_talents(&server_name, &character_id_name);
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Character {} respeccing talents on server {}", character_id_name, server_name);
+                                    request_respec_talents(&server_name, &character_id_name);
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Ok(ClientEvent::RequestMarkTalentSeen(server_name, character_id_name)) => {
-                                tracing::info!("Character {} marking talent points as seen on server {}", character_id_name, server_name);
-                                request_mark_talent_seen(&server_name, &character_id_name);
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Character {} marking talent points as seen on server {}", character_id_name, server_name);
+                                    request_mark_talent_seen(&server_name, &character_id_name);
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
                             }
                             Err(_) => {
                                 // ClientEvent::ConnectionClosed
@@ -386,6 +458,30 @@ pub async fn on_rcv_client_event(
 /// the real-time source of truth `login()` checks in addition to the DB's `is_connected`
 /// flag, since that flag can lag behind (or outlive) the actual live connection state
 /// (a crash that skipped clean disconnect, a reconnect racing the grace-period timer, etc.).
+/// Returns true if `client_id` may submit game actions on `server_name` — either the server's
+/// owner, or a party member who joined via the lobby (assigned at least one character via
+/// `AddCharacterOnServerData`). A client that only reached the server through a bare
+/// `JoinServerData` — e.g. "Join Ongoing Game", spectating an already-started game without ever
+/// picking a character in the lobby — is read-only: it still receives `ServerData`/board updates
+/// like any other `players_info` member (see `send_server_event_to_clients`'s membership filter),
+/// but is blocked here from acting.
+#[cfg(feature = "server")]
+fn client_can_act(server_name: &str, client_id: u32) -> bool {
+    let sm = SERVER_MANAGER.lock().unwrap();
+    let Some(server_data) = sm.servers_data.get(server_name) else {
+        return false;
+    };
+    server_data
+        .players_data
+        .players_info
+        .iter()
+        .any(|(player_name, info)| {
+            info.player_ids.contains(&client_id)
+                && (*player_name == server_data.players_data.owner_player_name
+                    || !info.character_id_names.is_empty())
+        })
+}
+
 #[cfg(feature = "server")]
 pub fn is_username_connected(name: &str) -> bool {
     SERVER_MANAGER

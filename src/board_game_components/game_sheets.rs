@@ -901,9 +901,60 @@ fn LogsSheet(s: SheetSide) -> Element {
     }
 }
 
+/// Builds a canonical(French)-name → localized-name lookup from every attack currently held by
+/// the active heroes/bosses, so log lines built server-side (always in the canonical French
+/// `name`, since lib-rpg has no UI/i18n concept) can be re-displayed in the viewer's language.
+fn build_atk_name_translations(
+    server_data: &ServerData,
+    lang: lib_rpg::common::lang::Lang,
+) -> std::collections::HashMap<String, String> {
+    let gm = &server_data.core_game_data.game_manager;
+    gm.pm
+        .active_heroes
+        .iter()
+        .chain(gm.pm.active_bosses.iter())
+        .flat_map(|c| c.attacks_list.values())
+        .map(|atk| (atk.name.clone(), atk.name_for(lang).to_owned()))
+        .collect()
+}
+
+/// Replaces the attack name embedded in a `"... uses {atk_name}]"` log line (the only message
+/// shape that carries one — see `GameAtkEffect::log_text()`/`build_logs_atk()` in lib-rpg) with
+/// its localized form, looked up from `name_map`. Leaves the message untouched if the shape
+/// doesn't match or the name isn't found (e.g. a since-removed character's attack).
+fn translate_atk_name_in_log(
+    message: &str,
+    name_map: &std::collections::HashMap<String, String>,
+) -> String {
+    const MARKER: &str = " uses ";
+    let Some(marker_pos) = message.find(MARKER) else {
+        return message.to_owned();
+    };
+    let after = &message[marker_pos + MARKER.len()..];
+    let Some(close_idx) = after.rfind(']') else {
+        return message.to_owned();
+    };
+    let Some(localized) = name_map.get(after[..close_idx].trim()) else {
+        return message.to_owned();
+    };
+    format!(
+        "{}{}{}",
+        &message[..marker_pos + MARKER.len()],
+        localized,
+        &after[close_idx..]
+    )
+}
+
 /// Filtered, colored list of log entries — newest first.
 #[component]
 fn LogsList(logs: Vec<LogData>, filter: String) -> Element {
+    let server_data = use_context::<Signal<ServerData>>();
+    let app_lang = use_context::<CtxAppLang>().0;
+    let lang = lang_from_app_lang(&app_lang());
+    // French is the canonical language baked into every log message — nothing to translate.
+    let name_map = (lang != lib_rpg::common::lang::Lang::Fr)
+        .then(|| build_atk_name_translations(&server_data(), lang));
+
     let filtered: Vec<&LogData> = logs
         .iter()
         .rev()
@@ -932,7 +983,13 @@ fn LogsList(logs: Vec<LogData>, filter: String) -> Element {
                 }
                 for log in filtered {
                     {
-                        let msg = log.message.replace('\n', "<br/>");
+                        let translated = name_map
+                            .as_ref()
+                            .map(|m| translate_atk_name_in_log(&log.message, m));
+                        let msg = translated
+                            .as_deref()
+                            .unwrap_or(&log.message)
+                            .replace('\n', "<br/>");
                         rsx! {
                             div {
                                 style: "padding: 4px 8px; margin: 2px 0; border-left: 3px solid {log.color}; border-radius: 0 4px 4px 0; font-size: 0.82rem; color: {log.color}; word-break: break-word;",
