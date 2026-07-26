@@ -138,7 +138,11 @@ fn main() {
         use axum_session_auth::AuthConfig;
         use axum_session_sqlx::SessionSqlitePool;
         use dx_rpg::{
-            auth_manager::{auth::AuthLayer, db::get_db, server_fn::update_all_connection_status},
+            auth_manager::{
+                auth::AuthLayer,
+                db::get_db,
+                server_fn::{auth_rate_limit, update_all_connection_status},
+            },
             websocket_handler::STARTING_CLIENT_ID,
         };
 
@@ -173,6 +177,7 @@ fn main() {
         // Create an axum router that dioxus will attach the app to
         Ok(dioxus::server::router(App)
             .route("/img-srv/{filename}", axum::routing::get(serve_img_handler))
+            .layer(axum::middleware::from_fn(auth_rate_limit))
             .layer(AuthLayer::new(Some(pool.clone())).with_config(
                 AuthConfig::<i64>::default().with_anonymous_user_id(Some(STARTING_CLIENT_ID)),
             ))
