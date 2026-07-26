@@ -20,6 +20,69 @@ use std::{collections::HashMap, sync::Mutex};
 pub static LOGIN_PROOFS: Lazy<Mutex<HashMap<String, String>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
+/// Brute-force/spam guard for `/api/user/login` and `/api/register`: allows 3 requests back to
+/// back per client (normal mistyped-password tolerance), then replenishes 1 every 12s (~5/min
+/// steady state).
+///
+/// Keyed per client IP, read from the `X-Forwarded-For` (falling back to `X-Real-IP`) header set
+#[cfg(feature = "server")]
+static AUTH_RATE_LIMITER: Lazy<governor::DefaultKeyedRateLimiter<String>> = Lazy::new(|| {
+    governor::RateLimiter::keyed(
+        governor::Quota::with_period(std::time::Duration::from_secs(12))
+            .expect("12s is a valid quota period")
+            .allow_burst(std::num::NonZeroU32::new(3).expect("3 is nonzero")),
+    )
+});
+
+/// Extracts the client's IP from reverse-proxy headers for keying `AUTH_RATE_LIMITER`. See that
+/// static's doc comment for why this — not `ConnectInfo` — is the source of truth here.
+#[cfg(feature = "server")]
+fn client_ip_key(headers: &axum::http::HeaderMap) -> String {
+    // X-Forwarded-For can be a comma-separated chain (client, proxy1, proxy2, ...) — the
+    // original client is the first entry.
+    if let Some(first_ip) = headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(str::trim)
+        .filter(|ip| !ip.is_empty())
+    {
+        return first_ip.to_owned();
+    }
+    if let Some(ip) = headers
+        .get("x-real-ip")
+        .and_then(|v| v.to_str().ok())
+        .map(str::trim)
+        .filter(|ip| !ip.is_empty())
+    {
+        return ip.to_owned();
+    }
+    "unknown".to_owned()
+}
+
+/// Axum middleware wiring `AUTH_RATE_LIMITER` to just the login/register paths — see that
+/// static's doc comment for the per-IP key extraction and its local-dev fallback.
+#[cfg(feature = "server")]
+pub async fn auth_rate_limit(
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    use axum::response::IntoResponse;
+    let path = req.uri().path();
+    if (path == "/api/user/login" || path == "/api/register")
+        && AUTH_RATE_LIMITER
+            .check_key(&client_ip_key(req.headers()))
+            .is_err()
+    {
+        return (
+            axum::http::StatusCode::TOO_MANY_REQUESTS,
+            "Too many attempts, please wait a moment.",
+        )
+            .into_response();
+    }
+    next.run(req).await
+}
+
 /// Returns whether password authentication is required, driven by the `USE_PASSWORD` env var.
 #[post("/api/get_use_password")]
 pub async fn get_use_password() -> Result<bool, ServerFnError> {

@@ -37,6 +37,7 @@ axum = { version = "0.8.9", features = ["macros"], optional = true }
 tower-http = { version = "0.7.0", features = ["auth"], optional = true }
 http = { version = "1.4.2", optional = true }
 tower = { version = "0.5.3", optional = true }
+governor = { version = "0.10", optional = true }
 execute = "0.2.15"
 dioxus-web = { version = "0.7.9", features = ["hydrate"], optional = true }
 axum_session = { version = "0.20.1", optional = true }
@@ -67,6 +68,7 @@ server = [
     "dep:sqlx",
     "dep:http",
     "dep:tower",
+    "dep:governor",
     "dep:axum_session",
     "dep:axum_session_auth",
     "dep:axum_session_sqlx",
