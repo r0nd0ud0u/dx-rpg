@@ -66,8 +66,9 @@ Infomaniak provides network-level DDoS mitigation (Arbor Networks)
 automatically for VPS Cloud/Lite — no setup needed, covers volumetric
 attacks (SYN/UDP floods, amplification). It does **not** cover
 application-layer abuse (HTTP/websocket floods from many IPs, brute
-force) — that's what the rate limiting above and `tower-governor` (in the
-app itself) are for.
+force) — that's what the rate limiting above, the app's own login/register
+limiter (`auth_rate_limit` in `src/auth_manager/server_fn/auth.rs`, built on
+the `governor` crate), and `fail2ban` (see `FAIL2BAN.md`) are for.
 
 ## Deploying a config change
 
