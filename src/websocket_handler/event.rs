@@ -531,6 +531,53 @@ pub fn send_logout_to_server(user_name: String, client_id: u32) {
     }
 }
 
+/// Admin-triggered account deletion: immediately force-logs-out every live session
+/// `username` currently has (no reconnect grace period, unlike a normal disconnect —
+/// the account is being deleted, so there's nothing to reconnect to) and drops it from
+/// `SERVER_MANAGER`'s live-session bookkeeping so a stale client can't silently rejoin
+/// via `AddPlayer`/`LoginAllSessions` afterward.
+#[cfg(feature = "server")]
+pub fn force_logout_user(username: &str) {
+    use crate::auth_manager::server_fn::auth::LOGIN_PROOFS;
+
+    let (client_ids, affected_servers) = {
+        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let client_ids = sm.players.remove(username).unwrap_or_default();
+        sm.device_tokens.remove(username);
+        let affected: Vec<String> = sm
+            .servers_data
+            .iter_mut()
+            .filter_map(|(server_name, server_data)| {
+                let was_present = server_data
+                    .players_data
+                    .players_info
+                    .contains_key(username);
+                server_data
+                    .players_data
+                    .players_info
+                    .retain(|player_name, _| player_name != username);
+                was_present.then(|| server_name.clone())
+            })
+            .collect();
+        (client_ids, affected)
+    };
+
+    {
+        let clients = CLIENTS.lock().unwrap();
+        for id in &client_ids {
+            if let Some(sender) = clients.get(&(*id as usize)) {
+                let _ = sender.send(ServerEvent::LogOut);
+            }
+        }
+    }
+
+    for server_name in affected_servers {
+        update_clients_server_data(&server_name);
+    }
+
+    LOGIN_PROOFS.lock().unwrap().remove(username);
+}
+
 #[cfg(feature = "server")]
 pub async fn send_disconnection_to_server_manager(client_id: u32) {
     use crate::auth_manager::server_fn::auth::LOGIN_PROOFS;

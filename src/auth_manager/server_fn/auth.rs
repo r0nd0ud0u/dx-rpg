@@ -248,7 +248,10 @@ pub async fn delete_user(
                         .execute(pool)
                         .await
                     {
-                        Ok(_) => Ok(()),
+                        Ok(_) => {
+                            cleanup_after_user_deletion(&username);
+                            Ok(())
+                        }
                         Err(e) => Err(ServerFnError::new(format!("{}", e))),
                     }
                 } else {
@@ -260,10 +263,32 @@ pub async fn delete_user(
                     .execute(pool)
                     .await
                 {
-                    Ok(_) => Ok(()),
+                    Ok(_) => {
+                        cleanup_after_user_deletion(&username);
+                        Ok(())
+                    }
                     Err(e) => Err(ServerFnError::new(format!("{}", e))),
                 }
             }
+        }
+    }
+}
+
+/// Runs the side effects of deleting a user account that aren't the `users` row itself:
+/// force-logs-out any live session for them (so a currently-connected admin target doesn't
+/// keep sitting in-game on a deleted account) and removes their saved games from disk.
+#[cfg(feature = "server")]
+fn cleanup_after_user_deletion(username: &str) {
+    crate::websocket_handler::event::force_logout_user(username);
+
+    let save_dir = crate::common::SAVED_DATA.join(username);
+    if save_dir.exists() {
+        if let Err(e) = std::fs::remove_dir_all(&save_dir) {
+            tracing::warn!(
+                "cleanup_after_user_deletion: failed to remove save dir for {}: {}",
+                username,
+                e
+            );
         }
     }
 }
