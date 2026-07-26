@@ -548,10 +548,7 @@ pub fn force_logout_user(username: &str) {
             .servers_data
             .iter_mut()
             .filter_map(|(server_name, server_data)| {
-                let was_present = server_data
-                    .players_data
-                    .players_info
-                    .contains_key(username);
+                let was_present = server_data.players_data.players_info.contains_key(username);
                 server_data
                     .players_data
                     .players_info
