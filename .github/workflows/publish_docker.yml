@@ -22,6 +22,12 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v7
 
+      - name: Sync package version to git tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag_version="${GITHUB_REF#refs/tags/v}"
+          sed -i "0,/^version = \".*\"/s//version = \"${tag_version}\"/" Cargo.toml
+          grep -m1 '^version' Cargo.toml
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 

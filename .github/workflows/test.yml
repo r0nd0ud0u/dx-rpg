@@ -36,11 +36,18 @@ jobs:
       - name: Update rust
         run: rustup update stable
     
+      # `cargo install cargo-binstall` builds it from source and is prone to
+      # breaking on upstream dependency-resolution conflicts in its own Cargo.lock
+      # (e.g. duplicate incompatible `compact_str` versions) since `cargo install`
+      # doesn't respect the published crate's lockfile by default. The official
+      # action instead fetches a prebuilt cargo-binstall binary for the runner's
+      # platform, sidestepping that entirely.
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.21.0
+
       - name: install dioxus
         shell: bash
-        run: |
-          cargo install cargo-binstall
-          cargo binstall dioxus-cli@0.7.9 --force
+        run: cargo binstall dioxus-cli@0.7.9 --force
       
       # https://github.com/DioxusLabs/dioxus/issues/3433
       # - name: check dioxus formatting
