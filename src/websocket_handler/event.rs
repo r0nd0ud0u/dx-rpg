@@ -671,6 +671,15 @@ pub fn force_logout_user(username: &str) {
     LOGIN_PROOFS.lock().unwrap().remove(username);
 }
 
+// How long the server waits for a dropped connection to come back before treating it as a
+// real logout (clearing is_connected + LOGIN_PROOFS). A plain page reload (F5) or a brief
+// network blip reconnects in well under a second, so this mostly exists to cover the native
+// mobile client: backgrounding/closing the Android app can suspend its process and network
+// access for several seconds before the client's own reconnect loop (see main.rs's ws-loop)
+// gets scheduled again and re-establishes the socket.
+#[cfg(feature = "server")]
+const DISCONNECT_GRACE_PERIOD: std::time::Duration = std::time::Duration::from_secs(30);
+
 #[cfg(feature = "server")]
 pub async fn send_disconnection_to_server_manager(client_id: u32) {
     use crate::auth_manager::server_fn::auth::LOGIN_PROOFS;
@@ -790,7 +799,7 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
     // entry in `sm.servers_data`) by the time the grace period elapses.
     let username_for_grace = username.clone();
     tokio::spawn(async move {
-        sleep(std::time::Duration::from_secs(3)).await;
+        sleep(DISCONNECT_GRACE_PERIOD).await;
         let reconnected = {
             let sm = SERVER_MANAGER.lock().unwrap();
             sm.players.contains_key(&username_for_grace)

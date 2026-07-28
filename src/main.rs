@@ -484,127 +484,159 @@ fn App() -> Element {
     }
 
     // Receive events from the websocket and update local signals.
+    //
+    // Wrapped in an outer reconnect loop: `use_websocket` establishes the connection once and
     use_future(move || {
         let mut socket = socket;
         async move {
-            tracing::info!("[client] ws-loop starting");
-            while let Ok(event) = socket.recv().await {
-                tracing::debug!("[client] ws-loop: received an event");
-                match event {
-                    ServerEvent::NewClientOnExistingPlayer(msg, client_id) => {
-                        message.set(msg);
-                        let login_name_session_local_sync = login_name_session_local_sync();
-                        let login_id_session_local_sync = login_id_session_local_sync();
-                        // re-send SetName to server
-                        if login_name_session_local_sync != *DISCONNECTED_USER
-                            && login_id_session_local_sync != NO_CLIENT_ID
-                        {
-                            let _ = socket
-                                .clone()
-                                .send(ClientEvent::AddPlayer(
-                                    login_name_session_local_sync.clone(),
-                                    device_token_local_sync(),
-                                ))
-                                .await;
-                            tracing::info!(
-                                "Client {} sent AddPlayer for player {} (id {})",
-                                client_id,
-                                login_name_session_local_sync,
-                                login_id_session_local_sync
-                            );
-                            let _ = socket
-                                .clone()
-                                .send(ClientEvent::RequestSavedGameList(
-                                    login_name_session_local_sync.clone(),
-                                ))
-                                .await;
-                            let _ = socket
-                                .clone()
-                                .send(ClientEvent::RequestOnGoingGamesList)
-                                .await;
+            loop {
+                tracing::info!("[client] ws-loop starting");
+                while let Ok(event) = socket.recv().await {
+                    tracing::debug!("[client] ws-loop: received an event");
+                    match event {
+                        ServerEvent::NewClientOnExistingPlayer(msg, client_id) => {
+                            message.set(msg);
+                            let login_name_session_local_sync = login_name_session_local_sync();
+                            let login_id_session_local_sync = login_id_session_local_sync();
+                            // re-send SetName to server
+                            if login_name_session_local_sync != *DISCONNECTED_USER
+                                && login_id_session_local_sync != NO_CLIENT_ID
+                            {
+                                let _ = socket
+                                    .clone()
+                                    .send(ClientEvent::AddPlayer(
+                                        login_name_session_local_sync.clone(),
+                                        device_token_local_sync(),
+                                    ))
+                                    .await;
+                                tracing::info!(
+                                    "Client {} sent AddPlayer for player {} (id {})",
+                                    client_id,
+                                    login_name_session_local_sync,
+                                    login_id_session_local_sync
+                                );
+                                let _ = socket
+                                    .clone()
+                                    .send(ClientEvent::RequestSavedGameList(
+                                        login_name_session_local_sync.clone(),
+                                    ))
+                                    .await;
+                                let _ = socket
+                                    .clone()
+                                    .send(ClientEvent::RequestOnGoingGamesList)
+                                    .await;
+                            }
                         }
-                    }
-                    ServerEvent::InitClient(id, characters_list) => {
-                        player_client_id.set(id);
-                        // set character list
-                        all_characters_names.set(characters_list);
-                        tracing::info!(
-                            "Client {} received characters list with {} characters",
-                            id,
-                            all_characters_names().len(),
-                        );
-                    }
-                    ServerEvent::UpdateServerData(server_data_update) => {
-                        // update server info
-                        server_data.set(*server_data_update.clone());
-                        *SERVER_NAME.write() =
-                            server_data_update.core_game_data.server_name.clone();
-                    }
-                    ServerEvent::UpdateOngoingGames(ongoing_games_update) => {
-                        ongoing_games.set(ongoing_games_update);
-                    }
-                    ServerEvent::ReconnectAllSessions(username, sql_id) => {
-                        let login_name_session_local_sync = login_name_session_local_sync();
-                        let login_id_session_local_sync = login_id_session_local_sync();
-                        if login_name_session_local_sync == username
-                            && login_id_session_local_sync == sql_id
-                        {
+                        ServerEvent::InitClient(id, characters_list) => {
+                            player_client_id.set(id);
+                            // set character list
+                            all_characters_names.set(characters_list);
                             tracing::info!(
-                                "ReconnectAllSessions for player {}",
-                                login_name_session_local_sync
-                            );
-                            let _ = socket
-                                .clone()
-                                .send(ClientEvent::AddPlayer(
-                                    login_name_session_local_sync.clone(),
-                                    device_token_local_sync(),
-                                ))
-                                .await;
-                        } else {
-                            tracing::info!(
-                                "Skipping ReconnectAllSessions for player {} (username: {}, sql_id: {})",
-                                login_name_session_local_sync,
-                                username,
-                                sql_id
+                                "Client {} received characters list with {} characters",
+                                id,
+                                all_characters_names().len(),
                             );
                         }
-                    }
-                    ServerEvent::AnswerSavedGameList(games_list) => {
-                        tracing::info!("Received saved game list with {} games", games_list.len());
-                        saved_game_list.set(games_list);
-                    }
-                    ServerEvent::ResetClientFromServerData => {
-                        tracing::info!("Reset client from server-data {}", SERVER_NAME());
-                        server_data.set(ServerData::reset(GamePhase::Ended));
-                        SERVER_NAME.write().clear();
-                    }
-                    ServerEvent::LogOut => {
-                        tracing::info!("Received LogOut event, resetting client data");
-                        server_data.set(ServerData::default());
-                        SERVER_NAME.write().clear();
-                        login_name_session_local_sync.set(DISCONNECTED_USER.clone());
-                        login_id_session_local_sync.set(NO_CLIENT_ID);
-                    }
-                    ServerEvent::SetAtkAnimation(is_animated) => {
-                        tracing::debug!("Received SetAtkAnimation event");
-                        toggle_atk_animation.set(is_animated);
-                    }
-                    ServerEvent::OverworldEntered(map_id) => {
-                        tracing::info!("[client] OverworldEntered: {}", map_id);
-                        overworld_map_id.set(Some(map_id));
-                    }
-                    ServerEvent::UpdateOverworld(overworld_update) => {
-                        server_data.write().core_game_data.overworld = Some(*overworld_update);
-                    }
-                    ServerEvent::UpdateCombat(combat_update) => {
-                        server_data
-                            .write()
-                            .core_game_data
-                            .apply_combat_update(*combat_update);
+                        ServerEvent::UpdateServerData(server_data_update) => {
+                            // update server info
+                            server_data.set(*server_data_update.clone());
+                            *SERVER_NAME.write() =
+                                server_data_update.core_game_data.server_name.clone();
+                        }
+                        ServerEvent::UpdateOngoingGames(ongoing_games_update) => {
+                            ongoing_games.set(ongoing_games_update);
+                        }
+                        ServerEvent::ReconnectAllSessions(username, sql_id) => {
+                            let login_name_session_local_sync = login_name_session_local_sync();
+                            let login_id_session_local_sync = login_id_session_local_sync();
+                            if login_name_session_local_sync == username
+                                && login_id_session_local_sync == sql_id
+                            {
+                                tracing::info!(
+                                    "ReconnectAllSessions for player {}",
+                                    login_name_session_local_sync
+                                );
+                                let _ = socket
+                                    .clone()
+                                    .send(ClientEvent::AddPlayer(
+                                        login_name_session_local_sync.clone(),
+                                        device_token_local_sync(),
+                                    ))
+                                    .await;
+                            } else {
+                                tracing::info!(
+                                    "Skipping ReconnectAllSessions for player {} (username: {}, sql_id: {})",
+                                    login_name_session_local_sync,
+                                    username,
+                                    sql_id
+                                );
+                            }
+                        }
+                        ServerEvent::AnswerSavedGameList(games_list) => {
+                            tracing::info!(
+                                "Received saved game list with {} games",
+                                games_list.len()
+                            );
+                            saved_game_list.set(games_list);
+                        }
+                        ServerEvent::ResetClientFromServerData => {
+                            tracing::info!("Reset client from server-data {}", SERVER_NAME());
+                            server_data.set(ServerData::reset(GamePhase::Ended));
+                            SERVER_NAME.write().clear();
+                        }
+                        ServerEvent::LogOut => {
+                            tracing::info!("Received LogOut event, resetting client data");
+                            server_data.set(ServerData::default());
+                            SERVER_NAME.write().clear();
+                            login_name_session_local_sync.set(DISCONNECTED_USER.clone());
+                            login_id_session_local_sync.set(NO_CLIENT_ID);
+                        }
+                        ServerEvent::SetAtkAnimation(is_animated) => {
+                            tracing::debug!("Received SetAtkAnimation event");
+                            toggle_atk_animation.set(is_animated);
+                        }
+                        ServerEvent::OverworldEntered(map_id) => {
+                            tracing::info!("[client] OverworldEntered: {}", map_id);
+                            overworld_map_id.set(Some(map_id));
+                        }
+                        ServerEvent::UpdateOverworld(overworld_update) => {
+                            server_data.write().core_game_data.overworld = Some(*overworld_update);
+                        }
+                        ServerEvent::UpdateCombat(combat_update) => {
+                            server_data
+                                .write()
+                                .core_game_data
+                                .apply_combat_update(*combat_update);
+                        }
                     }
                 }
+                tracing::warn!(
+                    "[client] ws-loop: connection lost (deserialization error or socket closed), reconnecting"
+                );
+
+                // Capped exponential backoff: reconnect quickly on the first attempts (matters
+                // for a briefly backgrounded mobile client racing the server's grace period),
+                // then back off so a genuinely offline client doesn't hammer the server.
+                let mut backoff = std::time::Duration::from_secs(1);
+                const MAX_RECONNECT_BACKOFF: std::time::Duration =
+                    std::time::Duration::from_secs(10);
+                loop {
+                    let reconnect_result = on_rcv_client_event(WebSocketOptions::new()).await;
+                    let reconnected = reconnect_result.is_ok();
+                    if let Err(ref err) = reconnect_result {
+                        tracing::warn!(
+                            "[client] ws-loop: reconnect attempt failed ({err:?}), retrying in {backoff:?}"
+                        );
+                    }
+                    socket.set(reconnect_result);
+                    if reconnected {
+                        tracing::info!("[client] ws-loop: reconnected");
+                        break;
+                    }
+                    dioxus_sdk_time::sleep(backoff).await;
+                    backoff = (backoff * 2).min(MAX_RECONNECT_BACKOFF);
+                }
             }
-            tracing::warn!("[client] ws-loop EXITED — deserialization error or socket closed");
         }
     });
 
