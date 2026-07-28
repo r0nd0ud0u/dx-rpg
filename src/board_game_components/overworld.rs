@@ -140,59 +140,27 @@ pub fn OverworldMap() -> Element {
                 let server_name = SERVER_NAME();
                 let player_name = local_login_name_session();
                 let lang = app_lang();
+                let direction = match e.key() {
+                    Key::ArrowUp => Some(Direction::Up),
+                    Key::ArrowDown => Some(Direction::Down),
+                    Key::ArrowLeft => Some(Direction::Left),
+                    Key::ArrowRight => Some(Direction::Right),
+                    Key::Character(ref s) if s.eq_ignore_ascii_case("w") => Some(Direction::Up),
+                    Key::Character(ref s) if s.eq_ignore_ascii_case("s") => Some(Direction::Down),
+                    Key::Character(ref s) if s.eq_ignore_ascii_case("a") => Some(Direction::Left),
+                    Key::Character(ref s) if s.eq_ignore_ascii_case("d") => {
+                        Some(Direction::Right)
+                    }
+                    _ => None,
+                };
+                if let Some(direction) = direction {
+                    e.prevent_default();
+                    let _ = socket
+                        .send(ClientEvent::MovePlayer(server_name, player_name, direction, lang))
+                        .await;
+                    return;
+                }
                 match e.key() {
-                    Key::ArrowUp => {
-                        e.prevent_default();
-                        let _ = socket
-                            .send(
-                                ClientEvent::MovePlayer(
-                                    server_name,
-                                    player_name,
-                                    Direction::Up,
-                                    lang,
-                                ),
-                            )
-                            .await;
-                    }
-                    Key::ArrowDown => {
-                        e.prevent_default();
-                        let _ = socket
-                            .send(
-                                ClientEvent::MovePlayer(
-                                    server_name,
-                                    player_name,
-                                    Direction::Down,
-                                    lang,
-                                ),
-                            )
-                            .await;
-                    }
-                    Key::ArrowLeft => {
-                        e.prevent_default();
-                        let _ = socket
-                            .send(
-                                ClientEvent::MovePlayer(
-                                    server_name,
-                                    player_name,
-                                    Direction::Left,
-                                    lang,
-                                ),
-                            )
-                            .await;
-                    }
-                    Key::ArrowRight => {
-                        e.prevent_default();
-                        let _ = socket
-                            .send(
-                                ClientEvent::MovePlayer(
-                                    server_name,
-                                    player_name,
-                                    Direction::Right,
-                                    lang,
-                                ),
-                            )
-                            .await;
-                    }
                     Key::Enter => {
                         e.prevent_default();
                         let _ = socket
