@@ -257,15 +257,6 @@ pub fn RunningGamePage() -> Element {
                             {t!("startgame-shop")}
                         }
                         if server_data().players_data.owner_player_name == local_login_name_session() {
-                            Button {
-                                variant: ButtonVariant::GreenType,
-                                onclick: move |_| async move {
-                                    let _ = socket
-                                        .send(ClientEvent::LoadNextScenario(SERVER_NAME(), auto_save_scenario()))
-                                        .await;
-                                },
-                                {t!("startgame-load-next-scenario")}
-                            }
                             if let Some(map_id) = return_map_id.clone() {
                                 Button {
                                     variant: ButtonVariant::GreenType,
