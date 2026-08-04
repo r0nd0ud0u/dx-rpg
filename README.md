@@ -142,7 +142,7 @@ Each setting is stored as an independent context in Dioxus using a distinct newt
 
 ### Store (🛒)
 
-The store is available **between scenarios** (end-of-scenario screen). Click the **🛒 Shop** button in the action bar that appears alongside "Load Next Scenario". The shop panel slides in from the right.
+The store is available **between scenarios** (end-of-scenario screen). Click the **🛒 Shop** button in the action bar that appears alongside "Explore overworld". The shop panel slides in from the right.
 
 During active combat the Store button in the toolbar is locked (🛒 Shop 🔒) — purchasing is only possible while reviewing scenario results.
 

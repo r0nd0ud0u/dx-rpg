@@ -237,7 +237,6 @@ startgame-finishing-blow-dot = ⚔️ Coup fatal (DOT)
 startgame-finishing-blow = ⚔️ Coup fatal
 startgame-enemy-last-attack = Dernière attaque de l'ennemi : { $name }
 startgame-shop = 🛒 Boutique
-startgame-load-next-scenario = ⚡ Charger le scénario suivant
 startgame-explore-overworld = 🗺 Explorer le monde
 startgame-loots = 🎁 Butin
 startgame-level-upgrades = ⬆️ Montées de niveau
