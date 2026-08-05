@@ -77,6 +77,7 @@ pub fn CharacterPanel(
     let show_boss_energy = use_context::<CtxShowBossEnergy>().0;
     let show_hero_aggro = use_context::<CtxShowHeroAggro>().0;
     let show_boss_hp = use_context::<CtxShowBossHp>().0;
+    let app_lang = use_context::<CtxAppLang>().0;
     // get first player of the list
     let current_character = {
         let sd = server_data();
@@ -160,7 +161,10 @@ pub fn CharacterPanel(
     rsx! {
         div { class: class_css, position: "relative",
             CharacterTooltip {
-                hots_bufs: CharacterRoundsInfo::get_hot_and_buf_nbs_txts(&c.character_rounds_info.all_effects),
+                hots_bufs: CharacterRoundsInfo::get_hot_and_buf_nbs_txts(
+                    &c.character_rounds_info.all_effects,
+                    lang_from_app_lang(&app_lang()),
+                ),
                 prefer_left: c.kind == CharacterKind::Boss,
             }
             div {
