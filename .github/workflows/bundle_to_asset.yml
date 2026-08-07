@@ -114,7 +114,12 @@ jobs:
             # like the Windows leg does: both dpkg and rpm treat '~' as "sorts
             # before a plain release" for pre-release versions, so "0.5.6~rc13"
             # is valid for both .deb and .rpm and keeps the rc info in the name.
-            tag_version="${tag_version//-/~}"
+            # The tilde is backslash-escaped: bash tilde-expands the replacement
+            # side of ${var//pat/repl} (per bash(1), it's subject to the same
+            # expansions as a normal word), so an unescaped '~' here silently
+            # becomes "/home/runner" and corrupts both the version string and
+            # the sed script that consumes it below (breaks on the stray '/').
+            tag_version="${tag_version//-/\~}"
           fi
           sed -i "0,/^version = \".*\"/s//version = \"${tag_version}\"/" Cargo.toml
           grep -m1 '^version' Cargo.toml
