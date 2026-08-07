@@ -203,22 +203,23 @@ jobs:
 
       # dioxus-cli 0.7.9 ignores Dioxus.toml's [bundle.rpm] table (its config
       # schema only migrated [bundle.deb] -> [linux.deb] so far) and reuses
-      # [bundle.deb]'s `depends` for the .rpm too, so the .rpm ends up requiring
-      # a package literally named "libwebkit2gtk-4.1-0" — the .deb-style name,
-      # not an RPM one. No repo (Fedora, openSUSE, ...) ships a package under
-      # that exact name (Fedora's is "webkit2gtk4.1"), so `dnf`/`rpm` refuses
-      # the transaction. rpmrebuild patches the built .rpm's spec in place to
-      # require the correct name instead of the wrong one baked in by dx.
-      # It also has to fill in Summary: dx's rpm-rs backend leaves that RPM tag
-      # empty, which rpmbuild (used internally by rpmrebuild) refuses to accept.
-      - name: Fix RPM webkit2gtk dependency name (Linux only)
+      # [bundle.deb]'s `depends` for the .rpm too, so every entry in the .rpm's
+      # Requires ends up as the literal .deb-style package name instead of the
+      # RPM one (e.g. "libwebkit2gtk-4.1-0" instead of Fedora's "webkit2gtk4.1",
+      # "libxdo3" instead of Fedora's "libxdo") — no RPM-based repo ships
+      # packages under those .deb names, so `dnf`/`rpm` refuses the transaction.
+      # rpmrebuild patches the built .rpm's spec in place to require the correct
+      # RPM-side names instead of the .deb ones baked in by dx. It also has to
+      # fill in Summary: dx's rpm-rs backend leaves that RPM tag empty, which
+      # rpmbuild (used internally by rpmrebuild) refuses to accept.
+      - name: Fix RPM dependency names (Linux only)
         if: runner.os == 'Linux'
         env:
           RPMREBUILD_ROOT_DIR: ${{ github.workspace }}/.rpmrebuild-tool
         run: |
           rpm=$(find . -maxdepth 1 -name '*.rpm')
           bash "$RPMREBUILD_ROOT_DIR/rpmrebuild" -p --notest-install \
-            --change-spec-requires="sed 's/libwebkit2gtk-4\.1-0/webkit2gtk4.1/'" \
+            --change-spec-requires="sed -e 's/libwebkit2gtk-4\.1-0/webkit2gtk4.1/' -e 's/libxdo3/libxdo/'" \
             --change-spec-preamble="sed 's/^Summary:[[:space:]]*\$/Summary: dx-rpg desktop client/'" \
             --directory=rpmrebuild-out \
             "$rpm"
