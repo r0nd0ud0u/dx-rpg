@@ -97,30 +97,18 @@ jobs:
       - name: Sync package version to git tag
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
+          # Windows (NSIS's VIProductVersion needs strict X.X.X.X) and Linux
+          # (RPM's version field rejects '-' outright, and Cargo.toml's version
+          # must stay valid SemVer — no '~' either, `cargo metadata` rejects it —
+          # so there's no character that satisfies rpm *and* Cargo at once)
+          # both need the plain X.Y.Z here; an rc tag like v0.5.6-rc13 fails
+          # either leg's packaging otherwise. The full tag (with the -rcN
+          # suffix) is preserved separately for release-asset filenames — see
+          # the "Extract .deb/.rpm packages" step below and the "Rename bundle
+          # directory"/zip steps, which use $GITHUB_REF directly instead of
+          # reading this stripped-down Cargo.toml version back out.
           tag_version="${GITHUB_REF#refs/tags/v}"
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            # NSIS's VIProductVersion field requires a strict X.X.X.X numeric
-            # format and rejects semver prerelease suffixes outright ("Error:
-            # invalid VIProductVersion format, should be X.X.X.X"), so an rc tag
-            # like v0.5.6-rc4 fails the Windows installer build. Strip the
-            # suffix for this leg only.
-            tag_version="${tag_version%%-*}"
-          else
-            # RPM's version field rejects '-' outright ("invalid character ...
-            # allowed: alphanumeric, '.', '_', '+', '%', '{', '}', '~', '^'"),
-            # so an rc tag like v0.5.6-rc13 fails the rpm leg of dx bundle
-            # (scripts/bundle_desktop.sh builds deb+rpm+appimage together on
-            # Linux). Swap the hyphen for '~' instead of stripping the suffix
-            # like the Windows leg does: both dpkg and rpm treat '~' as "sorts
-            # before a plain release" for pre-release versions, so "0.5.6~rc13"
-            # is valid for both .deb and .rpm and keeps the rc info in the name.
-            # The tilde is backslash-escaped: bash tilde-expands the replacement
-            # side of ${var//pat/repl} (per bash(1), it's subject to the same
-            # expansions as a normal word), so an unescaped '~' here silently
-            # becomes "/home/runner" and corrupts both the version string and
-            # the sed script that consumes it below (breaks on the stray '/').
-            tag_version="${tag_version//-/\~}"
-          fi
+          tag_version="${tag_version%%-*}"
           sed -i "0,/^version = \".*\"/s//version = \"${tag_version}\"/" Cargo.toml
           grep -m1 '^version' Cargo.toml
         shell: bash
@@ -174,7 +162,17 @@ jobs:
       - name: Extract .deb/.rpm packages (Linux only)
         if: runner.os == 'Linux'
         run: |
-          version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          # Use the full git tag (with its -rcN suffix, if any) for the release
+          # filename, not Cargo.toml's version: the "Sync package version to git
+          # tag" step above strips that suffix from Cargo.toml because rpm/Cargo
+          # itself can't represent it, but the filename can and should still
+          # distinguish an rc build from a final release. Falls back to
+          # Cargo.toml's version for non-tag runs (e.g. workflow_dispatch).
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF#refs/tags/v}"
+          else
+            version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          fi
           deb=$(find bundle-desktop -name '*.deb' | head -n1)
           rpm=$(find bundle-desktop -name '*.rpm' | head -n1)
           mv "$deb" "dx-rpg-desktop-v${version}_amd64.deb"
