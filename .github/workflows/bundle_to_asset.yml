@@ -120,8 +120,9 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          # rpmrebuild is needed by the "Fix RPM webkit2gtk dependency name" step below.
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev rpm rpmrebuild
+          # cpio is needed by the "Install rpmrebuild" step below (rpmrebuild.sh
+          # shells out to it, and it's not guaranteed preinstalled).
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev rpm cpio
 
       # `cargo install cargo-binstall` builds it from source and is prone to
       # breaking on upstream dependency-resolution conflicts in its own Cargo.lock
@@ -180,6 +181,26 @@ jobs:
           mv "$rpm" "dx-rpg-desktop-v${version}-1.x86_64.rpm"
         shell: bash
 
+      # rpmrebuild isn't packaged for Ubuntu (or current Debian) anymore — verified:
+      # `apt-get install rpmrebuild` 404s on noble's repos, and packages.debian.org
+      # shows "No such package" on both bookworm and sid. Its only current release
+      # channel is the upstream SourceForge project itself (also Fedora's package
+      # source). It's pure shell (rpmrebuild + rpmrebuild.sh etc, no compilation),
+      # so pointing RPMREBUILD_ROOT_DIR at the extracted tarball and invoking the
+      # `rpmrebuild` script directly works without installing anything system-wide.
+      - name: Install rpmrebuild (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          curl -sL "https://sourceforge.net/projects/rpmrebuild/files/rpmrebuild/2.21/rpmrebuild-2.21.tar.gz/download" \
+            -o rpmrebuild.tar.gz
+          mkdir -p "$RPMREBUILD_ROOT_DIR"
+          tar xzf rpmrebuild.tar.gz -C "$RPMREBUILD_ROOT_DIR"
+          chmod +x "$RPMREBUILD_ROOT_DIR/rpmrebuild" "$RPMREBUILD_ROOT_DIR"/*.sh
+          rm rpmrebuild.tar.gz
+        env:
+          RPMREBUILD_ROOT_DIR: ${{ github.workspace }}/.rpmrebuild-tool
+        shell: bash
+
       # dioxus-cli 0.7.9 ignores Dioxus.toml's [bundle.rpm] table (its config
       # schema only migrated [bundle.deb] -> [linux.deb] so far) and reuses
       # [bundle.deb]'s `depends` for the .rpm too, so the .rpm ends up requiring
@@ -192,9 +213,11 @@ jobs:
       # empty, which rpmbuild (used internally by rpmrebuild) refuses to accept.
       - name: Fix RPM webkit2gtk dependency name (Linux only)
         if: runner.os == 'Linux'
+        env:
+          RPMREBUILD_ROOT_DIR: ${{ github.workspace }}/.rpmrebuild-tool
         run: |
           rpm=$(find . -maxdepth 1 -name '*.rpm')
-          rpmrebuild -p --notest-install \
+          bash "$RPMREBUILD_ROOT_DIR/rpmrebuild" -p --notest-install \
             --change-spec-requires="sed 's/libwebkit2gtk-4\.1-0/webkit2gtk4.1/'" \
             --change-spec-preamble="sed 's/^Summary:[[:space:]]*\$/Summary: dx-rpg desktop client/'" \
             --directory=rpmrebuild-out \
