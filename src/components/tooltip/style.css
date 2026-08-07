@@ -2,6 +2,13 @@
 .tooltip {
   position: relative;
   display: inline-block;
+  /* Without this, a grid item (e.g. `.attack-list-line`'s second column,
+     which is `minmax(0,1fr)`) blockifies this element and stretches it to
+     fill the whole track by default (grid's `justify-items: stretch`),
+     while its content (the trigger button) stays only as wide as its text.
+     `.tooltip-content` then centers on the stretched box instead of the
+     button, landing far from the actual attack rectangle. */
+  width: fit-content;
 }
 
 .tooltip-trigger {

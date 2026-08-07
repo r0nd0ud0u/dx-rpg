@@ -374,6 +374,14 @@ character-page-no-potions = No potions available
 character-page-lvl = Lvl { $level }
 character-page-extra-round-title = Extra round from speed advantage
 character-page-aggro-title = Aggro
+character-page-sort-by-level = ⇅ Lvl
+character-page-sort-by-cost = ⇅ Cost
+character-page-configure-atk-panel = ⚙ Configure
+character-page-configure-atk-panel-title = Configure attack panel
+character-page-configure-atk-panel-desc = Drag and drop to reorder your attacks. This layout is saved for this character on this server.
+character-page-cancel = Cancel
+character-page-reset-atk-panel = Reset to default
+character-page-save-atk-panel = Save
 
 ## admin characters tab
 admin-chars-filter-universe = 🌐 Filter by Universe

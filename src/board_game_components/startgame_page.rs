@@ -120,7 +120,7 @@ pub fn RunningGamePage() -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
-    let auto_save_scenario = use_context::<CtxAutoSaveScenario>().0;
+    let _auto_save_scenario = use_context::<CtxAutoSaveScenario>().0;
     // Shop panel — only open at end-of-scenario
     let mut shop_open = use_signal(|| false);
 
