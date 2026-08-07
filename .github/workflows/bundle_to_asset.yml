@@ -118,7 +118,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev rpm
 
       # `cargo install cargo-binstall` builds it from source and is prone to
       # breaking on upstream dependency-resolution conflicts in its own Cargo.lock
@@ -151,6 +151,22 @@ jobs:
           SERVER_URL: ${{ vars.SERVER_URL || 'https://aogin-world.com' }}
           INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'false' }}
 
+      # `dx bundle --package-types deb --package-types rpm` (see scripts/bundle_desktop.sh)
+      # puts these next to the AppImage under bundle-desktop/. Pull them out and give
+      # them a versioned name before the AppImage-focused "Rename bundle directory"/zip
+      # steps below, so they can ship as their own release assets that users can
+      # `apt install` / `dnf install` directly, with libwebkit2gtk-4.1-0 / webkit2gtk4.1
+      # (see Dioxus.toml [bundle.deb]/[bundle.rpm]) pulled in automatically.
+      - name: Extract .deb/.rpm packages (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          deb=$(find bundle-desktop -name '*.deb' | head -n1)
+          rpm=$(find bundle-desktop -name '*.rpm' | head -n1)
+          mv "$deb" "dx-rpg-desktop-v${version}_amd64.deb"
+          mv "$rpm" "dx-rpg-desktop-v${version}-1.x86_64.rpm"
+        shell: bash
+
       - name: Rename bundle directory
         run: |
           mv bundle-desktop dx-rpg-desktop_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
@@ -174,6 +190,22 @@ jobs:
         with:
           name: bundle_desktop_linux.zip
           path: bundle_desktop_linux.zip
+          if-no-files-found: error
+
+      - name: Upload .deb artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: dx-rpg-desktop-deb
+          path: dx-rpg-desktop-v*_amd64.deb
+          if-no-files-found: error
+
+      - name: Upload .rpm artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: dx-rpg-desktop-rpm
+          path: dx-rpg-desktop-v*-1.x86_64.rpm
           if-no-files-found: error
 
       - name: Upload artifact (Windows)
@@ -347,3 +379,5 @@ jobs:
           files: |
             artifacts/**/*.zip
             artifacts/**/*.apk
+            artifacts/**/*.deb
+            artifacts/**/*.rpm

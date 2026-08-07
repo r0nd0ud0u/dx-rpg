@@ -666,7 +666,27 @@ real Android phone since ~2019; `x86_64-linux-android` also works, for emulator 
 
 Unlike the web bundle, these client-only bundles don't ship `offlines/`, `db.sqlite`,
 or a `.env` file — that data belongs to the server, not the client. Set `SERVER_URL`
-in the environment before launching the built client.
+in the environment before launching the built client. If you want to self-host
+instead, download the web/fullstack bundle (`dx-rpg_linux.zip` / `dx-rpg_windows.zip`)
+and run its `server` binary in place — don't copy that binary into a desktop/mobile
+bundle's directory, it needs the `offlines/` folder the web bundle ships alongside it.
+
+**Linux runtime dependency:** the desktop client needs `webkit2gtk-4.1` (e.g.
+`libwebkit2gtk-4.1-0`/`webkit2gtk4.1` and their `WebKitNetworkProcess` helper)
+*installed on the machine running it*, not just at build time. The release also
+ships `.deb`/`.rpm` packages (`dx-rpg-desktop-v*_amd64.deb`,
+`dx-rpg-desktop-v*.x86_64.rpm`, built via `dx bundle --package-types deb --package-types
+rpm`, see `scripts/bundle_desktop.sh` and `Dioxus.toml`'s `[bundle.deb]`/`[bundle.rpm]`)
+alongside the AppImage — installing one of those (`sudo apt install
+./dx-rpg-desktop-*.deb` / `sudo dnf install ./dx-rpg-desktop-*.rpm`) pulls in
+webkit2gtk automatically via the package manager, so prefer them over the AppImage
+on Debian/Ubuntu or Fedora/openSUSE. The AppImage can't declare that dependency
+(a known upstream limitation shared with Tauri, which uses the same wry/webview
+backend — its helper processes don't relocate reliably inside an AppImage), so if
+you do use it and launching fails with `Unable to spawn a new child process: ...
+WebKitNetworkProcess: No such file or directory`, install the `webkit2gtk-4.1`
+runtime package for your distro by hand (e.g. `sudo apt install
+libwebkit2gtk-4.1-0` on Debian/Ubuntu).
 
 **Android is the exception**: an installed APK has no shell to read env vars from at
 runtime the way a desktop process does, so `SERVER_URL` (and `INSECURE_ACCEPT_INVALID_CERTS`

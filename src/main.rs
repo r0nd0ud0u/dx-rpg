@@ -284,7 +284,18 @@ pub async fn init_data_manager() {
     use dx_rpg::common::{DATA_MANAGER, OFFLINE_PATH};
     use lib_rpg::server::data_manager::DataManager;
     let mut dm = DATA_MANAGER.lock().unwrap();
-    *dm = DataManager::try_new(OFFLINE_PATH).unwrap();
+    *dm = DataManager::try_new(OFFLINE_PATH).unwrap_or_else(|e| {
+        let cwd = std::env::current_dir().unwrap_or_default();
+        eprintln!(
+            "Failed to load game data from \"{OFFLINE_PATH}\" (resolved to {}): {e}\n\n\
+             The server binary must be run from a directory that contains the full \
+             \"{OFFLINE_PATH}/\" folder alongside it (this is what the self-hostable \
+             web/server bundle ships, e.g. dx-rpg_linux.zip / dx-rpg_windows.zip — not \
+             the desktop/mobile client-only bundles, which don't include game data).",
+            cwd.join(OFFLINE_PATH).display(),
+        );
+        std::process::exit(1);
+    });
     tracing::info!(
         "Data manager initialized with {} equipments and {} heroes",
         dm.equipment_table.len(),
