@@ -103,9 +103,18 @@ jobs:
             # format and rejects semver prerelease suffixes outright ("Error:
             # invalid VIProductVersion format, should be X.X.X.X"), so an rc tag
             # like v0.5.6-rc4 fails the Windows installer build. Strip the
-            # suffix for this leg only; the Linux desktop build has no such
-            # constraint and keeps the full tag.
+            # suffix for this leg only.
             tag_version="${tag_version%%-*}"
+          else
+            # RPM's version field rejects '-' outright ("invalid character ...
+            # allowed: alphanumeric, '.', '_', '+', '%', '{', '}', '~', '^'"),
+            # so an rc tag like v0.5.6-rc13 fails the rpm leg of dx bundle
+            # (scripts/bundle_desktop.sh builds deb+rpm+appimage together on
+            # Linux). Swap the hyphen for '~' instead of stripping the suffix
+            # like the Windows leg does: both dpkg and rpm treat '~' as "sorts
+            # before a plain release" for pre-release versions, so "0.5.6~rc13"
+            # is valid for both .deb and .rpm and keeps the rc info in the name.
+            tag_version="${tag_version//-/~}"
           fi
           sed -i "0,/^version = \".*\"/s//version = \"${tag_version}\"/" Cargo.toml
           grep -m1 '^version' Cargo.toml
