@@ -10,8 +10,8 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Upload Release Asset (${{ matrix.os }})
+  build-web:
+    name: Upload Web Client Asset (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -53,35 +53,35 @@ jobs:
 
       - name: Rename bundle directory
         run: |
-          mv bundle dx-rpg_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+          mv bundle dx-rpg-web_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
         shell: bash
 
       - name: Zip bundle (Linux)
         if: runner.os == 'Linux'
         run: |
-          zip -r bundle_linux.zip dx-rpg_linux
+          zip -r bundle_web_linux.zip dx-rpg-web_linux
         shell: bash
 
       - name: Zip bundle (Windows)
         if: runner.os == 'Windows'
         run: |
-          Compress-Archive -Path dx-rpg_windows -DestinationPath bundle_windows.zip
+          Compress-Archive -Path dx-rpg-web_windows -DestinationPath bundle_web_windows.zip
         shell: pwsh
 
       - name: Upload artifact (Linux)
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v7
         with:
-          name: bundle_linux.zip
-          path: bundle_linux.zip
+          name: bundle_web_linux.zip
+          path: bundle_web_linux.zip
           if-no-files-found: error
 
       - name: Upload artifact (Windows)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v7
         with:
-          name: bundle_windows.zip
-          path: bundle_windows.zip
+          name: bundle_web_windows.zip
+          path: bundle_web_windows.zip
           if-no-files-found: error
 
   build-desktop:
@@ -120,7 +120,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev rpm
+          # rpmrebuild is needed by the "Fix RPM webkit2gtk dependency name" step below.
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev rpm rpmrebuild
 
       # `cargo install cargo-binstall` builds it from source and is prone to
       # breaking on upstream dependency-resolution conflicts in its own Cargo.lock
@@ -177,6 +178,31 @@ jobs:
           rpm=$(find bundle-desktop -name '*.rpm' | head -n1)
           mv "$deb" "dx-rpg-desktop-v${version}_amd64.deb"
           mv "$rpm" "dx-rpg-desktop-v${version}-1.x86_64.rpm"
+        shell: bash
+
+      # dioxus-cli 0.7.9 ignores Dioxus.toml's [bundle.rpm] table (its config
+      # schema only migrated [bundle.deb] -> [linux.deb] so far) and reuses
+      # [bundle.deb]'s `depends` for the .rpm too, so the .rpm ends up requiring
+      # a package literally named "libwebkit2gtk-4.1-0" — the .deb-style name,
+      # not an RPM one. No repo (Fedora, openSUSE, ...) ships a package under
+      # that exact name (Fedora's is "webkit2gtk4.1"), so `dnf`/`rpm` refuses
+      # the transaction. rpmrebuild patches the built .rpm's spec in place to
+      # require the correct name instead of the wrong one baked in by dx.
+      # It also has to fill in Summary: dx's rpm-rs backend leaves that RPM tag
+      # empty, which rpmbuild (used internally by rpmrebuild) refuses to accept.
+      - name: Fix RPM webkit2gtk dependency name (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          rpm=$(find . -maxdepth 1 -name '*.rpm')
+          rpmrebuild -p --notest-install \
+            --change-spec-requires="sed 's/libwebkit2gtk-4\.1-0/webkit2gtk4.1/'" \
+            --change-spec-preamble="sed 's/^Summary:[[:space:]]*\$/Summary: dx-rpg desktop client/'" \
+            --directory=rpmrebuild-out \
+            "$rpm"
+          rebuilt=$(find rpmrebuild-out -name '*.rpm')
+          mv "$rebuilt" "$rpm"
+          rm -rf rpmrebuild-out
+          rpm -qp --requires "$rpm"
         shell: bash
 
       - name: Rename bundle directory
@@ -374,7 +400,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [build, build-desktop, build-mobile]
+    needs: [build-web, build-desktop, build-mobile]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
