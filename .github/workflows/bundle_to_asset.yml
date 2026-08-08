@@ -354,10 +354,12 @@ jobs:
       # --fullstack false. That build pulls in dioxus-desktop's Linux GTK bindings
       # (tao/wry -> glib-sys/gtk-sys), so the same system packages the desktop Linux
       # build needs are required here too, or the build fails on `glib-2.0` via pkg-config.
+      # imagemagick is needed by the "Patch Android launcher icon" step below
+      # (resizes assets/icon-512.png to each mipmap density).
       - name: Install Linux desktop dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev imagemagick
 
       # ubuntu-latest ships the Android SDK preinstalled (ANDROID_HOME is already set);
       # only the NDK needs to be added explicitly.
@@ -367,6 +369,15 @@ jobs:
         with:
           ndk-version: r27
           add-to-path: true
+
+      # build-tools (aapt2/zipalign/apksigner) is already on this runner (used by the
+      # "Print APK signing certificate fingerprint" step below), but platforms;android-34
+      # isn't guaranteed — the "Patch Android launcher icon" step needs it to link a
+      # tiny standalone resource package against real Android framework resources.
+      # sdkmanager no-ops quickly if either is already present.
+      - name: Ensure Android build-tools and platform are installed
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "build-tools;34.0.0" "platforms;android-34" > /dev/null
 
       # `cargo install cargo-binstall` builds it from source and is prone to
       # breaking on upstream dependency-resolution conflicts in its own Cargo.lock
@@ -450,6 +461,19 @@ jobs:
           apk=$(find bundle-android -name '*.apk' | head -n1)
           version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
           mv "$apk" "bundle-android/rpg-adventure-v${version}-arm64-v8a.apk"
+
+      # dioxus-cli 0.7.9's Android bundler hardcodes its launcher icon to
+      # Android Studio's stock "New Project" default (verified by downloading
+      # a real release APK and extracting res/*.webp directly) — no
+      # Dioxus.toml field reaches that code path. See patch_android_icon.sh
+      # for exactly how this surgically patches the built APK's icon
+      # resources in place (mipmap bitmaps, adaptive-icon background/
+      # foreground, re-sign) since there's no config-level fix.
+      - name: Patch Android launcher icon
+        run: |
+          chmod +x ./scripts/patch_android_icon.sh
+          ./scripts/patch_android_icon.sh
+        shell: bash
 
       # Guards against a repeat of the "package conflicts with an existing package"
       # install failure this step is named after: if the debug keystore ever stops
