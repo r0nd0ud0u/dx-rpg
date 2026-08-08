@@ -46,6 +46,26 @@ identifier = "io.github.r0ndoudou.dxrpg"
 publisher = "r0ndoudou"
 resources = ["assets/*"]
 
+# AppImage can't reliably bundle webkit2gtk itself (its helper processes and
+# injected-bundle .so have hardcoded path assumptions that don't relocate well
+# inside an AppImage — a known upstream limitation shared with Tauri, which uses
+# the same wry/webview backend), so the AppImage keeps needing it preinstalled on
+# the host. .deb/.rpm don't have that problem: they can declare it as a package
+# dependency and let the package manager install it, so `apt`/`dnf` pull in
+# webkit2gtk automatically instead of the user having to install it by hand.
+#
+# libxdo is here for the same reason: bundle_to_asset.yml links the desktop
+# build against libxdo-dev (keyboard-shortcut support) at build time, so the
+# installed binary needs libxdo.so.3 present at runtime too, or it fails to
+# even start with "error while loading shared libraries: libxdo.so.3: cannot
+# open shared object file". Package name differs per distro family: Debian/
+# Ubuntu ships it as libxdo3, Fedora/RPM as libxdo.
+[bundle.deb]
+depends = ["libwebkit2gtk-4.1-0", "libxdo3"]
+
+[bundle.rpm]
+depends = ["webkit2gtk4.1", "libxdo"]
+
 # Without this, `dx bundle --platform android --release` silently falls back to
 # `gradlew assembleDebug` (dioxus-cli only runs `assembleRelease` when this section
 # is present), which signs with AGP's own implicit default debug keystore

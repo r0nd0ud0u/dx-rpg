@@ -374,6 +374,14 @@ character-page-no-potions = Aucune potion disponible
 character-page-lvl = Niv. { $level }
 character-page-extra-round-title = Tour supplémentaire grâce à l'avantage de vitesse
 character-page-aggro-title = Aggro
+character-page-sort-by-level = ⇅ Niv.
+character-page-sort-by-cost = ⇅ Coût
+character-page-configure-atk-panel = ⚙ Configurer
+character-page-configure-atk-panel-title = Configurer le panneau d'attaques
+character-page-configure-atk-panel-desc = Glissez-déposez pour réorganiser vos attaques. Cette disposition est sauvegardée pour ce personnage sur ce serveur.
+character-page-cancel = Annuler
+character-page-reset-atk-panel = Réinitialiser
+character-page-save-atk-panel = Enregistrer
 
 ## admin characters tab
 admin-chars-filter-universe = 🌐 Filtrer par univers

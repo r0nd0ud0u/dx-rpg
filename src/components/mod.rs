@@ -1,6 +1,7 @@
 // AUTOGENERTED Components module
 pub mod alert_dialog;
 pub mod button;
+pub mod drag_and_drop_list;
 pub mod input;
 pub mod label;
 pub mod popover;

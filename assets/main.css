@@ -633,6 +633,8 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 .attack-list-line { display:grid; grid-template-columns:max-content minmax(0,1fr); gap:3px; align-items:center; }
 .attack-list-line > button { margin:2px; padding:3px 6px; font-size:.8rem; min-width:0; }
 .cost-energy-button { width:30px; }
+.attack-list-toolbar { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px; }
+.attack-list-toolbar > button { padding:3px 8px; font-size:.78rem; }
 
 /* TARGET BUTTONS */
 .character-name-button { position:absolute; -webkit-transform:translate(0%,-140%); justify-content:flex-start; }

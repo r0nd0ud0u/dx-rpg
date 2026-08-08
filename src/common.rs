@@ -107,6 +107,14 @@ pub struct CtxAutoSaveScenario(pub Signal<bool>);
 #[derive(Clone, Copy)]
 pub struct CtxShopEnabled(pub Signal<bool>);
 
+/// Per-character custom attack panel order, cached client-side for the
+/// current server/game (keyed by character `id_name`). Loaded on demand
+/// from `user_settings` (see `atk_panel_order_key` in `character_page.rs`)
+/// rather than eagerly like the boolean `CtxShow*` settings above, since the
+/// key space is per-character rather than a fixed handful of toggles.
+#[derive(Clone, Copy)]
+pub struct CtxAtkPanelOrders(pub Signal<std::collections::HashMap<String, Vec<String>>>);
+
 /// Current UI language ("en" or "fr"), synced to browser localStorage (works
 /// pre-login, unlike the SQLite-backed CtxShow* settings above). Drives both
 /// dioxus-i18n's t!() chrome strings (via the sync effect in main.rs) and

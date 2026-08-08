@@ -1,0 +1,76 @@
+.atk-dnd-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.atk-dnd-list-ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.atk-dnd-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--rpg-border-light, #2a3a55);
+  border-radius: 0.5rem;
+  background: var(--rpg-bg-card, #0f1623);
+  color: var(--rpg-text, #e2e8f0);
+  cursor: grab;
+  user-select: none;
+  transition:
+    background-color 100ms ease-out,
+    border-color 100ms ease-out;
+}
+
+.atk-dnd-item:focus-visible,
+.atk-dnd-item[data-focus-visible="true"] {
+  outline: none;
+  border-color: var(--rpg-gold, #c9a227);
+}
+
+.atk-dnd-item[data-is-grabbing="true"] {
+  cursor: grabbing;
+  border-color: var(--rpg-gold, #c9a227);
+  background: var(--rpg-bg-card-alt, #131a28);
+  opacity: 0.85;
+}
+
+.atk-dnd-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.atk-dnd-item-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.atk-dnd-item-reorder {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.atk-dnd-item-reorder > button {
+  padding: 2px 8px;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.atk-dnd-drop-indicator {
+  height: 2px;
+  margin: 2px 4px;
+  border-radius: 1px;
+  background: var(--rpg-gold, #c9a227);
+}
