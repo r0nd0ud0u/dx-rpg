@@ -78,11 +78,25 @@ icon = ["assets/icon-512.png"]
 # even start with "error while loading shared libraries: libxdo.so.3: cannot
 # open shared object file". Package name differs per distro family: Debian/
 # Ubuntu ships it as libxdo3, Fedora/RPM as libxdo.
+# dioxus-cli 0.7.9's BundleConfig struct (packages/cli/src/config/bundle.rs)
+# has no `rpm` field at all — a `[bundle.rpm]` table here would be silently
+# dropped by serde's default unknown-field handling. `bundle_linux_rpm()`
+# (packages/cli/src/bundler/linux.rs) reuses the *entire* DebianSettings
+# struct instead — depends, files, scripts, all of it — for the .rpm too, so
+# whatever's declared under [bundle.deb] applies to both package formats.
+# `depends` below is deb-style names ("libwebkit2gtk-4.1-0", "libxdo3"); the
+# .rpm ends up with those exact same (wrong, for RPM) names in its Requires,
+# which bundle_to_asset.yml's "Fix RPM dependency names and Release" step
+# translates to the real Fedora/RPM names (webkit2gtk4.1, libxdo) afterward.
 [bundle.deb]
 depends = ["libwebkit2gtk-4.1-0", "libxdo3"]
 
-[bundle.rpm]
-depends = ["webkit2gtk4.1", "libxdo"]
+# AppStream metadata (see the file itself for why): [bundle.deb].files packs
+# arbitrary extra files into the package at a fixed destination path, and
+# bundle_linux_rpm() reuses this same map for the .rpm — same file, same
+# destination, both package formats, no per-format duplication needed.
+[bundle.deb.files]
+"/usr/share/metainfo/io.github.r0ndoudou.rpgadventure.metainfo.xml" = "assets/io.github.r0ndoudou.rpgadventure.metainfo.xml"
 
 # The generic [bundle].icon list above isn't read by dx's Windows bundler at
 # all (only linux.rs/macos.rs consume it) — the .exe/MSI/NSIS icon needs this

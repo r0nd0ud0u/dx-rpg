@@ -184,7 +184,8 @@ jobs:
       # them a versioned name before the AppImage-focused "Rename bundle directory"/zip
       # steps below, so they can ship as their own release assets that users can
       # `apt install` / `dnf install` directly, with libwebkit2gtk-4.1-0 / webkit2gtk4.1
-      # (see Dioxus.toml [bundle.deb]/[bundle.rpm]) pulled in automatically.
+      # (see Dioxus.toml [bundle.deb] — dx's .rpm bundler reuses that whole
+      # table too, there's no separate [bundle.rpm]) pulled in automatically.
       - name: Extract .deb/.rpm packages (Linux only)
         if: runner.os == 'Linux'
         run: |
@@ -225,10 +226,11 @@ jobs:
           RPMREBUILD_ROOT_DIR: ${{ github.workspace }}/.rpmrebuild-tool
         shell: bash
 
-      # dioxus-cli 0.7.9 ignores Dioxus.toml's [bundle.rpm] table (its config
-      # schema only migrated [bundle.deb] -> [linux.deb] so far) and reuses
-      # [bundle.deb]'s `depends` for the .rpm too, so every entry in the .rpm's
-      # Requires ends up as the literal .deb-style package name instead of the
+      # dioxus-cli 0.7.9's BundleConfig has no `rpm` field at all (verified
+      # against packages/cli/src/config/bundle.rs at the v0.7.9 tag) — its
+      # .rpm bundler (bundler/linux.rs bundle_linux_rpm()) reuses the entire
+      # DebianSettings struct from [bundle.deb] instead, so every entry in
+      # the .rpm's Requires ends up as the literal .deb-style package name instead of the
       # RPM one (e.g. "libwebkit2gtk-4.1-0" instead of Fedora's "webkit2gtk4.1",
       # "libxdo3" instead of Fedora's "libxdo") — no RPM-based repo ships
       # packages under those .deb names, so `dnf`/`rpm` refuses the transaction.
