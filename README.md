@@ -101,6 +101,15 @@ The tooltip is shown only while the **Attack Tooltips** setting is enabled (see 
 
 > **Cooldown effects:** an attack is put on cooldown by a `CooldownTurnsNumber` effect. The number of turns the attack stays blocked is read from the effect's `Buffer.value` (and mirrored in `Value` / `Tours actifs`). These three must match — a `Buffer.value` of `0` means *no* cooldown, so the attack can be re-cast immediately.
 
+### Sorting and Configuring the Attack Panel
+
+The attack panel (opened from the combat toolbar) has two ways to change the order attacks are shown in:
+
+- **Sort by Level / Sort by Cost** — two buttons at the top of the panel that re-sort the currently displayed list. This is a display-only toggle: it is never saved, and reverts to the saved/default order next time the panel opens.
+- **⚙ Configure** — opens a drag-and-drop sheet (built on `dioxus-primitives`' `drag_and_drop_list`, see the "Module map" below) where attacks can be reordered by hand, with the same Sort by Level/Cost buttons available as a starting point. **Save** persists the resulting order; **Reset to default** clears it back to the character's natural (JSON insertion) order; **Cancel** discards the draft.
+
+A saved custom order always takes precedence over the panel's natural order once loaded, and is scoped per player, per character, and per server (see the Settings Panel section below) — so the same player can have a different layout for each hero, and that layout doesn't leak across unrelated servers/games.
+
 ### Scenarios Progress Sheet
 
 During a game, click **📜 Scenarios** in the game toolbar to open a side sheet showing all scenarios and their progress state (Not Started / In Progress / ✅ Completed).
@@ -139,6 +148,8 @@ In the game toolbar, a **Settings** sheet lets each user toggle options that are
 | Auto-save on Scenario | `auto_save_on_scenario` | on | Automatically save the game at the start of each new scenario |
 
 Each setting is stored as an independent context in Dioxus using a distinct newtype wrapper (`CtxShowBossHp`, `CtxShowBossEnergy`, etc.) to prevent context-key collisions that would otherwise occur since all `Signal<bool>` share the same `TypeId`.
+
+The attack panel's custom drag-and-drop order (see above) reuses the same `user_settings` table but isn't one of the flat boolean toggles above: it's stored under a composed key, `atk_panel_order:{server_name}:{character_id}`, as a JSON array of attack names — one row per (player, server, character) combination, cached client-side per character in `CtxAtkPanelOrders`.
 
 ### Store (🛒)
 
@@ -398,7 +409,7 @@ graph TD
 graph LR
     subgraph Frontend["Frontend (WASM)"]
         Pages["board_game_components/\nhome · lobby · gameboard\ncharacter · admin · login"]
-        Components["components/\nbutton · input · select\ndialog · popover · tabs · sidebar"]
+        Components["components/\nbutton · input · select\ndialog · popover · tabs · sidebar\ndrag_and_drop_list"]
         Widgets["widgets/\ncharts · tab_equipment\nalert_dialog"]
     end
 
@@ -655,7 +666,27 @@ real Android phone since ~2019; `x86_64-linux-android` also works, for emulator 
 
 Unlike the web bundle, these client-only bundles don't ship `offlines/`, `db.sqlite`,
 or a `.env` file — that data belongs to the server, not the client. Set `SERVER_URL`
-in the environment before launching the built client.
+in the environment before launching the built client. If you want to self-host
+instead, download the web/fullstack bundle (`dx-rpg_linux.zip` / `dx-rpg_windows.zip`)
+and run its `server` binary in place — don't copy that binary into a desktop/mobile
+bundle's directory, it needs the `offlines/` folder the web bundle ships alongside it.
+
+**Linux runtime dependency:** the desktop client needs `webkit2gtk-4.1` (e.g.
+`libwebkit2gtk-4.1-0`/`webkit2gtk4.1` and their `WebKitNetworkProcess` helper)
+*installed on the machine running it*, not just at build time. The release also
+ships `.deb`/`.rpm` packages (`dx-rpg-desktop-v*_amd64.deb`,
+`dx-rpg-desktop-v*.x86_64.rpm`, built via `dx bundle --package-types deb --package-types
+rpm`, see `scripts/bundle_desktop.sh` and `Dioxus.toml`'s `[bundle.deb]`/`[bundle.rpm]`)
+alongside the AppImage — installing one of those (`sudo apt install
+./dx-rpg-desktop-*.deb` / `sudo dnf install ./dx-rpg-desktop-*.rpm`) pulls in
+webkit2gtk automatically via the package manager, so prefer them over the AppImage
+on Debian/Ubuntu or Fedora/openSUSE. The AppImage can't declare that dependency
+(a known upstream limitation shared with Tauri, which uses the same wry/webview
+backend — its helper processes don't relocate reliably inside an AppImage), so if
+you do use it and launching fails with `Unable to spawn a new child process: ...
+WebKitNetworkProcess: No such file or directory`, install the `webkit2gtk-4.1`
+runtime package for your distro by hand (e.g. `sudo apt install
+libwebkit2gtk-4.1-0` on Debian/Ubuntu).
 
 **Android is the exception**: an installed APK has no shell to read env vars from at
 runtime the way a desktop process does, so `SERVER_URL` (and `INSECURE_ACCEPT_INVALID_CERTS`

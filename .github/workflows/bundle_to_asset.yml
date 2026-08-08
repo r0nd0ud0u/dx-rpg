@@ -10,8 +10,8 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Upload Release Asset (${{ matrix.os }})
+  build-web:
+    name: Upload Web Client Asset (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -39,8 +39,20 @@ jobs:
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@v1.21.0
 
+      # Same class of failure as the cargo-binstall comment above, one level
+      # down: dioxus-cli 0.7.9 does publish a prebuilt Windows binary
+      # (dx-x86_64-pc-windows-msvc.zip on its GitHub release), but binstall's
+      # default `--strategies` list ends in `compile` as a silent last-resort
+      # fallback if fetching/verifying that prebuilt asset ever hiccups. That
+      # fallback does an unpinned `cargo install`-style build straight against
+      # whatever's newest on crates.io right now, so it isn't reproducible —
+      # it broke when it landed on auth-git2 0.5.8 paired with git2 0.21.0,
+      # where auth-git2 calls `Cred::credential_helper`, an associated
+      # function git2 0.21 doesn't have (E0599). Disabling `compile` here
+      # makes the step fail loudly on a real download/network problem
+      # instead of intermittently on an incompatible dependency pairing.
       - name: Install dioxus-cli
-        run: cargo binstall dioxus-cli@0.7.9 --force
+        run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
         shell: bash
 
       - name: Make bundle script executable (Linux only)
@@ -53,35 +65,35 @@ jobs:
 
       - name: Rename bundle directory
         run: |
-          mv bundle dx-rpg_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+          mv bundle dx-rpg-web_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
         shell: bash
 
       - name: Zip bundle (Linux)
         if: runner.os == 'Linux'
         run: |
-          zip -r bundle_linux.zip dx-rpg_linux
+          zip -r bundle_web_linux.zip dx-rpg-web_linux
         shell: bash
 
       - name: Zip bundle (Windows)
         if: runner.os == 'Windows'
         run: |
-          Compress-Archive -Path dx-rpg_windows -DestinationPath bundle_windows.zip
+          Compress-Archive -Path dx-rpg-web_windows -DestinationPath bundle_web_windows.zip
         shell: pwsh
 
       - name: Upload artifact (Linux)
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v7
         with:
-          name: bundle_linux.zip
-          path: bundle_linux.zip
+          name: bundle_web_linux.zip
+          path: bundle_web_linux.zip
           if-no-files-found: error
 
       - name: Upload artifact (Windows)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v7
         with:
-          name: bundle_windows.zip
-          path: bundle_windows.zip
+          name: bundle_web_windows.zip
+          path: bundle_web_windows.zip
           if-no-files-found: error
 
   build-desktop:
@@ -97,16 +109,18 @@ jobs:
       - name: Sync package version to git tag
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
+          # Windows (NSIS's VIProductVersion needs strict X.X.X.X) and Linux
+          # (RPM's version field rejects '-' outright, and Cargo.toml's version
+          # must stay valid SemVer — no '~' either, `cargo metadata` rejects it —
+          # so there's no character that satisfies rpm *and* Cargo at once)
+          # both need the plain X.Y.Z here; an rc tag like v0.5.6-rc13 fails
+          # either leg's packaging otherwise. The full tag (with the -rcN
+          # suffix) is preserved separately for release-asset filenames — see
+          # the "Extract .deb/.rpm packages" step below and the "Rename bundle
+          # directory"/zip steps, which use $GITHUB_REF directly instead of
+          # reading this stripped-down Cargo.toml version back out.
           tag_version="${GITHUB_REF#refs/tags/v}"
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            # NSIS's VIProductVersion field requires a strict X.X.X.X numeric
-            # format and rejects semver prerelease suffixes outright ("Error:
-            # invalid VIProductVersion format, should be X.X.X.X"), so an rc tag
-            # like v0.5.6-rc4 fails the Windows installer build. Strip the
-            # suffix for this leg only; the Linux desktop build has no such
-            # constraint and keeps the full tag.
-            tag_version="${tag_version%%-*}"
-          fi
+          tag_version="${tag_version%%-*}"
           sed -i "0,/^version = \".*\"/s//version = \"${tag_version}\"/" Cargo.toml
           grep -m1 '^version' Cargo.toml
         shell: bash
@@ -118,7 +132,9 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev
+          # cpio is needed by the "Install rpmrebuild" step below (rpmrebuild.sh
+          # shells out to it, and it's not guaranteed preinstalled).
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev rpm cpio
 
       # `cargo install cargo-binstall` builds it from source and is prone to
       # breaking on upstream dependency-resolution conflicts in its own Cargo.lock
@@ -129,8 +145,20 @@ jobs:
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@v1.21.0
 
+      # Same class of failure as the cargo-binstall comment above, one level
+      # down: dioxus-cli 0.7.9 does publish a prebuilt Windows binary
+      # (dx-x86_64-pc-windows-msvc.zip on its GitHub release), but binstall's
+      # default `--strategies` list ends in `compile` as a silent last-resort
+      # fallback if fetching/verifying that prebuilt asset ever hiccups. That
+      # fallback does an unpinned `cargo install`-style build straight against
+      # whatever's newest on crates.io right now, so it isn't reproducible —
+      # it broke when it landed on auth-git2 0.5.8 paired with git2 0.21.0,
+      # where auth-git2 calls `Cred::credential_helper`, an associated
+      # function git2 0.21 doesn't have (E0599). Disabling `compile` here
+      # makes the step fail loudly on a real download/network problem
+      # instead of intermittently on an incompatible dependency pairing.
       - name: Install dioxus-cli
-        run: cargo binstall dioxus-cli@0.7.9 --force
+        run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
         shell: bash
 
       - name: Make bundle script executable (Linux only)
@@ -150,6 +178,99 @@ jobs:
           # so no INSECURE_ACCEPT_INVALID_CERTS override is needed here anymore.
           SERVER_URL: ${{ vars.SERVER_URL || 'https://aogin-world.com' }}
           INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'false' }}
+
+      # `dx bundle --package-types deb --package-types rpm` (see scripts/bundle_desktop.sh)
+      # puts these next to the AppImage under bundle-desktop/. Pull them out and give
+      # them a versioned name before the AppImage-focused "Rename bundle directory"/zip
+      # steps below, so they can ship as their own release assets that users can
+      # `apt install` / `dnf install` directly, with libwebkit2gtk-4.1-0 / webkit2gtk4.1
+      # (see Dioxus.toml [bundle.deb]/[bundle.rpm]) pulled in automatically.
+      - name: Extract .deb/.rpm packages (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          # Use the full git tag (with its -rcN suffix, if any) for the release
+          # filename, not Cargo.toml's version: the "Sync package version to git
+          # tag" step above strips that suffix from Cargo.toml because rpm/Cargo
+          # itself can't represent it, but the filename can and should still
+          # distinguish an rc build from a final release. Falls back to
+          # Cargo.toml's version for non-tag runs (e.g. workflow_dispatch).
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF#refs/tags/v}"
+          else
+            version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          fi
+          deb=$(find bundle-desktop -name '*.deb' | head -n1)
+          rpm=$(find bundle-desktop -name '*.rpm' | head -n1)
+          mv "$deb" "dx-rpg-desktop-v${version}_amd64.deb"
+          mv "$rpm" "dx-rpg-desktop-v${version}-1.x86_64.rpm"
+        shell: bash
+
+      # rpmrebuild isn't packaged for Ubuntu (or current Debian) anymore — verified:
+      # `apt-get install rpmrebuild` 404s on noble's repos, and packages.debian.org
+      # shows "No such package" on both bookworm and sid. Its only current release
+      # channel is the upstream SourceForge project itself (also Fedora's package
+      # source). It's pure shell (rpmrebuild + rpmrebuild.sh etc, no compilation),
+      # so pointing RPMREBUILD_ROOT_DIR at the extracted tarball and invoking the
+      # `rpmrebuild` script directly works without installing anything system-wide.
+      - name: Install rpmrebuild (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          curl -sL "https://sourceforge.net/projects/rpmrebuild/files/rpmrebuild/2.21/rpmrebuild-2.21.tar.gz/download" \
+            -o rpmrebuild.tar.gz
+          mkdir -p "$RPMREBUILD_ROOT_DIR"
+          tar xzf rpmrebuild.tar.gz -C "$RPMREBUILD_ROOT_DIR"
+          chmod +x "$RPMREBUILD_ROOT_DIR/rpmrebuild" "$RPMREBUILD_ROOT_DIR"/*.sh
+          rm rpmrebuild.tar.gz
+        env:
+          RPMREBUILD_ROOT_DIR: ${{ github.workspace }}/.rpmrebuild-tool
+        shell: bash
+
+      # dioxus-cli 0.7.9 ignores Dioxus.toml's [bundle.rpm] table (its config
+      # schema only migrated [bundle.deb] -> [linux.deb] so far) and reuses
+      # [bundle.deb]'s `depends` for the .rpm too, so every entry in the .rpm's
+      # Requires ends up as the literal .deb-style package name instead of the
+      # RPM one (e.g. "libwebkit2gtk-4.1-0" instead of Fedora's "webkit2gtk4.1",
+      # "libxdo3" instead of Fedora's "libxdo") — no RPM-based repo ships
+      # packages under those .deb names, so `dnf`/`rpm` refuses the transaction.
+      # rpmrebuild patches the built .rpm's spec in place to require the correct
+      # RPM-side names instead of the .deb ones baked in by dx. It also has to
+      # fill in Summary: dx's rpm-rs backend leaves that RPM tag empty, which
+      # rpmbuild (used internally by rpmrebuild) refuses to accept.
+      #
+      # It also rewrites Release: dx's rpm-rs backend always emits "1" — every
+      # -rcN build of the same Cargo.toml version (e.g. rc16, rc18, rc19) ends
+      # up as the exact same NEVRA (dx-rpg-0.5.6-1.x86_64). `dnf`/Discover then
+      # treat a newer rc's .rpm as "already installed" and silently keep
+      # whatever rc was installed first — which is how a stale build missing
+      # this very libxdo fix stayed installed and kept failing to launch after
+      # downloading a newer, fixed .rpm. Giving each rc its own Release
+      # (0.rcN, e.g. 0.rc19) makes every build a real, distinct, comparable
+      # NEVRA: 0.5.6-0.rc16 < 0.5.6-0.rc19 < 0.5.6-1 (a non-rc tag), verified
+      # with rpmdev-vercmp. Final releases (no -rcN suffix) keep Release: 1
+      # unchanged.
+      - name: Fix RPM dependency names and Release (Linux only)
+        if: runner.os == 'Linux'
+        env:
+          RPMREBUILD_ROOT_DIR: ${{ github.workspace }}/.rpmrebuild-tool
+        run: |
+          rpm=$(find . -maxdepth 1 -name '*.rpm')
+          if [[ "$rpm" =~ -rc([0-9]+)-1\.x86_64\.rpm$ ]]; then
+            release="0.rc${BASH_REMATCH[1]}"
+          else
+            release="1"
+          fi
+          preamble_filter="sed -e 's/^Summary:[[:space:]]*\$/Summary: dx-rpg desktop client/' -e 's/^Release:.*/Release: ${release}/'"
+          bash "$RPMREBUILD_ROOT_DIR/rpmrebuild" -p --notest-install \
+            --change-spec-requires="sed -e 's/libwebkit2gtk-4\.1-0/webkit2gtk4.1/' -e 's/libxdo3/libxdo/'" \
+            --change-spec-preamble="$preamble_filter" \
+            --directory=rpmrebuild-out \
+            "$rpm"
+          rebuilt=$(find rpmrebuild-out -name '*.rpm')
+          mv "$rebuilt" "$rpm"
+          rm -rf rpmrebuild-out
+          rpm -qp "$rpm"
+          rpm -qp --requires "$rpm"
+        shell: bash
 
       - name: Rename bundle directory
         run: |
@@ -174,6 +295,22 @@ jobs:
         with:
           name: bundle_desktop_linux.zip
           path: bundle_desktop_linux.zip
+          if-no-files-found: error
+
+      - name: Upload .deb artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: dx-rpg-desktop-deb
+          path: dx-rpg-desktop-v*_amd64.deb
+          if-no-files-found: error
+
+      - name: Upload .rpm artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: dx-rpg-desktop-rpm
+          path: dx-rpg-desktop-v*-1.x86_64.rpm
           if-no-files-found: error
 
       - name: Upload artifact (Windows)
@@ -238,8 +375,20 @@ jobs:
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@v1.21.0
 
+      # Same class of failure as the cargo-binstall comment above, one level
+      # down: dioxus-cli 0.7.9 does publish a prebuilt Windows binary
+      # (dx-x86_64-pc-windows-msvc.zip on its GitHub release), but binstall's
+      # default `--strategies` list ends in `compile` as a silent last-resort
+      # fallback if fetching/verifying that prebuilt asset ever hiccups. That
+      # fallback does an unpinned `cargo install`-style build straight against
+      # whatever's newest on crates.io right now, so it isn't reproducible —
+      # it broke when it landed on auth-git2 0.5.8 paired with git2 0.21.0,
+      # where auth-git2 calls `Cred::credential_helper`, an associated
+      # function git2 0.21 doesn't have (E0599). Disabling `compile` here
+      # makes the step fail loudly on a real download/network problem
+      # instead of intermittently on an incompatible dependency pairing.
       - name: Install dioxus-cli
-        run: cargo binstall dioxus-cli@0.7.9 --force
+        run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
         shell: bash
 
       - name: Make bundle script executable
@@ -330,7 +479,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [build, build-desktop, build-mobile]
+    needs: [build-web, build-desktop, build-mobile]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -347,3 +496,5 @@ jobs:
           files: |
             artifacts/**/*.zip
             artifacts/**/*.apk
+            artifacts/**/*.deb
+            artifacts/**/*.rpm

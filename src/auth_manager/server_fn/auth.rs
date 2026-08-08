@@ -345,14 +345,14 @@ fn cleanup_after_user_deletion(username: &str) {
     crate::websocket_handler::event::force_logout_user(username);
 
     let save_dir = crate::common::SAVED_DATA.join(username);
-    if save_dir.exists() {
-        if let Err(e) = std::fs::remove_dir_all(&save_dir) {
-            tracing::warn!(
-                "cleanup_after_user_deletion: failed to remove save dir for {}: {}",
-                username,
-                e
-            );
-        }
+    if save_dir.exists()
+        && let Err(e) = std::fs::remove_dir_all(&save_dir)
+    {
+        tracing::warn!(
+            "cleanup_after_user_deletion: failed to remove save dir for {}: {}",
+            username,
+            e
+        );
     }
 }
 

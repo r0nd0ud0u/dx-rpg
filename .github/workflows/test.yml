@@ -45,9 +45,22 @@ jobs:
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@v1.21.0
 
+      # Same class of failure as the cargo-binstall comment above, one level
+      # down: dioxus-cli 0.7.9 does publish a prebuilt binary for every CI
+      # platform this repo builds on, but binstall's default `--strategies`
+      # list ends in `compile` as a silent last-resort fallback if
+      # fetching/verifying that prebuilt asset ever hiccups. That fallback
+      # does an unpinned `cargo install`-style build straight against
+      # whatever's newest on crates.io right now, so it isn't reproducible —
+      # on Windows it broke when it landed on auth-git2 0.5.8 paired with
+      # git2 0.21.0, where auth-git2 calls `Cred::credential_helper`, an
+      # associated function git2 0.21 doesn't have (E0599). Disabling
+      # `compile` here makes the step fail loudly on a real download/network
+      # problem instead of intermittently on an incompatible dependency
+      # pairing.
       - name: install dioxus
         shell: bash
-        run: cargo binstall dioxus-cli@0.7.9 --force
+        run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
       
       # https://github.com/DioxusLabs/dioxus/issues/3433
       # - name: check dioxus formatting

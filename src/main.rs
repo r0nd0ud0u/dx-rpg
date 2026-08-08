@@ -11,14 +11,14 @@ use dioxus_sdk_storage::{StorageBacking, set_dir};
 use dotenv::dotenv;
 use dx_rpg::{
     common::{
-        CtxAppLang, CtxAutoSaveScenario, CtxDeviceToken, CtxShopEnabled, CtxShowAtkTooltips,
-        CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro, CtxSyncedInsecureCerts,
-        CtxSyncedServerUrl, CtxToggleAtkAnimation, DISCONNECTED_USER, DX_COMP_CSS, Route,
-        SERVER_NAME, SYNCED_DEVICE_TOKEN_KEY,
+        CtxAppLang, CtxAtkPanelOrders, CtxAutoSaveScenario, CtxDeviceToken, CtxShopEnabled,
+        CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
+        CtxSyncedInsecureCerts, CtxSyncedServerUrl, CtxToggleAtkAnimation, DISCONNECTED_USER,
+        DX_COMP_CSS, Route, SERVER_NAME, SYNCED_DEVICE_TOKEN_KEY,
     },
     components::{
-        alert_dialog, button, input, label, popover, select, separator, sheet, sidebar, tabs,
-        tooltip,
+        alert_dialog, button, drag_and_drop_list, input, label, popover, select, separator, sheet,
+        sidebar, tabs, tooltip,
     },
     websocket_handler::{
         NO_CLIENT_ID,
@@ -284,7 +284,18 @@ pub async fn init_data_manager() {
     use dx_rpg::common::{DATA_MANAGER, OFFLINE_PATH};
     use lib_rpg::server::data_manager::DataManager;
     let mut dm = DATA_MANAGER.lock().unwrap();
-    *dm = DataManager::try_new(OFFLINE_PATH).unwrap();
+    *dm = DataManager::try_new(OFFLINE_PATH).unwrap_or_else(|e| {
+        let cwd = std::env::current_dir().unwrap_or_default();
+        eprintln!(
+            "Failed to load game data from \"{OFFLINE_PATH}\" (resolved to {}): {e}\n\n\
+             The server binary must be run from a directory that contains the full \
+             \"{OFFLINE_PATH}/\" folder alongside it (this is what the self-hostable \
+             web/server bundle ships, e.g. dx-rpg_linux.zip / dx-rpg_windows.zip — not \
+             the desktop/mobile client-only bundles, which don't include game data).",
+            cwd.join(OFFLINE_PATH).display(),
+        );
+        std::process::exit(1);
+    });
     tracing::info!(
         "Data manager initialized with {} equipments and {} heroes",
         dm.equipment_table.len(),
@@ -671,6 +682,10 @@ fn App() -> Element {
     // Shop access during an active scenario — default disabled
     let shop_enabled: Signal<bool> = use_signal(|| false);
     use_context_provider(|| CtxShopEnabled(shop_enabled));
+    // Per-character custom attack panel order — empty until loaded on demand by AttackList
+    let atk_panel_orders: Signal<std::collections::HashMap<String, Vec<String>>> =
+        use_signal(std::collections::HashMap::new);
+    use_context_provider(|| CtxAtkPanelOrders(atk_panel_orders));
     // UI language ("en"/"fr") — localStorage-backed so it works pre-login
     use_context_provider(|| CtxAppLang(app_lang_local_sync));
     // Native clients only: server address / TLS-validation override, editable from the
@@ -688,6 +703,7 @@ fn App() -> Element {
         // ones declared inside a child component (see each component's STYLE_CSS comment).
         document::Link { rel: "stylesheet", href: alert_dialog::STYLE_CSS }
         document::Link { rel: "stylesheet", href: button::STYLE_CSS }
+        document::Link { rel: "stylesheet", href: drag_and_drop_list::STYLE_CSS }
         document::Link { rel: "stylesheet", href: input::STYLE_CSS }
         document::Link { rel: "stylesheet", href: label::STYLE_CSS }
         document::Link { rel: "stylesheet", href: popover::STYLE_CSS }
