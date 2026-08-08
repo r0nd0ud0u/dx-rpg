@@ -31,7 +31,11 @@ RUN --mount=type=ssh dx bundle --platform web --release
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y libssl3 pkg-config curl && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /app/target/dx/dx-rpg/release/web/ /usr/local/app
+# dx bundle writes to target/dx/<bin-target-name>/release/web/ — that first
+# segment is Cargo.toml's [[bin]].name ("rpg-adventure"), not the package
+# name ("dx-rpg"), since a single explicit [[bin]] target takes priority over
+# the package name when dx resolves which target it's building.
+COPY --from=builder /app/target/dx/rpg-adventure/release/web/ /usr/local/app
 COPY ./offlines/ /usr/local/app/offlines/
 
 # Create directories for persistent data volumes
