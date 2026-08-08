@@ -212,20 +212,39 @@ jobs:
       # RPM-side names instead of the .deb ones baked in by dx. It also has to
       # fill in Summary: dx's rpm-rs backend leaves that RPM tag empty, which
       # rpmbuild (used internally by rpmrebuild) refuses to accept.
-      - name: Fix RPM dependency names (Linux only)
+      #
+      # It also rewrites Release: dx's rpm-rs backend always emits "1" — every
+      # -rcN build of the same Cargo.toml version (e.g. rc16, rc18, rc19) ends
+      # up as the exact same NEVRA (dx-rpg-0.5.6-1.x86_64). `dnf`/Discover then
+      # treat a newer rc's .rpm as "already installed" and silently keep
+      # whatever rc was installed first — which is how a stale build missing
+      # this very libxdo fix stayed installed and kept failing to launch after
+      # downloading a newer, fixed .rpm. Giving each rc its own Release
+      # (0.rcN, e.g. 0.rc19) makes every build a real, distinct, comparable
+      # NEVRA: 0.5.6-0.rc16 < 0.5.6-0.rc19 < 0.5.6-1 (a non-rc tag), verified
+      # with rpmdev-vercmp. Final releases (no -rcN suffix) keep Release: 1
+      # unchanged.
+      - name: Fix RPM dependency names and Release (Linux only)
         if: runner.os == 'Linux'
         env:
           RPMREBUILD_ROOT_DIR: ${{ github.workspace }}/.rpmrebuild-tool
         run: |
           rpm=$(find . -maxdepth 1 -name '*.rpm')
+          if [[ "$rpm" =~ -rc([0-9]+)-1\.x86_64\.rpm$ ]]; then
+            release="0.rc${BASH_REMATCH[1]}"
+          else
+            release="1"
+          fi
+          preamble_filter="sed -e 's/^Summary:[[:space:]]*\$/Summary: dx-rpg desktop client/' -e 's/^Release:.*/Release: ${release}/'"
           bash "$RPMREBUILD_ROOT_DIR/rpmrebuild" -p --notest-install \
             --change-spec-requires="sed -e 's/libwebkit2gtk-4\.1-0/webkit2gtk4.1/' -e 's/libxdo3/libxdo/'" \
-            --change-spec-preamble="sed 's/^Summary:[[:space:]]*\$/Summary: dx-rpg desktop client/'" \
+            --change-spec-preamble="$preamble_filter" \
             --directory=rpmrebuild-out \
             "$rpm"
           rebuilt=$(find rpmrebuild-out -name '*.rpm')
           mv "$rebuilt" "$rpm"
           rm -rf rpmrebuild-out
+          rpm -qp "$rpm"
           rpm -qp --requires "$rpm"
         shell: bash
 
