@@ -52,6 +52,18 @@ identifier = "io.github.r0ndoudou.rpgadventure"
 publisher = "r0ndoudou"
 resources = ["assets/*"]
 
+# Desktop app icon: read directly off disk at bundle time (not through the
+# manganis asset pipeline), so a plain relative path is enough. Must be
+# square — dx derives the freedesktop hicolor icon-theme size folder
+# (hicolor/{size}x{size}/apps/) straight from this PNG's own width/height, so
+# a non-square source lands in a mismatched, badly-scaled size bucket. This
+# only reaches Linux (.deb/.rpm/AppImage) and macOS; see [bundle.windows]
+# below for the separate Windows .exe/installer icon setting, and
+# [web.app]/src/main.rs's FAVICON asset! for the web favicon — dioxus-cli
+# 0.7.9 doesn't wire any of these into the Android launcher icon, which
+# stays dx's own hardcoded default regardless of what's set here.
+icon = ["assets/icon-512.png"]
+
 # AppImage can't reliably bundle webkit2gtk itself (its helper processes and
 # injected-bundle .so have hardcoded path assumptions that don't relocate well
 # inside an AppImage — a known upstream limitation shared with Tauri, which uses
@@ -71,6 +83,14 @@ depends = ["libwebkit2gtk-4.1-0", "libxdo3"]
 
 [bundle.rpm]
 depends = ["webkit2gtk4.1", "libxdo"]
+
+# The generic [bundle].icon list above isn't read by dx's Windows bundler at
+# all (only linux.rs/macos.rs consume it) — the .exe/MSI/NSIS icon needs this
+# separate, Windows-specific path instead. Reuses the same favicon.ico as the
+# web favicon (see src/main.rs's FAVICON asset!) since it's already a proper
+# multi-resolution .ico, not just assets/icon-512.png re-pointed here.
+[bundle.windows]
+icon_path = "assets/favicon.ico"
 
 # Without this, `dx bundle --platform android --release` silently falls back to
 # `gradlew assembleDebug` (dioxus-cli only runs `assembleRelease` when this section
