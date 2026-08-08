@@ -66,12 +66,16 @@ for v in mipmap_id bg_path fg_path mdpi_path hdpi_path xhdpi_path xxhdpi_path xx
   fi
 done
 
+# Ubuntu's `imagemagick` apt package is still ImageMagick 6 (noble ships
+# 6.9.12), which has no `magick` binary at all — only `convert`. `magick` is
+# an IM7-only unified entrypoint. `convert` still works fine on IM7 too (as a
+# deprecated compat alias), so this stays portable across both.
 mkdir -p "$work/densities"
-magick assets/icon-512.png -resize 48x48   "$work/densities/mdpi.webp"
-magick assets/icon-512.png -resize 72x72   "$work/densities/hdpi.webp"
-magick assets/icon-512.png -resize 96x96   "$work/densities/xhdpi.webp"
-magick assets/icon-512.png -resize 144x144 "$work/densities/xxhdpi.webp"
-magick assets/icon-512.png -resize 192x192 "$work/densities/xxxhdpi.webp"
+convert assets/icon-512.png -resize 48x48   "$work/densities/mdpi.webp"
+convert assets/icon-512.png -resize 72x72   "$work/densities/hdpi.webp"
+convert assets/icon-512.png -resize 96x96   "$work/densities/xhdpi.webp"
+convert assets/icon-512.png -resize 144x144 "$work/densities/xxhdpi.webp"
+convert assets/icon-512.png -resize 192x192 "$work/densities/xxxhdpi.webp"
 
 proj="$work/proj"
 mkdir -p "$proj/res/drawable" "$proj/res/drawable-v24" "$proj/res/mipmap-mdpi"
