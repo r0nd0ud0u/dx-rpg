@@ -1,7 +1,8 @@
 [application]
 
-# App (Project) Name
-name = "dx-rpg"
+# App (Project) Name — shown as the window title, Android app label, and
+# (via [bundle].identifier below) folds into the RPM/deb/APK package name.
+name = "RPG Adventure"
 
 # Dioxus App Default Platform
 # web, desktop, fullstack
@@ -16,7 +17,7 @@ out_dir = "bundle"
 [web.app]
 
 # HTML title tag content
-title = "dx-rpg"
+title = "RPG Adventure"
 
 [web.watcher]
 
@@ -42,7 +43,12 @@ script = []
 script = []
 
 [bundle]
-identifier = "io.github.r0ndoudou.dxrpg"
+# Changing this changes the Android application ID (io.github.r0ndoudou.dxrpg
+# -> io.github.r0ndoudou.rpgadventure) and the RPM/deb package name — see the
+# matching update to the hardcoded Android data-dir path in src/main.rs, which
+# must stay in sync with this identifier or the app reads/writes the wrong
+# /data/data/<id>/ directory on Android.
+identifier = "io.github.r0ndoudou.rpgadventure"
 publisher = "r0ndoudou"
 resources = ["assets/*"]
 

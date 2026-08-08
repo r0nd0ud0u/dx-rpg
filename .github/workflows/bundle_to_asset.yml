@@ -65,19 +65,19 @@ jobs:
 
       - name: Rename bundle directory
         run: |
-          mv bundle dx-rpg-web_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+          mv bundle rpg-adventure-web_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
         shell: bash
 
       - name: Zip bundle (Linux)
         if: runner.os == 'Linux'
         run: |
-          zip -r bundle_web_linux.zip dx-rpg-web_linux
+          zip -r bundle_web_linux.zip rpg-adventure-web_linux
         shell: bash
 
       - name: Zip bundle (Windows)
         if: runner.os == 'Windows'
         run: |
-          Compress-Archive -Path dx-rpg-web_windows -DestinationPath bundle_web_windows.zip
+          Compress-Archive -Path rpg-adventure-web_windows -DestinationPath bundle_web_windows.zip
         shell: pwsh
 
       - name: Upload artifact (Linux)
@@ -201,8 +201,8 @@ jobs:
           fi
           deb=$(find bundle-desktop -name '*.deb' | head -n1)
           rpm=$(find bundle-desktop -name '*.rpm' | head -n1)
-          mv "$deb" "dx-rpg-desktop-v${version}_amd64.deb"
-          mv "$rpm" "dx-rpg-desktop-v${version}-1.x86_64.rpm"
+          mv "$deb" "rpg-adventure-desktop-v${version}_amd64.deb"
+          mv "$rpm" "rpg-adventure-desktop-v${version}-1.x86_64.rpm"
         shell: bash
 
       # rpmrebuild isn't packaged for Ubuntu (or current Debian) anymore — verified:
@@ -239,7 +239,7 @@ jobs:
       #
       # It also rewrites Release: dx's rpm-rs backend always emits "1" — every
       # -rcN build of the same Cargo.toml version (e.g. rc16, rc18, rc19) ends
-      # up as the exact same NEVRA (dx-rpg-0.5.6-1.x86_64). `dnf`/Discover then
+      # up as the exact same NEVRA (rpg-adventure-0.5.6-1.x86_64). `dnf`/Discover then
       # treat a newer rc's .rpm as "already installed" and silently keep
       # whatever rc was installed first — which is how a stale build missing
       # this very libxdo fix stayed installed and kept failing to launch after
@@ -259,7 +259,7 @@ jobs:
           else
             release="1"
           fi
-          preamble_filter="sed -e 's/^Summary:[[:space:]]*\$/Summary: dx-rpg desktop client/' -e 's/^Release:.*/Release: ${release}/'"
+          preamble_filter="sed -e 's/^Summary:[[:space:]]*\$/Summary: RPG Adventure desktop client/' -e 's/^Release:.*/Release: ${release}/'"
           bash "$RPMREBUILD_ROOT_DIR/rpmrebuild" -p --notest-install \
             --change-spec-requires="sed -e 's/libwebkit2gtk-4\.1-0/webkit2gtk4.1/' -e 's/libxdo3/libxdo/'" \
             --change-spec-preamble="$preamble_filter" \
@@ -274,19 +274,19 @@ jobs:
 
       - name: Rename bundle directory
         run: |
-          mv bundle-desktop dx-rpg-desktop_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+          mv bundle-desktop rpg-adventure-desktop_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
         shell: bash
 
       - name: Zip bundle (Linux)
         if: runner.os == 'Linux'
         run: |
-          zip -r bundle_desktop_linux.zip dx-rpg-desktop_linux
+          zip -r bundle_desktop_linux.zip rpg-adventure-desktop_linux
         shell: bash
 
       - name: Zip bundle (Windows)
         if: runner.os == 'Windows'
         run: |
-          Compress-Archive -Path dx-rpg-desktop_windows -DestinationPath bundle_desktop_windows.zip
+          Compress-Archive -Path rpg-adventure-desktop_windows -DestinationPath bundle_desktop_windows.zip
         shell: pwsh
 
       - name: Upload artifact (Linux)
@@ -301,16 +301,16 @@ jobs:
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v7
         with:
-          name: dx-rpg-desktop-deb
-          path: dx-rpg-desktop-v*_amd64.deb
+          name: rpg-adventure-desktop-deb
+          path: rpg-adventure-desktop-v*_amd64.deb
           if-no-files-found: error
 
       - name: Upload .rpm artifact (Linux)
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v7
         with:
-          name: dx-rpg-desktop-rpm
-          path: dx-rpg-desktop-v*-1.x86_64.rpm
+          name: rpg-adventure-desktop-rpm
+          path: rpg-adventure-desktop-v*-1.x86_64.rpm
           if-no-files-found: error
 
       - name: Upload artifact (Windows)
@@ -447,7 +447,7 @@ jobs:
         run: |
           apk=$(find bundle-android -name '*.apk' | head -n1)
           version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
-          mv "$apk" "bundle-android/dx-rpg-v${version}-arm64-v8a.apk"
+          mv "$apk" "bundle-android/rpg-adventure-v${version}-arm64-v8a.apk"
 
       # Guards against a repeat of the "package conflicts with an existing package"
       # install failure this step is named after: if the debug keystore ever stops
@@ -474,7 +474,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: bundle_android_arm64-v8a
-          path: bundle-android/dx-rpg-v*-arm64-v8a.apk
+          path: bundle-android/rpg-adventure-v*-arm64-v8a.apk
           if-no-files-found: error
 
   release:

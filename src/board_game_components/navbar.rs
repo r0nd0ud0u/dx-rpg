@@ -598,7 +598,7 @@ pub fn Navbar() -> Element {
                     // Brand
                     div { class: "app-footer-brand",
                         span { class: "app-footer-icon", "⚔️" }
-                        span { class: "app-footer-name", "dx-rpg" }
+                        span { class: "app-footer-name", "RPG Adventure" }
                         span { class: "app-footer-version", {concat!("v", env!("CARGO_PKG_VERSION"))} }
                     }
                     // About
