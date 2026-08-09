@@ -3,6 +3,16 @@ name = "dx-rpg"
 version = "0.5.5"
 authors = ["rondoudou"]
 edition = "2024"
+license = "Apache-2.0"
+
+# Keeps the crate/lib name (and every `use dx_rpg::...` import across src/) as
+# "dx-rpg" while renaming just the compiled executable and package identity
+# shown to end users (RPM/deb Name, installer filenames, Discover/Software
+# Center listings) to the "RPG Adventure" branding. Without this, the bin
+# target defaults to the package name and end users see "dx-rpg" instead.
+[[bin]]
+name = "rpg-adventure"
+path = "src/main.rs"
 
 # See more keys and their dexfinitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]

@@ -70,7 +70,7 @@ fn main() {
         // None because the `directories` crate doesn't support Android — unwrapping it panics
         // and leaves the screen white. Use the app's known internal data path instead.
         #[cfg(target_os = "android")]
-        set_dir!("/data/data/io.github.r0ndoudou.dxrpg/files/dx-rpg");
+        set_dir!("/data/data/io.github.r0ndoudou.rpgadventure/files/rpg-adventure");
         #[cfg(not(target_os = "android"))]
         set_dir!();
 
@@ -290,7 +290,7 @@ pub async fn init_data_manager() {
             "Failed to load game data from \"{OFFLINE_PATH}\" (resolved to {}): {e}\n\n\
              The server binary must be run from a directory that contains the full \
              \"{OFFLINE_PATH}/\" folder alongside it (this is what the self-hostable \
-             web/server bundle ships, e.g. dx-rpg_linux.zip / dx-rpg_windows.zip — not \
+             web/server bundle ships, e.g. bundle_web_linux.zip / bundle_web_windows.zip — not \
              the desktop/mobile client-only bundles, which don't include game data).",
             cwd.join(OFFLINE_PATH).display(),
         );
