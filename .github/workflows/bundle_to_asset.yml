@@ -51,9 +51,19 @@ jobs:
       # function git2 0.21 doesn't have (E0599). Disabling `compile` here
       # makes the step fail loudly on a real download/network problem
       # instead of intermittently on an incompatible dependency pairing.
+      # binstall's GitHub-release check (`crate-meta-data` strategy) hits
+      # api.github.com unauthenticated by default, capped at 60 requests/hour
+      # per source IP — shared across every GitHub-hosted runner, so it's
+      # routinely already exhausted before this step runs, returning 403 and
+      # (with `compile` disabled above) failing the whole step outright.
+      # binstall reads GITHUB_TOKEN automatically if set; the token GitHub
+      # Actions injects into every run for free raises that cap to 5000/hour
+      # and needs no extra repo secret.
       - name: Install dioxus-cli
         run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make bundle script executable (Linux only)
         if: runner.os == 'Linux'
@@ -157,9 +167,19 @@ jobs:
       # function git2 0.21 doesn't have (E0599). Disabling `compile` here
       # makes the step fail loudly on a real download/network problem
       # instead of intermittently on an incompatible dependency pairing.
+      # binstall's GitHub-release check (`crate-meta-data` strategy) hits
+      # api.github.com unauthenticated by default, capped at 60 requests/hour
+      # per source IP — shared across every GitHub-hosted runner, so it's
+      # routinely already exhausted before this step runs, returning 403 and
+      # (with `compile` disabled above) failing the whole step outright.
+      # binstall reads GITHUB_TOKEN automatically if set; the token GitHub
+      # Actions injects into every run for free raises that cap to 5000/hour
+      # and needs no extra repo secret.
       - name: Install dioxus-cli
         run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make bundle script executable (Linux only)
         if: runner.os == 'Linux'
@@ -400,9 +420,19 @@ jobs:
       # function git2 0.21 doesn't have (E0599). Disabling `compile` here
       # makes the step fail loudly on a real download/network problem
       # instead of intermittently on an incompatible dependency pairing.
+      # binstall's GitHub-release check (`crate-meta-data` strategy) hits
+      # api.github.com unauthenticated by default, capped at 60 requests/hour
+      # per source IP — shared across every GitHub-hosted runner, so it's
+      # routinely already exhausted before this step runs, returning 403 and
+      # (with `compile` disabled above) failing the whole step outright.
+      # binstall reads GITHUB_TOKEN automatically if set; the token GitHub
+      # Actions injects into every run for free raises that cap to 5000/hour
+      # and needs no extra repo secret.
       - name: Install dioxus-cli
         run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make bundle script executable
         run: chmod +x ./scripts/bundle_mobile.sh
