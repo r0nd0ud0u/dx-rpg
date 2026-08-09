@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream component metadata. Software centers (GNOME Software, KDE
+  Discover, apt/dnf's PackageKit backends) read this — not the .rpm/.deb's
+  own Name/Summary tags — to show a proper app name, developer, and
+  description instead of falling back to the downloaded filename and
+  "Unknown author". dioxus-cli 0.7.9 doesn't generate this file itself (no
+  [bundle.rpm]/[bundle.deb] config produces one), so it's authored by hand
+  and injected into the package directly: see [bundle.deb].files in
+  Dioxus.toml for the .deb, and the "Fix RPM dependency names and Release"
+  step in bundle_to_asset.yml for the .rpm.
+-->
+<component type="desktop-application">
+  <id>io.github.r0ndoudou.rpgadventure</id>
+  <name>RPG Adventure</name>
+  <summary>A browser-based multiplayer RPG</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+  <developer id="io.github.r0ndoudou">
+    <name>r0ndoudou</name>
+  </developer>
+  <description>
+    <p>
+      RPG Adventure is a multiplayer RPG built with Dioxus (Rust), using the
+      lib-rpg engine for turn-based combat and scenario progression.
+    </p>
+  </description>
+  <launchable type="desktop-id">rpg-adventure.desktop</launchable>
+  <url type="homepage">https://github.com/r0nd0ud0u/dx-rpg</url>
+  <content_rating type="oars-1.1" />
+</component>

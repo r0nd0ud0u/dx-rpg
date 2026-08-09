@@ -51,9 +51,19 @@ jobs:
       # function git2 0.21 doesn't have (E0599). Disabling `compile` here
       # makes the step fail loudly on a real download/network problem
       # instead of intermittently on an incompatible dependency pairing.
+      # binstall's GitHub-release check (`crate-meta-data` strategy) hits
+      # api.github.com unauthenticated by default, capped at 60 requests/hour
+      # per source IP — shared across every GitHub-hosted runner, so it's
+      # routinely already exhausted before this step runs, returning 403 and
+      # (with `compile` disabled above) failing the whole step outright.
+      # binstall reads GITHUB_TOKEN automatically if set; the token GitHub
+      # Actions injects into every run for free raises that cap to 5000/hour
+      # and needs no extra repo secret.
       - name: Install dioxus-cli
         run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make bundle script executable (Linux only)
         if: runner.os == 'Linux'
@@ -65,19 +75,19 @@ jobs:
 
       - name: Rename bundle directory
         run: |
-          mv bundle dx-rpg-web_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+          mv bundle rpg-adventure-web_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
         shell: bash
 
       - name: Zip bundle (Linux)
         if: runner.os == 'Linux'
         run: |
-          zip -r bundle_web_linux.zip dx-rpg-web_linux
+          zip -r bundle_web_linux.zip rpg-adventure-web_linux
         shell: bash
 
       - name: Zip bundle (Windows)
         if: runner.os == 'Windows'
         run: |
-          Compress-Archive -Path dx-rpg-web_windows -DestinationPath bundle_web_windows.zip
+          Compress-Archive -Path rpg-adventure-web_windows -DestinationPath bundle_web_windows.zip
         shell: pwsh
 
       - name: Upload artifact (Linux)
@@ -157,9 +167,19 @@ jobs:
       # function git2 0.21 doesn't have (E0599). Disabling `compile` here
       # makes the step fail loudly on a real download/network problem
       # instead of intermittently on an incompatible dependency pairing.
+      # binstall's GitHub-release check (`crate-meta-data` strategy) hits
+      # api.github.com unauthenticated by default, capped at 60 requests/hour
+      # per source IP — shared across every GitHub-hosted runner, so it's
+      # routinely already exhausted before this step runs, returning 403 and
+      # (with `compile` disabled above) failing the whole step outright.
+      # binstall reads GITHUB_TOKEN automatically if set; the token GitHub
+      # Actions injects into every run for free raises that cap to 5000/hour
+      # and needs no extra repo secret.
       - name: Install dioxus-cli
         run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make bundle script executable (Linux only)
         if: runner.os == 'Linux'
@@ -184,7 +204,8 @@ jobs:
       # them a versioned name before the AppImage-focused "Rename bundle directory"/zip
       # steps below, so they can ship as their own release assets that users can
       # `apt install` / `dnf install` directly, with libwebkit2gtk-4.1-0 / webkit2gtk4.1
-      # (see Dioxus.toml [bundle.deb]/[bundle.rpm]) pulled in automatically.
+      # (see Dioxus.toml [bundle.deb] — dx's .rpm bundler reuses that whole
+      # table too, there's no separate [bundle.rpm]) pulled in automatically.
       - name: Extract .deb/.rpm packages (Linux only)
         if: runner.os == 'Linux'
         run: |
@@ -201,8 +222,8 @@ jobs:
           fi
           deb=$(find bundle-desktop -name '*.deb' | head -n1)
           rpm=$(find bundle-desktop -name '*.rpm' | head -n1)
-          mv "$deb" "dx-rpg-desktop-v${version}_amd64.deb"
-          mv "$rpm" "dx-rpg-desktop-v${version}-1.x86_64.rpm"
+          mv "$deb" "rpg-adventure-desktop-v${version}_amd64.deb"
+          mv "$rpm" "rpg-adventure-desktop-v${version}-1.x86_64.rpm"
         shell: bash
 
       # rpmrebuild isn't packaged for Ubuntu (or current Debian) anymore — verified:
@@ -225,10 +246,11 @@ jobs:
           RPMREBUILD_ROOT_DIR: ${{ github.workspace }}/.rpmrebuild-tool
         shell: bash
 
-      # dioxus-cli 0.7.9 ignores Dioxus.toml's [bundle.rpm] table (its config
-      # schema only migrated [bundle.deb] -> [linux.deb] so far) and reuses
-      # [bundle.deb]'s `depends` for the .rpm too, so every entry in the .rpm's
-      # Requires ends up as the literal .deb-style package name instead of the
+      # dioxus-cli 0.7.9's BundleConfig has no `rpm` field at all (verified
+      # against packages/cli/src/config/bundle.rs at the v0.7.9 tag) — its
+      # .rpm bundler (bundler/linux.rs bundle_linux_rpm()) reuses the entire
+      # DebianSettings struct from [bundle.deb] instead, so every entry in
+      # the .rpm's Requires ends up as the literal .deb-style package name instead of the
       # RPM one (e.g. "libwebkit2gtk-4.1-0" instead of Fedora's "webkit2gtk4.1",
       # "libxdo3" instead of Fedora's "libxdo") — no RPM-based repo ships
       # packages under those .deb names, so `dnf`/`rpm` refuses the transaction.
@@ -239,7 +261,7 @@ jobs:
       #
       # It also rewrites Release: dx's rpm-rs backend always emits "1" — every
       # -rcN build of the same Cargo.toml version (e.g. rc16, rc18, rc19) ends
-      # up as the exact same NEVRA (dx-rpg-0.5.6-1.x86_64). `dnf`/Discover then
+      # up as the exact same NEVRA (rpg-adventure-0.5.6-1.x86_64). `dnf`/Discover then
       # treat a newer rc's .rpm as "already installed" and silently keep
       # whatever rc was installed first — which is how a stale build missing
       # this very libxdo fix stayed installed and kept failing to launch after
@@ -259,7 +281,7 @@ jobs:
           else
             release="1"
           fi
-          preamble_filter="sed -e 's/^Summary:[[:space:]]*\$/Summary: dx-rpg desktop client/' -e 's/^Release:.*/Release: ${release}/'"
+          preamble_filter="sed -e 's/^Summary:[[:space:]]*\$/Summary: RPG Adventure desktop client/' -e 's/^Release:.*/Release: ${release}/'"
           bash "$RPMREBUILD_ROOT_DIR/rpmrebuild" -p --notest-install \
             --change-spec-requires="sed -e 's/libwebkit2gtk-4\.1-0/webkit2gtk4.1/' -e 's/libxdo3/libxdo/'" \
             --change-spec-preamble="$preamble_filter" \
@@ -274,19 +296,19 @@ jobs:
 
       - name: Rename bundle directory
         run: |
-          mv bundle-desktop dx-rpg-desktop_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+          mv bundle-desktop rpg-adventure-desktop_${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
         shell: bash
 
       - name: Zip bundle (Linux)
         if: runner.os == 'Linux'
         run: |
-          zip -r bundle_desktop_linux.zip dx-rpg-desktop_linux
+          zip -r bundle_desktop_linux.zip rpg-adventure-desktop_linux
         shell: bash
 
       - name: Zip bundle (Windows)
         if: runner.os == 'Windows'
         run: |
-          Compress-Archive -Path dx-rpg-desktop_windows -DestinationPath bundle_desktop_windows.zip
+          Compress-Archive -Path rpg-adventure-desktop_windows -DestinationPath bundle_desktop_windows.zip
         shell: pwsh
 
       - name: Upload artifact (Linux)
@@ -301,16 +323,16 @@ jobs:
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v7
         with:
-          name: dx-rpg-desktop-deb
-          path: dx-rpg-desktop-v*_amd64.deb
+          name: rpg-adventure-desktop-deb
+          path: rpg-adventure-desktop-v*_amd64.deb
           if-no-files-found: error
 
       - name: Upload .rpm artifact (Linux)
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v7
         with:
-          name: dx-rpg-desktop-rpm
-          path: dx-rpg-desktop-v*-1.x86_64.rpm
+          name: rpg-adventure-desktop-rpm
+          path: rpg-adventure-desktop-v*-1.x86_64.rpm
           if-no-files-found: error
 
       - name: Upload artifact (Windows)
@@ -352,10 +374,12 @@ jobs:
       # --fullstack false. That build pulls in dioxus-desktop's Linux GTK bindings
       # (tao/wry -> glib-sys/gtk-sys), so the same system packages the desktop Linux
       # build needs are required here too, or the build fails on `glib-2.0` via pkg-config.
+      # imagemagick is needed by the "Patch Android launcher icon" step below
+      # (resizes assets/icon-512.png to each mipmap density).
       - name: Install Linux desktop dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev imagemagick
 
       # ubuntu-latest ships the Android SDK preinstalled (ANDROID_HOME is already set);
       # only the NDK needs to be added explicitly.
@@ -365,6 +389,15 @@ jobs:
         with:
           ndk-version: r27
           add-to-path: true
+
+      # build-tools (aapt2/zipalign/apksigner) is already on this runner (used by the
+      # "Print APK signing certificate fingerprint" step below), but platforms;android-34
+      # isn't guaranteed — the "Patch Android launcher icon" step needs it to link a
+      # tiny standalone resource package against real Android framework resources.
+      # sdkmanager no-ops quickly if either is already present.
+      - name: Ensure Android build-tools and platform are installed
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "build-tools;34.0.0" "platforms;android-34" > /dev/null
 
       # `cargo install cargo-binstall` builds it from source and is prone to
       # breaking on upstream dependency-resolution conflicts in its own Cargo.lock
@@ -387,9 +420,19 @@ jobs:
       # function git2 0.21 doesn't have (E0599). Disabling `compile` here
       # makes the step fail loudly on a real download/network problem
       # instead of intermittently on an incompatible dependency pairing.
+      # binstall's GitHub-release check (`crate-meta-data` strategy) hits
+      # api.github.com unauthenticated by default, capped at 60 requests/hour
+      # per source IP — shared across every GitHub-hosted runner, so it's
+      # routinely already exhausted before this step runs, returning 403 and
+      # (with `compile` disabled above) failing the whole step outright.
+      # binstall reads GITHUB_TOKEN automatically if set; the token GitHub
+      # Actions injects into every run for free raises that cap to 5000/hour
+      # and needs no extra repo secret.
       - name: Install dioxus-cli
         run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make bundle script executable
         run: chmod +x ./scripts/bundle_mobile.sh
@@ -447,7 +490,20 @@ jobs:
         run: |
           apk=$(find bundle-android -name '*.apk' | head -n1)
           version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
-          mv "$apk" "bundle-android/dx-rpg-v${version}-arm64-v8a.apk"
+          mv "$apk" "bundle-android/rpg-adventure-v${version}-arm64-v8a.apk"
+
+      # dioxus-cli 0.7.9's Android bundler hardcodes its launcher icon to
+      # Android Studio's stock "New Project" default (verified by downloading
+      # a real release APK and extracting res/*.webp directly) — no
+      # Dioxus.toml field reaches that code path. See patch_android_icon.sh
+      # for exactly how this surgically patches the built APK's icon
+      # resources in place (mipmap bitmaps, adaptive-icon background/
+      # foreground, re-sign) since there's no config-level fix.
+      - name: Patch Android launcher icon
+        run: |
+          chmod +x ./scripts/patch_android_icon.sh
+          ./scripts/patch_android_icon.sh
+        shell: bash
 
       # Guards against a repeat of the "package conflicts with an existing package"
       # install failure this step is named after: if the debug keystore ever stops
@@ -474,7 +530,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: bundle_android_arm64-v8a
-          path: bundle-android/dx-rpg-v*-arm64-v8a.apk
+          path: bundle-android/rpg-adventure-v*-arm64-v8a.apk
           if-no-files-found: error
 
   release:

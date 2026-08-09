@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Adaptive-icon background layer, injected into the built APK by
+  scripts/patch_android_icon.sh alongside ic_launcher_foreground.xml.
+
+  Just a flat fill in the app's own background colour (the rpg-bg custom
+  property in assets/dx-components-theme.css). It covers the whole 108x108dp canvas
+  rather than only the visible safe zone, because the launcher mask crops
+  this layer to whatever shape it wants (circle, squircle, rounded square)
+  and any uncovered area would show through as a transparent notch.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#080c14"
+        android:pathData="M0,0h108v108h-108z" />
+</vector>

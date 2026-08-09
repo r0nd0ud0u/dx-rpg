@@ -1,7 +1,8 @@
 [application]
 
-# App (Project) Name
-name = "dx-rpg"
+# App (Project) Name — shown as the window title, Android app label, and
+# (via [bundle].identifier below) folds into the RPM/deb/APK package name.
+name = "RPG Adventure"
 
 # Dioxus App Default Platform
 # web, desktop, fullstack
@@ -16,7 +17,7 @@ out_dir = "bundle"
 [web.app]
 
 # HTML title tag content
-title = "dx-rpg"
+title = "RPG Adventure"
 
 [web.watcher]
 
@@ -42,9 +43,26 @@ script = []
 script = []
 
 [bundle]
-identifier = "io.github.r0ndoudou.dxrpg"
+# Changing this changes the Android application ID (io.github.r0ndoudou.dxrpg
+# -> io.github.r0ndoudou.rpgadventure) and the RPM/deb package name — see the
+# matching update to the hardcoded Android data-dir path in src/main.rs, which
+# must stay in sync with this identifier or the app reads/writes the wrong
+# /data/data/<id>/ directory on Android.
+identifier = "io.github.r0ndoudou.rpgadventure"
 publisher = "r0ndoudou"
 resources = ["assets/*"]
+
+# Desktop app icon: read directly off disk at bundle time (not through the
+# manganis asset pipeline), so a plain relative path is enough. Must be
+# square — dx derives the freedesktop hicolor icon-theme size folder
+# (hicolor/{size}x{size}/apps/) straight from this PNG's own width/height, so
+# a non-square source lands in a mismatched, badly-scaled size bucket. This
+# only reaches Linux (.deb/.rpm/AppImage) and macOS; see [bundle.windows]
+# below for the separate Windows .exe/installer icon setting, and
+# [web.app]/src/main.rs's FAVICON asset! for the web favicon — dioxus-cli
+# 0.7.9 doesn't wire any of these into the Android launcher icon, which
+# stays dx's own hardcoded default regardless of what's set here.
+icon = ["assets/icon-512.png"]
 
 # AppImage can't reliably bundle webkit2gtk itself (its helper processes and
 # injected-bundle .so have hardcoded path assumptions that don't relocate well
@@ -60,11 +78,33 @@ resources = ["assets/*"]
 # even start with "error while loading shared libraries: libxdo.so.3: cannot
 # open shared object file". Package name differs per distro family: Debian/
 # Ubuntu ships it as libxdo3, Fedora/RPM as libxdo.
+# dioxus-cli 0.7.9's BundleConfig struct (packages/cli/src/config/bundle.rs)
+# has no `rpm` field at all — a `[bundle.rpm]` table here would be silently
+# dropped by serde's default unknown-field handling. `bundle_linux_rpm()`
+# (packages/cli/src/bundler/linux.rs) reuses the *entire* DebianSettings
+# struct instead — depends, files, scripts, all of it — for the .rpm too, so
+# whatever's declared under [bundle.deb] applies to both package formats.
+# `depends` below is deb-style names ("libwebkit2gtk-4.1-0", "libxdo3"); the
+# .rpm ends up with those exact same (wrong, for RPM) names in its Requires,
+# which bundle_to_asset.yml's "Fix RPM dependency names and Release" step
+# translates to the real Fedora/RPM names (webkit2gtk4.1, libxdo) afterward.
 [bundle.deb]
 depends = ["libwebkit2gtk-4.1-0", "libxdo3"]
 
-[bundle.rpm]
-depends = ["webkit2gtk4.1", "libxdo"]
+# AppStream metadata (see the file itself for why): [bundle.deb].files packs
+# arbitrary extra files into the package at a fixed destination path, and
+# bundle_linux_rpm() reuses this same map for the .rpm — same file, same
+# destination, both package formats, no per-format duplication needed.
+[bundle.deb.files]
+"/usr/share/metainfo/io.github.r0ndoudou.rpgadventure.metainfo.xml" = "assets/io.github.r0ndoudou.rpgadventure.metainfo.xml"
+
+# The generic [bundle].icon list above isn't read by dx's Windows bundler at
+# all (only linux.rs/macos.rs consume it) — the .exe/MSI/NSIS icon needs this
+# separate, Windows-specific path instead. Reuses the same favicon.ico as the
+# web favicon (see src/main.rs's FAVICON asset!) since it's already a proper
+# multi-resolution .ico, not just assets/icon-512.png re-pointed here.
+[bundle.windows]
+icon_path = "assets/favicon.ico"
 
 # Without this, `dx bundle --platform android --release` silently falls back to
 # `gradlew assembleDebug` (dioxus-cli only runs `assembleRelease` when this section
