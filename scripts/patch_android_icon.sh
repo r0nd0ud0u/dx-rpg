@@ -12,19 +12,20 @@
 #  1. Resize assets/icon-512.png to the 5 legacy mipmap densities and
 #     overwrite those exact files (plain raster swap, no compiler
 #     needed — Android resolves these by content, not by their
-#     resource-shrinker-obfuscated on-disk names).
-#  2. Recompile just the adaptive-icon background/foreground drawables
-#     via aapt2 — background becomes a solid vector matching our navy
-#     brand color, foreground becomes a <bitmap> pointing at the same
-#     mipmap/ic_launcher entry from step 1. This can't be a raw byte
-#     swap like the mipmaps: these two are themselves compiled binary
+#     resource-shrinker-obfuscated on-disk names). These only ever get
+#     used on API < 26; every modern device takes the adaptive-icon path
+#     in step 2 instead, so a correct-looking bitmap here proves nothing
+#     about what a real phone will show.
+#  2. Recompile the adaptive-icon background/foreground drawables via
+#     aapt2 from android/ic_launcher_{background,foreground}.xml. This
+#     can't be a raw byte swap like the mipmaps: both are compiled binary
 #     XML (Android vector-drawable format), so producing valid
-#     replacements requires a real compiler. `--stable-ids` pins the
-#     foreground's @mipmap/ic_launcher reference to mipmap/ic_launcher's
-#     *actual* resource ID in the real APK (extracted via `aapt2 dump
-#     resources`, never hardcoded — dx's exact ID assignment isn't a
-#     documented guarantee, so this reads whatever this build actually
-#     produced instead of assuming it matches a previous run).
+#     replacements requires a real compiler. Both are self-contained
+#     vectors — see the comment in ic_launcher_foreground.xml for why the
+#     foreground must NOT be a <bitmap> pointing at @mipmap/ic_launcher
+#     (it resolves back to this very adaptive icon on API 26+, and the
+#     resulting self-reference makes the launcher fall back to the
+#     generic default Android app icon).
 #  3. mipmap-anydpi-v26/ic_launcher.xml (the adaptive-icon wrapper) is
 #     left untouched — it already references the background/foreground
 #     drawables above by resource ID, and those IDs don't change just
@@ -38,6 +39,12 @@
 #     certificate fingerprint" step, which would have caught a mismatch
 #     here anyway, but re-signing correctly means it won't).
 #
+# Every resource path/ID below is read out of the APK being patched via
+# `aapt2 dump resources` rather than hardcoded: dx's exact resource-ID
+# assignment and the resource shrinker's obfuscated on-disk file names
+# ("res/BJ.xml") aren't documented guarantees, so this adapts to whatever
+# the build actually produced and hard-fails if the layout ever changes.
+#
 # Requires: ANDROID_HOME (build-tools 34.0.0 + platforms;android-34),
 # imagemagick, run from the repo root with bundle-android/*.apk already
 # built (see bundle_mobile.sh).
@@ -47,11 +54,13 @@ aapt2=$(find "$ANDROID_HOME/build-tools" -name aapt2 -type f | sort -V | tail -n
 zipalign=$(find "$ANDROID_HOME/build-tools" -name zipalign -type f | sort -V | tail -n1)
 apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n1)
 android_jar="$ANDROID_HOME/platforms/android-34/android.jar"
-apk=$(find bundle-android -name '*.apk' | head -n1)
+# -print -quit rather than `| head -n1`: under `set -o pipefail`, head exiting
+# after the first line can SIGPIPE find and fail the whole script.
+apk=$(find bundle-android -name '*.apk' -print -quit)
 work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
 
 dump=$("$aapt2" dump resources "$apk")
-mipmap_id=$(echo "$dump" | grep -oP '0x[0-9a-f]+(?= mipmap/ic_launcher$)')
 bg_path=$(echo "$dump" | grep -A1 ' drawable/ic_launcher_background$' | grep -oP 'res/\S+\.xml')
 fg_path=$(echo "$dump" | grep -A1 ' drawable/ic_launcher_foreground$' | grep -oP 'res/\S+\.xml')
 mdpi_path=$(echo "$dump" | grep -A6 ' mipmap/ic_launcher$' | grep '(mdpi)' | grep -oP 'res/\S+\.webp')
@@ -59,7 +68,7 @@ hdpi_path=$(echo "$dump" | grep -A6 ' mipmap/ic_launcher$' | grep '(hdpi)' | gre
 xhdpi_path=$(echo "$dump" | grep -A6 ' mipmap/ic_launcher$' | grep '(xhdpi)' | grep -oP 'res/\S+\.webp')
 xxhdpi_path=$(echo "$dump" | grep -A6 ' mipmap/ic_launcher$' | grep '(xxhdpi)' | grep -oP 'res/\S+\.webp')
 xxxhdpi_path=$(echo "$dump" | grep -A6 ' mipmap/ic_launcher$' | grep '(xxxhdpi)' | grep -oP 'res/\S+\.webp')
-for v in mipmap_id bg_path fg_path mdpi_path hdpi_path xhdpi_path xxhdpi_path xxxhdpi_path; do
+for v in bg_path fg_path mdpi_path hdpi_path xhdpi_path xxhdpi_path xxxhdpi_path; do
   if [ -z "${!v}" ]; then
     echo "::error::Failed to extract $v from aapt2 dump — dx-cli's Android icon resource layout may have changed, this patch step needs updating." >&2
     exit 1
@@ -77,42 +86,32 @@ convert assets/icon-512.png -resize 96x96   "$work/densities/xhdpi.webp"
 convert assets/icon-512.png -resize 144x144 "$work/densities/xxhdpi.webp"
 convert assets/icon-512.png -resize 192x192 "$work/densities/xxxhdpi.webp"
 
+# Compile the two vector drawables. This links a throwaway package purely to
+# get aapt2 to emit compiled binary XML; only the two drawable outputs are
+# taken from it, and neither references any other resource, so nothing here
+# depends on the real APK's resource IDs.
 proj="$work/proj"
-mkdir -p "$proj/res/drawable" "$proj/res/drawable-v24" "$proj/res/mipmap-mdpi"
-cat > "$proj/AndroidManifest.xml" << EOF
+mkdir -p "$proj/res/drawable"
+cat > "$proj/AndroidManifest.xml" << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="io.github.r0ndoudou.rpgadventure.iconpatch">
     <application android:label="iconpatch"/>
 </manifest>
 EOF
-cat > "$proj/res/drawable/ic_launcher_background.xml" << 'EOF'
-<?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#080c14" android:pathData="M0,0h108v108h-108z" />
-</vector>
-EOF
-cat > "$proj/res/drawable-v24/ic_launcher_foreground.xml" << 'EOF'
-<?xml version="1.0" encoding="utf-8"?>
-<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
-    android:src="@mipmap/ic_launcher"
-    android:gravity="center" />
-EOF
-echo "io.github.r0ndoudou.rpgadventure.iconpatch:mipmap/ic_launcher = $mipmap_id" > "$proj/stable_ids.txt"
-# Placeholder so @mipmap/ic_launcher resolves during this link; only the
-# background/foreground XML outputs below are actually used afterward.
-cp "$work/densities/mdpi.webp" "$proj/res/mipmap-mdpi/ic_launcher.webp"
+cp android/ic_launcher_background.xml "$proj/res/drawable/ic_launcher_background.xml"
+cp android/ic_launcher_foreground.xml "$proj/res/drawable/ic_launcher_foreground.xml"
 
 "$aapt2" compile --dir "$proj/res" -o "$proj/compiled.zip"
 "$aapt2" link -o "$proj/linked.apk" -I "$android_jar" --manifest "$proj/AndroidManifest.xml" \
   --no-version-vectors --no-auto-version --min-sdk-version 24 \
-  --stable-ids "$proj/stable_ids.txt" --package-id 0x7f \
   "$proj/compiled.zip"
 
 mkdir -p "$work/compiled_out"
-unzip -o -q "$proj/linked.apk" "res/drawable/ic_launcher_background.xml" "res/drawable-v24/ic_launcher_foreground.xml" -d "$work/compiled_out"
+unzip -o -q "$proj/linked.apk" \
+  "res/drawable/ic_launcher_background.xml" \
+  "res/drawable/ic_launcher_foreground.xml" \
+  -d "$work/compiled_out"
 
 staging="$work/staging"
 mkdir -p "$staging/$(dirname "$mdpi_path")"
@@ -122,15 +121,34 @@ cp "$work/densities/xhdpi.webp" "$staging/$xhdpi_path"
 cp "$work/densities/xxhdpi.webp" "$staging/$xxhdpi_path"
 cp "$work/densities/xxxhdpi.webp" "$staging/$xxxhdpi_path"
 cp "$work/compiled_out/res/drawable/ic_launcher_background.xml" "$staging/$bg_path"
-cp "$work/compiled_out/res/drawable-v24/ic_launcher_foreground.xml" "$staging/$fg_path"
+cp "$work/compiled_out/res/drawable/ic_launcher_foreground.xml" "$staging/$fg_path"
 
 patched="$work/patched.apk"
 cp "$apk" "$patched"
 ( cd "$staging" && zip -q "$patched" "$mdpi_path" "$hdpi_path" "$xhdpi_path" "$xxhdpi_path" "$xxxhdpi_path" "$bg_path" "$fg_path" )
 
 "$zipalign" -p -f 4 "$patched" "$work/aligned.apk"
+# v4 signing off: it emits a separate <name>.apk.idsig sidecar next to the
+# output, which dx's own build never produced and which would just be litter
+# in bundle-android/. v2/v3 (enabled by default) are what sideloaded installs
+# actually verify.
 "$apksigner" sign --ks android/debug.keystore --ks-pass pass:android --key-pass pass:android \
-  --ks-key-alias androiddebugkey --out "$apk.icon-patched" "$work/aligned.apk"
+  --ks-key-alias androiddebugkey --v4-signing-enabled false \
+  --out "$apk.icon-patched" "$work/aligned.apk"
 "$apksigner" verify "$apk.icon-patched"
 mv "$apk.icon-patched" "$apk"
-rm -rf "$work"
+
+# Guard against silently shipping a broken icon again: assert the patched
+# foreground really is a self-contained <vector> and not a <bitmap> pointing
+# back at the adaptive icon (the exact defect that made earlier builds fall
+# back to the stock Android icon on every API 26+ device).
+# Captured first, then matched with awk over a here-string: piping aapt2
+# straight into `grep -m1` makes grep exit early, SIGPIPEs aapt2, and under
+# `set -o pipefail` that kills the script even though the patch succeeded.
+fg_dump=$("$aapt2" dump xmltree --file "$fg_path" "$apk")
+fg_root=$(awk 'match($0, /E: [A-Za-z0-9_-]+/) { print substr($0, RSTART + 3, RLENGTH - 3); exit }' <<< "$fg_dump")
+if [ "$fg_root" != "vector" ]; then
+  echo "::error::Patched adaptive-icon foreground has root element <$fg_root>, expected <vector>." >&2
+  exit 1
+fi
+echo "Patched launcher icon OK (foreground root element: <$fg_root>)"

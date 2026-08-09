@@ -18,6 +18,7 @@ A browser-based multiplayer RPG built with [Dioxus](https://dioxuslabs.com/) (Ru
 - [Responsive Design](#responsive-design)
 - [Internationalization (i18n)](#internationalization-i18n)
 - [Deployment](#deployment)
+- [App Identity & Icons](#app-identity--icons)
 - [Screenshots](#screenshots)
 
 ---
@@ -835,10 +836,13 @@ git tag v1.2.3 && git push origin v1.2.3
 
 Pushing a `v*` tag also triggers `.github/workflows/bundle_to_asset.yml`, which
 publishes a GitHub Release with, alongside the existing self-hostable web/server
-bundle (`bundle_linux.zip` / `bundle_windows.zip`):
+bundle (`bundle_web_linux.zip` / `bundle_web_windows.zip`):
 - `bundle_desktop_linux.zip` / `bundle_desktop_windows.zip` — native desktop
   clients (see [Desktop & Mobile Clients](#desktop--mobile-clients))
-- `dx-rpg-arm64-v8a.apk` — native Android client (arm64-v8a; see
+- `rpg-adventure-desktop-v*_amd64.deb` / `rpg-adventure-desktop-v*.x86_64.rpm` —
+  installable Linux desktop packages, which pull in their `webkit2gtk` and
+  `libxdo` runtime dependencies automatically via the package manager
+- `rpg-adventure-v*-arm64-v8a.apk` — native Android client (arm64-v8a; see
   [Desktop & Mobile Clients](#desktop--mobile-clients) for why older 32-bit
   devices aren't supported)
 
@@ -863,6 +867,101 @@ conflicts with an existing package" — GitHub Actions runners are ephemeral and
 otherwise generate a new random debug key on every run. This is a debug-only key (never
 used for Play Store distribution) using Android tooling's well-known public debug
 password by convention, so committing it is intentional, not an oversight.
+
+---
+
+## App Identity & Icons
+
+### Name, license and author metadata
+
+The user-visible identity of the app is assembled from several files. They must
+stay consistent — nothing cross-validates them at build time:
+
+| What the user sees | Where it comes from |
+| --- | --- |
+| App name (window title, Android app label, launcher entry) | `Dioxus.toml` → `[application].name` = `RPG Adventure` |
+| Browser tab title | `Dioxus.toml` → `[web.app].title` |
+| Executable and `.deb`/`.rpm` package name | `Cargo.toml` → `[[bin]].name` = `rpg-adventure` |
+| Android application ID, `.deb`/`.rpm` identifier | `Dioxus.toml` → `[bundle].identifier` = `io.github.r0ndoudou.rpgadventure` |
+| License shown by installers | `Cargo.toml` → `[package].license` = `Apache-2.0` |
+| Author / publisher | `Cargo.toml` → `authors`, `Dioxus.toml` → `[bundle].publisher` |
+| App name + developer in Linux software centres | `assets/io.github.r0ndoudou.rpgadventure.metainfo.xml` |
+
+Two of these are easy to get wrong:
+
+- **The crate name stays `dx-rpg`.** Only the *binary* target is renamed, via an
+  explicit `[[bin]]` section. That keeps every `use dx_rpg::…` import across
+  `src/` working while end users see `rpg-adventure`. Note that `dx bundle`
+  derives its output path from the **bin target name**, so the web bundle lands
+  in `target/dx/rpg-adventure/release/web/` — which is what the `Dockerfile`
+  copies from.
+- **`[bundle].identifier` is duplicated in `src/main.rs`.** Android has no
+  runtime API to query it before storage is initialised, so the app's data
+  directory (`/data/data/<id>/files/…`) is hardcoded. Changing the identifier
+  without updating that path sends the app to the wrong directory.
+
+Software centres (GNOME Software, KDE Discover) do **not** read the `.rpm`/`.deb`
+`Name`/`Summary` fields for their listing — they read AppStream metadata. Without
+the `metainfo.xml` file above they fall back to the raw download filename and
+show *"Unknown author"*. dioxus-cli doesn't generate that file, so it's authored
+by hand and injected into both packages via `[bundle.deb].files` (its `.rpm`
+bundler reuses the whole `[bundle.deb]` table — there is no `[bundle.rpm]`).
+
+### Icon sources
+
+All platforms show the same artwork — gold crossed swords on the app's own navy
+background (`#c9a227` on `#080c14`, matching the theme in
+`assets/dx-components-theme.css`). The glyph is U+2694 from
+[Noto Emoji](https://fonts.google.com/noto/specimen/Noto+Emoji) (Apache-2.0).
+
+| Platform | File | Wired up by |
+| --- | --- | --- |
+| Web favicon | `assets/favicon.ico` | `src/main.rs` (`asset!` + `document::Link`) |
+| Linux `.deb`/`.rpm`/AppImage, macOS | `assets/icon-512.png` | `Dioxus.toml` → `[bundle].icon` |
+| Windows `.exe` / installer | `assets/favicon.ico` | `Dioxus.toml` → `[bundle.windows].icon_path` |
+| Android launcher | `android/ic_launcher_{background,foreground}.xml` | `scripts/patch_android_icon.sh` (see below) |
+
+Windows needs its own entry: dx's Windows bundler ignores the generic
+`[bundle].icon` list entirely and only reads `[bundle.windows].icon_path`.
+
+### Android launcher icon
+
+Android is the odd one out: **dioxus-cli 0.7.9 hardcodes the launcher icon** and
+exposes no configuration hook for it — the APK ships Android Studio's stock "New
+Project" placeholder (green grid, robot silhouette). `scripts/patch_android_icon.sh`
+therefore rewrites the icon resources in the built APK, then re-signs it with the
+same debug keystore. It runs automatically in CI after the Android build.
+
+Since Android 8 a launcher icon is an **adaptive icon**: two separate layers that
+the launcher composites itself, then crops with its own mask (circle, squircle,
+rounded square — it varies by device) and animates on press. Hence two files:
+
+- `android/ic_launcher_background.xml` — back layer; a flat navy fill.
+- `android/ic_launcher_foreground.xml` — front layer; the crossed swords as
+  vector outlines.
+
+Both are [Android vector drawables](https://developer.android.com/develop/ui/views/graphics/vector-drawable-resources)
+(Android's own XML vector format, conceptually SVG with `android:` attributes).
+The script compiles them with `aapt2` into binary XML and splices them in.
+
+Two constraints to respect when editing them:
+
+- **108×108dp canvas, 72dp safe zone.** Only the central 72dp circle is
+  guaranteed visible; the mask crops the rest. The background is therefore a
+  full-bleed rectangle (any gap would appear as a transparent notch after
+  masking), while the swords are sized so their outermost points land at radius
+  ~34.9, just inside the 36 limit, so no mask clips them.
+- **The foreground must not reference another resource.** It previously used
+  `<bitmap android:src="@mipmap/ic_launcher">`, which on API 26+ resolves back to
+  this very adaptive icon — a self-reference that fails to inflate, making the
+  launcher silently fall back to the generic default Android icon. Both layers
+  are now fully self-contained. The script asserts the patched foreground's root
+  element is `<vector>` and fails the build otherwise, so this can't regress
+  unnoticed.
+
+`assets/icon-512.png` still feeds the pre-Android-8 bitmap icons (and web and
+desktop), so it and the vector foreground are the same artwork maintained in two
+formats — **update both together** if the icon ever changes.
 
 ---
 
