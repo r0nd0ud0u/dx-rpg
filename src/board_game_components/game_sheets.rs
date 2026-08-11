@@ -1091,7 +1091,7 @@ fn ScenariosSheet(s: SheetSide) -> Element {
 
 // ─── Store Sheet ─────────────────────────────────────────────────────────────
 
-fn rank_color(rank: &lib_rpg::character_mod::rank::Rank) -> &'static str {
+pub(crate) fn rank_color(rank: &lib_rpg::character_mod::rank::Rank) -> &'static str {
     match rank {
         lib_rpg::character_mod::rank::Rank::Common => "var(--rpg-text-muted)",
         lib_rpg::character_mod::rank::Rank::Intermediate => "#4a9eff",
@@ -1099,7 +1099,7 @@ fn rank_color(rank: &lib_rpg::character_mod::rank::Rank) -> &'static str {
     }
 }
 
-fn rank_label(rank: &lib_rpg::character_mod::rank::Rank) -> String {
+pub(crate) fn rank_label(rank: &lib_rpg::character_mod::rank::Rank) -> String {
     match rank {
         lib_rpg::character_mod::rank::Rank::Common => t!("rank-common"),
         lib_rpg::character_mod::rank::Rank::Intermediate => t!("rank-intermediate"),

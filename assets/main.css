@@ -551,6 +551,10 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     padding-bottom: var(--sp-xs);
     border-bottom: 1px solid var(--rpg-border);
 }
+.scenario-empty {
+    font-size:.85rem; color: var(--rpg-text-muted);
+    margin-top: var(--sp-sm);
+}
 .loot-grid {
     display:grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -558,21 +562,66 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     margin-top: var(--sp-sm);
 }
 .loot-item {
+    display:flex; flex-direction:column; gap:6px;
     background: var(--rpg-bg-card-alt);
     border: 1px solid var(--rpg-border);
     border-radius: var(--r-md);
-    padding: 8px 12px;
+    padding: 10px 12px;
     font-size:.82rem; color: var(--rpg-text);
     transition: border-color var(--t-fast);
 }
 .loot-item:hover { border-color: var(--rpg-teal); }
-.level-up-box {
+.loot-item-header {
+    display:flex; align-items:center; gap:8px;
+}
+.loot-icon { font-size:1.1rem; line-height:1; }
+.loot-name { font-weight:700; font-size:.9rem; }
+.loot-badges {
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+}
+.loot-badge {
+    font-size:.7rem; font-weight:600;
+    border: 1px solid var(--rpg-border);
+    border-radius: var(--r-sm);
+    padding: 1px 6px;
+    color: var(--rpg-text-muted);
+}
+.loot-badge-amount {
+    color: var(--rpg-gold); border-color: rgba(201,162,39,.4);
+}
+.loot-classes {
+    font-size:.72rem; color: var(--rpg-text-muted);
+}
+.level-up-list {
+    display:flex; flex-direction:column; gap: var(--sp-sm);
+    margin-top: var(--sp-sm);
+}
+.level-up-entry {
     background: rgba(201,162,39,.05);
     border: 1px solid rgba(201,162,39,.2);
     border-radius: var(--r-md);
-    padding: var(--sp-md);
-    font-size:.88rem; line-height:1.9;
-    margin-top: var(--sp-sm);
+    padding: var(--sp-sm) var(--sp-md);
+    font-size:.88rem;
+}
+.level-up-entry-header {
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.level-up-name { font-weight:700; }
+.level-up-change { color: var(--rpg-gold); font-weight:600; }
+.level-up-unchanged { color: var(--rpg-text-muted); font-weight:500; }
+.level-up-new-attacks {
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+    margin-top: 6px;
+}
+.level-up-new-attacks-label {
+    font-size:.76rem; color: var(--rpg-text-muted);
+}
+.new-attack-chip {
+    background: var(--rpg-hero, #1a73e8);
+    color: white;
+    font-size:.78rem; font-weight:600;
+    padding: 2px 8px;
+    border-radius: var(--r-sm);
 }
 
 /* GAME OVER */
