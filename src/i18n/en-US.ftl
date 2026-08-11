@@ -239,7 +239,11 @@ startgame-enemy-last-attack = Enemy's last attack: { $name }
 startgame-shop = 🛒 Shop
 startgame-explore-overworld = 🗺 Explore Overworld
 startgame-loots = 🎁 Loots
+startgame-no-loots = No loot this time.
 startgame-level-upgrades = ⬆️ Level Upgrades
+startgame-level-up-change = ⬆️ { $old } → { $new }
+startgame-level-unchanged = 🟰 Lvl { $level }
+startgame-new-attacks = ✨ New attacks unlocked:
 startgame-turn-round = ⚔️ Turn { $turn } - Round { $round }
 startgame-run-away = 🗺 Run away
 

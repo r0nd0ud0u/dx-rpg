@@ -1,7 +1,9 @@
 use crate::board_game_components::character_page::{BarComponent, CharacterPanel};
-use crate::board_game_components::game_sheets::{GameSheets, StoreSheet};
+use crate::board_game_components::game_sheets::{GameSheets, StoreSheet, rank_color, rank_label};
 use crate::board_game_components::overworld::OverworldMap;
-use crate::common::{CtxAutoSaveScenario, Route, SERVER_NAME, photo_src};
+use crate::common::{
+    CtxAppLang, CtxAutoSaveScenario, Route, SERVER_NAME, lang_from_app_lang, photo_src,
+};
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::websocket_handler::msg_from_client::send_disconnect_from_server_data;
 use crate::{
@@ -16,13 +18,22 @@ use dioxus::fullstack::{CborEncoding, UseWebsocket};
 use dioxus::prelude::*;
 use dioxus_i18n::t;
 use lib_rpg::{
-    character_mod::character::CharacterKind,
+    character_mod::{attack_type::AttackType, character::CharacterKind, loot::LootType},
     common::constants::stats_const::HP,
     server::{
         game_state::GameStatus,
         server_manager::{GamePhase, ServerData},
     },
 };
+
+fn loot_kind_icon(kind: &LootType) -> &'static str {
+    match kind {
+        LootType::Equipment => "🛡️",
+        LootType::Consumable => "🧪",
+        LootType::Material => "⛏️",
+        LootType::Currency => "💰",
+    }
+}
 
 /// Read-only character panels shown at end of scenario / game.
 #[component]
@@ -121,6 +132,7 @@ pub fn RunningGamePage() -> Element {
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
     let _auto_save_scenario = use_context::<CtxAutoSaveScenario>().0;
+    let app_lang = use_context::<CtxAppLang>().0;
     // Shop panel — only open at end-of-scenario
     let mut shop_open = use_signal(|| false);
 
@@ -281,17 +293,104 @@ pub fn RunningGamePage() -> Element {
                     }
                     div { class: "scenario-section",
                         h3 { class: "scenario-section-title", {t!("startgame-loots")} }
-                        div { class: "loot-grid",
-                            for l in snap_server_data.core_game_data.game_manager.current_scenario.loots.iter() {
-                                div { class: "loot-item", "{l.format_loot()}" }
+                        if snap_server_data.core_game_data.game_manager.current_scenario.loots.is_empty() {
+                            p { class: "scenario-empty", {t!("startgame-no-loots")} }
+                        } else {
+                            div { class: "loot-grid",
+                                for l in snap_server_data.core_game_data.game_manager.current_scenario.loots.iter() {
+                                    div { class: "loot-item",
+                                        div { class: "loot-item-header",
+                                            span { class: "loot-icon", "{loot_kind_icon(&l.kind)}" }
+                                            span { class: "loot-name", "{l.name}" }
+                                        }
+                                        div { class: "loot-badges",
+                                            span {
+                                                class: "loot-badge",
+                                                style: "color:{rank_color(&l.rank)};border-color:{rank_color(&l.rank)};",
+                                                "{rank_label(&l.rank)}"
+                                            }
+                                            span { class: "loot-badge loot-badge-amount",
+                                                "×{l.level}"
+                                            }
+                                        }
+                                        if !l.classes.is_empty() {
+                                            div { class: "loot-classes", "{l.format_classes()}" }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                     div { class: "scenario-section",
                         h3 { class: "scenario-section-title", {t!("startgame-level-upgrades")} }
-                        div {
-                            class: "level-up-box",
-                            dangerous_inner_html: "{snap_server_data.core_game_data.game_manager.end_of_scenario.to_formatted_string(true)}",
+                        div { class: "level-up-list",
+                            for level_up in snap_server_data
+                                .core_game_data
+                                .game_manager
+                                .end_of_scenario
+                                .characters_levelup
+                                .iter()
+                            {
+                                {
+                                    let hero = snap_server_data
+                                        .core_game_data
+                                        .game_manager
+                                        .pm
+                                        .active_heroes
+                                        .iter()
+                                        .find(|h| h.id_name == level_up.character_id_name);
+                                    let hero_display_name = hero
+                                        .map(|h| h.db_full_name.clone())
+                                        .unwrap_or_else(|| level_up.character_id_name.clone());
+                                    let leveled_up = level_up.new_level > level_up.old_level;
+                                    let lang = lang_from_app_lang(&app_lang());
+                                    let new_attacks: Vec<&AttackType> = hero
+                                        .map(|h| {
+                                            h.attacks_list
+                                                .values()
+                                                .filter(|a| {
+                                                    a.level > level_up.old_level
+                                                        && a.level <= level_up.new_level
+                                                })
+                                                .collect()
+                                        })
+                                        .unwrap_or_default();
+                                    rsx! {
+                                        div { class: "level-up-entry",
+                                            div { class: "level-up-entry-header",
+                                                span { class: "level-up-name", "{hero_display_name}" }
+                                                if leveled_up {
+                                                    span { class: "level-up-change",
+                                                        {
+                                                            t!(
+                                                                "startgame-level-up-change", old : level_up.old_level as i64, new : level_up
+                                                                .new_level as i64
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                if !new_attacks.is_empty() {
+                                                    span { class: "level-up-change level-up-unchanged",
+                                                        {t!("startgame-level-unchanged", level : level_up.old_level as i64)}
+                                                    }
+                                                }
+                                            }
+                                            if !new_attacks.is_empty() {
+                                                div { class: "level-up-new-attacks",
+                                                    span { class: "level-up-new-attacks-label", {t!("startgame-new-attacks")} }
+                                                    for atk in new_attacks.iter() {
+                                                        span {
+                                                            class: "new-attack-chip",
+                                                            title: "{atk.description_for(lang)}",
+                                                            "✨ {atk.name_for(lang)}"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
