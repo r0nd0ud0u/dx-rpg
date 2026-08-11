@@ -239,7 +239,11 @@ startgame-enemy-last-attack = Dernière attaque de l'ennemi : { $name }
 startgame-shop = 🛒 Boutique
 startgame-explore-overworld = 🗺 Explorer le monde
 startgame-loots = 🎁 Butin
+startgame-no-loots = Aucun butin cette fois-ci.
 startgame-level-upgrades = ⬆️ Montées de niveau
+startgame-level-up-change = ⬆️ { $old } → { $new }
+startgame-level-unchanged = 🟰 Niv { $level }
+startgame-new-attacks = ✨ Nouvelles attaques débloquées :
 startgame-turn-round = ⚔️ Tour { $turn } - Manche { $round }
 startgame-run-away = 🗺 Fuir
 
