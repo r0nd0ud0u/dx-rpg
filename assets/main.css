@@ -1048,13 +1048,6 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 .char-card-hp-val {
     color: var(--rpg-text-muted);
 }
-.char-card-desc {
-    font-size: .68rem; color: var(--rpg-text-muted);
-    margin: var(--sp-xs) 0 0;
-    line-height: 1.35;
-    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
-    overflow: hidden;
-}
 .char-card-action {
     font-size: .72rem; font-weight: 700; padding: 5px 8px;
     text-align: center; margin-top: auto;
@@ -1101,6 +1094,37 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 /* Universe badge in lobby info bar */
 .lobby-universe {
     color: var(--rpg-teal) !important; font-weight: 700;
+}
+/* Hero detail panel (opened from a card on selection) */
+.sheet.char-detail-sheet[data-side="right"], .sheet.char-detail-sheet[data-side="left"] {
+    max-width: 22rem;
+}
+.char-detail-body {
+    display: flex; flex-direction: column; gap: var(--sp-md);
+    padding: 0 1rem 1rem;
+}
+.char-detail-desc {
+    font-size: .85rem; color: var(--rpg-text-muted);
+    line-height: 1.5; margin: 0;
+}
+.char-detail-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 6px;
+}
+.char-detail-stat-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    background: var(--rpg-bg-card-alt);
+    border: 1px solid var(--rpg-border);
+    border-radius: var(--r-sm);
+    padding: 5px 10px;
+    font-size: .78rem;
+}
+.char-detail-stat-name {
+    color: var(--rpg-text-muted);
+}
+.char-detail-stat-val {
+    color: var(--rpg-text); font-weight: 700;
 }
 
 /* =============================================
