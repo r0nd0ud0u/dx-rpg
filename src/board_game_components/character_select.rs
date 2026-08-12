@@ -7,14 +7,34 @@ use dioxus::{
 use dioxus_i18n::t;
 use lib_rpg::{
     character_mod::character::Character,
-    common::constants::stats_const::HP,
+    common::constants::stats_const::{
+        CRITICAL_STRIKE, DODGE, HP, MAGICAL_ARMOR, MAGICAL_POWER, MANA, PHYSICAL_ARMOR,
+        PHYSICAL_POWER, SPEED, VIGOR,
+    },
     server::server_manager::{GamePhase, ServerData},
 };
 
 use crate::{
     common::{CtxAppLang, lang_from_app_lang, photo_src},
+    components::sheet::{
+        Sheet, SheetContent, SheetDescription, SheetHeader, SheetSide, SheetTitle,
+    },
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
+
+/// Stats shown on the hero detail panel, in display order.
+const DETAIL_STATS: &[&str] = &[
+    HP,
+    MANA,
+    VIGOR,
+    PHYSICAL_POWER,
+    MAGICAL_POWER,
+    PHYSICAL_ARMOR,
+    MAGICAL_ARMOR,
+    CRITICAL_STRIKE,
+    DODGE,
+    SPEED,
+];
 
 fn strip_id_suffix(id_name: &str) -> &str {
     id_name.split("_#").next().unwrap_or(id_name)
@@ -114,9 +134,16 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
         .filter(|c| universe.is_empty() || c.universe == universe)
         .collect();
 
+    // Full-detail side panel
+    let mut detail_char: Signal<Option<String>> = use_signal(|| None);
+    let detail_hero = detail_char()
+        .as_ref()
+        .and_then(|name| hero_chars.iter().find(|c| &c.db_full_name == name))
+        .cloned();
+
     rsx! {
         div { class: "char-card-grid",
-            for c in hero_chars {
+            for c in &hero_chars {
                 {
                     let taken_by = if !is_single_player {
                         server_data()
@@ -142,6 +169,55 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
                             is_single_player,
                             is_taken,
                             taken_by,
+                            detail_char,
+                        }
+                    }
+                }
+            }
+        }
+        Sheet {
+            open: detail_char().is_some(),
+            on_open_change: move |v: bool| {
+                if !v {
+                    detail_char.set(None);
+                }
+            },
+            CharacterDetailPanel { c: detail_hero }
+        }
+    }
+}
+
+/// Full-info panel for a hero, opened from `CharCardItem` on selection.
+#[component]
+fn CharacterDetailPanel(c: Option<Character>) -> Element {
+    let app_lang = use_context::<CtxAppLang>().0;
+    let Some(c) = c else {
+        return rsx! {};
+    };
+    let lang = lang_from_app_lang(&app_lang());
+    let desc = c.description_for(lang).to_string();
+
+    rsx! {
+        SheetContent { side: SheetSide::Right, class: "char-detail-sheet".to_owned(),
+            SheetHeader {
+                SheetTitle { "{c.db_full_name}" }
+                SheetDescription {
+                    "{c.class.to_emoji()} {c.class.to_str()}"
+                    " · "
+                    {t!("common-level", level : c.level as i64)}
+                }
+            }
+            div { class: "char-detail-body",
+                if !desc.is_empty() {
+                    p { class: "char-detail-desc", "{desc}" }
+                }
+                div { class: "char-detail-stats",
+                    for key in DETAIL_STATS {
+                        if let Some(stat) = c.stats.all_stats.get(*key) {
+                            div { class: "char-detail-stat-row",
+                                span { class: "char-detail-stat-name", "{key}" }
+                                span { class: "char-detail-stat-val", "{stat.max}" }
+                            }
                         }
                     }
                 }
@@ -158,14 +234,11 @@ fn CharCardItem(
     is_single_player: bool,
     is_taken: bool,
     taken_by: Option<String>,
+    mut detail_char: Signal<Option<String>>,
 ) -> Element {
     let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
     let sd_signal = use_context::<Signal<ServerData>>();
-    let app_lang = use_context::<CtxAppLang>().0;
     let max_hp = c.stats.all_stats.get(HP).map(|s| s.max).unwrap_or(0);
-    let desc = c
-        .description_for(lang_from_app_lang(&app_lang()))
-        .to_string();
 
     // use_memo: recomputes whenever sd_signal changes; the handle is Copy so the
     // onclick closure can call is_selected() to read the *current* value at click
@@ -213,11 +286,15 @@ fn CharCardItem(
                         .await;
                 });
             }
+            if detail_char.peek().as_deref() == Some(cn.as_str()) {
+                detail_char.set(None);
+            }
             return;
         }
 
         // Select
         let hc = sd_signal.peek().core_game_data.heroes_chosen.clone();
+        detail_char.set(Some(cn.clone()));
         if is_single_player {
             let extra_count = hc
                 .keys()
@@ -262,9 +339,6 @@ fn CharCardItem(
                 div { class: "char-card-hp",
                     span { class: "char-card-hp-label", "HP" }
                     span { class: "char-card-hp-val", "{max_hp}" }
-                }
-                if !desc.is_empty() {
-                    p { class: "char-card-desc", "{desc}" }
                 }
             }
             if is_taken {
