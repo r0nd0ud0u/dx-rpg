@@ -309,14 +309,13 @@ pub fn TabStats() -> Element {
                     TabTrigger { value: format!("tab{}", i + 1), index: i + 1, "⚔️ {c.db_full_name}" }
                 }
             }
-            TabContent { value: "tab0".to_owned(), index: 0_usize, width: "42em",
+            TabContent { value: "tab0".to_owned(), index: 0_usize,
                 HeroStatsPanel { atks_info: all_atk_info, rounds }
             }
             for (i, c) in heroes.into_iter().enumerate() {
                 TabContent {
                     value: format!("tab{}", i + 1),
                     index: i + 1,
-                    width: "42em",
                     HeroStatsPanel {
                         atks_info: game_state
                             .stats_in_game

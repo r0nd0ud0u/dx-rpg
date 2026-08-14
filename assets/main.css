@@ -1758,6 +1758,10 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 
     /* Scenario end */
     .scenario-end-page { padding: var(--sp-lg) var(--sp-sm); }
+
+    /* Talent tree: 3 side-by-side columns get too narrow for talent labels
+       to stay readable — stack them instead, each at full sheet width. */
+    .talent-tree { flex-direction: column; gap: var(--sp-md); }
 }
 
 /* ── Android WebView fallback for the ≤768px rules above ────────────────
