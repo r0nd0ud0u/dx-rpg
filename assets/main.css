@@ -1978,6 +1978,16 @@ html.force-mobile-nav .game-toolbar-mobile-trigger .sidebar-trigger {
 }
 .potion-bag-header:first-child { border-top: none; margin-top: 0; }
 
+/* ── Overworld "Use Items" section (InventorySheet, overworld only) ──────── */
+.ow-consumables {
+    display: flex; flex-direction: column; gap: 2px;
+}
+.ow-consumable-row {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--sp-sm);
+    padding: 4px 2px;
+    font-size: .82rem;
+}
+
 
 /* ── Inventory hero tabs (single-player multi-hero view) ─────────────────── */
 .inv-tab {
