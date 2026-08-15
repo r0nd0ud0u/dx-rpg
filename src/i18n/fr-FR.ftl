@@ -208,6 +208,7 @@ char-select-other-players = Autres joueurs :
 char-card-taken-by = 🔒 { $taker }
 char-card-remove = × Retirer
 char-card-select = + Choisir
+char-card-details = ℹ️ Détails
 
 ## charts widget
 charts-no-attacks = Aucune attaque enregistrée pour l'instant.

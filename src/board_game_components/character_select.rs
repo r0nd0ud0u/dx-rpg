@@ -16,8 +16,9 @@ use lib_rpg::{
 
 use crate::{
     common::{CtxAppLang, lang_from_app_lang, photo_src},
-    components::sheet::{
-        Sheet, SheetContent, SheetDescription, SheetHeader, SheetSide, SheetTitle,
+    components::{
+        button::{Button, ButtonVariant},
+        sheet::{Sheet, SheetContent, SheetDescription, SheetHeader, SheetSide, SheetTitle},
     },
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
@@ -134,7 +135,8 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
         .filter(|c| universe.is_empty() || c.universe == universe)
         .collect();
 
-    // Full-detail side panel
+    // Full-detail side panel: opened via each card's "Details" button, independent
+    // of selecting/deselecting the hero.
     let mut detail_char: Signal<Option<String>> = use_signal(|| None);
     let detail_hero = detail_char()
         .as_ref()
@@ -187,7 +189,7 @@ pub fn CharacterCardGrid(player_name: String, is_single_player: bool, universe: 
     }
 }
 
-/// Full-info panel for a hero, opened from `CharCardItem` on selection.
+/// Full-info panel for a hero, opened from `CharCardItem`'s "Details" button.
 #[component]
 fn CharacterDetailPanel(c: Option<Character>) -> Element {
     let app_lang = use_context::<CtxAppLang>().0;
@@ -294,7 +296,6 @@ fn CharCardItem(
 
         // Select
         let hc = sd_signal.peek().core_game_data.heroes_chosen.clone();
-        detail_char.set(Some(cn.clone()));
         if is_single_player {
             let extra_count = hc
                 .keys()
@@ -329,6 +330,18 @@ fn CharCardItem(
                     class: "char-card-img",
                     alt: "{c.db_full_name}",
                 }
+            }
+            Button {
+                variant: ButtonVariant::Outline,
+                class: "char-card-details-btn".to_owned(),
+                onclick: {
+                    let details_name = c.db_full_name.clone();
+                    move |evt: MouseEvent| {
+                        evt.stop_propagation();
+                        detail_char.set(Some(details_name.clone()));
+                    }
+                },
+                {t!("char-card-details")}
             }
             div { class: "char-card-info",
                 span { class: "char-card-name", "{c.db_full_name}" }
