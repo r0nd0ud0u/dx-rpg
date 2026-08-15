@@ -313,9 +313,7 @@ pub fn TabStats() -> Element {
                 HeroStatsPanel { atks_info: all_atk_info, rounds }
             }
             for (i, c) in heroes.into_iter().enumerate() {
-                TabContent {
-                    value: format!("tab{}", i + 1),
-                    index: i + 1,
+                TabContent { value: format!("tab{}", i + 1), index: i + 1,
                     HeroStatsPanel {
                         atks_info: game_state
                             .stats_in_game
