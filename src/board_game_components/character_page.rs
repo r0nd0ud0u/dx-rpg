@@ -847,6 +847,23 @@ fn get_color(value: i32) -> String {
     ENERGY_GRAD.at(value as f32 / 100.0).to_css_hex()
 }
 
+/// Groups a (possibly repeated) list of item names into display order + per-name counts,
+/// e.g. `["Potion", "Potion", "Ether"]` -> `(["Potion", "Ether"], {"Potion": 2, "Ether": 1})`.
+pub(crate) fn group_by_name(
+    names: &[String],
+) -> (Vec<String>, std::collections::HashMap<String, usize>) {
+    let mut seen_order: Vec<String> = Vec::new();
+    let mut counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    for name in names {
+        let entry = counts.entry(name.clone()).or_insert(0);
+        if *entry == 0 {
+            seen_order.push(name.clone());
+        }
+        *entry += 1;
+    }
+    (seen_order, counts)
+}
+
 #[component]
 pub fn PotionList(
     id_name: String,
@@ -884,19 +901,6 @@ pub fn PotionList(
         .iter()
         .map(|c| c.name.clone())
         .collect();
-
-    fn group_by_name(names: &[String]) -> (Vec<String>, std::collections::HashMap<String, usize>) {
-        let mut seen_order: Vec<String> = Vec::new();
-        let mut counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
-        for name in names {
-            let entry = counts.entry(name.clone()).or_insert(0);
-            if *entry == 0 {
-                seen_order.push(name.clone());
-            }
-            *entry += 1;
-        }
-        (seen_order, counts)
-    }
 
     let (personal_order, personal_counts) = group_by_name(&potions);
     let (party_order, party_counts) = group_by_name(&party_potions);

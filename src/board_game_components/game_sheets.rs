@@ -4,22 +4,27 @@ use dioxus::{
 };
 use dioxus_i18n::t;
 use dioxus_primitives::scroll_area::ScrollDirection;
+use indexmap::IndexMap;
 use lib_rpg::{
-    character_mod::loot::LootType,
+    character_mod::{energy::EnergyKind, loot::LootType},
     common::{
-        constants::stats_const::HP,
+        constants::stats_const::{BERSERK, HP, MANA, VIGOR},
         log_data::{
             LogData,
             const_colors::{DARK_RED, LIGHT_BLUE, LIGHT_GREEN},
         },
     },
-    server::{scenario::ScenarioState, server_manager::ServerData},
+    server::{
+        scenario::ScenarioState,
+        server_manager::{GamePhase, ServerData},
+    },
     shop::sell_price,
 };
 
 use crate::{
     auth_manager::server_fn::{get_user_setting, save_user_setting},
-    common::{CtxAppLang, lang_from_app_lang},
+    board_game_components::character_page::{BarComponent, group_by_name},
+    common::{CtxAppLang, SERVER_NAME, lang_from_app_lang},
     components::{
         button::{Button, ButtonVariant},
         label::Label,
@@ -355,6 +360,118 @@ pub fn GameSheets() -> Element {
     }
 }
 
+/// Lets a hero drink their own personal potions or the shared party stash while resting
+/// in the overworld — always self-administered, no target picker (unlike combat's
+/// PotionList), and doesn't advance a turn.
+#[component]
+fn OverworldConsumablesSection(hero_id: String) -> Element {
+    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let server_data = use_context::<Signal<ServerData>>();
+    let snap = server_data();
+    let pm = &snap.core_game_data.game_manager.pm;
+
+    let Some(hero) = pm.get_active_hero_character(&hero_id) else {
+        return rsx! {};
+    };
+
+    let personal: Vec<String> = hero
+        .inventory
+        .consumables
+        .iter()
+        .map(|c| c.name.clone())
+        .collect();
+    let party: Vec<String> = pm
+        .party_consumables
+        .iter()
+        .map(|c| c.name.clone())
+        .collect();
+    let (personal_order, personal_counts) = group_by_name(&personal);
+    let (party_order, party_counts) = group_by_name(&party);
+
+    if personal_order.is_empty() && party_order.is_empty() {
+        return rsx! {
+            div { class: "stats-section-title", {t!("gs-inv-use-items-title")} }
+            p { class: "equip-empty", {t!("gs-inv-no-consumables")} }
+        };
+    }
+
+    rsx! {
+        div { class: "stats-section-title", {t!("gs-inv-use-items-title")} }
+        div { class: "ow-consumables",
+            if !personal_order.is_empty() {
+                span { class: "potion-bag-header", {t!("gs-inv-personal-potions")} }
+                for name in personal_order {
+                    {
+                        let count = personal_counts[&name];
+                        let label = if count > 1 {
+                            format!("💊 {} ×{}", name, count)
+                        } else {
+                            format!("💊 {}", name)
+                        };
+                        let hero_id = hero_id.clone();
+                        let item_name = name.clone();
+                        rsx! {
+                            div { class: "ow-consumable-row",
+                                span { "{label}" }
+                                Button {
+                                    variant: ButtonVariant::Outline,
+                                    onclick: move |_| {
+                                        let hid = hero_id.clone();
+                                        let iname = item_name.clone();
+                                        async move {
+                                            let _ = socket
+                                                .send(
+                                                    ClientEvent::UseOverworldConsumable(SERVER_NAME(), hid, iname, false),
+                                                )
+                                                .await;
+                                        }
+                                    },
+                                    {t!("gs-inv-use")}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if !party_order.is_empty() {
+                span { class: "potion-bag-header", {t!("gs-inv-party-potions")} }
+                for name in party_order {
+                    {
+                        let count = party_counts[&name];
+                        let label = if count > 1 {
+                            format!("✨ {} ×{}", name, count)
+                        } else {
+                            format!("✨ {}", name)
+                        };
+                        let hero_id = hero_id.clone();
+                        let item_name = name.clone();
+                        rsx! {
+                            div { class: "ow-consumable-row",
+                                span { "{label}" }
+                                Button {
+                                    variant: ButtonVariant::Outline,
+                                    onclick: move |_| {
+                                        let hid = hero_id.clone();
+                                        let iname = item_name.clone();
+                                        async move {
+                                            let _ = socket
+                                                .send(
+                                                    ClientEvent::UseOverworldConsumable(SERVER_NAME(), hid, iname, true),
+                                                )
+                                                .await;
+                                        }
+                                    },
+                                    {t!("gs-inv-use")}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[component]
 fn InventorySheet(s: SheetSide) -> Element {
     // contexts
@@ -390,11 +507,26 @@ fn InventorySheet(s: SheetSide) -> Element {
         .cloned()
         .unwrap_or_default();
 
-    // BTreeMap — all stats sorted
+    // Energy bars shown above the stats grid: HP always, Mana/Vigor/Berserk only for the
+    // energy kinds this hero actually has — same visual as the combat character panel, so
+    // it's easy to see at a glance whether a potion is worth spending here.
+    let energy_list: IndexMap<String, (String, EnergyKind)> = IndexMap::from([
+        (MANA.to_owned(), ("MP".to_owned(), EnergyKind::Mana)),
+        (VIGOR.to_owned(), ("VP".to_owned(), EnergyKind::Vigor)),
+        (BERSERK.to_owned(), ("BP".to_owned(), EnergyKind::Berserk)),
+    ]);
+
+    // BTreeMap — remaining stats sorted, excluding the ones already shown as energy bars
     let ordered_stats: std::collections::BTreeMap<
         String,
         lib_rpg::character_mod::stats::Attribute,
-    > = character.stats.all_stats.clone().into_iter().collect();
+    > = character
+        .stats
+        .all_stats
+        .clone()
+        .into_iter()
+        .filter(|(k, _)| k != HP && !energy_list.contains_key(k))
+        .collect();
 
     rsx! {
         SheetContent { side: s,
@@ -425,6 +557,24 @@ fn InventorySheet(s: SheetSide) -> Element {
                                         title: t!("gs-new-equipment-for", name : hero.db_full_name.clone()),
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+
+                // Energy bars — HP + whichever energies this hero has.
+                div { class: "character-energy-effects-box",
+                    BarComponent {
+                        max: character.stats.all_stats[HP].max,
+                        current: character.stats.all_stats[HP].current,
+                        name: HP.to_owned(),
+                    }
+                    for (stat, energy) in energy_list.iter() {
+                        if character.stats.all_stats[stat].max > 0 && character.has_energy_kind(&energy.1) {
+                            BarComponent {
+                                max: character.stats.all_stats[stat].max,
+                                current: character.stats.all_stats[stat].current,
+                                name: energy.0.clone(),
                             }
                         }
                     }
@@ -467,6 +617,14 @@ fn InventorySheet(s: SheetSide) -> Element {
                 // key, the effect's captured hero id / category list stays stale and
                 // the "new equipment" badges never clear for other heroes.
                 TabEquipment { key: "{character.id_name}", c: character.clone() }
+
+                // Using potions/consumables is only offered here while resting in the
+                // overworld — during combat, PotionList (reached via the ⚔️ menu) handles
+                // it instead, since that flow also picks a target and advances the turn.
+                if server_data_snap.core_game_data.game_phase == GamePhase::Overworld {
+                    Separator { horizontal: true, decorative: true }
+                    OverworldConsumablesSection { hero_id: character.id_name.clone() }
+                }
             }
 
             SheetFooter {
