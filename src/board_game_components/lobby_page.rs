@@ -82,7 +82,11 @@ pub fn LobbyPage() -> Element {
                     div { class: "lobby-info-item",
                         span { class: "lobby-info-label", {t!("lobby-players-label")} }
                         span { class: "lobby-info-value",
-                            "{server_data_snap.players_data.players_info.len()} / {server_data_snap.core_game_data.players_nb}"
+                            if server_data_snap.core_game_data.loaded_from_save {
+                                "{server_data_snap.players_data.players_info.len()} / {server_data_snap.core_game_data.players_nb}"
+                            } else {
+                                "{server_data_snap.players_data.players_info.len()}"
+                            }
                         }
                     }
                     {
