@@ -17,6 +17,7 @@ saved_data/*
 # desktop/mobile client bundle output (scripts/bundle_desktop.sh, scripts/bundle_mobile.sh)
 /bundle-desktop/*
 /bundle-android/*
+/bundle-android-aab/*
 /bundle-ios/*
 /db.sqlite-journal
 

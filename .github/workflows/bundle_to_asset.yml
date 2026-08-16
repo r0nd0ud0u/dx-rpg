@@ -3,6 +3,16 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      play_track:
+        description: 'Play Store track to upload the AAB to (only used if PLAY_SERVICE_ACCOUNT_JSON is set)'
+        type: choice
+        default: internal
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
 
 name: Upload Release Asset
 
@@ -533,6 +543,132 @@ jobs:
           path: bundle-android/rpg-adventure-v*-arm64-v8a.apk
           if-no-files-found: error
 
+  build-android-aab:
+    name: Upload Android App Bundle (Play Store)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Sync package version to git tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag_version="${GITHUB_REF#refs/tags/v}"
+          sed -i "0,/^version = \".*\"/s//version = \"${tag_version}\"/" Cargo.toml
+          grep -m1 '^version' Cargo.toml
+        shell: bash
+
+      - name: Update rust
+        run: rustup update stable
+
+      - name: Add Android rust target
+        run: rustup target add aarch64-linux-android
+
+      # Same as build-mobile: `dx bundle --platform android` also compiles a host-target
+      # companion build that pulls in dioxus-desktop's Linux GTK bindings.
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev
+
+      - name: Install Android NDK
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27
+          add-to-path: true
+
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.21.0
+
+      - name: Install dioxus-cli
+        run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Decodes the release keystore into the runner's temp dir — NOT the checkout —
+      # so there is no risk of it ever being picked up by `git add`/committed. This
+      # keystore is the app's one production signing identity; it must never be
+      # committed to the repo (unlike android/debug.keystore, which is intentionally
+      # public/throwaway). Requires these repo secrets to be set (Settings -> Secrets
+      # and variables -> Actions):
+      #   ANDROID_RELEASE_KEYSTORE_BASE64  - `base64 -w0 release.keystore` output
+      #   ANDROID_RELEASE_KEYSTORE_PASSWORD - keystore/key password (PKCS12 keystores
+      #                                        use one password for both)
+      #   ANDROID_RELEASE_KEY_ALIAS         - key alias
+      - name: Decode release keystore
+        run: echo "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+        shell: bash
+        env:
+          ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+
+      # dx has no CLI flag for keystore path/alias/password — [bundle.android] in
+      # Dioxus.toml is the only place dx reads Android signing config from. This
+      # patches that block, in this job's own throwaway checkout only, to point at
+      # the release keystore instead of the committed debug one used by
+      # build-mobile's sideloadable test APK.
+      - name: Patch Dioxus.toml with release signing config
+        run: |
+          sed -i \
+            -e "s|^jks_file = .*|jks_file = \"$RUNNER_TEMP/release.keystore\"|" \
+            -e "s|^jks_password = .*|jks_password = \"${ANDROID_RELEASE_KEYSTORE_PASSWORD}\"|" \
+            -e "s|^key_alias = .*|key_alias = \"${ANDROID_RELEASE_KEY_ALIAS}\"|" \
+            -e "s|^key_password = .*|key_password = \"${ANDROID_RELEASE_KEYSTORE_PASSWORD}\"|" \
+            Dioxus.toml
+          grep -A4 '^\[bundle.android\]' Dioxus.toml | sed -E 's/(password = ").*(")/\1***\2/'
+        shell: bash
+        env:
+          ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+
+      - name: Make bundle script executable
+        run: chmod +x ./scripts/bundle_android_aab.sh
+
+      - name: Build Android App Bundle
+        run: ./scripts/bundle_android_aab.sh aarch64-linux-android
+        shell: bash
+        env:
+          SERVER_URL: ${{ vars.SERVER_URL || 'https://aogin-world.com' }}
+          INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'false' }}
+
+      - name: Rename AAB with version
+        run: |
+          aab=$(find bundle-android-aab -name '*.aab' | head -n1)
+          version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          mv "$aab" "bundle-android-aab/rpg-adventure-v${version}.aab"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle_android_aab
+          path: bundle-android-aab/rpg-adventure-v*.aab
+          if-no-files-found: error
+
+      # Optional: auto-publish to Play Console via the Google Play Developer API.
+      # Skipped entirely (not failed) when PLAY_SERVICE_ACCOUNT_JSON isn't set, so this
+      # workflow keeps working as a plain downloadable-artifact build until that secret
+      # exists. Requires, one-time, in Google Cloud + Play Console (neither of which CI
+      # can do on your behalf):
+      #   1. Enable the "Google Play Android Developer API" on a Google Cloud project.
+      #   2. Create a service account in that project, generate a JSON key for it.
+      #   3. In Play Console -> Setup -> API access, link that Cloud project, then grant
+      #      the service account at least the "Release to testing tracks" permission
+      #      (Release manager) for this app.
+      #   4. Add the JSON key's raw contents as the PLAY_SERVICE_ACCOUNT_JSON repo secret.
+      # Also note: Google Play's API refuses the very first release of a brand-new app
+      # listing — that one upload has to be done manually through the Play Console web
+      # UI once, after which the API (and this step) works for every release after.
+      - name: Upload to Play Store
+        if: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: io.github.r0ndoudou.rpgadventure
+          releaseFiles: bundle-android-aab/rpg-adventure-v*.aab
+          track: ${{ github.event.inputs.play_track || 'internal' }}
+          status: completed
+
   build-ios:
     name: Upload iOS Simulator Client Asset
     runs-on: macos-latest
@@ -604,7 +740,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [build-web, build-desktop, build-mobile, build-ios]
+    needs: [build-web, build-desktop, build-mobile, build-android-aab, build-ios]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -621,5 +757,6 @@ jobs:
           files: |
             artifacts/**/*.zip
             artifacts/**/*.apk
+            artifacts/**/*.aab
             artifacts/**/*.deb
             artifacts/**/*.rpm
