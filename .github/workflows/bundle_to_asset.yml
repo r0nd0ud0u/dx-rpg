@@ -670,37 +670,16 @@ jobs:
           path: bundle-android-aab/rpg-adventure-v*.aab
           if-no-files-found: error
 
-      # Optional: auto-publish to Play Console via the Google Play Developer API.
-      # Skipped entirely (not failed) when PLAY_SERVICE_ACCOUNT_JSON isn't set, so this
-      # workflow keeps working as a plain downloadable-artifact build until that secret
-      # exists. Requires, one-time, in Google Cloud + Play Console (neither of which CI
-      # can do on your behalf):
-      #   1. Enable the "Google Play Android Developer API" on a Google Cloud project.
-      #   2. Create a service account in that project, generate a JSON key for it.
-      #   3. In Play Console -> Setup -> API access, link that Cloud project, then grant
-      #      the service account at least the "Release to testing tracks" permission
-      #      (Release manager) for this app.
-      #   4. Add the JSON key's raw contents as the PLAY_SERVICE_ACCOUNT_JSON repo secret.
-      # Also note: Google Play's API refuses the very first release of a brand-new app
-      # listing — that one upload has to be done manually through the Play Console web
-      # UI once, after which the API (and this step) works for every release after.
-      #
-      # `secrets` isn't a valid context in step/job `if:` conditionals (GitHub Actions
-      # only exposes it to `env:`/`with:`), so the presence check has to happen in a
-      # run step that exports the result via GITHUB_OUTPUT instead.
-      - name: Check for Play Store secret
-        id: check-play-secret
-        run: echo "set=${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}" >> "$GITHUB_OUTPUT"
-
-      - name: Upload to Play Store
-        if: steps.check-play-secret.outputs.set == 'true'
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: io.github.r0ndoudou.rpgadventure
-          releaseFiles: bundle-android-aab/rpg-adventure-v*.aab
-          track: ${{ github.event.inputs.play_track || 'internal' }}
-          status: completed
+      # Play Store auto-upload (via the Google Play Developer API) is disabled for now —
+      # the Play Console account/service-account linking isn't finished yet, so the
+      # upload step was failing. This job now only builds and uploads the .aab as a
+      # plain GitHub Release asset. To re-enable once Play Console access works:
+      # add back a step using r0adkll/upload-google-play@v1 with
+      # serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }},
+      # packageName: io.github.r0ndoudou.rpgadventure,
+      # releaseFiles: bundle-android-aab/rpg-adventure-v*.aab, tracks: internal,
+      # status: completed — gated behind a "secrets != ''" check exported through
+      # GITHUB_OUTPUT from a run step (secrets isn't usable directly in step `if:`).
 
   build-ios:
     name: Upload iOS Simulator Client Asset
