@@ -612,6 +612,18 @@ jobs:
         env:
           ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
 
+      # Fails fast with a clear error if ANDROID_RELEASE_KEYSTORE_BASE64 decoded to
+      # something that isn't a valid keystore (bad copy/paste into the GitHub secret,
+      # stray characters, wrong file encoded, etc.), instead of a confusing
+      # KeytoolException 2+ minutes into the Gradle build. keytool ships with the
+      # JDK that's already preinstalled on GitHub-hosted ubuntu runners.
+      - name: Verify release keystore
+        run: keytool -list -keystore release.keystore -storepass "$ANDROID_RELEASE_KEYSTORE_PASSWORD" -alias "$ANDROID_RELEASE_KEY_ALIAS" > /dev/null
+        shell: bash
+        env:
+          ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+
       # dx has no CLI flag for keystore path/alias/password — [bundle.android] in
       # Dioxus.toml is the only place dx reads Android signing config from. This
       # patches that block, in this job's own throwaway checkout only, to point at
