@@ -659,8 +659,16 @@ jobs:
       # Also note: Google Play's API refuses the very first release of a brand-new app
       # listing — that one upload has to be done manually through the Play Console web
       # UI once, after which the API (and this step) works for every release after.
+      #
+      # `secrets` isn't a valid context in step/job `if:` conditionals (GitHub Actions
+      # only exposes it to `env:`/`with:`), so the presence check has to happen in a
+      # run step that exports the result via GITHUB_OUTPUT instead.
+      - name: Check for Play Store secret
+        id: check-play-secret
+        run: echo "set=${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}" >> "$GITHUB_OUTPUT"
+
       - name: Upload to Play Store
-        if: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
+        if: steps.check-play-secret.outputs.set == 'true'
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
