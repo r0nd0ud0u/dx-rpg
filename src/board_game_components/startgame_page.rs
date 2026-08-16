@@ -160,6 +160,13 @@ pub fn RunningGamePage() -> Element {
         .map(|ow| ow.map_id.clone())
         .or_else(|| universe_map(&snap_server_data.core_game_data.universe).map(str::to_owned));
 
+    // The game is about to auto-enter the overworld (Running phase, no overworld state
+    // yet, universe has a starting map) but the server hasn't confirmed it yet. Skip
+    // rendering the gameboard during this window to avoid a brief combat-view flash.
+    let pending_overworld_entry = !in_overworld
+        && snap_server_data.core_game_data.overworld.is_none()
+        && universe_map(&snap_server_data.core_game_data.universe).is_some();
+
     // Auto-enter overworld the first time the game reaches Running phase for
     // universes that have an overworld map, and no saved overworld state exists yet.
     let mut auto_entered = use_signal(|| false);
@@ -193,7 +200,7 @@ pub fn RunningGamePage() -> Element {
                 OverworldMap {}
             }
         }
-        if !in_overworld {
+        if !in_overworld && !pending_overworld_entry {
             if server_data().core_game_data.game_manager.game_state.status == GameStatus::EndOfGame {
                 div { class: "gameover-page",
                     h1 { class: "gameover-title", {t!("startgame-game-over")} }
