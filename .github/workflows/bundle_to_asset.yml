@@ -50,7 +50,7 @@ jobs:
         uses: cargo-bins/cargo-binstall@v1.21.0
 
       # Same class of failure as the cargo-binstall comment above, one level
-      # down: dioxus-cli 0.7.9 does publish a prebuilt Windows binary
+      # down: dioxus-cli 0.7.10 does publish a prebuilt Windows binary
       # (dx-x86_64-pc-windows-msvc.zip on its GitHub release), but binstall's
       # default `--strategies` list ends in `compile` as a silent last-resort
       # fallback if fetching/verifying that prebuilt asset ever hiccups. That
@@ -70,7 +70,7 @@ jobs:
       # Actions injects into every run for free raises that cap to 5000/hour
       # and needs no extra repo secret.
       - name: Install dioxus-cli
-        run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
+        run: cargo binstall dioxus-cli@0.7.10 --force --disable-strategies compile
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -166,7 +166,7 @@ jobs:
         uses: cargo-bins/cargo-binstall@v1.21.0
 
       # Same class of failure as the cargo-binstall comment above, one level
-      # down: dioxus-cli 0.7.9 does publish a prebuilt Windows binary
+      # down: dioxus-cli 0.7.10 does publish a prebuilt Windows binary
       # (dx-x86_64-pc-windows-msvc.zip on its GitHub release), but binstall's
       # default `--strategies` list ends in `compile` as a silent last-resort
       # fallback if fetching/verifying that prebuilt asset ever hiccups. That
@@ -186,7 +186,7 @@ jobs:
       # Actions injects into every run for free raises that cap to 5000/hour
       # and needs no extra repo secret.
       - name: Install dioxus-cli
-        run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
+        run: cargo binstall dioxus-cli@0.7.10 --force --disable-strategies compile
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -256,8 +256,8 @@ jobs:
           RPMREBUILD_ROOT_DIR: ${{ github.workspace }}/.rpmrebuild-tool
         shell: bash
 
-      # dioxus-cli 0.7.9's BundleConfig has no `rpm` field at all (verified
-      # against packages/cli/src/config/bundle.rs at the v0.7.9 tag) — its
+      # dioxus-cli 0.7.10's BundleConfig has no `rpm` field at all (verified
+      # against packages/cli/src/config/bundle.rs at the v0.7.10 tag) — its
       # .rpm bundler (bundler/linux.rs bundle_linux_rpm()) reuses the entire
       # DebianSettings struct from [bundle.deb] instead, so every entry in
       # the .rpm's Requires ends up as the literal .deb-style package name instead of the
@@ -373,7 +373,7 @@ jobs:
 
       # arm64-v8a covers essentially every real Android phone since ~2019, and is the
       # only 32-/64-bit split that matters here: dioxus's manganis crate (its asset
-      # macro backend) hard-errors on 32-bit Android targets as of dioxus 0.7.9
+      # macro backend) hard-errors on 32-bit Android targets as of dioxus 0.7.10
       # ("Only 64-bit Android targets are supported"), so armv7-linux-androideabi
       # (armeabi-v7a, older 32-bit devices) cannot be built at all with this version.
       - name: Add Android rust target
@@ -419,7 +419,7 @@ jobs:
         uses: cargo-bins/cargo-binstall@v1.21.0
 
       # Same class of failure as the cargo-binstall comment above, one level
-      # down: dioxus-cli 0.7.9 does publish a prebuilt Windows binary
+      # down: dioxus-cli 0.7.10 does publish a prebuilt Windows binary
       # (dx-x86_64-pc-windows-msvc.zip on its GitHub release), but binstall's
       # default `--strategies` list ends in `compile` as a silent last-resort
       # fallback if fetching/verifying that prebuilt asset ever hiccups. That
@@ -439,7 +439,7 @@ jobs:
       # Actions injects into every run for free raises that cap to 5000/hour
       # and needs no extra repo secret.
       - name: Install dioxus-cli
-        run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
+        run: cargo binstall dioxus-cli@0.7.10 --force --disable-strategies compile
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -458,7 +458,7 @@ jobs:
       #
       # assembleRelease also turns on R8 minification, which enables the
       # `lintVitalRelease`/`lintVitalAnalyzeRelease` task as a dependency. That task
-      # is known to crash on some AGP 8.8+/Gradle 9.1+ combinations (dioxus-cli 0.7.9
+      # is known to crash on some AGP 8.8+/Gradle 9.1+ combinations (dioxus-cli 0.7.10
       # pins AGP 8.7.0 + Gradle 9.1.0 — see DioxusLabs/dioxus#5251); since dx bundle
       # gives no way to pass `-x lintVitalAnalyzeRelease` through to gradle, and the
       # generated gradle project is rewritten from scratch on every build (so we
@@ -502,7 +502,7 @@ jobs:
           version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
           mv "$apk" "bundle-android/rpg-adventure-v${version}-arm64-v8a.apk"
 
-      # dioxus-cli 0.7.9's Android bundler hardcodes its launcher icon to
+      # dioxus-cli 0.7.10's Android bundler hardcodes its launcher icon to
       # Android Studio's stock "New Project" default (verified by downloading
       # a real release APK and extracting res/*.webp directly) — no
       # Dioxus.toml field reaches that code path. See patch_android_icon.sh
@@ -582,7 +582,7 @@ jobs:
         uses: cargo-bins/cargo-binstall@v1.21.0
 
       - name: Install dioxus-cli
-        run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
+        run: cargo binstall dioxus-cli@0.7.10 --force --disable-strategies compile
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -738,7 +738,7 @@ jobs:
         uses: cargo-bins/cargo-binstall@v1.21.0
 
       - name: Install dioxus-cli
-        run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
+        run: cargo binstall dioxus-cli@0.7.10 --force --disable-strategies compile
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
