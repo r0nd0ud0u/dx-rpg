@@ -587,18 +587,27 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Decodes the release keystore into the runner's temp dir — NOT the checkout —
-      # so there is no risk of it ever being picked up by `git add`/committed. This
-      # keystore is the app's one production signing identity; it must never be
-      # committed to the repo (unlike android/debug.keystore, which is intentionally
-      # public/throwaway). Requires these repo secrets to be set (Settings -> Secrets
-      # and variables -> Actions):
+      # Decodes the release keystore into the checkout root as a gitignored file
+      # (see .gitignore's /release.keystore entry) rather than $RUNNER_TEMP: dx's
+      # generated Gradle config resolves jks_file via Java's `File(projectDir,
+      # child)`, which — per its javadoc — silently strips the leading slash off
+      # an absolute `child` and joins it onto `projectDir` instead of using it
+      # as-is. Pointing jks_file at an absolute $RUNNER_TEMP path therefore
+      # produced a mangled path like ".../dx-rpg/dx-rpg/home/runner/.../_temp/
+      # release.keystore" and failed with "Keystore file ... not found". A path
+      # relative to the checkout root (== Gradle's projectDir here) resolves
+      # correctly either way. The "Delete release keystore" step below removes
+      # it once the build no longer needs it. This keystore is the app's one
+      # production signing identity; it must never be committed to the repo
+      # (unlike android/debug.keystore, which is intentionally public/throwaway).
+      # Requires these repo secrets to be set (Settings -> Secrets and variables
+      # -> Actions):
       #   ANDROID_RELEASE_KEYSTORE_BASE64  - `base64 -w0 release.keystore` output
       #   ANDROID_RELEASE_KEYSTORE_PASSWORD - keystore/key password (PKCS12 keystores
       #                                        use one password for both)
       #   ANDROID_RELEASE_KEY_ALIAS         - key alias
       - name: Decode release keystore
-        run: echo "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+        run: echo "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 -d > release.keystore
         shell: bash
         env:
           ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
@@ -611,7 +620,7 @@ jobs:
       - name: Patch Dioxus.toml with release signing config
         run: |
           sed -i \
-            -e "s|^jks_file = .*|jks_file = \"$RUNNER_TEMP/release.keystore\"|" \
+            -e "s|^jks_file = .*|jks_file = \"release.keystore\"|" \
             -e "s|^jks_password = .*|jks_password = \"${ANDROID_RELEASE_KEYSTORE_PASSWORD}\"|" \
             -e "s|^key_alias = .*|key_alias = \"${ANDROID_RELEASE_KEY_ALIAS}\"|" \
             -e "s|^key_password = .*|key_password = \"${ANDROID_RELEASE_KEYSTORE_PASSWORD}\"|" \
@@ -631,6 +640,10 @@ jobs:
         env:
           SERVER_URL: ${{ vars.SERVER_URL || 'https://aogin-world.com' }}
           INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'false' }}
+
+      - name: Delete release keystore
+        if: always()
+        run: rm -f release.keystore
 
       - name: Rename AAB with version
         run: |

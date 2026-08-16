@@ -21,6 +21,11 @@ saved_data/*
 /bundle-ios/*
 /db.sqlite-journal
 
+# CI-decoded release signing keystore (build-android-aab job in
+# bundle_to_asset.yml) — never the real production keystore, just the runner's
+# throwaway checkout copy
+/release.keystore
+
 /offlines/games/*
 
 db.sqlite
