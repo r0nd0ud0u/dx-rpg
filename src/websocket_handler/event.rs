@@ -95,6 +95,9 @@ pub enum ClientEvent {
     RequestTargetForConsumable(String, String, String, bool), // server_name, player_name, consumable_name, is_party
     UsePotion(String, String, String, String), // server_name, player_name, potion_name, target_id_name
     UsePartyPotion(String, String, String, String), // server_name, player_name, potion_name, target_id_name
+    // Overworld consumable use (no target picker, always self-administered, doesn't
+    // advance a combat turn): server_name, hero_id_name, consumable_name, is_party
+    UseOverworldConsumable(String, String, String, bool),
     BuyItem(String, String, String, String), // server_name, character_id_name, item_name, item_kind ("Equipment"|"Consumable")
     SellItem(String, String, String, String), // server_name, character_id_name, item_name_or_unique_name, item_kind
     MovePlayer(String, String, Direction, String), // server_name, player_name, direction, lang ("en"|"fr")
@@ -355,6 +358,15 @@ pub async fn on_rcv_client_event(
                                     use_party_potion_handler(&server_name, &player_name, &potion_name, &target_id_name);
                                     update_core_game_data_after_atk(&server_name, None, tx_server.clone()).await;
                                     process_ennemy_atk(&server_name, tx_server.clone()).await;
+                                } else {
+                                    tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
+                            }
+                            Ok(ClientEvent::UseOverworldConsumable(server_name, hero_id_name, consumable_name, is_party)) => {
+                                if client_can_act(&server_name, client_id) {
+                                    tracing::info!("Hero {} using overworld consumable {} (party={}) on server {}", hero_id_name, consumable_name, is_party, server_name);
+                                    use_overworld_consumable_handler(&server_name, &hero_id_name, &consumable_name, is_party);
+                                    update_clients_server_data(&server_name);
                                 } else {
                                     tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
                                 }
@@ -1214,6 +1226,80 @@ pub fn use_party_potion_handler(
             );
             server_data.core_game_data.game_manager.logs.push(entry);
             server_data.core_game_data.last_action_header = header;
+        }
+    }
+}
+
+/// Use a consumable outside combat (overworld resting): always self-administered by
+/// `hero_id_name`, no turn advance and no enemy counter-attack — unlike `use_potion_handler`
+/// / `use_party_potion_handler`, which are wired to the combat turn flow.
+#[cfg(feature = "server")]
+fn use_overworld_consumable_handler(
+    server_name: &str,
+    hero_id_name: &str,
+    consumable_name: &str,
+    is_party: bool,
+) {
+    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let Some(server_data) = sm.servers_data.get_mut(server_name) else {
+        tracing::error!(
+            "use_overworld_consumable_handler: server {} not found",
+            server_name
+        );
+        return;
+    };
+    let game_state = server_data.core_game_data.game_manager.game_state.clone();
+    let pm = &mut server_data.core_game_data.game_manager.pm;
+
+    let result = if is_party {
+        pm.use_party_consumable(hero_id_name, consumable_name, &game_state)
+    } else {
+        let Some(hero) = pm.get_mut_active_hero_character(hero_id_name) else {
+            tracing::warn!(
+                "use_overworld_consumable_handler: hero {} not found",
+                hero_id_name
+            );
+            return;
+        };
+        let Some(consumable) = hero
+            .inventory
+            .consumables
+            .iter()
+            .find(|c| c.name == consumable_name)
+            .cloned()
+        else {
+            tracing::warn!(
+                "use_overworld_consumable_handler: consumable {} not found on {}",
+                consumable_name,
+                hero_id_name
+            );
+            return;
+        };
+        let launcher_stats = hero.stats.clone();
+        hero.use_consumable(consumable, &game_state, &launcher_stats)
+            .map(|_| ())
+    };
+
+    match result {
+        Ok(()) => {
+            tracing::info!(
+                "Hero {} used {} consumable {} in overworld successfully",
+                hero_id_name,
+                if is_party { "party" } else { "personal" },
+                consumable_name
+            );
+            let msg = format!("💊 {} uses {}", hero_id_name, consumable_name);
+            server_data.core_game_data.game_manager.logs.push(LogData {
+                message: utils::format_string_with_timestamp(&msg),
+                color: String::new(),
+            });
+        }
+        Err(e) => {
+            tracing::error!(
+                "use_overworld_consumable_handler: failed to use {}: {}",
+                consumable_name,
+                e
+            );
         }
     }
 }
