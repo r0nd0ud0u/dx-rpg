@@ -544,7 +544,7 @@ graph LR
 ### Prerequisites
 
 - Rust stable toolchain
-- Dioxus CLI (`cargo binstall dioxus-cli@0.7.9 --force`)
+- Dioxus CLI (`cargo binstall dioxus-cli@0.7.10 --force`)
 - SSH access to the lib-rpg private dependency (add to `~/.cargo/config.toml`):
 
 ```toml
@@ -663,7 +663,7 @@ default ABI, which may not match your phone's — the app then simply fails to i
 `rustup target add <triple>`. arm64-v8a (`aarch64-linux-android`) covers essentially every
 real Android phone since ~2019; `x86_64-linux-android` also works, for emulator testing.
 32-bit targets (`armv7-linux-androideabi`, older devices) don't build — `dioxus`'s
-`manganis` crate hard-requires a 64-bit Android target as of dioxus 0.7.9.
+`manganis` crate hard-requires a 64-bit Android target as of dioxus 0.7.10.
 
 Unlike the web bundle, these client-only bundles don't ship `offlines/`, `db.sqlite`,
 or a `.env` file — that data belongs to the server, not the client. Set `SERVER_URL`
@@ -926,7 +926,7 @@ Windows needs its own entry: dx's Windows bundler ignores the generic
 
 ### Android launcher icon
 
-Android is the odd one out: **dioxus-cli 0.7.9 hardcodes the launcher icon** and
+Android is the odd one out: **dioxus-cli 0.7.10 hardcodes the launcher icon** and
 exposes no configuration hook for it — the APK ships Android Studio's stock "New
 Project" placeholder (green grid, robot silhouette). `scripts/patch_android_icon.sh`
 therefore rewrites the icon resources in the built APK, then re-signs it with the

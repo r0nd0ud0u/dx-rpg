@@ -3,6 +3,16 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      play_track:
+        description: 'Play Store track to upload the AAB to (only used if PLAY_SERVICE_ACCOUNT_JSON is set)'
+        type: choice
+        default: internal
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
 
 name: Upload Release Asset
 
@@ -40,7 +50,7 @@ jobs:
         uses: cargo-bins/cargo-binstall@v1.21.0
 
       # Same class of failure as the cargo-binstall comment above, one level
-      # down: dioxus-cli 0.7.9 does publish a prebuilt Windows binary
+      # down: dioxus-cli 0.7.10 does publish a prebuilt Windows binary
       # (dx-x86_64-pc-windows-msvc.zip on its GitHub release), but binstall's
       # default `--strategies` list ends in `compile` as a silent last-resort
       # fallback if fetching/verifying that prebuilt asset ever hiccups. That
@@ -60,7 +70,7 @@ jobs:
       # Actions injects into every run for free raises that cap to 5000/hour
       # and needs no extra repo secret.
       - name: Install dioxus-cli
-        run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
+        run: cargo binstall dioxus-cli@0.7.10 --force --disable-strategies compile
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -156,7 +166,7 @@ jobs:
         uses: cargo-bins/cargo-binstall@v1.21.0
 
       # Same class of failure as the cargo-binstall comment above, one level
-      # down: dioxus-cli 0.7.9 does publish a prebuilt Windows binary
+      # down: dioxus-cli 0.7.10 does publish a prebuilt Windows binary
       # (dx-x86_64-pc-windows-msvc.zip on its GitHub release), but binstall's
       # default `--strategies` list ends in `compile` as a silent last-resort
       # fallback if fetching/verifying that prebuilt asset ever hiccups. That
@@ -176,7 +186,7 @@ jobs:
       # Actions injects into every run for free raises that cap to 5000/hour
       # and needs no extra repo secret.
       - name: Install dioxus-cli
-        run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
+        run: cargo binstall dioxus-cli@0.7.10 --force --disable-strategies compile
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -246,8 +256,8 @@ jobs:
           RPMREBUILD_ROOT_DIR: ${{ github.workspace }}/.rpmrebuild-tool
         shell: bash
 
-      # dioxus-cli 0.7.9's BundleConfig has no `rpm` field at all (verified
-      # against packages/cli/src/config/bundle.rs at the v0.7.9 tag) — its
+      # dioxus-cli 0.7.10's BundleConfig has no `rpm` field at all (verified
+      # against packages/cli/src/config/bundle.rs at the v0.7.10 tag) — its
       # .rpm bundler (bundler/linux.rs bundle_linux_rpm()) reuses the entire
       # DebianSettings struct from [bundle.deb] instead, so every entry in
       # the .rpm's Requires ends up as the literal .deb-style package name instead of the
@@ -363,7 +373,7 @@ jobs:
 
       # arm64-v8a covers essentially every real Android phone since ~2019, and is the
       # only 32-/64-bit split that matters here: dioxus's manganis crate (its asset
-      # macro backend) hard-errors on 32-bit Android targets as of dioxus 0.7.9
+      # macro backend) hard-errors on 32-bit Android targets as of dioxus 0.7.10
       # ("Only 64-bit Android targets are supported"), so armv7-linux-androideabi
       # (armeabi-v7a, older 32-bit devices) cannot be built at all with this version.
       - name: Add Android rust target
@@ -409,7 +419,7 @@ jobs:
         uses: cargo-bins/cargo-binstall@v1.21.0
 
       # Same class of failure as the cargo-binstall comment above, one level
-      # down: dioxus-cli 0.7.9 does publish a prebuilt Windows binary
+      # down: dioxus-cli 0.7.10 does publish a prebuilt Windows binary
       # (dx-x86_64-pc-windows-msvc.zip on its GitHub release), but binstall's
       # default `--strategies` list ends in `compile` as a silent last-resort
       # fallback if fetching/verifying that prebuilt asset ever hiccups. That
@@ -429,7 +439,7 @@ jobs:
       # Actions injects into every run for free raises that cap to 5000/hour
       # and needs no extra repo secret.
       - name: Install dioxus-cli
-        run: cargo binstall dioxus-cli@0.7.9 --force --disable-strategies compile
+        run: cargo binstall dioxus-cli@0.7.10 --force --disable-strategies compile
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -448,7 +458,7 @@ jobs:
       #
       # assembleRelease also turns on R8 minification, which enables the
       # `lintVitalRelease`/`lintVitalAnalyzeRelease` task as a dependency. That task
-      # is known to crash on some AGP 8.8+/Gradle 9.1+ combinations (dioxus-cli 0.7.9
+      # is known to crash on some AGP 8.8+/Gradle 9.1+ combinations (dioxus-cli 0.7.10
       # pins AGP 8.7.0 + Gradle 9.1.0 — see DioxusLabs/dioxus#5251); since dx bundle
       # gives no way to pass `-x lintVitalAnalyzeRelease` through to gradle, and the
       # generated gradle project is rewritten from scratch on every build (so we
@@ -492,7 +502,7 @@ jobs:
           version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
           mv "$apk" "bundle-android/rpg-adventure-v${version}-arm64-v8a.apk"
 
-      # dioxus-cli 0.7.9's Android bundler hardcodes its launcher icon to
+      # dioxus-cli 0.7.10's Android bundler hardcodes its launcher icon to
       # Android Studio's stock "New Project" default (verified by downloading
       # a real release APK and extracting res/*.webp directly) — no
       # Dioxus.toml field reaches that code path. See patch_android_icon.sh
@@ -533,9 +543,216 @@ jobs:
           path: bundle-android/rpg-adventure-v*-arm64-v8a.apk
           if-no-files-found: error
 
+  build-android-aab:
+    name: Upload Android App Bundle (Play Store)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Sync package version to git tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag_version="${GITHUB_REF#refs/tags/v}"
+          sed -i "0,/^version = \".*\"/s//version = \"${tag_version}\"/" Cargo.toml
+          grep -m1 '^version' Cargo.toml
+        shell: bash
+
+      - name: Update rust
+        run: rustup update stable
+
+      - name: Add Android rust target
+        run: rustup target add aarch64-linux-android
+
+      # Same as build-mobile: `dx bundle --platform android` also compiles a host-target
+      # companion build that pulls in dioxus-desktop's Linux GTK bindings.
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev
+
+      - name: Install Android NDK
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27
+          add-to-path: true
+
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.21.0
+
+      - name: Install dioxus-cli
+        run: cargo binstall dioxus-cli@0.7.10 --force --disable-strategies compile
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Decodes the release keystore into the checkout root as a gitignored file
+      # (see .gitignore's /release.keystore entry) rather than $RUNNER_TEMP: dx's
+      # generated Gradle config resolves jks_file via Java's `File(projectDir,
+      # child)`, which — per its javadoc — silently strips the leading slash off
+      # an absolute `child` and joins it onto `projectDir` instead of using it
+      # as-is. Pointing jks_file at an absolute $RUNNER_TEMP path therefore
+      # produced a mangled path like ".../dx-rpg/dx-rpg/home/runner/.../_temp/
+      # release.keystore" and failed with "Keystore file ... not found". A path
+      # relative to the checkout root (== Gradle's projectDir here) resolves
+      # correctly either way. The "Delete release keystore" step below removes
+      # it once the build no longer needs it. This keystore is the app's one
+      # production signing identity; it must never be committed to the repo
+      # (unlike android/debug.keystore, which is intentionally public/throwaway).
+      # Requires these repo secrets to be set (Settings -> Secrets and variables
+      # -> Actions):
+      #   ANDROID_RELEASE_KEYSTORE_BASE64  - `base64 -w0 release.keystore` output
+      #   ANDROID_RELEASE_KEYSTORE_PASSWORD - keystore/key password (PKCS12 keystores
+      #                                        use one password for both)
+      #   ANDROID_RELEASE_KEY_ALIAS         - key alias
+      - name: Decode release keystore
+        run: echo "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 -d > release.keystore
+        shell: bash
+        env:
+          ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+
+      # Fails fast with a clear error if ANDROID_RELEASE_KEYSTORE_BASE64 decoded to
+      # something that isn't a valid keystore (bad copy/paste into the GitHub secret,
+      # stray characters, wrong file encoded, etc.), instead of a confusing
+      # KeytoolException 2+ minutes into the Gradle build. keytool ships with the
+      # JDK that's already preinstalled on GitHub-hosted ubuntu runners.
+      - name: Verify release keystore
+        run: keytool -list -keystore release.keystore -storepass "$ANDROID_RELEASE_KEYSTORE_PASSWORD" -alias "$ANDROID_RELEASE_KEY_ALIAS" > /dev/null
+        shell: bash
+        env:
+          ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+
+      # dx has no CLI flag for keystore path/alias/password — [bundle.android] in
+      # Dioxus.toml is the only place dx reads Android signing config from. This
+      # patches that block, in this job's own throwaway checkout only, to point at
+      # the release keystore instead of the committed debug one used by
+      # build-mobile's sideloadable test APK.
+      - name: Patch Dioxus.toml with release signing config
+        run: |
+          sed -i \
+            -e "s|^jks_file = .*|jks_file = \"release.keystore\"|" \
+            -e "s|^jks_password = .*|jks_password = \"${ANDROID_RELEASE_KEYSTORE_PASSWORD}\"|" \
+            -e "s|^key_alias = .*|key_alias = \"${ANDROID_RELEASE_KEY_ALIAS}\"|" \
+            -e "s|^key_password = .*|key_password = \"${ANDROID_RELEASE_KEYSTORE_PASSWORD}\"|" \
+            Dioxus.toml
+          grep -A4 '^\[bundle.android\]' Dioxus.toml | sed -E 's/(password = ").*(")/\1***\2/'
+        shell: bash
+        env:
+          ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+
+      - name: Make bundle script executable
+        run: chmod +x ./scripts/bundle_android_aab.sh
+
+      - name: Build Android App Bundle
+        run: ./scripts/bundle_android_aab.sh aarch64-linux-android
+        shell: bash
+        env:
+          SERVER_URL: ${{ vars.SERVER_URL || 'https://aogin-world.com' }}
+          INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'false' }}
+
+      - name: Delete release keystore
+        if: always()
+        run: rm -f release.keystore
+
+      - name: Rename AAB with version
+        run: |
+          aab=$(find bundle-android-aab -name '*.aab' | head -n1)
+          version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          mv "$aab" "bundle-android-aab/rpg-adventure-v${version}.aab"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle_android_aab
+          path: bundle-android-aab/rpg-adventure-v*.aab
+          if-no-files-found: error
+
+      # Play Store auto-upload (via the Google Play Developer API) is disabled for now —
+      # the Play Console account/service-account linking isn't finished yet, so the
+      # upload step was failing. This job now only builds and uploads the .aab as a
+      # plain GitHub Release asset. To re-enable once Play Console access works:
+      # add back a step using r0adkll/upload-google-play@v1 with
+      # serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }},
+      # packageName: io.github.r0ndoudou.rpgadventure,
+      # releaseFiles: bundle-android-aab/rpg-adventure-v*.aab, tracks: internal,
+      # status: completed — gated behind a "secrets != ''" check exported through
+      # GITHUB_OUTPUT from a run step (secrets isn't usable directly in step `if:`).
+
+  build-ios:
+    name: Upload iOS Simulator Client Asset
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Sync package version to git tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag_version="${GITHUB_REF#refs/tags/v}"
+          sed -i '' "0,/^version = \".*\"/s//version = \"${tag_version}\"/" Cargo.toml
+          grep -m1 '^version' Cargo.toml
+        shell: bash
+
+      - name: Update rust
+        run: rustup update stable
+
+      # aarch64-apple-ios-sim targets the Simulator on Apple Silicon Macs, which is
+      # what macos-latest runners are. This produces an UNSIGNED .app (see
+      # scripts/bundle_ios.sh) that only runs in Xcode's Simulator — not on a real
+      # device, which needs a paid Apple Developer account plus a signing cert and
+      # provisioning profile that this workflow deliberately does not set up.
+      - name: Add iOS Simulator rust target
+        run: rustup target add aarch64-apple-ios-sim
+
+      # `cargo install cargo-binstall` builds it from source and is prone to
+      # breaking on upstream dependency-resolution conflicts in its own Cargo.lock
+      # (e.g. duplicate incompatible `compact_str` versions) since `cargo install`
+      # doesn't respect the published crate's lockfile by default. The official
+      # action instead fetches a prebuilt cargo-binstall binary for the runner's
+      # platform, sidestepping that entirely.
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.21.0
+
+      - name: Install dioxus-cli
+        run: cargo binstall dioxus-cli@0.7.10 --force --disable-strategies compile
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Make bundle script executable
+        run: chmod +x ./scripts/bundle_ios.sh
+
+      # Same reasoning as build-mobile: SERVER_URL/INSECURE_ACCEPT_INVALID_CERTS get
+      # baked in at build time (see src/main.rs's option_env!() fallback and build.rs)
+      # so the released client works out of the box. Override via repo Settings ->
+      # Secrets and variables -> Actions -> Variables without touching this file.
+      - name: Build iOS Simulator client
+        run: ./scripts/bundle_ios.sh aarch64-apple-ios-sim
+        shell: bash
+        env:
+          SERVER_URL: ${{ vars.SERVER_URL || 'https://aogin-world.com' }}
+          INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'false' }}
+
+      - name: Zip .app bundle
+        run: |
+          version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          app=$(find bundle-ios -name '*.app' -maxdepth 2 | head -n1)
+          ditto -c -k --sequesterRsrc --keepParent "$app" "rpg-adventure-v${version}-ios-simulator.zip"
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle_ios_simulator
+          path: rpg-adventure-v*-ios-simulator.zip
+          if-no-files-found: error
+
   release:
     name: Create GitHub Release
-    needs: [build-web, build-desktop, build-mobile]
+    needs: [build-web, build-desktop, build-mobile, build-android-aab, build-ios]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -552,5 +769,6 @@ jobs:
           files: |
             artifacts/**/*.zip
             artifacts/**/*.apk
+            artifacts/**/*.aab
             artifacts/**/*.deb
             artifacts/**/*.rpm
