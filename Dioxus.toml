@@ -60,7 +60,7 @@ resources = ["assets/*"]
 # only reaches Linux (.deb/.rpm/AppImage) and macOS; see [bundle.windows]
 # below for the separate Windows .exe/installer icon setting, and
 # [web.app]/src/main.rs's FAVICON asset! for the web favicon — dioxus-cli
-# 0.7.9 doesn't wire any of these into the Android launcher icon, which
+# 0.7.10 doesn't wire any of these into the Android launcher icon, which
 # stays dx's own hardcoded default regardless of what's set here.
 icon = ["assets/icon-512.png"]
 
@@ -78,7 +78,7 @@ icon = ["assets/icon-512.png"]
 # even start with "error while loading shared libraries: libxdo.so.3: cannot
 # open shared object file". Package name differs per distro family: Debian/
 # Ubuntu ships it as libxdo3, Fedora/RPM as libxdo.
-# dioxus-cli 0.7.9's BundleConfig struct (packages/cli/src/config/bundle.rs)
+# dioxus-cli 0.7.10's BundleConfig struct (packages/cli/src/config/bundle.rs)
 # has no `rpm` field at all — a `[bundle.rpm]` table here would be silently
 # dropped by serde's default unknown-field handling. `bundle_linux_rpm()`
 # (packages/cli/src/bundler/linux.rs) reuses the *entire* DebianSettings
