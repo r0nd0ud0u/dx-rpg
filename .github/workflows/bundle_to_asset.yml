@@ -614,6 +614,16 @@ jobs:
           ndk-version: r27
           add-to-path: true
 
+      # dx bundle links against platforms;android-34 by default (dioxus-cli 0.7.10's
+      # generated Gradle project hardcodes compileSdk/targetSdk 34 — see build-mobile's
+      # matching step). Play Console requires targetSdkVersion >= 35 for new uploads
+      # ("must target at least API level 35"), so android-35 needs to be present on
+      # this runner too for the "Force Android API 35" init script below to compile
+      # against. sdkmanager no-ops quickly if already present.
+      - name: Ensure Android build-tools and platform are installed
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "build-tools;35.0.0" "platforms;android-35" > /dev/null
+
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@v1.21.0
 
@@ -682,6 +692,36 @@ jobs:
         env:
           ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
           ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+
+      # dx bundle's generated Gradle project is rewritten from scratch on every
+      # build (same constraint as build-mobile's "Disable Android lint-vital
+      # checks" step — there's no build.gradle.kts to edit ahead of time), and
+      # dioxus-cli 0.7.10 hardcodes compileSdk/targetSdk 34 in it. Play Console
+      # rejects AAB uploads below targetSdkVersion 35 ("must target at least
+      # API level 35"), so this overrides both via a global Gradle init script
+      # instead — afterEvaluate runs after the generated build.gradle's own
+      # `android { }` block has already set 34, so the override sticks. It also
+      # sets ndk.debugSymbolLevel so the AAB includes native (.so) debug symbols
+      # for Play Console's crash/ANR analysis (its "no symbol file uploaded"
+      # warning). SYMBOL_TABLE, not FULL: Cargo.toml has no [profile.release]
+      # `debug`/`strip` override, so the .so carries no DWARF line-info to begin
+      # with (Cargo's release default is debug = false) — only the function
+      # symbol table survives, which is exactly what SYMBOL_TABLE packages;
+      # FULL would just bloat the AAB for debug info that isn't there.
+      - name: Force Android API 35 and native debug symbols
+        run: |
+          mkdir -p ~/.gradle/init.d
+          cat > ~/.gradle/init.d/force-android-35.gradle <<'EOF'
+          allprojects {
+              afterEvaluate { project ->
+                  if (project.plugins.hasPlugin('com.android.application')) {
+                      project.android.compileSdkVersion(35)
+                      project.android.defaultConfig.targetSdkVersion(35)
+                      project.android.buildTypes.release.ndk.debugSymbolLevel = 'SYMBOL_TABLE'
+                  }
+              }
+          }
+          EOF
 
       - name: Make bundle script executable
         run: chmod +x ./scripts/bundle_android_aab.sh
