@@ -70,7 +70,7 @@ fn main() {
         // None because the `directories` crate doesn't support Android — unwrapping it panics
         // and leaves the screen white. Use the app's known internal data path instead.
         #[cfg(target_os = "android")]
-        set_dir!("/data/data/io.github.r0ndoudou.rpgadventure/files/rpg-adventure");
+        set_dir!("/data/data/com.aogin.rpgadventure/files/rpg-adventure");
         #[cfg(not(target_os = "android"))]
         set_dir!();
 
