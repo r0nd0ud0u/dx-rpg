@@ -3,7 +3,7 @@ use crate::common::DATA_MANAGER;
 #[cfg(feature = "server")]
 use crate::utils::server_file_utils;
 #[cfg(feature = "server")]
-use crate::websocket_handler::common_event::SERVER_MANAGER;
+use crate::websocket_handler::common_event::lock_server_manager;
 #[cfg(feature = "server")]
 use anyhow::Result;
 #[cfg(feature = "server")]
@@ -479,7 +479,7 @@ pub async fn on_rcv_client_event(
 /// but is blocked here from acting.
 #[cfg(feature = "server")]
 fn client_can_act(server_name: &str, client_id: u32) -> bool {
-    let sm = SERVER_MANAGER.lock().unwrap();
+    let sm = lock_server_manager();
     let Some(server_data) = sm.servers_data.get(server_name) else {
         return false;
     };
@@ -496,9 +496,7 @@ fn client_can_act(server_name: &str, client_id: u32) -> bool {
 
 #[cfg(feature = "server")]
 pub fn is_username_connected(name: &str) -> bool {
-    SERVER_MANAGER
-        .lock()
-        .unwrap()
+    lock_server_manager()
         .players
         .get(name)
         .is_some_and(|ids| !ids.is_empty())
@@ -538,7 +536,7 @@ pub fn add_player(name: String, id: u32, device_token: String) {
         }
         return;
     }
-    let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
+    let mut sm: std::sync::MutexGuard<'_, ServerManager> = lock_server_manager();
     match sm.device_tokens.get(&name) {
         Some(owner) if owner != &device_token => {
             tracing::warn!(
@@ -580,7 +578,7 @@ pub fn login_all_sessions(username: String, sql_id: i64, device_token: String) {
         // this username — so any players/device_tokens entries still present are stale
         // leftovers (e.g. a client that crashed or never called logout). Reset them so this
         // login's device becomes the sole recognized owner going forward.
-        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let mut sm = lock_server_manager();
         sm.players.remove(&username);
         sm.device_tokens.insert(username.clone(), device_token);
     }
@@ -594,7 +592,7 @@ pub fn login_all_sessions(username: String, sql_id: i64, device_token: String) {
 pub fn send_logout_to_server(user_name: String, client_id: u32) {
     // Collect affected server names BEFORE dropping the lock, then broadcast after
     let affected_servers: Vec<String> = {
-        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let mut sm = lock_server_manager();
         // remove player from ServerManager
         sm.players
             .retain(|player_name, _| player_name != &user_name);
@@ -649,7 +647,7 @@ pub fn force_logout_user(username: &str) {
     use crate::auth_manager::server_fn::auth::LOGIN_PROOFS;
 
     let (client_ids, affected_servers) = {
-        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let mut sm = lock_server_manager();
         let client_ids = sm.players.remove(username).unwrap_or_default();
         sm.device_tokens.remove(username);
         let affected: Vec<String> = sm
@@ -701,7 +699,7 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
     //  Extract username + mutate players
     // ----------------------------------------
     let (username, has_other_connections) = {
-        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let mut sm = lock_server_manager();
 
         let username = sm
             .players
@@ -744,7 +742,7 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
     //  be in any game, e.g. still on the lobby/menu, hence the Option)
     // ----------------------------------------
     let game_info: Option<(Vec<u32>, String, bool)> = {
-        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let mut sm = lock_server_manager();
 
         match sm.get_server_data_by_player_id(client_id) {
             Some(mut server_data) => {
@@ -813,7 +811,7 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
     tokio::spawn(async move {
         sleep(DISCONNECT_GRACE_PERIOD).await;
         let reconnected = {
-            let sm = SERVER_MANAGER.lock().unwrap();
+            let sm = lock_server_manager();
             sm.players.contains_key(&username_for_grace)
         };
         if reconnected {
@@ -838,9 +836,7 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
                     }
                 }
             }
-            SERVER_MANAGER
-                .lock()
-                .unwrap()
+            lock_server_manager()
                 .servers_data
                 .remove(&affected_server_name);
             update_clients_ongoing_games();
@@ -862,7 +858,7 @@ pub async fn send_disconnection_to_server_data(
     server_name: &str,
     player_name: &str,
 ) {
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     let Some(is_owner_disconnecting) = sm
         .servers_data
         .get(server_name)
@@ -889,7 +885,7 @@ pub async fn send_disconnection_to_server_data(
     send_end_of_serverdata(server_name, client_id, is_owner_disconnecting);
 
     // remove from servers data
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         if player_name == server_data.players_data.owner_player_name {
             // if the owner player is disconnecting, we consider that the server data is not relevant anymore, and we remove it
@@ -932,7 +928,7 @@ pub async fn send_disconnection_to_server_data(
 #[cfg(feature = "server")]
 pub async fn start_new_game_by_player(server_name: &str, is_replay: bool) {
     let (core_game_data, server_owner) = {
-        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let mut sm = lock_server_manager();
         let Some(server_data) = sm.servers_data.get_mut(server_name) else {
             tracing::error!(
                 "start_new_game_by_player: No server data found for server name: {}",
@@ -1008,7 +1004,7 @@ pub async fn init_new_game_by_player(
     drop(dm);
     tracing::info!("New core game data created for player: {}", server_name);
     // update ongoing servers data list
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     // remove ongoing game if already exists for the server name
     sm.ongoing_games
         .retain(|ongoing_game| ongoing_game.server_name != server_name);
@@ -1051,7 +1047,7 @@ fn request_target_for_consumable_handler(
     is_party: bool,
 ) {
     use lib_rpg::character_mod::inventory::Consumable;
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     let Some(server_data) = sm.servers_data.get_mut(server_name) else {
         tracing::error!(
             "request_target_for_consumable_handler: server {} not found",
@@ -1094,7 +1090,7 @@ pub fn use_potion_handler(
     potion_name: &str,
     target_id_name: &str,
 ) {
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         let game_state = server_data.core_game_data.game_manager.game_state.clone();
         let pm = &mut server_data.core_game_data.game_manager.pm;
@@ -1169,7 +1165,7 @@ pub fn use_party_potion_handler(
     potion_name: &str,
     target_id_name: &str,
 ) {
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         let game_state = server_data.core_game_data.game_manager.game_state.clone();
         let pm = &mut server_data.core_game_data.game_manager.pm;
@@ -1240,7 +1236,7 @@ fn use_overworld_consumable_handler(
     consumable_name: &str,
     is_party: bool,
 ) {
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     let Some(server_data) = sm.servers_data.get_mut(server_name) else {
         tracing::error!(
             "use_overworld_consumable_handler: server {} not found",
@@ -1320,7 +1316,7 @@ fn overworld_move_handler(server_name: &str, player_name: &str, dir: Direction, 
     }
 
     let action = {
-        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let mut sm = lock_server_manager();
         let Some(server_data) = sm.servers_data.get_mut(server_name) else {
             tracing::error!("overworld_move: no server data for {}", server_name);
             return;
@@ -1387,7 +1383,7 @@ fn overworld_interact_handler(server_name: &str, player_name: &str, lang: &str) 
     let lang = crate::common::lang_from_app_lang(lang);
 
     let fight_scenario = {
-        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let mut sm = lock_server_manager();
         let Some(server_data) = sm.servers_data.get_mut(server_name) else {
             tracing::error!("overworld_interact: no server data for {}", server_name);
             return;
@@ -1421,7 +1417,7 @@ fn overworld_interact_handler(server_name: &str, player_name: &str, lang: &str) 
     };
 
     if let Some(scenario_id) = fight_scenario {
-        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let mut sm = lock_server_manager();
         if let Some(server_data) = sm.servers_data.get_mut(server_name) {
             server_data
                 .core_game_data
@@ -1438,7 +1434,7 @@ fn overworld_interact_handler(server_name: &str, player_name: &str, lang: &str) 
 
 #[cfg(feature = "server")]
 fn overworld_dismiss_dialog_handler(server_name: &str, player_name: &str) {
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     let Some(server_data) = sm.servers_data.get_mut(server_name) else {
         return;
     };
@@ -1466,7 +1462,7 @@ fn overworld_enter_handler(
 
     let offline_root = std::path::Path::new(OFFLINE_PATH);
     let owner_name = {
-        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let mut sm = lock_server_manager();
         let Some(server_data) = sm.servers_data.get_mut(server_name) else {
             tracing::error!("overworld_enter: no server data for {}", server_name);
             return None;
@@ -1526,7 +1522,7 @@ fn overworld_enter_handler(
 #[cfg(feature = "server")]
 fn overworld_exit_handler(server_name: &str) {
     {
-        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let mut sm = lock_server_manager();
         if let Some(server_data) = sm.servers_data.get_mut(server_name) {
             server_data.core_game_data.game_phase = GamePhase::Running;
             // Keep overworld state so re-entering the same map restores positions.
@@ -1630,7 +1626,7 @@ fn update_clients_ongoing_games() {
     let clients = CLIENTS.lock().unwrap();
     for (&_other_id, sender) in clients.iter() {
         let _ = sender.send(ServerEvent::UpdateOngoingGames(
-            SERVER_MANAGER.lock().unwrap().ongoing_games.clone(),
+            lock_server_manager().ongoing_games.clone(),
         ));
     }
 }
@@ -1638,7 +1634,7 @@ fn update_clients_ongoing_games() {
 #[cfg(feature = "server")]
 fn send_end_of_serverdata(server_name: &str, client_id: u32, is_owner_disconnecting: bool) {
     // get server data
-    let sm = SERVER_MANAGER.lock().unwrap();
+    let sm = lock_server_manager();
     let server_data = match sm.servers_data.get(server_name) {
         Some(server_data) => server_data.clone(),
         None => {
@@ -1672,7 +1668,7 @@ pub async fn update_core_game_data_after_atk(
     tx: mpsc::UnboundedSender<ServerOwnEvent>,
 ) {
     use lib_rpg::server::game_state::GameStatus;
-    let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
+    let mut sm: std::sync::MutexGuard<'_, ServerManager> = lock_server_manager();
     let logs: Vec<LogData>;
     let status_after_atk: GameStatus;
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
@@ -1776,7 +1772,7 @@ pub async fn process_ennemy_atk(server_name: &str, tx: mpsc::UnboundedSender<Ser
 #[cfg(feature = "server")]
 pub fn get_core_game_data_by_server_name(server_name: &str) -> Option<CoreGameData> {
     // get app by server name
-    let sm = SERVER_MANAGER.lock().unwrap();
+    let sm = lock_server_manager();
     let app = match sm.servers_data.get(server_name) {
         Some(server_data) => server_data.core_game_data.clone(),
         None => {
@@ -1792,7 +1788,7 @@ pub fn get_core_game_data_by_server_name(server_name: &str) -> Option<CoreGameDa
 #[cfg(feature = "server")]
 pub fn get_server_data_by_server_name(server_name: &str) -> Option<ServerData> {
     // get server-data by server name
-    let sm = SERVER_MANAGER.lock().unwrap();
+    let sm = lock_server_manager();
     let server_data = match sm.servers_data.get(server_name) {
         Some(server_data) => server_data.clone(),
         None => {
@@ -1811,7 +1807,7 @@ pub fn add_server_data_with_player(
     id: u32,
     player_name: &str,
 ) {
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     sm.add_server_data(server_name, app, player_name);
     sm.add_player_to_server(server_name, player_name, id);
     tracing::info!("servers data keys: {:?}", sm.servers_data.keys());
@@ -1820,7 +1816,7 @@ pub fn add_server_data_with_player(
 #[cfg(feature = "server")]
 fn update_lobby_page_after_joining_game(server_name: &str, player_name: &str, client_id: u32) {
     // update lobby page for the player who joined the game
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     sm.add_player_to_server(server_name, player_name, client_id);
     drop(sm);
     update_clients_server_data(server_name);
@@ -1830,7 +1826,7 @@ fn update_lobby_page_after_joining_game(server_name: &str, player_name: &str, cl
 #[cfg(feature = "server")]
 fn add_character_on_server_data(server_name: &str, player_name: &str, character_name: &str) {
     let dm = DATA_MANAGER.lock().unwrap();
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         // remove characters from one player in server data
         server_data
@@ -1943,7 +1939,7 @@ fn add_character_on_server_data(server_name: &str, player_name: &str, character_
 #[cfg(feature = "server")]
 fn remove_character_on_server_data(server_name: &str, player_key: &str) {
     let dm = DATA_MANAGER.lock().unwrap();
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         if player_key.contains("__sp") {
             // Synthetic single-player extra-hero slot: drop the whole entry.
@@ -2016,7 +2012,7 @@ fn set_universe_on_server_data(server_name: &str, universe: &str) {
             .collect()
     };
 
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         server_data.core_game_data.universe = universe.to_owned();
         // Replace scenario list and rebuild states map so scenario count is correct
@@ -2108,7 +2104,7 @@ async fn load_game_by_player(
 
     // ---- update ongoing games (lock scope #1) ----
     {
-        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let mut sm = lock_server_manager();
 
         sm.ongoing_games.retain(|g| g.server_name != server_name);
 
@@ -2126,7 +2122,7 @@ async fn load_game_by_player(
 
         // ---- update server data by app (lock scope #2) ----
         let server_exists = {
-            let mut sm = SERVER_MANAGER.lock().unwrap();
+            let mut sm = lock_server_manager();
             if let Some(server_data) = sm.servers_data.get_mut(&server_name) {
                 server_data.core_game_data = app.clone();
                 true
@@ -2149,7 +2145,7 @@ async fn load_game_by_player(
 
 #[cfg(feature = "server")]
 async fn update_ongoing_games_list_display(client_id: u32) {
-    let sm = SERVER_MANAGER.lock().unwrap();
+    let sm = lock_server_manager();
     let ongoing_games = sm.ongoing_games.clone();
     drop(sm);
     let clients = CLIENTS.lock().unwrap();
@@ -2195,7 +2191,7 @@ async fn process_replay_game(server_name: &str, client_id: u32) {
 
 #[cfg(feature = "server")]
 fn request_set_targeted_characters(server_name: &str, launcher_name: &str, atk_name: &str) {
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         server_data
             .core_game_data
@@ -2219,7 +2215,7 @@ fn request_set_one_target(
     atk_name: &str,
     target_name: &str,
 ) {
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         server_data.core_game_data.game_manager.pm.set_one_target(
             launcher_name,
@@ -2259,7 +2255,7 @@ async fn process_save_game(server_name: &str, player_name: &str) {
 
 #[cfg(feature = "server")]
 fn add_log_to_app(server_name: &str, logs: Vec<LogData>) {
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         server_data.core_game_data.game_manager.logs.extend(logs);
     }
@@ -2322,7 +2318,7 @@ pub async fn get_core_game_data_by_dir(
 #[cfg(feature = "server")]
 pub async fn process_load_next_scenario(server_name: &str, auto_save: bool) -> Result<()> {
     let owner_player_name = {
-        let mut sm = SERVER_MANAGER.lock().unwrap();
+        let mut sm = lock_server_manager();
         let Some(server_data) = sm.servers_data.get_mut(server_name) else {
             tracing::error!(
                 "process_load_next_scenario: No server data found for server name: {}",

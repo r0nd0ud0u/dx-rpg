@@ -40,6 +40,17 @@ jobs:
       - name: Update rust
         run: rustup update stable
 
+      # Caches ~/.cargo/registry, ~/.cargo/git and target/, keyed on this job
+      # (so each matrix leg gets its own cache) plus a hash of Cargo.lock and
+      # the active rustc version. Needs rustc already installed (see "Update
+      # rust" above) since it reads the toolchain version as part of the key.
+      # cache-on-failure keeps the cache even if a later packaging step (e.g.
+      # rpmrebuild) fails, since the expensive part — compiling — still succeeded.
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
       # `cargo install cargo-binstall` builds it from source and is prone to
       # breaking on upstream dependency-resolution conflicts in its own Cargo.lock
       # (e.g. duplicate incompatible `compact_str` versions) since `cargo install`
@@ -148,6 +159,24 @@ jobs:
       - name: Update rust
         run: rustup update stable
 
+      # Caches ~/.cargo/registry, ~/.cargo/git and target/, keyed on this job
+      # (so each matrix leg gets its own cache) plus a hash of Cargo.lock and
+      # the active rustc version. Needs rustc already installed (see "Update
+      # rust" above) since it reads the toolchain version as part of the key.
+      # cache-on-failure keeps the cache even if a later packaging step (e.g.
+      # rpmrebuild) fails, since the expensive part — compiling — still succeeded.
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      # DEBIAN_FRONTEND/NEEDRESTART_MODE avoid a multi-minute (sometimes 15-20min)
+      # hang here: ubuntu-latest runner images ship `needrestart`, which pops an
+      # interactive "which services should be restarted?" dialog whenever apt
+      # touches shared libraries in use (exactly what libwebkit2gtk/libgtk3 do) —
+      # with no tty to answer it, it stalls until some fallback timeout instead of
+      # just proceeding. Setting these makes both apt and needrestart run fully
+      # non-interactively.
       - name: Install Linux desktop dependencies
         if: runner.os == 'Linux'
         run: |
@@ -155,6 +184,9 @@ jobs:
           # cpio is needed by the "Install rpmrebuild" step below (rpmrebuild.sh
           # shells out to it, and it's not guaranteed preinstalled).
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev rpm cpio
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          NEEDRESTART_MODE: a
 
       # `cargo install cargo-binstall` builds it from source and is prone to
       # breaking on upstream dependency-resolution conflicts in its own Cargo.lock
@@ -371,6 +403,15 @@ jobs:
       - name: Update rust
         run: rustup update stable
 
+      # Caches ~/.cargo/registry, ~/.cargo/git and target/, keyed on this job
+      # plus a hash of Cargo.lock and the active rustc version. Needs rustc
+      # already installed (see "Update rust" above) since it reads the
+      # toolchain version as part of the key.
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
       # arm64-v8a covers essentially every real Android phone since ~2019, and is the
       # only 32-/64-bit split that matters here: dioxus's manganis crate (its asset
       # macro backend) hard-errors on 32-bit Android targets as of dioxus 0.7.10
@@ -386,10 +427,16 @@ jobs:
       # build needs are required here too, or the build fails on `glib-2.0` via pkg-config.
       # imagemagick is needed by the "Patch Android launcher icon" step below
       # (resizes assets/icon-512.png to each mipmap density).
+      # See build-desktop's "Install Linux desktop dependencies" step for why
+      # DEBIAN_FRONTEND/NEEDRESTART_MODE are needed here (avoids a needrestart
+      # interactive-dialog hang).
       - name: Install Linux desktop dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev imagemagick
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          NEEDRESTART_MODE: a
 
       # ubuntu-latest ships the Android SDK preinstalled (ANDROID_HOME is already set);
       # only the NDK needs to be added explicitly.
@@ -479,6 +526,20 @@ jobs:
           }
           EOF
 
+      # [bundle].identifier drives both the Android application ID and the RPM/deb
+      # package name (see the comment on that field in Dioxus.toml), so it can't be
+      # changed globally to the Play-Store-required package name without also
+      # renaming the desktop Linux packages and breaking existing installs' upgrade
+      # path. Patching it here, in this job's own throwaway checkout only, keeps
+      # desktop/web on "io.github.r0ndoudou.rpgadventure" while Android (both this
+      # sideloadable APK and build-android-aab's Play Store bundle) uses the package
+      # name Play Console requires. src/main.rs's Android data-dir path is hardcoded
+      # to match "com.aogin.rpgadventure" directly in source (Android-only via
+      # #[cfg(target_os = "android")], so it doesn't affect other platforms) since
+      # that can't be patched through a TOML sed the way this field can.
+      - name: Patch Dioxus.toml with Android package name
+        run: sed -i 's|^identifier = .*|identifier = "com.aogin.rpgadventure"|' Dioxus.toml
+
       # An installed APK has no shell to read env vars from at runtime (unlike the
       # desktop client), so SERVER_URL/INSECURE_ACCEPT_INVALID_CERTS must be baked in
       # at build time here — see src/main.rs's option_env!() fallback and build.rs.
@@ -564,12 +625,27 @@ jobs:
       - name: Add Android rust target
         run: rustup target add aarch64-linux-android
 
+      # Caches ~/.cargo/registry, ~/.cargo/git and target/, keyed on this job
+      # plus a hash of Cargo.lock and the active rustc version. Needs rustc
+      # already installed (see "Update rust" above) since it reads the
+      # toolchain version as part of the key.
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
       # Same as build-mobile: `dx bundle --platform android` also compiles a host-target
       # companion build that pulls in dioxus-desktop's Linux GTK bindings.
+      # See build-desktop's "Install Linux desktop dependencies" step for why
+      # DEBIAN_FRONTEND/NEEDRESTART_MODE are needed here (avoids a needrestart
+      # interactive-dialog hang).
       - name: Install Linux desktop dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libudev-dev libayatana-appindicator3-dev libxdo-dev libglib2.0-dev
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          NEEDRESTART_MODE: a
 
       - name: Install Android NDK
         id: setup-ndk
@@ -577,6 +653,12 @@ jobs:
         with:
           ndk-version: r27
           add-to-path: true
+
+      # android-35 for the "Force Android API 35" step below — Play Console now
+      # requires targetSdkVersion >= 35. sdkmanager no-ops if already present.
+      - name: Ensure Android build-tools and platform are installed
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "build-tools;35.0.0" "platforms;android-35" > /dev/null
 
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@v1.21.0
@@ -587,36 +669,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Decodes the release keystore into the checkout root as a gitignored file
-      # (see .gitignore's /release.keystore entry) rather than $RUNNER_TEMP: dx's
-      # generated Gradle config resolves jks_file via Java's `File(projectDir,
-      # child)`, which — per its javadoc — silently strips the leading slash off
-      # an absolute `child` and joins it onto `projectDir` instead of using it
-      # as-is. Pointing jks_file at an absolute $RUNNER_TEMP path therefore
-      # produced a mangled path like ".../dx-rpg/dx-rpg/home/runner/.../_temp/
-      # release.keystore" and failed with "Keystore file ... not found". A path
-      # relative to the checkout root (== Gradle's projectDir here) resolves
-      # correctly either way. The "Delete release keystore" step below removes
-      # it once the build no longer needs it. This keystore is the app's one
-      # production signing identity; it must never be committed to the repo
-      # (unlike android/debug.keystore, which is intentionally public/throwaway).
-      # Requires these repo secrets to be set (Settings -> Secrets and variables
-      # -> Actions):
-      #   ANDROID_RELEASE_KEYSTORE_BASE64  - `base64 -w0 release.keystore` output
-      #   ANDROID_RELEASE_KEYSTORE_PASSWORD - keystore/key password (PKCS12 keystores
-      #                                        use one password for both)
-      #   ANDROID_RELEASE_KEY_ALIAS         - key alias
+      # Decoded into the checkout root, not $RUNNER_TEMP: dx resolves jks_file via
+      # Java's File(projectDir, child), which silently mangles an absolute child
+      # path (strips its leading slash, then joins it onto projectDir anyway) —
+      # a relative path avoids that. Gitignored (see .gitignore); deleted by the
+      # "Delete release keystore" step once the build no longer needs it. Requires
+      # repo secrets: ANDROID_RELEASE_KEYSTORE_BASE64 (`base64 -w0 release.keystore`),
+      # ANDROID_RELEASE_KEYSTORE_PASSWORD, ANDROID_RELEASE_KEY_ALIAS.
       - name: Decode release keystore
         run: echo "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 -d > release.keystore
         shell: bash
         env:
           ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
 
-      # Fails fast with a clear error if ANDROID_RELEASE_KEYSTORE_BASE64 decoded to
-      # something that isn't a valid keystore (bad copy/paste into the GitHub secret,
-      # stray characters, wrong file encoded, etc.), instead of a confusing
-      # KeytoolException 2+ minutes into the Gradle build. keytool ships with the
-      # JDK that's already preinstalled on GitHub-hosted ubuntu runners.
+      # Fails fast if the decoded keystore is invalid (bad secret/paste), instead
+      # of a confusing KeytoolException 2+ minutes into the Gradle build.
       - name: Verify release keystore
         run: keytool -list -keystore release.keystore -storepass "$ANDROID_RELEASE_KEYSTORE_PASSWORD" -alias "$ANDROID_RELEASE_KEY_ALIAS" > /dev/null
         shell: bash
@@ -624,14 +691,14 @@ jobs:
           ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
           ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
 
-      # dx has no CLI flag for keystore path/alias/password — [bundle.android] in
-      # Dioxus.toml is the only place dx reads Android signing config from. This
-      # patches that block, in this job's own throwaway checkout only, to point at
-      # the release keystore instead of the committed debug one used by
-      # build-mobile's sideloadable test APK.
+      # dx only reads Android signing config from [bundle.android] in Dioxus.toml
+      # (no CLI flag), so this repoints it at the release keystore in this job's
+      # throwaway checkout. Also patches [bundle].identifier to the Play-required
+      # package name, same as build-mobile's matching step.
       - name: Patch Dioxus.toml with release signing config
         run: |
           sed -i \
+            -e "s|^identifier = .*|identifier = \"com.aogin.rpgadventure\"|" \
             -e "s|^jks_file = .*|jks_file = \"release.keystore\"|" \
             -e "s|^jks_password = .*|jks_password = \"${ANDROID_RELEASE_KEYSTORE_PASSWORD}\"|" \
             -e "s|^key_alias = .*|key_alias = \"${ANDROID_RELEASE_KEY_ALIAS}\"|" \
@@ -642,6 +709,42 @@ jobs:
         env:
           ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
           ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+
+      # dx regenerates the Gradle project from scratch every build, hardcoding
+      # compileSdk/targetSdk 34 and versionCode 1 — no config field reaches
+      # either, so a Gradle init script overrides them post-generation (same
+      # trick as build-mobile's lint-vital-disable step). Play requires
+      # targetSdk >= 35, and a fixed versionCode 1 collides on every upload
+      # ("Version code 1 has already been used"). versionCode is derived from
+      # the X.Y.Z tag (X*10000 + Y*100 + Z) so it stays monotonic with releases;
+      # read from $GITHUB_REF rather than Cargo.toml because a prerelease tag
+      # like v0.5.6-rc13 syncs verbatim into Cargo.toml (unlike build-desktop,
+      # this job doesn't strip -rcN there), which would break the arithmetic.
+      - name: Force Android API 35 and versionCode
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF#refs/tags/v}"
+            version="${version%%-*}"
+          else
+            version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          fi
+          IFS='.' read -r major minor patch <<< "$version"
+          version_code=$((10#$major * 10000 + 10#$minor * 100 + 10#$patch))
+          echo "Computed Android versionCode $version_code from version $version"
+
+          mkdir -p ~/.gradle/init.d
+          cat > ~/.gradle/init.d/force-android-35.gradle <<EOF
+          allprojects {
+              afterEvaluate { project ->
+                  if (project.plugins.hasPlugin('com.android.application')) {
+                      project.android.compileSdkVersion(35)
+                      project.android.defaultConfig.targetSdkVersion(35)
+                      project.android.defaultConfig.versionCode(${version_code})
+                  }
+              }
+          }
+          EOF
+        shell: bash
 
       - name: Make bundle script executable
         run: chmod +x ./scripts/bundle_android_aab.sh
@@ -698,6 +801,15 @@ jobs:
 
       - name: Update rust
         run: rustup update stable
+
+      # Caches ~/.cargo/registry, ~/.cargo/git and target/, keyed on this job
+      # plus a hash of Cargo.lock and the active rustc version. Needs rustc
+      # already installed (see "Update rust" above) since it reads the
+      # toolchain version as part of the key.
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
 
       # aarch64-apple-ios-sim targets the Simulator on Apple Silicon Macs, which is
       # what macos-latest runners are. This produces an UNSIGNED .app (see

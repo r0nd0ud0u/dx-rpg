@@ -1,7 +1,7 @@
 #[cfg(feature = "server")]
 use crate::common::DATA_MANAGER;
 #[cfg(feature = "server")]
-use crate::websocket_handler::common_event::SERVER_MANAGER;
+use crate::websocket_handler::common_event::lock_server_manager;
 #[cfg(feature = "server")]
 use dioxus::logger::tracing;
 #[cfg(feature = "server")]
@@ -37,7 +37,7 @@ pub fn buy_item_handler(
         return;
     }
 
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     let Some(server_data) = sm.servers_data.get_mut(server_name) else {
         tracing::error!("buy_item_handler: no server data for '{}'", server_name);
         return;
@@ -159,7 +159,7 @@ pub fn sell_item_handler(
     };
     let refund = sell_price(buy_price);
 
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     let Some(server_data) = sm.servers_data.get_mut(server_name) else {
         tracing::error!("sell_item_handler: no server data for '{}'", server_name);
         return;

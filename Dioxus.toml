@@ -43,11 +43,16 @@ script = []
 script = []
 
 [bundle]
-# Changing this changes the Android application ID (io.github.r0ndoudou.dxrpg
-# -> io.github.r0ndoudou.rpgadventure) and the RPM/deb package name — see the
-# matching update to the hardcoded Android data-dir path in src/main.rs, which
-# must stay in sync with this identifier or the app reads/writes the wrong
-# /data/data/<id>/ directory on Android.
+# Changing this changes the Android application ID and the RPM/deb package
+# name — see the matching update to the hardcoded Android data-dir path in
+# src/main.rs, which must stay in sync with this identifier or the app reads/
+# writes the wrong /data/data/<id>/ directory on Android.
+#
+# Android builds (build-mobile and build-android-aab in bundle_to_asset.yml)
+# override this at CI time to "com.aogin.rpgadventure" — the package name
+# Play Console requires — without touching desktop/web packaging here. See
+# those jobs' "Patch Dioxus.toml with Android package name"/"...release
+# signing config" steps.
 identifier = "io.github.r0ndoudou.rpgadventure"
 publisher = "r0ndoudou"
 resources = ["assets/*"]

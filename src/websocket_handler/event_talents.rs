@@ -1,5 +1,7 @@
 #[cfg(feature = "server")]
-use crate::websocket_handler::{common_event::SERVER_MANAGER, event::update_clients_server_data};
+use crate::websocket_handler::{
+    common_event::lock_server_manager, event::update_clients_server_data,
+};
 #[cfg(feature = "server")]
 use dioxus::logger::tracing;
 #[cfg(feature = "server")]
@@ -12,7 +14,7 @@ use lib_rpg::server::server_manager::ServerManager;
 pub fn request_unlock_talent(server_name: &str, character_id_name: &str, talent_id: &str) {
     use lib_rpg::character_mod::character::Character;
 
-    let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
+    let mut sm: std::sync::MutexGuard<'_, ServerManager> = lock_server_manager();
 
     let apply = |character: &mut Character, tree: &lib_rpg::character_mod::talent::TalentTree| {
         if let Err(e) = character.unlock_talent(talent_id, tree) {
@@ -62,7 +64,7 @@ pub fn request_unlock_talent(server_name: &str, character_id_name: &str, talent_
 pub fn request_respec_talents(server_name: &str, character_id_name: &str) {
     use lib_rpg::character_mod::character::Character;
 
-    let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
+    let mut sm: std::sync::MutexGuard<'_, ServerManager> = lock_server_manager();
 
     let apply = |character: &mut Character, tree: &lib_rpg::character_mod::talent::TalentTree| {
         character.respec_talents(tree);
@@ -101,7 +103,7 @@ pub fn request_respec_talents(server_name: &str, character_id_name: &str) {
 /// player opens the Talents tab, mirroring `request_mark_equip_seen`.
 #[cfg(feature = "server")]
 pub fn request_mark_talent_seen(server_name: &str, character_id_name: &str) {
-    let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
+    let mut sm: std::sync::MutexGuard<'_, ServerManager> = lock_server_manager();
 
     if let Some(server_data) = sm.servers_data.get_mut(server_name) {
         let pm = &mut server_data.core_game_data.game_manager.pm;
