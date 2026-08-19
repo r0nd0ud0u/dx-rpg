@@ -614,12 +614,8 @@ jobs:
           ndk-version: r27
           add-to-path: true
 
-      # dx bundle links against platforms;android-34 by default (dioxus-cli 0.7.10's
-      # generated Gradle project hardcodes compileSdk/targetSdk 34 — see build-mobile's
-      # matching step). Play Console requires targetSdkVersion >= 35 for new uploads
-      # ("must target at least API level 35"), so android-35 needs to be present on
-      # this runner too for the "Force Android API 35" init script below to compile
-      # against. sdkmanager no-ops quickly if already present.
+      # android-35 for the "Force Android API 35" step below — Play Console now
+      # requires targetSdkVersion >= 35. sdkmanager no-ops if already present.
       - name: Ensure Android build-tools and platform are installed
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "build-tools;35.0.0" "platforms;android-35" > /dev/null
@@ -633,36 +629,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Decodes the release keystore into the checkout root as a gitignored file
-      # (see .gitignore's /release.keystore entry) rather than $RUNNER_TEMP: dx's
-      # generated Gradle config resolves jks_file via Java's `File(projectDir,
-      # child)`, which — per its javadoc — silently strips the leading slash off
-      # an absolute `child` and joins it onto `projectDir` instead of using it
-      # as-is. Pointing jks_file at an absolute $RUNNER_TEMP path therefore
-      # produced a mangled path like ".../dx-rpg/dx-rpg/home/runner/.../_temp/
-      # release.keystore" and failed with "Keystore file ... not found". A path
-      # relative to the checkout root (== Gradle's projectDir here) resolves
-      # correctly either way. The "Delete release keystore" step below removes
-      # it once the build no longer needs it. This keystore is the app's one
-      # production signing identity; it must never be committed to the repo
-      # (unlike android/debug.keystore, which is intentionally public/throwaway).
-      # Requires these repo secrets to be set (Settings -> Secrets and variables
-      # -> Actions):
-      #   ANDROID_RELEASE_KEYSTORE_BASE64  - `base64 -w0 release.keystore` output
-      #   ANDROID_RELEASE_KEYSTORE_PASSWORD - keystore/key password (PKCS12 keystores
-      #                                        use one password for both)
-      #   ANDROID_RELEASE_KEY_ALIAS         - key alias
+      # Decoded into the checkout root, not $RUNNER_TEMP: dx resolves jks_file via
+      # Java's File(projectDir, child), which silently mangles an absolute child
+      # path (strips its leading slash, then joins it onto projectDir anyway) —
+      # a relative path avoids that. Gitignored (see .gitignore); deleted by the
+      # "Delete release keystore" step once the build no longer needs it. Requires
+      # repo secrets: ANDROID_RELEASE_KEYSTORE_BASE64 (`base64 -w0 release.keystore`),
+      # ANDROID_RELEASE_KEYSTORE_PASSWORD, ANDROID_RELEASE_KEY_ALIAS.
       - name: Decode release keystore
         run: echo "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 -d > release.keystore
         shell: bash
         env:
           ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
 
-      # Fails fast with a clear error if ANDROID_RELEASE_KEYSTORE_BASE64 decoded to
-      # something that isn't a valid keystore (bad copy/paste into the GitHub secret,
-      # stray characters, wrong file encoded, etc.), instead of a confusing
-      # KeytoolException 2+ minutes into the Gradle build. keytool ships with the
-      # JDK that's already preinstalled on GitHub-hosted ubuntu runners.
+      # Fails fast if the decoded keystore is invalid (bad secret/paste), instead
+      # of a confusing KeytoolException 2+ minutes into the Gradle build.
       - name: Verify release keystore
         run: keytool -list -keystore release.keystore -storepass "$ANDROID_RELEASE_KEYSTORE_PASSWORD" -alias "$ANDROID_RELEASE_KEY_ALIAS" > /dev/null
         shell: bash
@@ -670,14 +651,10 @@ jobs:
           ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
           ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
 
-      # dx has no CLI flag for keystore path/alias/password — [bundle.android] in
-      # Dioxus.toml is the only place dx reads Android signing config from. This
-      # patches that block, in this job's own throwaway checkout only, to point at
-      # the release keystore instead of the committed debug one used by
-      # build-mobile's sideloadable test APK.
-      # Also patches [bundle].identifier to the Play-Store-required package name —
-      # see the matching "Patch Dioxus.toml with Android package name" step in
-      # build-mobile for why this can't just be changed globally in Dioxus.toml.
+      # dx only reads Android signing config from [bundle.android] in Dioxus.toml
+      # (no CLI flag), so this repoints it at the release keystore in this job's
+      # throwaway checkout. Also patches [bundle].identifier to the Play-required
+      # package name, same as build-mobile's matching step.
       - name: Patch Dioxus.toml with release signing config
         run: |
           sed -i \
@@ -693,35 +670,45 @@ jobs:
           ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
           ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
 
-      # dx bundle's generated Gradle project is rewritten from scratch on every
-      # build (same constraint as build-mobile's "Disable Android lint-vital
-      # checks" step — there's no build.gradle.kts to edit ahead of time), and
-      # dioxus-cli 0.7.10 hardcodes compileSdk/targetSdk 34 in it. Play Console
-      # rejects AAB uploads below targetSdkVersion 35 ("must target at least
-      # API level 35"), so this overrides both via a global Gradle init script
-      # instead — afterEvaluate runs after the generated build.gradle's own
-      # `android { }` block has already set 34, so the override sticks. It also
-      # sets ndk.debugSymbolLevel so the AAB includes native (.so) debug symbols
-      # for Play Console's crash/ANR analysis (its "no symbol file uploaded"
-      # warning). SYMBOL_TABLE, not FULL: Cargo.toml has no [profile.release]
-      # `debug`/`strip` override, so the .so carries no DWARF line-info to begin
-      # with (Cargo's release default is debug = false) — only the function
-      # symbol table survives, which is exactly what SYMBOL_TABLE packages;
-      # FULL would just bloat the AAB for debug info that isn't there.
-      - name: Force Android API 35 and native debug symbols
+      # dx regenerates the Gradle project from scratch every build, hardcoding
+      # compileSdk/targetSdk 34 and versionCode 1 — no config field reaches
+      # either, so a Gradle init script overrides them post-generation (same
+      # trick as build-mobile's lint-vital-disable step). Play requires
+      # targetSdk >= 35, and a fixed versionCode 1 collides on every upload
+      # ("Version code 1 has already been used"). versionCode is derived from
+      # the X.Y.Z tag (X*10000 + Y*100 + Z) so it stays monotonic with releases;
+      # read from $GITHUB_REF rather than Cargo.toml because a prerelease tag
+      # like v0.5.6-rc13 syncs verbatim into Cargo.toml (unlike build-desktop,
+      # this job doesn't strip -rcN there), which would break the arithmetic.
+      # debugSymbolLevel is SYMBOL_TABLE not FULL: release builds carry no DWARF
+      # info (no debug/strip override in [profile.release]), just the symbol
+      # table, so FULL would only bloat the AAB.
+      - name: Force Android API 35, native debug symbols, and versionCode
         run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF#refs/tags/v}"
+            version="${version%%-*}"
+          else
+            version=$(grep -m1 '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          fi
+          IFS='.' read -r major minor patch <<< "$version"
+          version_code=$((10#$major * 10000 + 10#$minor * 100 + 10#$patch))
+          echo "Computed Android versionCode $version_code from version $version"
+
           mkdir -p ~/.gradle/init.d
-          cat > ~/.gradle/init.d/force-android-35.gradle <<'EOF'
+          cat > ~/.gradle/init.d/force-android-35.gradle <<EOF
           allprojects {
               afterEvaluate { project ->
                   if (project.plugins.hasPlugin('com.android.application')) {
                       project.android.compileSdkVersion(35)
                       project.android.defaultConfig.targetSdkVersion(35)
+                      project.android.defaultConfig.versionCode(${version_code})
                       project.android.buildTypes.release.ndk.debugSymbolLevel = 'SYMBOL_TABLE'
                   }
               }
           }
           EOF
+        shell: bash
 
       - name: Make bundle script executable
         run: chmod +x ./scripts/bundle_android_aab.sh
