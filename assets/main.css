@@ -1774,6 +1774,32 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     /* Talent tree: 3 side-by-side columns get too narrow for talent labels
        to stay readable — stack them instead, each at full sheet width. */
     .talent-tree { flex-direction: column; gap: var(--sp-md); }
+
+    /* Tooltips: left/right side positioning (talent tree, equipment tab)
+       places the fixed 400px-wide box entirely off one edge of the trigger
+       via right:100%/left:100% — once triggers stretch to full sheet width
+       on mobile, that pushes the whole tooltip off-screen and invisible.
+       Render below the trigger instead (like side="bottom"), centered and
+       capped to the viewport width. */
+    .tooltip-content {
+        max-width: min(400px, calc(100vw - 32px));
+    }
+    .tooltip-content[data-side="left"],
+    .tooltip-content[data-side="right"] {
+        top: 100%;
+        left: 50%;
+        right: auto;
+        margin: 8px 0 0 0;
+        transform: translateX(-50%);
+    }
+    .tooltip-content[data-side="left"]::after,
+    .tooltip-content[data-side="right"]::after {
+        top: auto;
+        bottom: calc(100% - 0.25rem);
+        left: 50%;
+        right: auto;
+        border-radius: 0.1rem 0 0;
+    }
 }
 
 /* ── Android WebView fallback for the ≤768px rules above ────────────────

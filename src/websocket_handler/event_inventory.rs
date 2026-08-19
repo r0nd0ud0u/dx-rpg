@@ -1,7 +1,7 @@
 #[cfg(feature = "server")]
 use crate::{
     common::DATA_MANAGER,
-    websocket_handler::{common_event::SERVER_MANAGER, event::update_clients_server_data},
+    websocket_handler::{common_event::lock_server_manager, event::update_clients_server_data},
 };
 #[cfg(feature = "server")]
 use dioxus::logger::tracing;
@@ -18,7 +18,7 @@ pub async fn request_toggle_equip(
 
     let dm = DATA_MANAGER.lock().unwrap();
     let all_equipments = &dm.equipment_table;
-    let mut sm: std::sync::MutexGuard<'_, ServerManager> = SERVER_MANAGER.lock().unwrap();
+    let mut sm: std::sync::MutexGuard<'_, ServerManager> = lock_server_manager();
 
     // Toggle the equipment and dismiss its "new" badge. Interacting with an item
     // clears the notification, so the player can do it by clicking the item
@@ -68,7 +68,7 @@ pub fn request_mark_equip_seen(category_key: &str, character_id_name: &str, serv
         return;
     };
 
-    let mut sm = SERVER_MANAGER.lock().unwrap();
+    let mut sm = lock_server_manager();
     if let Some(server_data) = sm.servers_data.get_mut(server_name)
         && let Some(character) = server_data
             .core_game_data
