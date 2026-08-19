@@ -720,6 +720,18 @@ jobs:
           SERVER_URL: ${{ vars.SERVER_URL || 'https://aogin-world.com' }}
           INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'false' }}
 
+      # Checks the actual .aab instead of trusting Play Console's UI, which can
+      # keep showing a stale "no symbol file" warning from a prior upload.
+      - name: Verify native debug symbols are packaged
+        run: |
+          aab=$(find bundle-android-aab -name '*.aab' -print -quit)
+          if unzip -l "$aab" | grep -q 'BUNDLE-METADATA/com.android.tools.build.debugsymbols/'; then
+            echo "Native debug symbols present in AAB."
+          else
+            echo "::error::No native debug symbols found in the AAB — the ndk.debugSymbolLevel override isn't taking effect." >&2
+            exit 1
+          fi
+
       - name: Delete release keystore
         if: always()
         run: rm -f release.keystore
