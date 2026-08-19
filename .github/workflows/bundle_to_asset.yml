@@ -682,7 +682,10 @@ jobs:
       # this job doesn't strip -rcN there), which would break the arithmetic.
       # debugSymbolLevel is SYMBOL_TABLE not FULL: release builds carry no DWARF
       # info (no debug/strip override in [profile.release]), just the symbol
-      # table, so FULL would only bloat the AAB.
+      # table, so FULL would only bloat the AAB. jniLibs.keepDebugSymbols is
+      # required alongside it — our .so is a prebuilt (cargo-built, not
+      # AGP-compiled) library, and AGP's default packaging strips it before
+      # debugSymbolLevel's extraction step would otherwise see anything.
       - name: Force Android API 35, native debug symbols, and versionCode
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
@@ -704,6 +707,7 @@ jobs:
                       project.android.defaultConfig.targetSdkVersion(35)
                       project.android.defaultConfig.versionCode(${version_code})
                       project.android.buildTypes.release.ndk.debugSymbolLevel = 'SYMBOL_TABLE'
+                      project.android.packagingOptions.jniLibs.keepDebugSymbols.add('**/*.so')
                   }
               }
           }
