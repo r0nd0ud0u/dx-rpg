@@ -680,13 +680,7 @@ jobs:
       # read from $GITHUB_REF rather than Cargo.toml because a prerelease tag
       # like v0.5.6-rc13 syncs verbatim into Cargo.toml (unlike build-desktop,
       # this job doesn't strip -rcN there), which would break the arithmetic.
-      # debugSymbolLevel is SYMBOL_TABLE not FULL: release builds carry no DWARF
-      # info (no debug/strip override in [profile.release]), just the symbol
-      # table, so FULL would only bloat the AAB. jniLibs.keepDebugSymbols is
-      # required alongside it — our .so is a prebuilt (cargo-built, not
-      # AGP-compiled) library, and AGP's default packaging strips it before
-      # debugSymbolLevel's extraction step would otherwise see anything.
-      - name: Force Android API 35, native debug symbols, and versionCode
+      - name: Force Android API 35 and versionCode
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             version="${GITHUB_REF#refs/tags/v}"
@@ -706,8 +700,6 @@ jobs:
                       project.android.compileSdkVersion(35)
                       project.android.defaultConfig.targetSdkVersion(35)
                       project.android.defaultConfig.versionCode(${version_code})
-                      project.android.buildTypes.release.ndk.debugSymbolLevel = 'SYMBOL_TABLE'
-                      project.android.packagingOptions.jniLibs.keepDebugSymbols.add('**/*.so')
                   }
               }
           }
@@ -723,18 +715,6 @@ jobs:
         env:
           SERVER_URL: ${{ vars.SERVER_URL || 'https://aogin-world.com' }}
           INSECURE_ACCEPT_INVALID_CERTS: ${{ vars.INSECURE_ACCEPT_INVALID_CERTS || 'false' }}
-
-      # Checks the actual .aab instead of trusting Play Console's UI, which can
-      # keep showing a stale "no symbol file" warning from a prior upload.
-      - name: Verify native debug symbols are packaged
-        run: |
-          aab=$(find bundle-android-aab -name '*.aab' -print -quit)
-          if unzip -l "$aab" | grep -q 'BUNDLE-METADATA/com.android.tools.build.debugsymbols/'; then
-            echo "Native debug symbols present in AAB."
-          else
-            echo "::error::No native debug symbols found in the AAB — the ndk.debugSymbolLevel override isn't taking effect." >&2
-            exit 1
-          fi
 
       - name: Delete release keystore
         if: always()
