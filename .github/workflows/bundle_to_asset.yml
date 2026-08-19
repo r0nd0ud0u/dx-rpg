@@ -40,6 +40,17 @@ jobs:
       - name: Update rust
         run: rustup update stable
 
+      # Caches ~/.cargo/registry, ~/.cargo/git and target/, keyed on this job
+      # (so each matrix leg gets its own cache) plus a hash of Cargo.lock and
+      # the active rustc version. Needs rustc already installed (see "Update
+      # rust" above) since it reads the toolchain version as part of the key.
+      # cache-on-failure keeps the cache even if a later packaging step (e.g.
+      # rpmrebuild) fails, since the expensive part — compiling — still succeeded.
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
       # `cargo install cargo-binstall` builds it from source and is prone to
       # breaking on upstream dependency-resolution conflicts in its own Cargo.lock
       # (e.g. duplicate incompatible `compact_str` versions) since `cargo install`
@@ -147,6 +158,17 @@ jobs:
 
       - name: Update rust
         run: rustup update stable
+
+      # Caches ~/.cargo/registry, ~/.cargo/git and target/, keyed on this job
+      # (so each matrix leg gets its own cache) plus a hash of Cargo.lock and
+      # the active rustc version. Needs rustc already installed (see "Update
+      # rust" above) since it reads the toolchain version as part of the key.
+      # cache-on-failure keeps the cache even if a later packaging step (e.g.
+      # rpmrebuild) fails, since the expensive part — compiling — still succeeded.
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
 
       # DEBIAN_FRONTEND/NEEDRESTART_MODE avoid a multi-minute (sometimes 15-20min)
       # hang here: ubuntu-latest runner images ship `needrestart`, which pops an
@@ -381,6 +403,15 @@ jobs:
       - name: Update rust
         run: rustup update stable
 
+      # Caches ~/.cargo/registry, ~/.cargo/git and target/, keyed on this job
+      # plus a hash of Cargo.lock and the active rustc version. Needs rustc
+      # already installed (see "Update rust" above) since it reads the
+      # toolchain version as part of the key.
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
       # arm64-v8a covers essentially every real Android phone since ~2019, and is the
       # only 32-/64-bit split that matters here: dioxus's manganis crate (its asset
       # macro backend) hard-errors on 32-bit Android targets as of dioxus 0.7.10
@@ -594,6 +625,15 @@ jobs:
       - name: Add Android rust target
         run: rustup target add aarch64-linux-android
 
+      # Caches ~/.cargo/registry, ~/.cargo/git and target/, keyed on this job
+      # plus a hash of Cargo.lock and the active rustc version. Needs rustc
+      # already installed (see "Update rust" above) since it reads the
+      # toolchain version as part of the key.
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
       # Same as build-mobile: `dx bundle --platform android` also compiles a host-target
       # companion build that pulls in dioxus-desktop's Linux GTK bindings.
       # See build-desktop's "Install Linux desktop dependencies" step for why
@@ -761,6 +801,15 @@ jobs:
 
       - name: Update rust
         run: rustup update stable
+
+      # Caches ~/.cargo/registry, ~/.cargo/git and target/, keyed on this job
+      # plus a hash of Cargo.lock and the active rustc version. Needs rustc
+      # already installed (see "Update rust" above) since it reads the
+      # toolchain version as part of the key.
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
 
       # aarch64-apple-ios-sim targets the Simulator on Apple Silicon Macs, which is
       # what macos-latest runners are. This produces an UNSIGNED .app (see
