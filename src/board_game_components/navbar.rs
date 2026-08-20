@@ -11,8 +11,11 @@ use dioxus_i18n::t;
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
+    audio::{self, MusicTrack},
     auth_manager::server_fn::{change_password, get_use_password, logout},
-    common::{ADMIN, CtxAppLang, CtxSyncedInsecureCerts, CtxSyncedServerUrl, Route},
+    common::{
+        ADMIN, CtxAppLang, CtxAudioSettings, CtxSyncedInsecureCerts, CtxSyncedServerUrl, Route,
+    },
     components::{
         alert_dialog::{
             AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
@@ -58,6 +61,7 @@ pub fn Navbar() -> Element {
     // directly with use_synced_storage in Navbar (a #[layout(...)] component).
     let mut synced_server_url = use_context::<CtxSyncedServerUrl>().0;
     let mut synced_insecure_certs = use_context::<CtxSyncedInsecureCerts>().0;
+    let mut audio_settings = use_context::<CtxAudioSettings>();
 
     // nav
     let navigator = use_navigator();
@@ -65,6 +69,27 @@ pub fn Navbar() -> Element {
     // dialog open states — lifted here so the roots can live outside the navbar div
     let mut help_open = use_signal(|| false);
     let mut quit_open = use_signal(|| false);
+    let mut sound_settings_open = use_signal(|| false);
+
+    // Which background track (if any) should be playing, decided from the current
+    // GamePhase. Navbar is the shared #[layout] component mounted on every route, so
+    // this is the one place music transitions are decided — avoids each page having to
+    // remember to stop music it started on unmount.
+    let mut current_music_track: Signal<Option<MusicTrack>> = use_signal(|| None);
+    use_effect(move || {
+        let desired = match server_data().core_game_data.game_phase {
+            GamePhase::Overworld => Some(MusicTrack::Overworld),
+            GamePhase::Running => None, // silence during combat — sfx read more clearly
+            _ => Some(MusicTrack::Home),
+        };
+        if desired != current_music_track() {
+            current_music_track.set(desired);
+            match desired {
+                Some(track) => audio::play_music(track, audio_settings),
+                None => audio::stop_music(),
+            }
+        }
+    });
 
     // Server connection settings dialog — native only (gated at render time below via
     // `cfg!(target_arch = "wasm32")`, since #[cfg] attributes aren't supported inside
@@ -144,6 +169,12 @@ pub fn Navbar() -> Element {
                         variant: ButtonVariant::Outline,
                         onclick: move |_| help_open.set(true),
                         "?"
+                    }
+                    // Sound settings trigger
+                    Button {
+                        variant: ButtonVariant::Outline,
+                        onclick: move |_| sound_settings_open.set(true),
+                        {if (audio_settings.muted)() { "🔇" } else { "🔊" }}
                     }
                     // Server settings trigger (native only — excluded from web-server SSR
                     // so the hydration stream matches the wasm32 client's render)
@@ -340,6 +371,61 @@ pub fn Navbar() -> Element {
                             p {
                                 "    "
                                 {t!("help-admin-scenarios")}
+                            }
+                        }
+                    }
+                    AlertDialogAction {
+                        AlertDialogCancel { {t!("common-close")} }
+                    }
+                }
+            }
+
+            // Sound settings dialog — sliders/mute apply live (no draft/save step, unlike
+            // the server-settings dialog above, since there's nothing unsafe about a
+            // volume change taking effect immediately).
+            AlertDialogRoot {
+                open: sound_settings_open(),
+                on_open_change: move |v| sound_settings_open.set(v),
+                AlertDialogContent {
+                    AlertDialogTitle { {t!("sound-settings-title")} }
+                    AlertDialogDescription {
+                        div { style: "text-align:left; display:flex; flex-direction:column; gap:1rem;",
+                            label { style: "display:flex; align-items:center; gap:0.5rem; cursor:pointer;",
+                                input {
+                                    r#type: "checkbox",
+                                    checked: (audio_settings.muted)(),
+                                    onchange: move |e: FormEvent| {
+                                        (audio_settings.muted).set(e.checked());
+                                        audio::set_music_volume(audio_settings);
+                                    },
+                                }
+                                span { {t!("sound-settings-muted")} }
+                            }
+                            label { style: "display:flex; flex-direction:column; gap:0.25rem;",
+                                span { {t!("sound-settings-music-volume")} }
+                                Input {
+                                    r#type: "range",
+                                    min: "0",
+                                    max: "100",
+                                    value: "{(audio_settings.music_volume)()}",
+                                    oninput: move |e: FormEvent| {
+                                        (audio_settings.music_volume).set(e.value().parse().unwrap_or(60));
+                                        audio::set_music_volume(audio_settings);
+                                    },
+                                }
+                            }
+                            label { style: "display:flex; flex-direction:column; gap:0.25rem;",
+                                span { {t!("sound-settings-sfx-volume")} }
+                                Input {
+                                    r#type: "range",
+                                    min: "0",
+                                    max: "100",
+                                    value: "{(audio_settings.sfx_volume)()}",
+                                    oninput: move |e: FormEvent| {
+                                        (audio_settings.sfx_volume).set(e.value().parse().unwrap_or(80));
+                                    },
+                                    onchange: move |_| audio::play_sfx(lib_rpg::common::sound_cue::SoundCue::Hit, audio_settings),
+                                }
                             }
                         }
                     }

@@ -4,6 +4,7 @@ use dioxus::{
 };
 use lib_rpg::{
     character_mod::buffers::BufKinds,
+    common::sound_cue::classify_result_atk,
     server::{
         game_manager::ResultLaunchAttack, players_manager::GameAtkEffect,
         server_manager::ServerData,
@@ -11,8 +12,11 @@ use lib_rpg::{
 };
 
 use crate::{
+    audio,
     board_game_components::character_page::{AttackList, CharacterPanel, PotionList},
-    common::{CtxAppLang, CtxToggleAtkAnimation, SERVER_NAME, lang_from_app_lang},
+    common::{
+        CtxAppLang, CtxAudioSettings, CtxToggleAtkAnimation, SERVER_NAME, lang_from_app_lang,
+    },
     components::button::{Button, ButtonVariant},
     websocket_handler::event::{ClientEvent, ServerEvent},
 };
@@ -45,6 +49,28 @@ pub fn GameBoard() -> Element {
     let mut selected_consumable = use_signal(|| "".to_owned());
     // id_name of the character currently selected as the consumable target (empty = use server default)
     let mut selected_consumable_target = use_signal(|| "".to_owned());
+
+    // Combat sound effects: fire the sfx for a new attack result exactly once. Deduped on
+    // (turn_nb, round_nb, launcher_id_name) rather than watching `logs` text, since
+    // `classify_result_atk` reads the same structured `ResultLaunchAttack` the server
+    // already computes (see lib-rpg's `common::sound_cue`).
+    let audio_settings = use_context::<CtxAudioSettings>();
+    let mut last_sfx_result_key = use_signal(|| (0usize, 0usize, String::new()));
+    use_effect(move || {
+        let ra = server_data()
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_result_atk
+            .clone();
+        let key = (ra.turn_nb, ra.round_nb, ra.launcher_id_name.clone());
+        if !ra.launcher_id_name.is_empty() && key != last_sfx_result_key() {
+            last_sfx_result_key.set(key);
+            for cue in classify_result_atk(&ra) {
+                audio::play_sfx(cue, audio_settings);
+            }
+        }
+    });
 
     // spectator: player has no character in active heroes
     let local_session_player_name = use_context::<Signal<String>>();

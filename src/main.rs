@@ -11,10 +11,11 @@ use dioxus_sdk_storage::{StorageBacking, set_dir};
 use dotenv::dotenv;
 use dx_rpg::{
     common::{
-        CtxAppLang, CtxAtkPanelOrders, CtxAutoSaveScenario, CtxDeviceToken, CtxShopEnabled,
-        CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
+        CtxAppLang, CtxAtkPanelOrders, CtxAudioSettings, CtxAutoSaveScenario, CtxDeviceToken,
+        CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
         CtxSyncedInsecureCerts, CtxSyncedServerUrl, CtxToggleAtkAnimation, DISCONNECTED_USER,
-        DX_COMP_CSS, Route, SERVER_NAME, SYNCED_DEVICE_TOKEN_KEY,
+        DX_COMP_CSS, Route, SERVER_NAME, SYNCED_AUDIO_MUTED_KEY, SYNCED_DEVICE_TOKEN_KEY,
+        SYNCED_MUSIC_VOLUME_KEY, SYNCED_SFX_VOLUME_KEY,
     },
     components::{
         alert_dialog, button, drag_and_drop_list, input, label, popover, select, separator, sheet,
@@ -401,6 +402,14 @@ fn App() -> Element {
         use_synced_storage::<LocalStorage, String>("synced_app_lang".to_owned(), || {
             "en".to_owned()
         });
+    // Audio settings — same on every platform (no native/web split needed), so unlike
+    // CtxSyncedServerUrl below these are plain use_synced_storage calls.
+    let music_volume_local_sync =
+        use_synced_storage::<LocalStorage, i32>(SYNCED_MUSIC_VOLUME_KEY.to_owned(), || 60);
+    let sfx_volume_local_sync =
+        use_synced_storage::<LocalStorage, i32>(SYNCED_SFX_VOLUME_KEY.to_owned(), || 80);
+    let audio_muted_local_sync =
+        use_synced_storage::<LocalStorage, bool>(SYNCED_AUDIO_MUTED_KEY.to_owned(), || false);
     // Native-only server URL/TLS-validation override, editable from the Navbar's Server
     // settings dialog; declared here (not in Navbar) since use_synced_storage there
     // stack-overflows the app (Navbar is a #[layout] component, not the route root).
@@ -439,6 +448,12 @@ fn App() -> Element {
     // which don't compile web_sys (it's a wasm-bindgen crate, native targets don't have it).
     use_effect(|| {
         document::eval("document.documentElement.setAttribute('data-theme', 'dark');");
+    });
+
+    // Sets up the background-music/sfx `<audio>` elements once. Same document::eval
+    // approach as the theme effect above — works on web, desktop, and mobile alike.
+    use_effect(|| {
+        dx_rpg::audio::init_audio_bridge();
     });
 
     // Android's WebView (used by the native mobile client) never enables "wide viewport"
@@ -656,6 +671,11 @@ fn App() -> Element {
     use_context_provider(|| login_name_session_local_sync);
     use_context_provider(|| login_id_session_local_sync);
     use_context_provider(|| CtxDeviceToken(device_token_local_sync));
+    use_context_provider(|| CtxAudioSettings {
+        music_volume: music_volume_local_sync,
+        sfx_volume: sfx_volume_local_sync,
+        muted: audio_muted_local_sync,
+    });
     use_context_provider(|| server_data);
     use_context_provider(|| overworld_map_id);
     use_context_provider(|| ongoing_games);
