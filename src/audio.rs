@@ -66,7 +66,9 @@ pub fn init_audio_bridge() {
             document.body.appendChild(bgm);
             const resumeOnFirstGesture = () => {
                 if (bgm.paused && bgm.src) {
-                    bgm.play().catch(() => {});
+                    bgm.play()
+                        .then(() => console.debug('[dxAudio] resumed on first gesture'))
+                        .catch((e) => console.warn('[dxAudio] resume on gesture failed:', e));
                 }
                 ['pointerdown', 'keydown', 'touchstart'].forEach(
                     (evt) => document.removeEventListener(evt, resumeOnFirstGesture)
@@ -82,7 +84,7 @@ pub fn init_audio_bridge() {
                         bgm.src = src;
                     }
                     bgm.volume = muted ? 0 : volume;
-                    bgm.play().catch(() => {});
+                    bgm.play().catch((e) => console.warn('[dxAudio] playMusic failed:', src, e));
                 },
                 stopMusic() {
                     bgm.pause();
@@ -96,7 +98,7 @@ pub fn init_audio_bridge() {
                     }
                     const sfx = new Audio(src);
                     sfx.volume = volume;
-                    sfx.play().catch(() => {});
+                    sfx.play().catch((e) => console.warn('[dxAudio] playSfx failed:', src, e));
                 },
             };
         }
