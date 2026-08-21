@@ -64,11 +64,12 @@ pub fn init_audio_bridge() {
             const bgm = document.createElement('audio');
             bgm.loop = true;
             document.body.appendChild(bgm);
+            const describe = (e) => (e && (e.name || e.message)) ? `${e.name}: ${e.message}` : String(e);
             const resumeOnFirstGesture = () => {
                 if (bgm.paused && bgm.src) {
                     bgm.play()
                         .then(() => console.debug('[dxAudio] resumed on first gesture'))
-                        .catch((e) => console.warn('[dxAudio] resume on gesture failed:', e));
+                        .catch((e) => console.warn(`[dxAudio] resume on gesture failed: ${describe(e)}`));
                 }
                 ['pointerdown', 'keydown', 'touchstart'].forEach(
                     (evt) => document.removeEventListener(evt, resumeOnFirstGesture)
@@ -84,7 +85,7 @@ pub fn init_audio_bridge() {
                         bgm.src = src;
                     }
                     bgm.volume = muted ? 0 : volume;
-                    bgm.play().catch((e) => console.warn('[dxAudio] playMusic failed:', src, e));
+                    bgm.play().catch((e) => console.warn(`[dxAudio] playMusic failed: ${src}: ${describe(e)}`));
                 },
                 stopMusic() {
                     bgm.pause();
@@ -98,7 +99,7 @@ pub fn init_audio_bridge() {
                     }
                     const sfx = new Audio(src);
                     sfx.volume = volume;
-                    sfx.play().catch((e) => console.warn('[dxAudio] playSfx failed:', src, e));
+                    sfx.play().catch((e) => console.warn(`[dxAudio] playSfx failed: ${src}: ${describe(e)}`));
                 },
             };
         }
