@@ -51,6 +51,12 @@ fn sfx_asset(cue: SoundCue) -> Asset {
 /// same way the theme/viewport `document::eval` calls in `main.rs` are — this
 /// works uniformly across web, desktop (tao/wry webview), and mobile (Android
 /// webview) since all three render through a browser engine.
+///
+/// Browsers block audio.play() with sound until the page has had a genuine user
+/// gesture (click/key/touch) — Home's music auto-starts on mount, before any
+/// gesture, so that first play() is silently rejected (some embedded webviews,
+/// e.g. VS Code's, are more permissive and don't hit this). A one-time listener
+/// below retries as soon as the very first gesture happens anywhere on the page.
 pub fn init_audio_bridge() {
     document::eval(
         r#"
@@ -58,6 +64,17 @@ pub fn init_audio_bridge() {
             const bgm = document.createElement('audio');
             bgm.loop = true;
             document.body.appendChild(bgm);
+            const resumeOnFirstGesture = () => {
+                if (bgm.paused && bgm.src) {
+                    bgm.play().catch(() => {});
+                }
+                ['pointerdown', 'keydown', 'touchstart'].forEach(
+                    (evt) => document.removeEventListener(evt, resumeOnFirstGesture)
+                );
+            };
+            ['pointerdown', 'keydown', 'touchstart'].forEach(
+                (evt) => document.addEventListener(evt, resumeOnFirstGesture)
+            );
             window.__dxAudio = {
                 bgm,
                 playMusic(src, volume, muted) {
