@@ -11,6 +11,9 @@ const SFX_CRITICAL: Asset = asset!("/assets/audio/sfx/critical.ogg");
 const SFX_DODGE: Asset = asset!("/assets/audio/sfx/dodge.ogg");
 const SFX_BLOCK: Asset = asset!("/assets/audio/sfx/block.ogg");
 const SFX_HEAL: Asset = asset!("/assets/audio/sfx/heal.ogg");
+const SFX_POTION: Asset = asset!("/assets/audio/sfx/potion.ogg");
+const SFX_VICTORY: Asset = asset!("/assets/audio/sfx/victory.ogg");
+const SFX_GAMEOVER: Asset = asset!("/assets/audio/sfx/gameover.ogg");
 
 /// Looping background tracks. Which one (if any) should be playing is decided in
 /// `Navbar` from the current `GamePhase` (see its music-transition effect).
@@ -36,6 +39,9 @@ fn sfx_asset(cue: SoundCue) -> Asset {
         SoundCue::Dodge => SFX_DODGE,
         SoundCue::Block => SFX_BLOCK,
         SoundCue::Heal => SFX_HEAL,
+        SoundCue::Potion => SFX_POTION,
+        SoundCue::Victory => SFX_VICTORY,
+        SoundCue::GameOver => SFX_GAMEOVER,
     }
 }
 

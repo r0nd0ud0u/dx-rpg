@@ -91,6 +91,24 @@ pub fn Navbar() -> Element {
         }
     });
 
+    // Potion-use sound effect. Lives here (not in GameBoard/OverworldMap) since a
+    // potion can be used from either place — Navbar is the one component mounted on
+    // every route. Deduped on `seq` rather than turn/round: see the doc comment on
+    // `ConsumableUseResult` in lib-rpg for why (overworld uses don't advance a turn).
+    let mut last_potion_seq = use_signal(|| 0u64);
+    use_effect(move || {
+        let consumable_use = server_data()
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_consumable_use
+            .clone();
+        if !consumable_use.launcher_id_name.is_empty() && consumable_use.seq != last_potion_seq() {
+            last_potion_seq.set(consumable_use.seq);
+            audio::play_sfx(lib_rpg::common::sound_cue::SoundCue::Potion, audio_settings);
+        }
+    });
+
     // Server connection settings dialog — native only (gated at render time below via
     // `cfg!(target_arch = "wasm32")`, since #[cfg] attributes aren't supported inside
     // rsx!;).
