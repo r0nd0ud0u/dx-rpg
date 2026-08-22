@@ -218,12 +218,21 @@ pub fn Navbar() -> Element {
                     if cfg!(feature = "desktop") {
                         Button {
                             variant: ButtonVariant::Outline,
-                            onclick: move |_| {
+                            onclick: {
+                                // `desktop_window` (a non-`Copy` `Rc`-backed handle) is also
+                                // captured by the Sidebar drawer's duplicate button further
+                                // down — clone here so each `move` closure gets its own handle
+                                // instead of fighting over the one declared at the top of this
+                                // component.
                                 #[cfg(feature = "desktop")]
-                                {
-                                    let next = !is_fullscreen();
-                                    desktop_window.set_fullscreen(next);
-                                    is_fullscreen.set(next);
+                                let desktop_window = desktop_window.clone();
+                                move |_| {
+                                    #[cfg(feature = "desktop")]
+                                    {
+                                        let next = !is_fullscreen();
+                                        desktop_window.set_fullscreen(next);
+                                        is_fullscreen.set(next);
+                                    }
                                 }
                             },
                             {if is_fullscreen() { "🗗" } else { "🗖" }}
@@ -670,14 +679,18 @@ pub fn Navbar() -> Element {
                 if cfg!(feature = "desktop") {
                     Button {
                         variant: ButtonVariant::Outline,
-                        onclick: move |_| {
+                        onclick: {
                             #[cfg(feature = "desktop")]
-                            {
-                                let next = !is_fullscreen();
-                                desktop_window.set_fullscreen(next);
-                                is_fullscreen.set(next);
+                            let desktop_window = desktop_window.clone();
+                            move |_| {
+                                #[cfg(feature = "desktop")]
+                                {
+                                    let next = !is_fullscreen();
+                                    desktop_window.set_fullscreen(next);
+                                    is_fullscreen.set(next);
+                                }
+                                mobile_nav_open.set(false);
                             }
-                            mobile_nav_open.set(false);
                         },
                         {if is_fullscreen() { "🗗" } else { "🗖" }}
                         " "
