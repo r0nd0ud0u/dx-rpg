@@ -2471,6 +2471,7 @@ dependencies = [
  "dioxus-web",
  "dotenv",
  "execute",
+ "futures",
  "getrandom 0.3.4",
  "governor",
  "http",
