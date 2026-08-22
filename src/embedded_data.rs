@@ -8,7 +8,7 @@
 //! comment), so this module couldn't compile there even if included.
 #![cfg(not(feature = "server"))]
 
-include!(concat!(env!("OUT_DIR"), "/embedded_offline_files.rs"));
+include!(env!("EMBEDDED_OFFLINE_FILES_PATH"));
 
 /// Registers the embedded `offlines/` data with lib-rpg. Call once, before any code that
 /// might construct a `DataManager` (offline mode's local game engine). Idempotent —
