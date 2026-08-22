@@ -98,14 +98,43 @@ impl GameChannel {
 
     pub async fn recv(&mut self) -> Result<ServerEvent, GameChannelError> {
         #[cfg(not(feature = "server"))]
-        if self.is_offline() {
+        {
             // Cloned out of the CopyValue's temporary read guard (cheap — LocalChannel
             // is just a bundle of Rc clones) before awaiting: the guard itself can't
             // live across the .await (it's a short-lived borrow), but the owned
             // LocalChannel clone can.
             let local = self.local.read().clone();
-            return local.recv().await.ok_or(GameChannelError::LocalClosed);
+            if self.is_offline() {
+                // Steady-state offline: never poll `remote` here — nothing is
+                // listening on SERVER_URL in offline mode, so if it resolves
+                // immediately (rather than just hanging) on every call, racing it on
+                // every single iteration would busy-spin instead of `local.recv()`'s
+                // proper async wait for the next real event.
+                return local.recv().await.ok_or(GameChannelError::LocalClosed);
+            }
+            // Not offline *yet* — but `go_offline()` can be called by the "Play
+            // Offline" button while *this exact* call is already in flight (this is
+            // an `&mut self` method on a long-running receive loop, called fresh each
+            // iteration, so "in flight" here means this specific `remote.recv()`
+            // future, not a stale one from a previous call). Race both so the
+            // transition is noticed immediately instead of waiting for `remote.recv()`
+            // to resolve on its own, which it may never do. `local` is polled first
+            // and preferred whenever both are simultaneously ready: before
+            // `go_offline()` has ever run, `local`'s channel has nothing queued, so it
+            // simply never resolves here — a harmless always-pending branch that never
+            // disadvantages a normal online session.
+            let local_fut = local.recv();
+            let remote_fut = self.remote.recv();
+            futures::pin_mut!(local_fut);
+            futures::pin_mut!(remote_fut);
+            return match futures::future::select(local_fut, remote_fut).await {
+                futures::future::Either::Left((res, _)) => res.ok_or(GameChannelError::LocalClosed),
+                futures::future::Either::Right((res, _)) => {
+                    res.map_err(|e| GameChannelError::Remote(Box::new(e)))
+                }
+            };
         }
+        #[cfg(feature = "server")]
         self.remote
             .recv()
             .await
