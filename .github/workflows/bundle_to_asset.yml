@@ -312,7 +312,7 @@ jobs:
       # NEVRA: 0.5.6-0.rc16 < 0.5.6-0.rc19 < 0.5.6-1 (a non-rc tag), verified
       # with rpmdev-vercmp. Final releases (no -rcN suffix) keep Release: 1
       # unchanged.
-      - name: Fix RPM dependency names and Release (Linux only)
+      - name: Fix RPM dependency names, Release, and Vendor/Packager (Linux only)
         if: runner.os == 'Linux'
         env:
           RPMREBUILD_ROOT_DIR: ${{ github.workspace }}/.rpmrebuild-tool
@@ -323,7 +323,12 @@ jobs:
           else
             release="1"
           fi
-          preamble_filter="sed -e 's/^Summary:[[:space:]]*\$/Summary: RPG Adventure desktop client/' -e 's/^Release:.*/Release: ${release}/'"
+          # dioxus-cli 0.7.10's RPM bundler never sets Vendor/Packager (it calls the
+          # `rpm` crate's PackageBuilder::new() and stops there — no .vendor()/
+          # .packager() call — regardless of [bundle].publisher in Dioxus.toml), so
+          # `rpm -qi` shows neither field at all. Insert them here the same way
+          # Release is rewritten above, rather than waiting on an upstream fix.
+          preamble_filter="sed -e 's/^Summary:[[:space:]]*\$/Summary: RPG Adventure desktop client/' -e 's/^Release:.*/Release: ${release}/' -e '/^Release:/a Vendor: r0ndoudou' -e '/^Release:/a Packager: r0ndoudou'"
           bash "$RPMREBUILD_ROOT_DIR/rpmrebuild" -p --notest-install \
             --change-spec-requires="sed -e 's/libwebkit2gtk-4\.1-0/webkit2gtk4.1/' -e 's/libxdo3/libxdo/'" \
             --change-spec-preamble="$preamble_filter" \
@@ -334,6 +339,31 @@ jobs:
           rm -rf rpmrebuild-out
           rpm -qp "$rpm"
           rpm -qp --requires "$rpm"
+
+      # Must run after the rpmrebuild step above, not before: rpmrebuild fully
+      # unpacks and repacks the RPM, which would strip any signature added earlier.
+      # RPM_GPG_PRIVATE_KEY holds the *dedicated* package-signing key (not any
+      # personal commit-signing key) — see RPM-GPG-KEY-rpg-adventure at the repo
+      # root, the matching public half players can `rpm --import` to verify with.
+      # That key currently has no passphrase, hence no --passphrase-fd plumbing
+      # here; if it's ever rotated to a passphrase-protected one, this step also
+      # needs a RPM_GPG_PASSPHRASE secret piped in via --passphrase-fd.
+      - name: Sign RPM (Linux only)
+        if: runner.os == 'Linux'
+        env:
+          RPM_GPG_PRIVATE_KEY: ${{ secrets.RPM_GPG_PRIVATE_KEY }}
+        run: |
+          rpm=$(find . -maxdepth 1 -name '*.rpm')
+          echo "$RPM_GPG_PRIVATE_KEY" | gpg --batch --import
+          cat > ~/.rpmmacros <<'MACROS'
+          %_signature gpg
+          %_gpg_name B5E57E0E1E3246F097E54466FF2C3D159864DE38
+          %__gpg_sign_cmd %{__gpg} gpg --batch --no-armor --pinentry-mode loopback --no-verbose --no-secmem-warning -u "%{_gpg_name}" --detach-sign --output %{__signature_filename} %{__plaintext_filename}
+          MACROS
+          rpm --addsign "$rpm"
+          rpm --import RPM-GPG-KEY-rpg-adventure
+          rpm -K "$rpm"
+        shell: bash
         shell: bash
 
       - name: Rename bundle directory
