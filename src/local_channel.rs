@@ -19,7 +19,13 @@ use lib_rpg::server::server_manager::ServerData;
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 
 const LOCAL_SERVER_NAME: &str = "offline";
-const LOCAL_PLAYER_NAME: &str = "Player";
+// `pub(crate)`: the "Play Offline" entry point (login_page.rs) needs this exact value
+// too — it must set `local_login_name_session` and `SERVER_NAME` (via
+// `send_initialize_game`'s `user_name` argument) to the same string this module uses
+// for `owner_player_name`, or the several `owner_player_name == local_login_name_session()`
+// host-only-controls checks scattered through startgame_page.rs (load next scenario,
+// save game, ...) would never pass during an offline session.
+pub(crate) const LOCAL_PLAYER_NAME: &str = "Player";
 const LOCAL_CLIENT_ID: u32 = 0;
 
 #[derive(Clone)]

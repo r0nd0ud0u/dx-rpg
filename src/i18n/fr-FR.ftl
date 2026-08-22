@@ -163,6 +163,8 @@ login-choose-password-placeholder = Choisissez un mot de passe
 login-invalid-login = Identifiants invalides
 login-name-taken = Ce nom est déjà pris.
 login-sign-up-button = S'inscrire →
+login-offline-title = ✈️ Jouer hors ligne
+login-offline-hint = Sans compte, sans serveur — choisissez un univers et lancez une partie solo locale.
 
 ## create server page
 create-server-title = 🏰 Créer une partie

@@ -196,6 +196,12 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     border-bottom: 1px solid var(--rpg-border-light);
     padding-bottom: var(--sp-sm); margin-bottom: var(--sp-xs);
 }
+.auth-desc {
+    font-size: .82rem; color: var(--rpg-text-muted); margin: 0;
+}
+.offline-universe-grid {
+    display: flex; flex-wrap: wrap; gap: var(--sp-sm);
+}
 .rpg-answer {
     font-size:.82rem; padding: var(--sp-xs) var(--sp-sm);
     border-radius: var(--r-sm); min-height:1.4em;
