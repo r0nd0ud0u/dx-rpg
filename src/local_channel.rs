@@ -105,7 +105,7 @@ impl Default for LocalChannel {
 /// failure mode than crashing if one is reached anyway.
 fn dispatch(state: &Rc<RefCell<ServerData>>, msg: ClientEvent) -> Vec<ServerEvent> {
     match msg {
-        ClientEvent::InitializeGame(server_name, _player_name, universe, is_single_player) => {
+        ClientEvent::InitializeGame(server_name, player_name, universe, is_single_player) => {
             match crate::local_engine::new_local_game(&universe) {
                 Ok(mut core) => {
                     core.is_single_player = is_single_player;
@@ -119,9 +119,22 @@ fn dispatch(state: &Rc<RefCell<ServerData>>, msg: ClientEvent) -> Vec<ServerEven
                     // actually used) made that check permanently false, silently
                     // hiding the Start Game button for the rest of the session.
                     core.server_name = server_name;
+                    // Mirrors the real server's `init_new_game_by_player` ->
+                    // `add_server_data_with_player` -> `add_player_to_server`, which
+                    // pre-creates an empty `PlayerInfo` entry for the joining player as
+                    // soon as the game/lobby exists, before any character is picked.
+                    // Without this, `players_info` stays empty and
+                    // `character_select.rs`'s `CharacterSelect` — which early-returns
+                    // blank whenever `players_info.is_empty()` — never renders anything
+                    // to click at all, and the lobby's player count never leaves 0.
+                    core.players_nb = 1;
                     let mut data = state.borrow_mut();
                     data.core_game_data = core;
-                    data.players_data.owner_player_name = LOCAL_PLAYER_NAME.to_owned();
+                    data.players_data.owner_player_name = player_name.clone();
+                    data.players_data
+                        .players_info
+                        .entry(player_name)
+                        .or_default();
                 }
                 Err(e) => {
                     dioxus::logger::tracing::error!("offline mode: InitializeGame failed: {e}");
@@ -215,6 +228,18 @@ mod tests {
         ));
         let after_init = expect_update(&channel);
         assert_eq!(after_init.core_game_data.game_phase, GamePhase::InitGame);
+        // `character_select.rs`'s `CharacterSelect` renders nothing at all whenever
+        // `players_info` is empty, so this entry must exist *before* any character is
+        // picked — not just after, which `AddCharacterOnServerData`'s own `.entry(...)`
+        // would paper over even if `InitializeGame` never created it.
+        assert!(
+            after_init
+                .players_data
+                .players_info
+                .contains_key(LOCAL_PLAYER_NAME),
+            "expected an empty PlayerInfo for {LOCAL_PLAYER_NAME:?} right after InitializeGame, got {:?}",
+            after_init.players_data.players_info
+        );
 
         channel.send(ClientEvent::AddCharacterOnServerData(
             LOCAL_PLAYER_NAME.to_owned(),
