@@ -18,7 +18,6 @@ use lib_rpg::server::server_manager::ServerData;
 
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 
-const LOCAL_SERVER_NAME: &str = "offline";
 // `pub(crate)`: the "Play Offline" entry point (login_page.rs) needs this exact value
 // too — it must set `local_login_name_session` and `SERVER_NAME` (via
 // `send_initialize_game`'s `user_name` argument) to the same string this module uses
@@ -106,11 +105,20 @@ impl Default for LocalChannel {
 /// failure mode than crashing if one is reached anyway.
 fn dispatch(state: &Rc<RefCell<ServerData>>, msg: ClientEvent) -> Vec<ServerEvent> {
     match msg {
-        ClientEvent::InitializeGame(_server_name, _player_name, universe, is_single_player) => {
+        ClientEvent::InitializeGame(server_name, _player_name, universe, is_single_player) => {
             match crate::local_engine::new_local_game(&universe) {
                 Ok(mut core) => {
                     core.is_single_player = is_single_player;
-                    core.server_name = LOCAL_SERVER_NAME.to_owned();
+                    // Must match whatever the caller passed as `server_name` here —
+                    // the receive loop copies this straight into the app-wide
+                    // `SERVER_NAME` signal (main.rs's `UpdateServerData` handler),
+                    // which `lobby_page.rs`'s "show the Start Game button" host check
+                    // (`SERVER_NAME() == local_login_name_session()`) compares against
+                    // `local_login_name_session()`. A previous hardcoded placeholder
+                    // here ("offline", disagreeing with whatever name the login flow
+                    // actually used) made that check permanently false, silently
+                    // hiding the Start Game button for the rest of the session.
+                    core.server_name = server_name;
                     let mut data = state.borrow_mut();
                     data.core_game_data = core;
                     data.players_data.owner_player_name = LOCAL_PLAYER_NAME.to_owned();
@@ -200,7 +208,7 @@ mod tests {
             .clone();
 
         channel.send(ClientEvent::InitializeGame(
-            LOCAL_SERVER_NAME.to_owned(),
+            LOCAL_PLAYER_NAME.to_owned(),
             LOCAL_PLAYER_NAME.to_owned(),
             "lotr".to_owned(),
             true,
@@ -209,7 +217,7 @@ mod tests {
         assert_eq!(after_init.core_game_data.game_phase, GamePhase::InitGame);
 
         channel.send(ClientEvent::AddCharacterOnServerData(
-            LOCAL_SERVER_NAME.to_owned(),
+            LOCAL_PLAYER_NAME.to_owned(),
             LOCAL_PLAYER_NAME.to_owned(),
             hero_name.clone(),
         ));
@@ -219,7 +227,7 @@ mod tests {
             1
         );
 
-        channel.send(ClientEvent::StartGame(LOCAL_SERVER_NAME.to_owned()));
+        channel.send(ClientEvent::StartGame(LOCAL_PLAYER_NAME.to_owned()));
         let after_start = expect_update(&channel);
         assert_eq!(after_start.core_game_data.game_phase, GamePhase::Running);
 
@@ -234,7 +242,7 @@ mod tests {
             .cloned()
             .expect("hero should have at least one attack");
         channel.send(ClientEvent::LaunchAttack(
-            LOCAL_SERVER_NAME.to_owned(),
+            LOCAL_PLAYER_NAME.to_owned(),
             atk_name,
         ));
         let after_attack = expect_update(&channel);
@@ -242,7 +250,7 @@ mod tests {
         // fresh single-hero party" caveat as local_engine's own combat test) — this
         // test's job is proving the channel plumbing round-trips real state, not
         // re-proving combat math local_engine::tests already covers.
-        assert_eq!(after_attack.core_game_data.server_name, LOCAL_SERVER_NAME);
+        assert_eq!(after_attack.core_game_data.server_name, LOCAL_PLAYER_NAME);
     }
 
     fn expect_update(channel: &LocalChannel) -> ServerData {
