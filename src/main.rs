@@ -123,8 +123,48 @@ fn main() {
         }
     }
 
-    // On the client, we simply launch the app as normal, taking over the main thread
-    #[cfg(not(feature = "server"))]
+    // On the client, we simply launch the app as normal, taking over the main thread.
+    //
+    // Desktop only: `document::Link` stylesheets declared in App()'s rsx! (below) are
+    // injected into <head> via a queued effect that runs *after* the webview's first
+    // paint — a real flash-of-unstyled-content on launch, not present on web (where
+    // the browser parses <link> tags from the served HTML's <head> before painting
+    // anything). `Config::with_custom_head` splices content into <head> of the initial
+    // HTML dioxus-desktop serves, before the webview ever renders — so build the same
+    // stylesheet list here and hand it in up front. The App()-root document::Link
+    // entries stay in place regardless: web still needs them (this custom_head path is
+    // desktop-only), and on desktop they just harmlessly re-apply the same hrefs.
+    #[cfg(all(not(feature = "server"), feature = "desktop"))]
+    {
+        // Same stylesheets App()'s rsx! below loads via document::Link, so this list and
+        // that one must be kept in sync by hand — there's no single source both can share,
+        // since one is a `const` list consumed here in `main()` and the other is markup
+        // inside the `App` component.
+        let stylesheets: &[Asset] = &[
+            MAIN_CSS,
+            dx_rpg::common::DX_COMP_CSS,
+            dx_rpg::components::alert_dialog::STYLE_CSS,
+            dx_rpg::components::button::STYLE_CSS,
+            dx_rpg::components::drag_and_drop_list::STYLE_CSS,
+            dx_rpg::components::input::STYLE_CSS,
+            dx_rpg::components::label::STYLE_CSS,
+            dx_rpg::components::popover::STYLE_CSS,
+            dx_rpg::components::select::STYLE_CSS,
+            dx_rpg::components::separator::STYLE_CSS,
+            dx_rpg::components::sheet::STYLE_CSS,
+            dx_rpg::components::sidebar::STYLE_CSS,
+            dx_rpg::components::tabs::STYLE_CSS,
+            dx_rpg::components::tooltip::STYLE_CSS,
+        ];
+        let mut head = format!(r#"<link rel="icon" href="{FAVICON}">"#);
+        for href in stylesheets {
+            head.push_str(&format!(r#"<link rel="stylesheet" href="{href}">"#));
+        }
+        dioxus::LaunchBuilder::new()
+            .with_cfg(dioxus_desktop::Config::new().with_custom_head(head))
+            .launch(App);
+    }
+    #[cfg(all(not(feature = "server"), not(feature = "desktop")))]
     dioxus::launch(App);
 
     // On the server, we can use `dioxus::serve` to create a server that serves our app.

@@ -14,6 +14,7 @@ quit-dialog-title = Quitter la partie
 quit-dialog-body = Êtes-vous sûr de vouloir quitter la partie ?
 
 navbar-server-settings = 🌐 Serveur
+navbar-fullscreen-toggle = Plein écran
 server-settings-title = Connexion au serveur
 server-settings-current = Actuellement connecté à : { $url }
 server-settings-placeholder = https://votre-serveur.exemple.com
