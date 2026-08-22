@@ -1,8 +1,10 @@
+use crate::audio;
 use crate::board_game_components::character_page::{BarComponent, CharacterPanel};
 use crate::board_game_components::game_sheets::{GameSheets, StoreSheet, rank_color, rank_label};
 use crate::board_game_components::overworld::OverworldMap;
 use crate::common::{
-    CtxAppLang, CtxAutoSaveScenario, Route, SERVER_NAME, lang_from_app_lang, photo_src,
+    CtxAppLang, CtxAudioSettings, CtxAutoSaveScenario, Route, SERVER_NAME, lang_from_app_lang,
+    photo_src,
 };
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 use crate::websocket_handler::msg_from_client::send_disconnect_from_server_data;
@@ -135,6 +137,34 @@ pub fn RunningGamePage() -> Element {
     let app_lang = use_context::<CtxAppLang>().0;
     // Shop panel — only open at end-of-scenario
     let mut shop_open = use_signal(|| false);
+
+    // Victory/game-over sound effect — fires once per transition into that GameStatus
+    // (not on every re-render while already in it, and not on the harmless StartGame
+    // reset a replay/new scenario does in between).
+    let audio_settings = use_context::<CtxAudioSettings>();
+    let mut last_announced_status = use_signal(GameStatus::default);
+    use_effect(move || {
+        let status = server_data()
+            .core_game_data
+            .game_manager
+            .game_state
+            .status
+            .clone();
+        if status != last_announced_status() {
+            last_announced_status.set(status.clone());
+            match status {
+                GameStatus::EndOfGame => audio::play_sfx(
+                    lib_rpg::common::sound_cue::SoundCue::GameOver,
+                    audio_settings,
+                ),
+                GameStatus::EndOfScenario => audio::play_sfx(
+                    lib_rpg::common::sound_cue::SoundCue::Victory,
+                    audio_settings,
+                ),
+                _ => {}
+            }
+        }
+    });
 
     let snap_server_data = server_data();
 

@@ -22,6 +22,11 @@ server-settings-insecure-warning = Désactive la validation du certificat TLS po
 server-settings-save = Enregistrer
 server-settings-saved = Enregistré — redémarrez l'application pour appliquer ce changement.
 
+sound-settings-title = Réglages sonores
+sound-settings-muted = Couper tous les sons
+sound-settings-music-volume = Volume de la musique
+sound-settings-sfx-volume = Volume des effets sonores
+
 navbar-change-password = 🔑 Mot de passe
 change-password-title = Changer le mot de passe
 change-password-current-placeholder = Mot de passe actuel

@@ -1,0 +1,27 @@
+Audio assets — sources and licenses (all CC0, no attribution required)
+
+	sfx/hit.ogg       — impactMetal_medium_000.ogg, Kenney "Impact Sounds" (kenney.nl/assets/impact-sounds)
+	sfx/critical.ogg  — impactMetal_heavy_000.ogg,  Kenney "Impact Sounds" (kenney.nl/assets/impact-sounds)
+	sfx/block.ogg     — impactPlate_heavy_000.ogg,  Kenney "Impact Sounds" (kenney.nl/assets/impact-sounds)
+	sfx/dodge.ogg     — cloth2.ogg,                 Kenney "RPG Audio" (kenney.nl/assets/rpg-audio)
+	sfx/heal.ogg      — confirmation_002.ogg,       Kenney "Interface Sounds" (kenney.nl/assets/interface-sounds)
+	sfx/potion.ogg    — metalPot1.ogg,              Kenney "RPG Audio" (kenney.nl/assets/rpg-audio)
+	sfx/victory.ogg   — confirmation_004.ogg,       Kenney "Interface Sounds" (kenney.nl/assets/interface-sounds)
+	sfx/gameover.ogg  — error_001.ogg,              Kenney "Interface Sounds" (kenney.nl/assets/interface-sounds)
+	music/home.ogg      — "Just Saying Tho" by the Short Loops Background Music Pack author
+	music/overworld.ogg — "A Brand New Wisdom" by the Short Loops Background Music Pack author
+	  both from opengameart.org/content/short-loops-background-music-pack
+
+			------------------------------
+
+	License: (Creative Commons Zero, CC0)
+	http://creativecommons.org/publicdomain/zero/1.0/
+
+	Free to use in personal, educational and commercial projects. Credit is
+	appreciated by the original authors but not required.
+
+			------------------------------
+
+	These are placeholder picks — swap any file under assets/audio/ for a
+	better-fitting one at any time; the code only depends on the filenames
+	listed above, not their content.
