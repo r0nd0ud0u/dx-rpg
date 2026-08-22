@@ -114,10 +114,21 @@ pub fn Navbar() -> Element {
     // read it; `dioxus_desktop::use_window()` itself only exists on desktop builds, so
     // it's real-cfg-gated — the button's onclick body below is gated the same way, and
     // is simply a no-op closure on non-desktop builds where the button never renders
-    // (see the `if cfg!(feature = "desktop")` around it further down).
-    #[cfg_attr(not(feature = "desktop"), allow(unused_mut))]
+    // (see the `if cfg!(all(feature = "desktop", not(feature = "server")))` around it
+    // further down).
+    //
+    // Also excludes `feature = "server"`: `dx serve --platform desktop` builds this
+    // crate's companion fullstack server binary *with the `desktop` feature still
+    // enabled* (not a clean `server`-only build) — so without this extra exclusion,
+    // `use_window()` gets called during that server's SSR pass too, where there is no
+    // real webview window to find, and panics ("Could not find context
+    // Rc<DesktopService>"), taking down every page render on that server.
+    #[cfg_attr(
+        not(all(feature = "desktop", not(feature = "server"))),
+        allow(unused_mut)
+    )]
     let mut is_fullscreen = use_signal(|| false);
-    #[cfg(feature = "desktop")]
+    #[cfg(all(feature = "desktop", not(feature = "server")))]
     let desktop_window = dioxus_desktop::use_window();
     // Mobile-only nav drawer (Sidebar) — the desktop controls group is duplicated
     // into it (CSS-gated visibility, see .navbar-desktop-group/.navbar-mobile-trigger
@@ -215,7 +226,7 @@ pub fn Navbar() -> Element {
                         }
                     }
                     // Fullscreen toggle (desktop only)
-                    if cfg!(feature = "desktop") {
+                    if cfg!(all(feature = "desktop", not(feature = "server"))) {
                         Button {
                             variant: ButtonVariant::Outline,
                             onclick: {
@@ -224,10 +235,10 @@ pub fn Navbar() -> Element {
                                 // down — clone here so each `move` closure gets its own handle
                                 // instead of fighting over the one declared at the top of this
                                 // component.
-                                #[cfg(feature = "desktop")]
+                                #[cfg(all(feature = "desktop", not(feature = "server")))]
                                 let desktop_window = desktop_window.clone();
                                 move |_| {
-                                    #[cfg(feature = "desktop")]
+                                    #[cfg(all(feature = "desktop", not(feature = "server")))]
                                     {
                                         let next = !is_fullscreen();
                                         desktop_window.set_fullscreen(next);
@@ -676,14 +687,14 @@ pub fn Navbar() -> Element {
                         {t!("navbar-server-settings")}
                     }
                 }
-                if cfg!(feature = "desktop") {
+                if cfg!(all(feature = "desktop", not(feature = "server"))) {
                     Button {
                         variant: ButtonVariant::Outline,
                         onclick: {
-                            #[cfg(feature = "desktop")]
+                            #[cfg(all(feature = "desktop", not(feature = "server")))]
                             let desktop_window = desktop_window.clone();
                             move |_| {
-                                #[cfg(feature = "desktop")]
+                                #[cfg(all(feature = "desktop", not(feature = "server")))]
                                 {
                                     let next = !is_fullscreen();
                                     desktop_window.set_fullscreen(next);
