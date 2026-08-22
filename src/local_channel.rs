@@ -184,6 +184,76 @@ fn dispatch(state: &Rc<RefCell<ServerData>>, msg: ClientEvent) -> Vec<ServerEven
             vec![update_event(state)]
         }
 
+        ClientEvent::EnterOverworld(_server_name, map_id) => {
+            let mut data = state.borrow_mut();
+            let hero_id = owner_hero_id(&data);
+            if let Err(e) = crate::local_engine::enter_overworld_map(
+                &mut data.core_game_data,
+                &map_id,
+                None,
+                hero_id.as_deref(),
+            ) {
+                dioxus::logger::tracing::error!("offline mode: EnterOverworld failed: {e}");
+            }
+            drop(data);
+            vec![update_event(state)]
+        }
+
+        ClientEvent::MovePlayer(_server_name, player_name, dir, lang) => {
+            let mut data = state.borrow_mut();
+            // Real server: only the server owner controls the party sprite.
+            if player_name != data.players_data.owner_player_name {
+                return Vec::new();
+            }
+            let Some(hero_id) = owner_hero_id(&data) else {
+                dioxus::logger::tracing::warn!("offline mode: MovePlayer with no hero");
+                return Vec::new();
+            };
+            let lang = crate::common::lang_from_app_lang(&lang);
+            if let Err(e) =
+                crate::local_engine::move_player(&mut data.core_game_data, &hero_id, dir, lang)
+            {
+                dioxus::logger::tracing::error!("offline mode: MovePlayer failed: {e}");
+            }
+            drop(data);
+            vec![update_event(state)]
+        }
+
+        ClientEvent::Interact(_server_name, player_name, lang) => {
+            let mut data = state.borrow_mut();
+            if player_name != data.players_data.owner_player_name {
+                return Vec::new();
+            }
+            let Some(hero_id) = owner_hero_id(&data) else {
+                dioxus::logger::tracing::warn!("offline mode: Interact with no hero");
+                return Vec::new();
+            };
+            let lang = crate::common::lang_from_app_lang(&lang);
+            if let Err(e) = crate::local_engine::interact(&mut data.core_game_data, &hero_id, lang)
+            {
+                dioxus::logger::tracing::error!("offline mode: Interact failed: {e}");
+            }
+            drop(data);
+            vec![update_event(state)]
+        }
+
+        ClientEvent::DismissDialog(_server_name, player_name) => {
+            let mut data = state.borrow_mut();
+            if player_name != data.players_data.owner_player_name {
+                return Vec::new();
+            }
+            crate::local_engine::dismiss_dialog(&mut data.core_game_data);
+            drop(data);
+            vec![update_event(state)]
+        }
+
+        ClientEvent::ExitOverworld(_server_name) => {
+            let mut data = state.borrow_mut();
+            crate::local_engine::exit_overworld(&mut data.core_game_data);
+            drop(data);
+            vec![update_event(state)]
+        }
+
         other => {
             dioxus::logger::tracing::warn!("offline mode: unsupported action {other:?}");
             Vec::new()
@@ -193,6 +263,17 @@ fn dispatch(state: &Rc<RefCell<ServerData>>, msg: ClientEvent) -> Vec<ServerEven
 
 fn update_event(state: &Rc<RefCell<ServerData>>) -> ServerEvent {
     ServerEvent::UpdateServerData(Box::new(state.borrow().clone()))
+}
+
+/// The owner's first chosen hero id — the one overworld sprite represents the whole
+/// party by. Matches the real server's `players_info.get(&owner_name).and_then(|info|
+/// info.character_id_names.first())` lookup used throughout `event.rs`'s overworld
+/// handlers.
+fn owner_hero_id(data: &ServerData) -> Option<String> {
+    data.players_data
+        .players_info
+        .get(&data.players_data.owner_player_name)
+        .and_then(|info| info.character_id_names.first().cloned())
 }
 
 #[cfg(test)]
