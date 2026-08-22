@@ -14,6 +14,7 @@ quit-dialog-title = Quit Game
 quit-dialog-body = Are you sure you want to quit the game?
 
 navbar-server-settings = 🌐 Server
+navbar-fullscreen-toggle = Fullscreen
 server-settings-title = Server Connection
 server-settings-current = Currently connected to: { $url }
 server-settings-placeholder = https://your-server.example.com

@@ -113,6 +113,16 @@ pub fn Navbar() -> Element {
     // `cfg!(target_arch = "wasm32")`, since #[cfg] attributes aren't supported inside
     // rsx!;).
     let mut server_settings_open = use_signal(|| false);
+    // Desktop-only fullscreen toggle. `is_fullscreen` is declared unconditionally (a
+    // plain use_signal, harmless on every platform) so the button's label can always
+    // read it; `dioxus_desktop::use_window()` itself only exists on desktop builds, so
+    // it's real-cfg-gated — the button's onclick body below is gated the same way, and
+    // is simply a no-op closure on non-desktop builds where the button never renders
+    // (see the `if cfg!(feature = "desktop")` around it further down).
+    #[cfg_attr(not(feature = "desktop"), allow(unused_mut))]
+    let mut is_fullscreen = use_signal(|| false);
+    #[cfg(feature = "desktop")]
+    let desktop_window = dioxus_desktop::use_window();
     // Mobile-only nav drawer (Sidebar) — the desktop controls group is duplicated
     // into it (CSS-gated visibility, see .navbar-desktop-group/.navbar-mobile-trigger
     // in main.css) so narrow screens get a proper drawer instead of a cramped row.
@@ -206,6 +216,21 @@ pub fn Navbar() -> Element {
                                 server_settings_open.set(true);
                             },
                             {t!("navbar-server-settings")}
+                        }
+                    }
+                    // Fullscreen toggle (desktop only)
+                    if cfg!(feature = "desktop") {
+                        Button {
+                            variant: ButtonVariant::Outline,
+                            onclick: move |_| {
+                                #[cfg(feature = "desktop")]
+                                {
+                                    let next = !is_fullscreen();
+                                    desktop_window.set_fullscreen(next);
+                                    is_fullscreen.set(next);
+                                }
+                            },
+                            {if is_fullscreen() { "🗗" } else { "🗖" }}
                         }
                     }
                     // Change-password trigger (signed-in users, only while USE_PASSWORD is on)
@@ -623,6 +648,16 @@ pub fn Navbar() -> Element {
                     },
                     {t!("help-title")}
                 }
+                Button {
+                    variant: ButtonVariant::Outline,
+                    onclick: move |_| {
+                        sound_settings_open.set(true);
+                        mobile_nav_open.set(false);
+                    },
+                    {if (audio_settings.muted)() { "🔇" } else { "🔊" }}
+                    " "
+                    {t!("sound-settings-title")}
+                }
                 if cfg!(all(not(target_arch = "wasm32"), not(feature = "server"))) {
                     Button {
                         variant: ButtonVariant::Outline,
@@ -634,6 +669,23 @@ pub fn Navbar() -> Element {
                             mobile_nav_open.set(false);
                         },
                         {t!("navbar-server-settings")}
+                    }
+                }
+                if cfg!(feature = "desktop") {
+                    Button {
+                        variant: ButtonVariant::Outline,
+                        onclick: move |_| {
+                            #[cfg(feature = "desktop")]
+                            {
+                                let next = !is_fullscreen();
+                                desktop_window.set_fullscreen(next);
+                                is_fullscreen.set(next);
+                            }
+                            mobile_nav_open.set(false);
+                        },
+                        {if is_fullscreen() { "🗗" } else { "🗖" }}
+                        " "
+                        {t!("navbar-fullscreen-toggle")}
                     }
                 }
                 if is_quit_visible(&server_data().core_game_data.game_phase) {
