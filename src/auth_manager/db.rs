@@ -58,18 +58,26 @@ async fn db() -> Pool<Sqlite> {
     pool.execute(r#"CREATE TABLE IF NOT EXISTS user_settings ( "username" VARCHAR(256) NOT NULL, "key" VARCHAR(64) NOT NULL, "value" VARCHAR(256) NOT NULL, PRIMARY KEY("username","key"))"#,)
             .await.unwrap();
 
-    // Insert in some test data for two users (one anonymous, one normal)
-    pool.execute(r#"INSERT INTO users (id, anonymous, username, password, is_connected) SELECT 1, true, 'Admin', '', false ON CONFLICT(id) DO UPDATE SET anonymous = EXCLUDED.anonymous, username = EXCLUDED.username, password = EXCLUDED.password, is_connected = EXCLUDED.is_connected"#,)
+    // Seed the two default accounts (Admin, Guest) once, on true first run only.
+    // `DO NOTHING` (not `DO UPDATE`) is load-bearing: this runs on every server start,
+    // and previously used `DO UPDATE SET ... password = EXCLUDED.password` with an
+    // empty-string password literal — silently wiping any real password an admin had
+    // set via change_password() back to empty on every restart/redeploy. Combined with
+    // login()'s legacy-account bypass (empty stored password -> any password accepted),
+    // that meant Admin's password reset itself to "log in with literally anything" every
+    // time the server restarted.
+    pool.execute(r#"INSERT INTO users (id, anonymous, username, password, is_connected) SELECT 1, true, 'Admin', '', false ON CONFLICT(id) DO NOTHING"#,)
             .await.unwrap();
-    pool.execute(r#"INSERT INTO users (id, anonymous, username, password, is_connected) SELECT 2, false, 'Guest', '', false ON CONFLICT(id) DO UPDATE SET anonymous = EXCLUDED.anonymous, username = EXCLUDED.username, password = EXCLUDED.password, is_connected = EXCLUDED.is_connected"#,)
+    pool.execute(r#"INSERT INTO users (id, anonymous, username, password, is_connected) SELECT 2, false, 'Guest', '', false ON CONFLICT(id) DO NOTHING"#,)
             .await.unwrap();
 
-    // permissions
-    pool.execute(r#"INSERT INTO user_permissions (user_id, token) SELECT 1, 'Admin::View'"#)
+    // permissions — `user_permissions` has no unique constraint on (user_id, token), so
+    // these must self-guard against re-inserting a duplicate row on every restart.
+    pool.execute(r#"INSERT INTO user_permissions (user_id, token) SELECT 1, 'Admin::View' WHERE NOT EXISTS (SELECT 1 FROM user_permissions WHERE user_id = 1 AND token = 'Admin::View')"#)
         .await
         .unwrap();
 
-    pool.execute(r#"INSERT INTO user_permissions (user_id, token) SELECT 2, 'Category::View'"#)
+    pool.execute(r#"INSERT INTO user_permissions (user_id, token) SELECT 2, 'Category::View' WHERE NOT EXISTS (SELECT 1 FROM user_permissions WHERE user_id = 2 AND token = 'Category::View')"#)
         .await
         .unwrap();
 
