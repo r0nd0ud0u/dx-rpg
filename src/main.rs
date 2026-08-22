@@ -123,6 +123,14 @@ fn main() {
         }
     }
 
+    // Registers the offlines/ game data (embedded at compile time by build.rs) with
+    // lib-rpg, so offline mode's local game engine can construct a DataManager the same
+    // way the server does — before any component/hook exists, same reasoning as the
+    // server-URL resolution above running this early. A no-op on the server build (the
+    // module is cfg'd out there entirely; see embedded_data.rs).
+    #[cfg(not(feature = "server"))]
+    dx_rpg::embedded_data::register();
+
     // On the client, we simply launch the app as normal, taking over the main thread.
     //
     // Desktop only: `document::Link` stylesheets declared in App()'s rsx! (below) are

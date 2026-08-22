@@ -18,7 +18,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0.104"
 dioxus = { version = "0.7.10", features = ["router", "fullstack"] }
-lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "d9d3ed0e360bb6c13f698d5d986f36094632ccb5" }
+lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "599240d18f8ce25cbaa9a21de692c8ecb81c9db9" }
 serde = "1.0.229"
 dioxus-desktop = { version = "0.7.10", optional = true }
 dioxus-html = "0.7.10"
