@@ -728,6 +728,26 @@ fn App() -> Element {
                 const MAX_RECONNECT_BACKOFF: std::time::Duration =
                     std::time::Duration::from_secs(10);
                 loop {
+                    // This loop has its own long sleeps between attempts and no other
+                    // exit condition besides a successful reconnect — which never comes
+                    // without a real server. If "Play Offline" is clicked while stuck
+                    // here (very likely: on a fresh launch with nothing listening on
+                    // SERVER_URL, the very first connection attempt fails immediately,
+                    // dropping straight into this loop before the user has had time to
+                    // click anything), it would otherwise keep retrying/sleeping forever
+                    // and never hand control back to the outer `while let Ok(event) =
+                    // game_channel.recv().await` above — so the local channel's queued
+                    // events (InitClient, UpdateServerData, ...) never get drained and
+                    // the game screen stays blank. Bail out back to the top of the outer
+                    // loop as soon as offline mode is seen, where `game_channel.recv()`
+                    // will correctly route to the local channel instead.
+                    #[cfg(not(feature = "server"))]
+                    if offline_mode() {
+                        tracing::info!(
+                            "[client] ws-loop: offline mode activated mid-reconnect, abandoning it"
+                        );
+                        break;
+                    }
                     let reconnect_result = on_rcv_client_event(WebSocketOptions::new()).await;
                     let reconnected = reconnect_result.is_ok();
                     if let Err(ref err) = reconnect_result {
