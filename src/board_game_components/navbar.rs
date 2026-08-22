@@ -2,11 +2,7 @@ use crate::{
     common::DISCONNECTED_USER,
     websocket_handler::{NO_CLIENT_ID, msg_from_client::send_disconnect_from_server_data},
 };
-use dioxus::{
-    fullstack::{CborEncoding, UseWebsocket},
-    logger::tracing,
-    prelude::*,
-};
+use dioxus::{logger::tracing, prelude::*};
 use dioxus_i18n::t;
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
@@ -25,9 +21,9 @@ use crate::{
         input::Input,
         sidebar::{Sidebar, SidebarTrigger},
     },
+    game_channel::GameChannel,
     websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        msg_from_client::send_disconnect_from_server_data as send_quit,
+        event::ClientEvent, msg_from_client::send_disconnect_from_server_data as send_quit,
     },
 };
 
@@ -51,7 +47,7 @@ fn is_signed_in(username: &str) -> bool {
 #[component]
 pub fn Navbar() -> Element {
     // contexts
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let mut local_login_name_session = use_context::<Signal<String>>();
     let mut local_login_id_session = use_context::<Signal<i64>>();
     let server_data = use_context::<Signal<ServerData>>();

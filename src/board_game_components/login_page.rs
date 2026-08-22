@@ -1,11 +1,11 @@
-use dioxus::fullstack::CborEncoding;
+use dioxus::logger::tracing;
 use dioxus::prelude::*;
-use dioxus::{fullstack::UseWebsocket, logger::tracing};
 use dioxus_i18n::t;
 
 use crate::auth_manager::server_fn::get_user_id;
+use crate::game_channel::GameChannel;
 use crate::websocket_handler::NO_CLIENT_ID;
-use crate::websocket_handler::event::{ClientEvent, ServerEvent};
+use crate::websocket_handler::event::ClientEvent;
 use crate::{
     auth_manager::server_fn::{get_use_password, login, register},
     common::{CtxDeviceToken, Route},
@@ -18,7 +18,7 @@ use crate::{
 #[component]
 pub fn LoginPage() -> Element {
     // contexts
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let mut local_login_name_session = use_context::<Signal<String>>();
     let mut local_login_id_session = use_context::<Signal<i64>>();
     let mut device_token = use_context::<CtxDeviceToken>().0;

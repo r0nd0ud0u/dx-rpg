@@ -13,7 +13,7 @@
 
 use std::{cell::RefCell, rc::Rc};
 
-use futures::{StreamExt, channel::mpsc};
+use futures::{StreamExt, channel::mpsc, lock::Mutex as AsyncMutex};
 use lib_rpg::server::server_manager::ServerData;
 
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
@@ -25,7 +25,11 @@ const LOCAL_CLIENT_ID: u32 = 0;
 #[derive(Clone)]
 pub struct LocalChannel {
     tx: mpsc::UnboundedSender<ServerEvent>,
-    rx: Rc<RefCell<mpsc::UnboundedReceiver<ServerEvent>>>,
+    // An async-aware lock, not `RefCell`: `recv` needs to hold this across an `.await`
+    // (for the whole duration of `.next().await`), which a plain `RefCell`'s guard
+    // isn't safe to do (it can't yield to other tasks, so a would-be second borrow
+    // panics instead of just waiting its turn).
+    rx: Rc<AsyncMutex<mpsc::UnboundedReceiver<ServerEvent>>>,
     state: Rc<RefCell<ServerData>>,
 }
 
@@ -37,7 +41,7 @@ impl LocalChannel {
         let (tx, rx) = mpsc::unbounded();
         Self {
             tx,
-            rx: Rc::new(RefCell::new(rx)),
+            rx: Rc::new(AsyncMutex::new(rx)),
             state: Rc::new(RefCell::new(ServerData::default())),
         }
     }
@@ -69,11 +73,12 @@ impl LocalChannel {
     }
 
     pub async fn recv(&self) -> Option<ServerEvent> {
-        // `rx` is only ever borrowed for the duration of a single `.next().await` call,
+        // `rx` is only ever locked for the duration of a single `.next().await` call,
         // and `recv` is only ever called from GameChannel::recv's one call site
-        // (App()'s receive loop) — never concurrently with itself — so this can't
-        // conflict with `push`'s borrow, which only touches `tx`.
-        self.rx.borrow_mut().next().await
+        // (App()'s receive loop) — never concurrently with itself — so `.lock().await`
+        // always acquires immediately in practice; it's an async mutex (not a plain
+        // `RefCell`) specifically so holding the guard across `.next().await` is sound.
+        self.rx.lock().await.next().await
     }
 
     fn push(&self, event: ServerEvent) {

@@ -1,7 +1,4 @@
-use dioxus::{
-    fullstack::{CborEncoding, UseWebsocket},
-    prelude::*,
-};
+use dioxus::prelude::*;
 use dioxus_i18n::t;
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
@@ -14,10 +11,8 @@ use crate::{
         },
         button::Button,
     },
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        msg_from_client::send_disconnect_from_server_data,
-    },
+    game_channel::GameChannel,
+    websocket_handler::msg_from_client::send_disconnect_from_server_data,
 };
 
 // NOTE: not currently referenced anywhere — navbar.rs has its own, wired-up
@@ -26,7 +21,7 @@ use crate::{
 #[component]
 pub fn AlertDialogQuitGame() -> Element {
     // contexts
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let local_login_name_session = use_context::<Signal<String>>();
     let server_data = use_context::<Signal<ServerData>>();
     // local signal
