@@ -5,6 +5,7 @@ pub mod common;
 pub mod components;
 pub mod embedded_data;
 pub mod i18n;
+pub mod local_engine;
 pub mod utils;
 pub mod websocket_handler;
 pub mod widgets;
