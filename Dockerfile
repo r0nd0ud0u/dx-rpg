@@ -4,6 +4,7 @@ WORKDIR /app
 
 FROM chef AS planner
 COPY src src
+COPY build.rs .
 COPY Cargo.toml .
 COPY Cargo.lock .
 COPY assets assets
@@ -15,6 +16,7 @@ FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
 RUN --mount=type=ssh cargo chef cook --release --recipe-path recipe.json
 COPY src src
+COPY build.rs .
 COPY Cargo.toml .
 COPY Cargo.lock .
 COPY assets assets
