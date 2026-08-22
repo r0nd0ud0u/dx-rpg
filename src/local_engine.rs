@@ -20,23 +20,45 @@ use lib_rpg::server::{
 
 use crate::common::OFFLINE_PATH;
 
-/// Constructs a fresh single-player `CoreGameData` for `universe` (e.g. `"lotr"`) — no
-/// heroes selected yet, game not started. Mirrors `init_new_game_by_player`'s core.
+/// Constructs a fresh single-player `CoreGameData` for `universe` (e.g. `"lotr"`, or
+/// `""` for all universes) — no heroes selected yet, game not started. Mirrors
+/// `init_new_game_by_player`'s core.
 pub fn new_local_game(universe: &str) -> anyhow::Result<CoreGameData> {
     crate::embedded_data::register();
     let dm = DataManager::try_new(OFFLINE_PATH)?;
 
-    let scenarios: Vec<_> = dm
-        .all_scenarios
-        .iter()
-        .filter(|s| s.universe == universe)
-        .cloned()
-        .collect();
+    let scenarios: Vec<_> = if universe.is_empty() {
+        dm.all_scenarios.clone()
+    } else {
+        dm.all_scenarios
+            .iter()
+            .filter(|s| s.universe == universe)
+            .cloned()
+            .collect()
+    };
     let mut core = CoreGameData::new_with_scenarios(&dm, "local", scenarios)?;
     core.is_single_player = true;
     core.universe = universe.to_owned();
     core.game_phase = GamePhase::InitGame;
     Ok(core)
+}
+
+/// Lists the distinct universes available in the embedded/offline data set (e.g.
+/// `["lotr", "pokemon"]`), for the "Play Offline" universe picker — no network call,
+/// mirrors `list_universes_server`'s scenario+hero union (minus its extra raw-directory
+/// scan, which only matters for an admin-only edge case: a universe with character/
+/// scenario folders present but not yet containing any actual data).
+pub fn list_universes() -> anyhow::Result<Vec<String>> {
+    crate::embedded_data::register();
+    let dm = DataManager::try_new(OFFLINE_PATH)?;
+    let universes: std::collections::HashSet<String> = dm
+        .list_universes()
+        .into_iter()
+        .chain(dm.list_hero_universes())
+        .collect();
+    let mut universes: Vec<String> = universes.into_iter().collect();
+    universes.sort();
+    Ok(universes)
 }
 
 /// Adds `hero_name` (matched against `Character.db_full_name`) to the active party,
@@ -78,6 +100,26 @@ pub fn start_local_game(core: &mut CoreGameData) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn list_universes_includes_lotr() {
+        let universes = list_universes().expect("list_universes");
+        assert!(
+            universes.contains(&"lotr".to_owned()),
+            "expected 'lotr' among {universes:?}"
+        );
+    }
+
+    #[test]
+    fn new_local_game_with_empty_universe_loads_all_scenarios() {
+        crate::embedded_data::register();
+        let dm = DataManager::try_new(OFFLINE_PATH).unwrap();
+        let core = new_local_game("").expect("new_local_game");
+        assert_eq!(
+            core.game_manager.all_scenarios.len(),
+            dm.all_scenarios.len()
+        );
+    }
 
     fn lotr_hero_name(dm: &DataManager) -> String {
         dm.all_heroes
