@@ -1,8 +1,5 @@
 use colorgrad::Gradient;
-use dioxus::{
-    fullstack::{CborEncoding, UseWebsocket},
-    prelude::*,
-};
+use dioxus::prelude::*;
 use dioxus_i18n::t;
 use dioxus_primitives::ContentSide;
 use indexmap::IndexMap;
@@ -33,7 +30,8 @@ use crate::{
         sheet::{Sheet, SheetContent, SheetDescription, SheetHeader, SheetSide, SheetTitle},
         tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     },
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    game_channel::GameChannel,
+    websocket_handler::event::ClientEvent,
 };
 use dioxus::logger::tracing;
 
@@ -293,7 +291,7 @@ pub fn CharacterTargetButton(
     selected_consumable_target: Signal<String>,
 ) -> Element {
     // contexts
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let local_session_player_name = use_context::<Signal<String>>();
 
     let mut kind_str = "hero";
@@ -396,7 +394,7 @@ pub fn NewAtkButton(
     selected_atk_name: Signal<String>,
 ) -> Element {
     // contexts
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let show_tooltips = use_context::<CtxShowAtkTooltips>().0;
     let app_lang = use_context::<CtxAppLang>().0;
     // local signals
@@ -870,7 +868,7 @@ pub fn PotionList(
     display_potionlist_sig: Signal<bool>,
     selected_consumable: Signal<String>,
 ) -> Element {
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_session_player_name = use_context::<Signal<String>>();
 

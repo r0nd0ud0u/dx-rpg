@@ -1,9 +1,6 @@
 use std::collections::BTreeMap;
 
-use dioxus::{
-    fullstack::{CborEncoding, UseWebsocket},
-    prelude::*,
-};
+use dioxus::prelude::*;
 use dioxus_i18n::t;
 use dioxus_primitives::ContentSide;
 use lib_rpg::{
@@ -22,14 +19,15 @@ use crate::{
         tabs::{TabContent, TabList, TabTrigger, Tabs},
         tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     },
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    game_channel::GameChannel,
+    websocket_handler::event::ClientEvent,
 };
 
 #[component]
 pub fn TabEquipment(c: Character) -> Element {
     // contexts
     let server_data = use_context::<Signal<ServerData>>();
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let server_name = SERVER_NAME();
     let all_equipments_table = server_data()
         .core_game_data
@@ -180,7 +178,7 @@ fn EquipmentTooltip(
     character_id_name: String,
 ) -> Element {
     // context
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let app_lang = use_context::<CtxAppLang>().0;
 
     let e_inventory_name = e_inventory.unique_name.clone();

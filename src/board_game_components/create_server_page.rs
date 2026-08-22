@@ -1,22 +1,19 @@
-use dioxus::{
-    fullstack::{CborEncoding, UseWebsocket},
-    prelude::*,
-};
+use dioxus::prelude::*;
 use dioxus_i18n::t;
 
 use crate::{
     common::Route,
     components::button::{Button, ButtonVariant},
+    game_channel::GameChannel,
     utils::server_file_utils::{SaveSlotInfo, delete_game, get_save_slots},
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        msg_from_client::{request_update_saved_game_list_display, send_initialize_game},
+    websocket_handler::msg_from_client::{
+        request_update_saved_game_list_display, send_initialize_game,
     },
 };
 
 #[component]
 pub fn CreateServer() -> Element {
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let local_login_name_session = use_context::<Signal<String>>();
     let navigator = use_navigator();
 

@@ -1,8 +1,5 @@
 use dioxus::logger::tracing;
-use dioxus::{
-    fullstack::{CborEncoding, UseWebsocket},
-    prelude::*,
-};
+use dioxus::prelude::*;
 use dioxus_i18n::t;
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
@@ -14,16 +11,14 @@ use crate::{
     },
     common::{Route, SERVER_NAME},
     components::button::Button,
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        msg_from_client::send_start_game,
-    },
+    game_channel::GameChannel,
+    websocket_handler::{event::ClientEvent, msg_from_client::send_start_game},
 };
 
 #[component]
 pub fn LobbyPage() -> Element {
     // contexts
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let local_login_name_session = use_context::<Signal<String>>();
     let server_data = use_context::<Signal<ServerData>>();
 

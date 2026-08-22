@@ -424,6 +424,22 @@ fn App() -> Element {
 
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
+    // Offline-mode transport: GameChannel wraps `socket` (unchanged, real-websocket
+    // behavior — the server build, which also renders this UI for SSR, only ever uses
+    // that path) plus, client builds only, a LocalChannel that routes ClientEvents
+    // straight into local_engine instead of over the network once `offline_mode` is
+    // flipped true (see Home()'s "Play Offline" action). See game_channel.rs's doc
+    // comment for why the split is cfg-gated rather than a runtime Option.
+    #[cfg(not(feature = "server"))]
+    let local_channel_handle = dx_rpg::local_channel::LocalChannel::new();
+    #[cfg(not(feature = "server"))]
+    let offline_mode = use_signal(|| false);
+    #[cfg(not(feature = "server"))]
+    let game_channel =
+        dx_rpg::game_channel::GameChannel::new(socket, local_channel_handle, offline_mode);
+    #[cfg(feature = "server")]
+    let game_channel = dx_rpg::game_channel::GameChannel::new(socket);
+
     // synced storage
     // login_name drives which page is rendered (LoginPage vs home content). Starting with
     // the server default (DISCONNECTED_USER) on both the server binary and the WASM client
@@ -561,11 +577,17 @@ fn App() -> Element {
     //
     // Wrapped in an outer reconnect loop: `use_websocket` establishes the connection once and
     use_future(move || {
+        // `socket` stays the real websocket handle, used only by the reconnect logic
+        // further down (which is meaningless in offline mode — nothing to reconnect
+        // to). Everything that should route through offline mode when active goes
+        // through `game_channel` instead. Both are Copy, freely re-capturable on every
+        // invocation of this closure (use_future's FnMut) with no explicit clone needed.
         let mut socket = socket;
+        let mut game_channel = game_channel;
         async move {
             loop {
                 tracing::info!("[client] ws-loop starting");
-                while let Ok(event) = socket.recv().await {
+                while let Ok(event) = game_channel.recv().await {
                     tracing::debug!("[client] ws-loop: received an event");
                     match event {
                         ServerEvent::NewClientOnExistingPlayer(msg, client_id) => {
@@ -576,7 +598,7 @@ fn App() -> Element {
                             if login_name_session_local_sync != *DISCONNECTED_USER
                                 && login_id_session_local_sync != NO_CLIENT_ID
                             {
-                                let _ = socket
+                                let _ = game_channel
                                     .clone()
                                     .send(ClientEvent::AddPlayer(
                                         login_name_session_local_sync.clone(),
@@ -589,13 +611,13 @@ fn App() -> Element {
                                     login_name_session_local_sync,
                                     login_id_session_local_sync
                                 );
-                                let _ = socket
+                                let _ = game_channel
                                     .clone()
                                     .send(ClientEvent::RequestSavedGameList(
                                         login_name_session_local_sync.clone(),
                                     ))
                                     .await;
-                                let _ = socket
+                                let _ = game_channel
                                     .clone()
                                     .send(ClientEvent::RequestOnGoingGamesList)
                                     .await;
@@ -630,7 +652,7 @@ fn App() -> Element {
                                     "ReconnectAllSessions for player {}",
                                     login_name_session_local_sync
                                 );
-                                let _ = socket
+                                let _ = game_channel
                                     .clone()
                                     .send(ClientEvent::AddPlayer(
                                         login_name_session_local_sync.clone(),
@@ -684,6 +706,17 @@ fn App() -> Element {
                         }
                     }
                 }
+                // In offline mode, game_channel.recv() only fails if LocalChannel's
+                // sender was dropped — shouldn't happen while the app is alive, but if
+                // it somehow did, there's no real server to reconnect to (attempting one
+                // would defeat the whole point of offline mode). Just retry the local
+                // recv loop instead of falling into the real-network reconnect below.
+                #[cfg(not(feature = "server"))]
+                if offline_mode() {
+                    tracing::warn!("[client] ws-loop: local channel closed unexpectedly, retrying");
+                    continue;
+                }
+
                 tracing::warn!(
                     "[client] ws-loop: connection lost (deserialization error or socket closed), reconnecting"
                 );
@@ -714,7 +747,7 @@ fn App() -> Element {
         }
     });
 
-    use_context_provider(|| socket);
+    use_context_provider(|| game_channel);
     use_context_provider(|| player_client_id);
     use_context_provider(|| login_name_session_local_sync);
     use_context_provider(|| login_id_session_local_sync);

@@ -1,7 +1,4 @@
-use dioxus::{
-    fullstack::{CborEncoding, UseWebsocket},
-    logger::tracing,
-};
+use dioxus::logger::tracing;
 use lib_rpg::{
     character_mod::buffers::BufKinds,
     common::sound_cue::classify_result_atk,
@@ -18,7 +15,8 @@ use crate::{
         CtxAppLang, CtxAudioSettings, CtxToggleAtkAnimation, SERVER_NAME, lang_from_app_lang,
     },
     components::button::{Button, ButtonVariant},
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    game_channel::GameChannel,
+    websocket_handler::event::ClientEvent,
 };
 use dioxus::prelude::*;
 use dioxus_i18n::t;
@@ -26,7 +24,7 @@ use dioxus_i18n::t;
 #[component]
 pub fn GameBoard() -> Element {
     // contexts
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let server_data = use_context::<Signal<ServerData>>();
     let toggle_atk_animation = use_context::<CtxToggleAtkAnimation>().0;
 

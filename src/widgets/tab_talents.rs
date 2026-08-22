@@ -1,7 +1,4 @@
-use dioxus::{
-    fullstack::{CborEncoding, UseWebsocket},
-    prelude::*,
-};
+use dioxus::prelude::*;
 use dioxus_i18n::t;
 use dioxus_primitives::ContentSide;
 use lib_rpg::{
@@ -19,7 +16,8 @@ use crate::{
         button::{Button, ButtonVariant},
         tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     },
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    game_channel::GameChannel,
+    websocket_handler::event::ClientEvent,
 };
 
 fn talent_name(talent: &TalentDef, lang: Lang) -> &str {
@@ -43,7 +41,7 @@ pub fn TabTalents(c: Character) -> Element {
     let app_lang = use_context::<CtxAppLang>().0;
     let server_name = SERVER_NAME();
     let lang = lang_from_app_lang(&app_lang());
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
 
     // Mark this hero's talent points as seen as soon as their tab is shown, clearing
     // the notification badge.
@@ -107,7 +105,7 @@ pub fn TabTalents(c: Character) -> Element {
 
 #[component]
 fn RespecButton(c: Character, server_name: String) -> Element {
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let character_id_name = c.id_name.clone();
     let has_unlocked = !c.talents.unlocked.is_empty();
 
@@ -169,7 +167,7 @@ fn TalentNode(
     lang: Lang,
     server_name: String,
 ) -> Element {
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
 
     let is_unlocked = character.talents.unlocked.iter().any(|id| id == &talent.id);
     let missing_requires: Vec<String> = talent
