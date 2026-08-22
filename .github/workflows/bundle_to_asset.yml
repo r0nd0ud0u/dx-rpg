@@ -364,7 +364,6 @@ jobs:
           rpm --import RPM-GPG-KEY-rpg-adventure
           rpm -K "$rpm"
         shell: bash
-        shell: bash
 
       - name: Rename bundle directory
         run: |
