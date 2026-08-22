@@ -22,6 +22,11 @@ server-settings-insecure-warning = Disables TLS certificate validation for this 
 server-settings-save = Save
 server-settings-saved = Saved — restart the app for this to take effect.
 
+sound-settings-title = Sound Settings
+sound-settings-muted = Mute all sound
+sound-settings-music-volume = Music volume
+sound-settings-sfx-volume = Sound effects volume
+
 navbar-change-password = 🔑 Password
 change-password-title = Change Password
 change-password-current-placeholder = Current password

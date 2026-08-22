@@ -75,6 +75,13 @@ pub const SYNCED_INSECURE_CERTS_KEY: &str = "synced_insecure_certs";
 /// session for the same username (see `websocket_handler::event::add_player`).
 pub const SYNCED_DEVICE_TOKEN_KEY: &str = "synced_device_token";
 
+/// Audio settings, persisted locally (both web and native) and shared between
+/// `main.rs` (declares them via `use_synced_storage`) and `board_game_components/navbar.rs`
+/// / `audio.rs` (read/write them to control playback).
+pub const SYNCED_MUSIC_VOLUME_KEY: &str = "synced_music_volume";
+pub const SYNCED_SFX_VOLUME_KEY: &str = "synced_sfx_volume";
+pub const SYNCED_AUDIO_MUTED_KEY: &str = "synced_audio_muted";
+
 // ── Per-setting context newtypes ─────────────────────────────────────────────
 // Each wraps a `Signal<bool>` in a distinct type so that Dioxus context lookup
 // (which is keyed by TypeId) stores and retrieves them independently.
@@ -141,6 +148,17 @@ pub struct CtxSyncedInsecureCerts(pub Signal<bool>);
 /// via context (declared in `App()`) for the same reasons as `CtxSyncedServerUrl`.
 #[derive(Clone, Copy)]
 pub struct CtxDeviceToken(pub Signal<String>);
+
+/// Audio playback settings — music volume, sfx volume (each 0-100), and a mute-all
+/// toggle. Persisted via `SYNCED_MUSIC_VOLUME_KEY`/`SYNCED_SFX_VOLUME_KEY`/
+/// `SYNCED_AUDIO_MUTED_KEY`, declared in `App()`, and read by `audio.rs`'s
+/// `play_music`/`play_sfx` plus the volume controls in `Navbar`.
+#[derive(Clone, Copy)]
+pub struct CtxAudioSettings {
+    pub music_volume: Signal<i32>,
+    pub sfx_volume: Signal<i32>,
+    pub muted: Signal<bool>,
+}
 
 /// Converts the app's "en"/"fr" locale string into lib-rpg's `Lang` enum —
 /// the one conversion boundary between the two crates' locale representations

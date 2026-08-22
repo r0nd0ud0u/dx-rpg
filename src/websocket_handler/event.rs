@@ -26,6 +26,8 @@ use lib_rpg::common::overworld::Position;
 use lib_rpg::server::core_game_data::CombatUpdate;
 #[cfg(feature = "server")]
 use lib_rpg::server::core_game_data::CoreGameData;
+#[cfg(feature = "server")]
+use lib_rpg::server::game_state::ConsumableUseResult;
 use lib_rpg::server::overworld_manager::OverworldState;
 use lib_rpg::server::server_manager::OnGoingGame;
 use lib_rpg::server::server_manager::ServerData;
@@ -1133,6 +1135,16 @@ pub fn use_potion_handler(
                     message: utils::format_string_with_timestamp(&msg),
                     color: String::new(),
                 });
+                server_data
+                    .core_game_data
+                    .game_manager
+                    .game_state
+                    .last_consumable_use = ConsumableUseResult {
+                    launcher_id_name: launcher_id.clone(),
+                    target_id_name: target_id_name.to_owned(),
+                    consumable_name: potion_name.to_owned(),
+                    seq: game_state.last_consumable_use.seq + 1,
+                };
             }
             Err(e) => {
                 tracing::error!("Failed to use potion {}: {}", potion_name, e);
@@ -1206,6 +1218,16 @@ pub fn use_party_potion_handler(
                     message: utils::format_string_with_timestamp(&msg),
                     color: String::new(),
                 });
+                server_data
+                    .core_game_data
+                    .game_manager
+                    .game_state
+                    .last_consumable_use = ConsumableUseResult {
+                    launcher_id_name: launcher_id.clone(),
+                    target_id_name: target_id_name.to_owned(),
+                    consumable_name: potion_name.to_owned(),
+                    seq: game_state.last_consumable_use.seq + 1,
+                };
             }
             Err(e) => tracing::error!("Failed to use party potion {}: {}", potion_name, e),
         }
@@ -1289,6 +1311,16 @@ fn use_overworld_consumable_handler(
                 message: utils::format_string_with_timestamp(&msg),
                 color: String::new(),
             });
+            server_data
+                .core_game_data
+                .game_manager
+                .game_state
+                .last_consumable_use = ConsumableUseResult {
+                launcher_id_name: hero_id_name.to_owned(),
+                target_id_name: hero_id_name.to_owned(),
+                consumable_name: consumable_name.to_owned(),
+                seq: game_state.last_consumable_use.seq + 1,
+            };
         }
         Err(e) => {
             tracing::error!(
