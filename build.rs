@@ -49,6 +49,20 @@ fn embed_offline_files() {
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR is always set for build scripts");
     let dest = Path::new(&out_dir).join("embedded_offline_files.rs");
     fs::write(&dest, out).unwrap_or_else(|e| panic!("failed to write {}: {e}", dest.display()));
+
+    // Handed to src/embedded_data.rs as `env!("EMBEDDED_OFFLINE_FILES_PATH")` rather than
+    // having it reconstruct the same path via `concat!(env!("OUT_DIR"), "/...")`: bare
+    // `env!("OUT_DIR")` is documented by rustc itself as not reliably available to every
+    // compile of a crate with multiple targets (`error: environment variable OUT_DIR not
+    // defined at compile time` — hit in a Docker CI build of this exact project, though
+    // never locally, since a warm target/ dir from earlier builds papered over it there).
+    // A `cargo:rustc-env` value set by this build script, by contrast, is guaranteed by
+    // Cargo to reach every compilation that depends on this build script — the standard,
+    // documented way to hand a generated file's path to `include!` from a build script.
+    println!(
+        "cargo:rustc-env=EMBEDDED_OFFLINE_FILES_PATH={}",
+        dest.display()
+    );
 }
 
 /// Recursively collects `(relative_key, absolute_path)` for every file under `dir`.
