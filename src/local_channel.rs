@@ -14,7 +14,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use futures::{StreamExt, channel::mpsc, lock::Mutex as AsyncMutex};
-use lib_rpg::server::server_manager::ServerData;
+use lib_rpg::server::{scenario::ScenarioState, server_manager::ServerData};
 
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 
@@ -180,6 +180,33 @@ fn dispatch(state: &Rc<RefCell<ServerData>>, msg: ClientEvent) -> Vec<ServerEven
                 .core_game_data
                 .game_manager
                 .launch_attack(Some(&atk_name));
+            drop(data);
+            vec![update_event(state)]
+        }
+
+        // Mirrors the real server's `set_universe_on_server_data`. `InitializeGame` already
+        // applies the universe it was handed, so in the normal flow this arrives carrying the
+        // same value and is a no-op — but it is also sent on its own when the universe picker
+        // changes, and falling through to the catch-all left `core.universe` and the scenario
+        // list stale (logged as "unsupported action SetUniverse").
+        ClientEvent::SetUniverse(_server_name, universe) => {
+            let mut data = state.borrow_mut();
+            match crate::local_engine::scenarios_for_universe(&universe) {
+                Ok(filtered) => {
+                    let core = &mut data.core_game_data;
+                    core.universe = universe;
+                    core.game_manager.all_scenarios = filtered.clone();
+                    core.game_manager.states_scenarios.clear();
+                    for scenario in &filtered {
+                        core.game_manager
+                            .states_scenarios
+                            .insert(scenario.name.clone(), ScenarioState::NotStarted);
+                    }
+                }
+                Err(e) => {
+                    dioxus::logger::tracing::error!("offline mode: SetUniverse failed: {e}");
+                }
+            }
             drop(data);
             vec![update_event(state)]
         }
