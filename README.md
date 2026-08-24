@@ -376,7 +376,7 @@ copy the template and edit it: `cp .env_template .env`.
 | `IP` | `0.0.0.0` | Bind address |
 | `PORT` | `8080` | HTTP port |
 | `DATABASE_URL` | `sqlite://db.sqlite` | SQLite connection string |
-| `USE_PASSWORD` | `false` | Require password on login |
+| `USE_PASSWORD` | `false` | Require a password on login. Read **server-side only** — see [Password authentication](#password-authentication) |
 | `MAX_SAVES` | `3` | Max save slots per user |
 | `ADMIN_ENABLED` | `false` | Enable `/admin` panel |
 | `SERVER_URL` | `http://127.0.0.1:8080` | Client-only, native builds (desktop/mobile): remote multiplayer server to connect to. Ignored by the web client, which infers it from same-origin, and by the server itself. |
@@ -498,6 +498,47 @@ sequenceDiagram
     SQLite-->>Server: User row + permissions
     Server-->>Browser: Set session cookie
     Browser-->>User: Redirect to home
+```
+
+#### Password authentication
+
+Passwords are bcrypt-hashed (cost 10) into `users.password` by `register()` and
+`change_password()`, and checked by `password_matches()` in
+`src/auth_manager/server_fn/auth.rs` — the single comparison helper shared by `login()`,
+`change_password()` and `delete_user()`.
+
+Two rules that are easy to get wrong, both covered by unit tests in that file:
+
+- **`bcrypt::verify` returns `Result<bool, _>`, and the `bool` is the answer.** Its `Err`
+  arm only means the *stored hash was malformed*, so collapsing the call with `.is_ok()`
+  accepts every password that hashes successfully. `password_matches()` uses
+  `.unwrap_or(false)` so a malformed hash fails closed.
+- **`USE_PASSWORD` is read from the server's own environment, never from the request.**
+  `login()` and `register()` take a `use_password` argument, but it is a *UI hint* used by
+  the login form to decide whether to render the password field — the server overrides it
+  with `use_password_enabled()`. Trusting the argument would let a hand-rolled request to
+  `/api/user/login` pass `false` and skip the password check, or one to `/api/register`
+  store no password at all.
+
+- **A request parameter naming an account is not proof of owning it.**
+  `change_password()` receives the target `username` as a parameter, so it re-derives the
+  caller's identity from the session (`get_user_name()`) and refuses any mismatch. Without
+  that check the endpoint is an unauthenticated password reset for any account.
+
+`login()` additionally refuses a second session for a user who is already connected,
+checking both the `users.is_connected` column and the live websocket set
+(`is_username_connected()`) — the DB flag alone can lag behind or outlive reality after a
+crash.
+
+**Legacy accounts.** A row whose `password` is `NULL` or `''` has no hash to compare
+against and accepts any password by design, so that accounts created before
+`USE_PASSWORD` was switched on stay reachable; their owners are expected to set a real
+password via the Settings panel afterwards. The `Admin` and `Guest` rows seeded by
+`db.rs` start out exactly like this. **Turning on `USE_PASSWORD` therefore does not by
+itself secure a pre-existing database** — audit it with:
+
+```bash
+sqlite3 db.sqlite "SELECT username, password IS NULL OR password = '' AS no_password FROM users;"
 ```
 
 ### Game session flow (WebSocket)
