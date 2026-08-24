@@ -687,6 +687,39 @@ environment variable at startup (defaults to `http://127.0.0.1:8080` if unset):
 SERVER_URL=https://your-server.example.com dx serve --platform desktop --no-default-features --features desktop
 ```
 
+#### Windows: main-thread stack size
+
+The desktop client needs a larger main-thread stack than Windows gives by default.
+Windows allocates 1 MB where Linux gives 8 MB (`ulimit -s` = 8192), and in a debug build
+the startup path exceeds 1 MB — the app builds and launches, then dies immediately with
+`thread 'main' has overflowed its stack` and exit code `0xc00000fd`
+(`STATUS_STACK_OVERFLOW`), so no window ever appears.
+
+This is Windows-only: the same commit built for `x86_64-unknown-linux-gnu` and run under
+a Linux desktop session starts cleanly, webview and all, with no flag needed.
+
+MSVC bakes the stack limit into the executable header at link time, so it cannot be raised
+at runtime the way `std::thread::Builder::stack_size` can for spawned threads. `.cargo/config.toml`
+therefore passes `/STACK` for the MSVC target:
+
+```toml
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/STACK:16777216"]
+```
+
+Note this applies to every MSVC build, not just desktop, and changing it forces a full
+rebuild of all dependencies for that target.
+
+Two things this is *not*, both of which look identical from the outside — the app simply
+never appears:
+
+- **A missing feature flag.** `dx serve --desktop` on its own leaves `default = ["server"]`
+  active, so `main()` compiles to the `dioxus::serve` Axum branch (visible in the log as
+  `Registering: POST /api/...`) instead of either window-opening branch. Always pass
+  `--no-default-features --features desktop`, as the commands above do.
+- **A build failure.** The build succeeds; the crash is at startup, after
+  `Build completed successfully ... launching app!`.
+
 Android dev-serving needs the same Android SDK/NDK + `rustup target add
 aarch64-linux-android` toolchain as `bundle_mobile.sh` below, plus a connected
 device or running emulator visible to `adb devices`.
