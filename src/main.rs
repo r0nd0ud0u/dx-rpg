@@ -168,8 +168,30 @@ fn main() {
         for href in stylesheets {
             head.push_str(&format!(r#"<link rel="stylesheet" href="{href}">"#));
         }
+
+        // `dx serve --platform desktop` opens the window straight through tao/wry, bypassing
+        // the `[bundle].icon` path in Dioxus.toml entirely (that one's only read by `dx
+        // bundle`'s packaging step) — without an explicit icon here the taskbar falls back to
+        // whatever the OS/webview backend defaults to (e.g. the system's default browser
+        // icon). Decode the same square PNG bundling uses so dev and packaged builds match.
+        let icon_png = include_bytes!("../assets/icon-512.png");
+        let icon = image::load_from_memory(icon_png)
+            .expect("assets/icon-512.png must be a valid image")
+            .into_rgba8();
+        let (icon_width, icon_height) = icon.dimensions();
+        let window_icon = dioxus_desktop::tao::window::Icon::from_rgba(
+            icon.into_raw(),
+            icon_width,
+            icon_height,
+        )
+        .expect("assets/icon-512.png must be a valid RGBA icon");
+
         dioxus::LaunchBuilder::new()
-            .with_cfg(dioxus_desktop::Config::new().with_custom_head(head))
+            .with_cfg(
+                dioxus_desktop::Config::new()
+                    .with_custom_head(head)
+                    .with_icon(window_icon),
+            )
             .launch(App);
     }
     #[cfg(all(not(feature = "server"), not(feature = "desktop")))]
