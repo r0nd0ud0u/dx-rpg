@@ -179,12 +179,9 @@ fn main() {
             .expect("assets/icon-512.png must be a valid image")
             .into_rgba8();
         let (icon_width, icon_height) = icon.dimensions();
-        let window_icon = dioxus_desktop::tao::window::Icon::from_rgba(
-            icon.into_raw(),
-            icon_width,
-            icon_height,
-        )
-        .expect("assets/icon-512.png must be a valid RGBA icon");
+        let window_icon =
+            dioxus_desktop::tao::window::Icon::from_rgba(icon.into_raw(), icon_width, icon_height)
+                .expect("assets/icon-512.png must be a valid RGBA icon");
 
         dioxus::LaunchBuilder::new()
             .with_cfg(
