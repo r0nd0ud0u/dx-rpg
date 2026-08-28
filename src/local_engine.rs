@@ -14,8 +14,7 @@
 
 use anyhow::{Context, bail};
 use lib_rpg::server::{
-    core_game_data::CoreGameData, data_manager::DataManager, scenario::ScenarioState,
-    server_manager::GamePhase,
+    core_game_data::CoreGameData, data_manager::DataManager, server_manager::GamePhase,
 };
 
 use crate::common::OFFLINE_PATH;
@@ -104,10 +103,7 @@ pub fn start_local_game(core: &mut CoreGameData) -> anyhow::Result<()> {
         bail!("cannot start a local game with no heroes selected");
     }
     core.game_manager.start_game();
-    let current_name = core.game_manager.current_scenario.name.clone();
-    if let Some(state) = core.game_manager.states_scenarios.get_mut(&current_name) {
-        *state = ScenarioState::InProgress;
-    }
+    core.game_manager.mark_current_scenario_in_progress();
     if core.game_phase != GamePhase::Overworld {
         core.game_phase = GamePhase::Running;
     }
