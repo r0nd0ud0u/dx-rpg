@@ -14,8 +14,7 @@
 
 use anyhow::{Context, bail};
 use lib_rpg::server::{
-    core_game_data::CoreGameData, data_manager::DataManager, scenario::ScenarioState,
-    server_manager::GamePhase,
+    core_game_data::CoreGameData, data_manager::DataManager, server_manager::GamePhase,
 };
 
 use crate::common::OFFLINE_PATH;
@@ -23,11 +22,10 @@ use crate::common::OFFLINE_PATH;
 /// Constructs a fresh single-player `CoreGameData` for `universe` (e.g. `"lotr"`, or
 /// `""` for all universes) — no heroes selected yet, game not started. Mirrors
 /// `init_new_game_by_player`'s core.
-pub fn new_local_game(universe: &str) -> anyhow::Result<CoreGameData> {
-    crate::embedded_data::register();
-    let dm = DataManager::try_new(OFFLINE_PATH)?;
-
-    let scenarios: Vec<_> = if universe.is_empty() {
+/// Scenarios belonging to `universe`, or all of them when it's empty — the offline
+/// counterpart of the filter `set_universe_on_server_data` applies server-side.
+fn filter_scenarios(dm: &DataManager, universe: &str) -> Vec<lib_rpg::server::scenario::Scenario> {
+    if universe.is_empty() {
         dm.all_scenarios.clone()
     } else {
         dm.all_scenarios
@@ -35,7 +33,25 @@ pub fn new_local_game(universe: &str) -> anyhow::Result<CoreGameData> {
             .filter(|s| s.universe == universe)
             .cloned()
             .collect()
-    };
+    }
+}
+
+/// Same filter as [`filter_scenarios`], loading the embedded data set itself. Used by the
+/// offline channel's `SetUniverse` handler, which changes the universe on an already-built
+/// game rather than creating a new one.
+pub fn scenarios_for_universe(
+    universe: &str,
+) -> anyhow::Result<Vec<lib_rpg::server::scenario::Scenario>> {
+    crate::embedded_data::register();
+    let dm = DataManager::try_new(OFFLINE_PATH)?;
+    Ok(filter_scenarios(&dm, universe))
+}
+
+pub fn new_local_game(universe: &str) -> anyhow::Result<CoreGameData> {
+    crate::embedded_data::register();
+    let dm = DataManager::try_new(OFFLINE_PATH)?;
+
+    let scenarios = filter_scenarios(&dm, universe);
     let mut core = CoreGameData::new_with_scenarios(&dm, "local", scenarios)?;
     core.is_single_player = true;
     core.universe = universe.to_owned();
@@ -87,10 +103,7 @@ pub fn start_local_game(core: &mut CoreGameData) -> anyhow::Result<()> {
         bail!("cannot start a local game with no heroes selected");
     }
     core.game_manager.start_game();
-    let current_name = core.game_manager.current_scenario.name.clone();
-    if let Some(state) = core.game_manager.states_scenarios.get_mut(&current_name) {
-        *state = ScenarioState::InProgress;
-    }
+    core.game_manager.mark_current_scenario_in_progress();
     if core.game_phase != GamePhase::Overworld {
         core.game_phase = GamePhase::Running;
     }

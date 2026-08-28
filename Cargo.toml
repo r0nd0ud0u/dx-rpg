@@ -18,7 +18,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0.104"
 dioxus = { version = "0.7.10", features = ["router", "fullstack"] }
-lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "599240d18f8ce25cbaa9a21de692c8ecb81c9db9" }
+lib-rpg = { git = "https://github.com/r0nd0ud0u/lib-rpg.git", rev = "4c6502b789e998e123f0765cbf26fbeae9aa2d2d" }
 serde = "1.0.229"
 dioxus-desktop = { version = "0.7.10", optional = true }
 # Decodes assets/icon-512.png into raw RGBA at startup for tao's Icon::from_rgba, so
@@ -110,3 +110,4 @@ inherits = "dev"
 
 [profile.android-dev]
 inherits = "dev"
+
