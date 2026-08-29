@@ -231,30 +231,42 @@ fn PlayOfflineCard() -> Element {
     let mut local_login_name_session = use_context::<Signal<String>>();
     let navigator = use_navigator();
     let offline_universes = use_signal(|| list_universes().unwrap_or_default());
+    // The universe dropdown only appears after this is clicked, so starting offline play
+    // is a single, unambiguous button rather than one button per universe (the previous
+    // design) cluttering the login screen.
+    let mut offline_started = use_signal(|| false);
 
     rsx! {
         div { class: "rpg-card auth-card",
             p { class: "auth-section-title", {t!("login-offline-title")} }
             p { class: "auth-desc", {t!("login-offline-hint")} }
-            div { class: "offline-universe-grid",
-                for universe in offline_universes() {
-                    Button {
-                        variant: ButtonVariant::Secondary,
-                        onclick: {
-                            let universe = universe.clone();
-                            move |_| {
-                                let universe = universe.clone();
-                                async move {
-                                    let mut sock = socket;
-                                    sock.go_offline();
-                                    *local_login_name_session.write() = LOCAL_PLAYER_NAME.to_owned();
-                                    send_initialize_game(LOCAL_PLAYER_NAME, &universe, true, sock)
-                                        .await;
-                                    navigator.push(Route::LobbyPage {});
-                                }
-                            }
-                        },
-                        "{universe}"
+            if !offline_started() {
+                Button {
+                    variant: ButtonVariant::Secondary,
+                    onclick: move |_| offline_started.set(true),
+                    {t!("login-offline-start-button")}
+                }
+            } else {
+                select {
+                    class: "lobby-select",
+                    "aria-label": t!("login-offline-choose-universe-label"),
+                    value: "",
+                    onchange: move |e: FormEvent| {
+                        let universe = e.value();
+                        if universe.is_empty() {
+                            return;
+                        }
+                        spawn(async move {
+                            let mut sock = socket;
+                            sock.go_offline();
+                            *local_login_name_session.write() = LOCAL_PLAYER_NAME.to_owned();
+                            send_initialize_game(LOCAL_PLAYER_NAME, &universe, true, sock).await;
+                            navigator.push(Route::LobbyPage {});
+                        });
+                    },
+                    option { value: "", {t!("login-offline-choose-universe-option")} }
+                    for universe in offline_universes() {
+                        option { value: "{universe}", "{universe}" }
                     }
                 }
             }
