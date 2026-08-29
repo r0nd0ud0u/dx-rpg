@@ -6,6 +6,7 @@ use crate::game_channel::GameChannel;
 use crate::utils::server_file_utils::{SaveSlotInfo, delete_game, get_save_slots};
 use crate::websocket_handler::event::ClientEvent;
 use crate::{
+    board_game_components::common_comp::BackButton,
     common::Route,
     components::button::{Button, ButtonVariant},
 };
@@ -40,6 +41,7 @@ pub fn LoadGame() -> Element {
 
     rsx! {
         div { class: "home-container",
+            BackButton { target: Route::CreateServer {}.into() }
             h2 { class: "rpg-title", {t!("loadgame-title")} }
             p { class: "rpg-subtitle", "{count_label}" }
 

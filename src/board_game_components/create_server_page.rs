@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use dioxus_i18n::t;
 
 use crate::{
+    board_game_components::common_comp::BackButton,
     common::Route,
     components::{
         alert_dialog::{
@@ -65,6 +66,7 @@ pub fn CreateServer() -> Element {
 
     rsx! {
         div { class: "home-container",
+            BackButton { target: Route::Home {}.into() }
             h1 { class: "rpg-title", {t!("create-server-title")} }
 
             if !error_msg().is_empty() {
