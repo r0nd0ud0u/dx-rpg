@@ -1816,11 +1816,18 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
    matter how narrow the phone actually is. main.rs works around this by
    measuring window.screen.width directly (which reports the real device
    width regardless of the WebView's viewport-scaling bug) and toggling this
-   class on <html> — so these mirror only the four display toggles the
-   Android client actually needs; the mobile client-only relevant chunk.
-   Real browsers (including the web build) already get this correctly from
-   the @media query, and won't ever get this class since screen.width there
-   reflects the real screen too — it's harmless, redundant confirmation. */
+   class on <html> — so these mirror the ≤768px block's display toggles
+   *and* its tooltip-content overrides (see the comment above that block):
+   without the mirror here, tooltips stayed anchored via the fixed 400px
+   left:100%/right:100% desktop rules on the Android app specifically, since
+   the media query that fixes them never matches there. Each selector below
+   pairs a `.tooltip-content` class with `[data-side=...]` the same way the
+   media-query version does, which gives it strictly higher specificity than
+   the always-on desktop rules regardless of source order, so no `!important`
+   is needed here. Real browsers (including the web build) already get this
+   correctly from the @media query, and won't ever get this class since
+   screen.width there reflects the real screen too — it's harmless,
+   redundant confirmation. */
 html.force-mobile-nav .navbar-desktop-group,
 html.force-mobile-nav .game-toolbar-desktop {
     display: none;
@@ -1832,6 +1839,25 @@ html.force-mobile-nav .game-toolbar-mobile-trigger {
 html.force-mobile-nav .navbar-mobile-trigger .sidebar-trigger,
 html.force-mobile-nav .game-toolbar-mobile-trigger .sidebar-trigger {
     display: flex;
+}
+html.force-mobile-nav .tooltip-content {
+    max-width: min(400px, calc(100vw - 32px));
+}
+html.force-mobile-nav .tooltip-content[data-side="left"],
+html.force-mobile-nav .tooltip-content[data-side="right"] {
+    top: 100%;
+    left: 50%;
+    right: auto;
+    margin: 8px 0 0 0;
+    transform: translateX(-50%);
+}
+html.force-mobile-nav .tooltip-content[data-side="left"]::after,
+html.force-mobile-nav .tooltip-content[data-side="right"]::after {
+    top: auto;
+    bottom: calc(100% - 0.25rem);
+    left: 50%;
+    right: auto;
+    border-radius: 0.1rem 0 0;
 }
 
 /* ── Small phones portrait (≤ 480 px) ──────────────────────────────────── */
