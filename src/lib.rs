@@ -3,6 +3,7 @@ pub mod auth_manager;
 pub mod board_game_components;
 pub mod common;
 pub mod components;
+pub mod debug_console;
 pub mod embedded_data;
 pub mod game_channel;
 pub mod i18n;

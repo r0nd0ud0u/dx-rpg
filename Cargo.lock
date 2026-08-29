@@ -2488,6 +2488,8 @@ dependencies = [
  "tokio",
  "tower",
  "tower-http 0.7.0",
+ "tracing-subscriber",
+ "tracing-wasm",
  "unic-langid",
  "wasm-bindgen-futures",
  "web-sys",

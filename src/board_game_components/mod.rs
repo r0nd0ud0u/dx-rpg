@@ -8,6 +8,7 @@ pub mod character_page;
 pub mod character_select;
 pub mod common_comp;
 pub mod create_server_page;
+pub mod debug_console;
 pub mod game_sheets;
 pub mod gameboard;
 pub mod home_page;
