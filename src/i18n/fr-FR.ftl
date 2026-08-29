@@ -174,6 +174,9 @@ login-name-taken = Ce nom est déjà pris.
 login-sign-up-button = S'inscrire →
 login-offline-title = ✈️ Jouer hors ligne
 login-offline-hint = Sans compte, sans serveur — choisissez un univers et lancez une partie solo locale.
+login-offline-start-button = Jouer hors ligne
+login-offline-choose-universe-label = Choisissez un univers
+login-offline-choose-universe-option = -- Choisissez un univers --
 
 ## create server page
 create-server-title = 🏰 Créer une partie
