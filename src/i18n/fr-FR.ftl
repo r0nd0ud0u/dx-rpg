@@ -175,7 +175,10 @@ create-server-singleplayer-hint = Un joueur contrôle tous les héros.
 create-server-multiplayer-hint = Chaque joueur connecté choisit un héros.
 create-server-step2 = 2️⃣ Choisissez un emplacement de sauvegarde
 create-server-empty-slot = Emplacement vide { $index }
-create-server-overwrite-play = ▶ Écraser et jouer
+create-server-continue-play = ▶ Continuer
+create-server-overwrite-play = 🗑 Écraser et jouer
+create-server-overwrite-confirm-title = Écraser cette sauvegarde ?
+create-server-overwrite-confirm-body = Cette action supprimera définitivement cette aventure sauvegardée pour en démarrer une nouvelle à la place. Cette action est irréversible.
 create-server-load-game = Charger une partie
 create-server-load-game-desc = Continuez une aventure sauvegardée
 
