@@ -1,17 +1,10 @@
-use dioxus::{
-    fullstack::{CborEncoding, UseWebsocket},
-    prelude::*,
-};
+use dioxus::prelude::*;
 use dioxus_i18n::t;
 use lib_rpg::server::server_manager::OnGoingGame;
 
 use crate::{
-    board_game_components::common_comp::ButtonLink,
-    common::Route,
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        msg_from_client::send_join_server_data,
-    },
+    board_game_components::common_comp::ButtonLink, common::Route, game_channel::GameChannel,
+    websocket_handler::msg_from_client::send_join_server_data,
 };
 
 #[component]
@@ -44,7 +37,7 @@ pub fn JoinOngoingGame() -> Element {
 
 #[component]
 pub fn GamePanel(server_name: String, player_name: String) -> Element {
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     rsx! {
         div { class: "ongoing-game-item",
             ButtonLink {

@@ -2471,9 +2471,11 @@ dependencies = [
  "dioxus-web",
  "dotenv",
  "execute",
+ "futures",
  "getrandom 0.3.4",
  "governor",
  "http",
+ "image",
  "indexmap",
  "lib-rpg",
  "once_cell",
@@ -4202,7 +4204,7 @@ checksum = "7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8"
 [[package]]
 name = "lib-rpg"
 version = "1.5.6"
-source = "git+https://github.com/r0nd0ud0u/lib-rpg.git?rev=d9d3ed0e360bb6c13f698d5d986f36094632ccb5#d9d3ed0e360bb6c13f698d5d986f36094632ccb5"
+source = "git+https://github.com/r0nd0ud0u/lib-rpg.git?rev=4c6502b789e998e123f0765cbf26fbeae9aa2d2d#4c6502b789e998e123f0765cbf26fbeae9aa2d2d"
 dependencies = [
  "anyhow",
  "chrono",

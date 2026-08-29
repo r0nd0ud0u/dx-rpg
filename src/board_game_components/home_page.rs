@@ -1,14 +1,12 @@
-use dioxus::{
-    fullstack::{CborEncoding, UseWebsocket},
-    prelude::*,
-};
+use dioxus::prelude::*;
 use dioxus_i18n::t;
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
     board_game_components::login_page::LoginPage,
     common::{DISCONNECTED_USER, Route},
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    game_channel::GameChannel,
+    websocket_handler::event::ClientEvent,
 };
 
 /// Home page
@@ -16,7 +14,7 @@ use crate::{
 pub fn Home() -> Element {
     // contexts
     let local_login_name_session = use_context::<Signal<String>>();
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let server_data = use_context::<Signal<ServerData>>;
     // Snapshot for this render
     let user_name = local_login_name_session();

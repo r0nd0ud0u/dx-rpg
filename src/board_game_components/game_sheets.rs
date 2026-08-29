@@ -1,7 +1,4 @@
-use dioxus::{
-    fullstack::{CborEncoding, UseWebsocket},
-    prelude::*,
-};
+use dioxus::prelude::*;
 use dioxus_i18n::t;
 use dioxus_primitives::scroll_area::ScrollDirection;
 use indexmap::IndexMap;
@@ -37,17 +34,15 @@ use crate::{
         sidebar::{Sidebar, SidebarTrigger},
         tabs::{TabContent, TabList, TabTrigger, Tabs},
     },
-    websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        msg_from_client::request_save_game,
-    },
+    game_channel::GameChannel,
+    websocket_handler::{event::ClientEvent, msg_from_client::request_save_game},
     widgets::{charts::TabStats, tab_equipment::TabEquipment, tab_talents::TabTalents},
 };
 
 #[component]
 fn SaveButton(is_saved: Signal<bool>) -> Element {
     // contexts
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let local_login_name_session = use_context::<Signal<String>>();
 
     rsx! {
@@ -365,7 +360,7 @@ pub fn GameSheets() -> Element {
 /// PotionList), and doesn't advance a turn.
 #[component]
 fn OverworldConsumablesSection(hero_id: String) -> Element {
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let server_data = use_context::<Signal<ServerData>>();
     let snap = server_data();
     let pm = &snap.core_game_data.game_manager.pm;
@@ -1270,7 +1265,7 @@ pub(crate) fn rank_label(rank: &lib_rpg::character_mod::rank::Rank) -> String {
 /// combat) and the scenario-end screen.
 #[component]
 pub fn StoreSheet(s: SheetSide) -> Element {
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
     let app_lang = use_context::<CtxAppLang>().0;

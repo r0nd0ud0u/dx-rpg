@@ -14,6 +14,7 @@ quit-dialog-title = Quit Game
 quit-dialog-body = Are you sure you want to quit the game?
 
 navbar-server-settings = 🌐 Server
+navbar-fullscreen-toggle = Fullscreen
 server-settings-title = Server Connection
 server-settings-current = Currently connected to: { $url }
 server-settings-placeholder = https://your-server.example.com
@@ -162,6 +163,8 @@ login-choose-password-placeholder = Choose a password
 login-invalid-login = Invalid login
 login-name-taken = This name is already taken.
 login-sign-up-button = Sign Up →
+login-offline-title = ✈️ Play Offline
+login-offline-hint = No account, no server — pick a universe and start a local solo game.
 
 ## create server page
 create-server-title = 🏰 Create a Game

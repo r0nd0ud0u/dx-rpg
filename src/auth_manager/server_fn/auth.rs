@@ -83,14 +83,47 @@ pub async fn auth_rate_limit(
     next.run(req).await
 }
 
-/// Returns whether password authentication is required, driven by the `USE_PASSWORD` env var.
-#[post("/api/get_use_password")]
-pub async fn get_use_password() -> Result<bool, ServerFnError> {
-    Ok(std::env::var("USE_PASSWORD")
+/// Checks a typed password against the bcrypt hash stored in the `users.password` column.
+///
+/// `stored` is `None`/empty for an account created (or migrated from) before `USE_PASSWORD` was
+/// enabled: there is no hash to check against, so any password is accepted and it's on the user
+/// to set a real one afterward via `change_password()`.
+///
+/// Note the `unwrap_or(false)`: `bcrypt::verify` returns `Result<bool, BcryptError>`, where the
+/// `Err` arm means only that the *stored hash was malformed*, not that the password was wrong.
+/// Collapsing this with `.is_ok()` — as all three call sites used to — discards the `bool` that
+/// actually carries the answer and yields `true` for every password that hashes successfully,
+/// i.e. accepts anything.
+#[cfg(feature = "server")]
+fn password_matches(stored: Option<&str>, typed: &str) -> bool {
+    match stored {
+        Some(hash) if !hash.is_empty() => bcrypt::verify(typed, hash).unwrap_or(false),
+        _ => true,
+    }
+}
+
+/// Server-side source of truth for whether passwords are enforced, read straight from the
+/// `USE_PASSWORD` env var.
+///
+/// Every auth decision must go through this rather than through the `use_password` argument the
+/// client passes in: that argument is only a UI hint (it tells the login form whether to render
+/// the password field), and a hand-rolled HTTP request to `/api/user/login` can set it to
+/// `false` to skip the password check entirely. Same for `/api/register`, where a `false` there
+/// makes the server store no password at all — leaving a row whose NULL password then matches
+/// anything on the next login.
+#[cfg(feature = "server")]
+fn use_password_enabled() -> bool {
+    std::env::var("USE_PASSWORD")
         .unwrap_or_else(|_| "false".to_owned())
         .trim()
         .to_lowercase()
-        == "true")
+        == "true"
+}
+
+/// Returns whether password authentication is required, driven by the `USE_PASSWORD` env var.
+#[post("/api/get_use_password")]
+pub async fn get_use_password() -> Result<bool, ServerFnError> {
+    Ok(use_password_enabled())
 }
 
 #[post("/api/user/login", auth: Session)]
@@ -99,6 +132,9 @@ pub async fn login(
     password: String,
     use_password: bool,
 ) -> Result<String, ServerFnError> {
+    // Client-supplied value is a UI hint only — see `use_password_enabled`.
+    let _ = use_password;
+    let use_password = use_password_enabled();
     if username.trim() == "" || (password.is_empty() && use_password) {
         Err(ServerFnError::new(
             "Username or Password can't be empty!".to_owned(),
@@ -117,14 +153,7 @@ pub async fn login(
                 username
             )))
         } else {
-            // A `None`/empty password means this account was created (or migrated from)
-            // before USE_PASSWORD was enabled and has no real password to check against
-            // yet — let it through regardless of what was typed. It's on the user to set
-            // a real password afterward via change_password().
-            let is_valid = match rows[0].password.as_deref() {
-                Some(hash) if !hash.is_empty() => bcrypt::verify(password, hash).is_ok(),
-                _ => true,
-            };
+            let is_valid = password_matches(rows[0].password.as_deref(), &password);
             // Check the DB flag AND the real-time live-connection state: the DB flag can lag
             // behind (grace-period timing) or outlive (a crash that skipped clean disconnect)
             // the actual set of live websocket connections, and trusting it alone would let a
@@ -172,6 +201,9 @@ pub async fn register(
     password: String,
     use_password: bool,
 ) -> Result<(), ServerFnError> {
+    // Client-supplied value is a UI hint only — see `use_password_enabled`.
+    let _ = use_password;
+    let use_password = use_password_enabled();
     if username.trim() == "" || (password.is_empty() && use_password) {
         Err(ServerFnError::new(
             "Username or Password can't be empty!".to_owned(),
@@ -232,6 +264,23 @@ pub async fn change_password(
     new_password: String,
     use_password: bool,
 ) -> Result<(), ServerFnError> {
+    // Client-supplied value is a UI hint only — see `use_password_enabled`. Trusting it here
+    // let a caller pass `false` and skip the old-password check entirely.
+    let _ = use_password;
+    let use_password = use_password_enabled();
+
+    // `username` arrives as a request parameter, so it can name *any* account. Bind it to the
+    // caller's own session: without this, an unauthenticated POST naming someone else's
+    // username could set a new password for them and take the account over outright.
+    let session_user = get_user_name().await.map_err(|_| {
+        ServerFnError::new("You must be signed in to change a password.".to_owned())
+    })?;
+    if session_user != username {
+        return Err(ServerFnError::new(
+            "You can only change your own password.".to_owned(),
+        ));
+    }
+
     if new_password.trim().is_empty() {
         return Err(ServerFnError::new(
             "New password can't be empty!".to_owned(),
@@ -251,12 +300,7 @@ pub async fn change_password(
         )));
     };
 
-    let old_password_ok = match row.password.as_deref() {
-        Some(hash) if use_password && !hash.is_empty() => {
-            bcrypt::verify(&old_password, hash).is_ok()
-        }
-        _ => true,
-    };
+    let old_password_ok = !use_password || password_matches(row.password.as_deref(), &old_password);
     if !old_password_ok {
         return Err(ServerFnError::new(
             "Current password is not correct!".to_owned(),
@@ -298,16 +342,17 @@ pub async fn delete_user(
             let msg = format!("Username {} is not registered!", username);
             Err(ServerFnError::new(msg))
         } else {
-            let is_valid = match rows[0].password.as_deref() {
-                Some(hash) if !hash.is_empty() => bcrypt::verify(&password, hash).is_ok(),
-                _ => true,
-            };
+            let is_valid = password_matches(rows[0].password.as_deref(), &password);
 
             if use_password {
                 if is_valid {
-                    match sqlx::query("DELETE FROM users WHERE username = ?1 AND password = ?2")
+                    // Only the username is matched here: `is_valid` above already checked
+                    // the typed password against the stored bcrypt hash. Re-binding the
+                    // plaintext password into the WHERE clause compared it against the
+                    // *hash* column, which never matches — the DELETE silently affected 0
+                    // rows while still reporting Ok and wiping the user's save directory.
+                    match sqlx::query("DELETE FROM users WHERE username = ?1")
                         .bind(&username)
-                        .bind(&password)
                         .execute(pool)
                         .await
                     {
@@ -473,4 +518,79 @@ pub async fn save_user_setting(key: String, value: String) -> Result<(), ServerF
     .await
     .map_err(|e| ServerFnError::new(format!("{e}")))?;
     Ok(())
+}
+
+#[cfg(all(test, feature = "server"))]
+mod tests {
+    use super::*;
+
+    /// Cheapest bcrypt cost the crate accepts — these tests hash on every run and don't need
+    /// the production cost of 10 to prove the comparison logic.
+    const TEST_COST: u32 = 4;
+
+    #[test]
+    fn correct_password_is_accepted() {
+        let hash = bcrypt::hash("hunter2", TEST_COST).unwrap();
+        assert!(password_matches(Some(&hash), "hunter2"));
+    }
+
+    /// Regression test for the bug where all three call sites used
+    /// `bcrypt::verify(..).is_ok()`. `verify` returns `Result<bool, _>` whose `Err` arm means
+    /// "malformed hash", not "wrong password" — so `.is_ok()` was `true` for *any* password
+    /// checked against a well-formed hash, letting anyone log in as anyone.
+    #[test]
+    fn wrong_password_is_rejected() {
+        let hash = bcrypt::hash("hunter2", TEST_COST).unwrap();
+        assert!(!password_matches(Some(&hash), "not-hunter2"));
+        assert!(!password_matches(Some(&hash), ""));
+        assert!(!password_matches(Some(&hash), "HUNTER2"));
+    }
+
+    /// A hash that `bcrypt::verify` can't even parse must fail closed, not open.
+    #[test]
+    fn malformed_hash_is_rejected() {
+        assert!(!password_matches(Some("not-a-bcrypt-hash"), "anything"));
+    }
+
+    /// Documented legacy-account behaviour: a row written before `USE_PASSWORD` was enabled has
+    /// no hash to compare against, so it stays reachable until its owner sets a real password.
+    /// Admin/Guest are seeded this way in `db.rs`.
+    #[test]
+    fn account_without_stored_password_accepts_anything() {
+        assert!(password_matches(None, "anything"));
+        assert!(password_matches(Some(""), "anything"));
+    }
+
+    /// `USE_PASSWORD` must come from the server's own environment, never from the
+    /// client-supplied argument that `login`/`register` accept purely as a UI hint.
+    ///
+    /// This is the only test in the crate that touches the process environment. If another
+    /// one ever needs to, both must move behind a shared mutex — `cargo test` runs tests on
+    /// parallel threads in a single process, and `set_var` is process-global.
+    #[test]
+    fn use_password_enabled_reads_the_env_var() {
+        let previous = std::env::var("USE_PASSWORD").ok();
+        // SAFETY: no other test reads or writes USE_PASSWORD (see doc comment above), so no
+        // concurrent reader can observe these writes. The original value is restored below.
+        unsafe {
+            std::env::set_var("USE_PASSWORD", "true");
+            assert!(use_password_enabled());
+            std::env::set_var("USE_PASSWORD", " TRUE ");
+            assert!(use_password_enabled(), "value is trimmed and lowercased");
+            std::env::set_var("USE_PASSWORD", "false");
+            assert!(!use_password_enabled());
+            std::env::set_var("USE_PASSWORD", "yes");
+            assert!(
+                !use_password_enabled(),
+                "only the literal \"true\" enables it"
+            );
+            std::env::remove_var("USE_PASSWORD");
+            assert!(!use_password_enabled(), "defaults to false when unset");
+
+            match previous {
+                Some(v) => std::env::set_var("USE_PASSWORD", v),
+                None => std::env::remove_var("USE_PASSWORD"),
+            }
+        }
+    }
 }

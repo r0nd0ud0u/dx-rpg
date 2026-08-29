@@ -1,4 +1,3 @@
-use dioxus::fullstack::{CborEncoding, UseWebsocket};
 use dioxus::html::Key;
 use dioxus::prelude::*;
 use dioxus_i18n::t;
@@ -10,7 +9,8 @@ use lib_rpg::{
 use crate::{
     auth_manager::server_fn::{get_user_setting, save_user_setting},
     common::{CtxAppLang, PATH_IMG, SERVER_NAME},
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    game_channel::GameChannel,
+    websocket_handler::event::ClientEvent,
 };
 
 const TILE_PX: i32 = 48;
@@ -90,7 +90,7 @@ fn npc_sprite_file(npc: &lib_rpg::server::overworld_manager::NpcState) -> &'stat
 
 #[component]
 pub fn OverworldMap() -> Element {
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
     let app_lang = use_context::<CtxAppLang>().0;

@@ -1,11 +1,11 @@
-use dioxus::fullstack::CborEncoding;
+use dioxus::logger::tracing;
 use dioxus::prelude::*;
-use dioxus::{fullstack::UseWebsocket, logger::tracing};
 use dioxus_i18n::t;
 
 use crate::auth_manager::server_fn::get_user_id;
+use crate::game_channel::GameChannel;
 use crate::websocket_handler::NO_CLIENT_ID;
-use crate::websocket_handler::event::{ClientEvent, ServerEvent};
+use crate::websocket_handler::event::ClientEvent;
 use crate::{
     auth_manager::server_fn::{get_use_password, login, register},
     common::{CtxDeviceToken, Route},
@@ -14,11 +14,16 @@ use crate::{
         input::Input,
     },
 };
+#[cfg(not(feature = "server"))]
+use crate::{
+    local_channel::LOCAL_PLAYER_NAME, local_engine::list_universes,
+    websocket_handler::msg_from_client::send_initialize_game,
+};
 
 #[component]
 pub fn LoginPage() -> Element {
     // contexts
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let mut local_login_name_session = use_context::<Signal<String>>();
     let mut local_login_id_session = use_context::<Signal<i64>>();
     let mut device_token = use_context::<CtxDeviceToken>().0;
@@ -206,7 +211,59 @@ pub fn LoginPage() -> Element {
                         p { class: "rpg-answer-error", "{register_answer}" }
                     }
                 }
+                PlayOfflineCard {}
             }
         }
     }
+}
+
+/// A third card next to sign-in/sign-up: pick a universe and jump straight into a
+/// local, no-server single-player game (see `game_channel.rs`/`local_channel.rs`).
+/// Absent entirely on the server build — a `#[cfg]`-swapped no-op twin below, rather
+/// than an `if cfg!(...)` inside the rsx above, because the real body references
+/// `GameChannel::go_offline`/`local_engine::list_universes`, which don't exist in that
+/// build at all (`cfg!(...)` is a runtime check — it doesn't stop those calls from
+/// needing to compile).
+#[cfg(not(feature = "server"))]
+#[component]
+fn PlayOfflineCard() -> Element {
+    let socket = use_context::<GameChannel>();
+    let mut local_login_name_session = use_context::<Signal<String>>();
+    let navigator = use_navigator();
+    let offline_universes = use_signal(|| list_universes().unwrap_or_default());
+
+    rsx! {
+        div { class: "rpg-card auth-card",
+            p { class: "auth-section-title", {t!("login-offline-title")} }
+            p { class: "auth-desc", {t!("login-offline-hint")} }
+            div { class: "offline-universe-grid",
+                for universe in offline_universes() {
+                    Button {
+                        variant: ButtonVariant::Secondary,
+                        onclick: {
+                            let universe = universe.clone();
+                            move |_| {
+                                let universe = universe.clone();
+                                async move {
+                                    let mut sock = socket;
+                                    sock.go_offline();
+                                    *local_login_name_session.write() = LOCAL_PLAYER_NAME.to_owned();
+                                    send_initialize_game(LOCAL_PLAYER_NAME, &universe, true, sock)
+                                        .await;
+                                    navigator.push(Route::LobbyPage {});
+                                }
+                            }
+                        },
+                        "{universe}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[cfg(feature = "server")]
+#[component]
+fn PlayOfflineCard() -> Element {
+    rsx! {}
 }

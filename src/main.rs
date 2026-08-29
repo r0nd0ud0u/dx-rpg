@@ -123,8 +123,75 @@ fn main() {
         }
     }
 
-    // On the client, we simply launch the app as normal, taking over the main thread
+    // Registers the offlines/ game data (embedded at compile time by build.rs) with
+    // lib-rpg, so offline mode's local game engine can construct a DataManager the same
+    // way the server does — before any component/hook exists, same reasoning as the
+    // server-URL resolution above running this early. A no-op on the server build (the
+    // module is cfg'd out there entirely; see embedded_data.rs).
     #[cfg(not(feature = "server"))]
+    dx_rpg::embedded_data::register();
+
+    // On the client, we simply launch the app as normal, taking over the main thread.
+    //
+    // Desktop only: `document::Link` stylesheets declared in App()'s rsx! (below) are
+    // injected into <head> via a queued effect that runs *after* the webview's first
+    // paint — a real flash-of-unstyled-content on launch, not present on web (where
+    // the browser parses <link> tags from the served HTML's <head> before painting
+    // anything). `Config::with_custom_head` splices content into <head> of the initial
+    // HTML dioxus-desktop serves, before the webview ever renders — so build the same
+    // stylesheet list here and hand it in up front. The App()-root document::Link
+    // entries stay in place regardless: web still needs them (this custom_head path is
+    // desktop-only), and on desktop they just harmlessly re-apply the same hrefs.
+    #[cfg(all(not(feature = "server"), feature = "desktop"))]
+    {
+        // Same stylesheets App()'s rsx! below loads via document::Link, so this list and
+        // that one must be kept in sync by hand — there's no single source both can share,
+        // since one is a `const` list consumed here in `main()` and the other is markup
+        // inside the `App` component.
+        let stylesheets: &[Asset] = &[
+            MAIN_CSS,
+            dx_rpg::common::DX_COMP_CSS,
+            dx_rpg::components::alert_dialog::STYLE_CSS,
+            dx_rpg::components::button::STYLE_CSS,
+            dx_rpg::components::drag_and_drop_list::STYLE_CSS,
+            dx_rpg::components::input::STYLE_CSS,
+            dx_rpg::components::label::STYLE_CSS,
+            dx_rpg::components::popover::STYLE_CSS,
+            dx_rpg::components::select::STYLE_CSS,
+            dx_rpg::components::separator::STYLE_CSS,
+            dx_rpg::components::sheet::STYLE_CSS,
+            dx_rpg::components::sidebar::STYLE_CSS,
+            dx_rpg::components::tabs::STYLE_CSS,
+            dx_rpg::components::tooltip::STYLE_CSS,
+        ];
+        let mut head = format!(r#"<link rel="icon" href="{FAVICON}">"#);
+        for href in stylesheets {
+            head.push_str(&format!(r#"<link rel="stylesheet" href="{href}">"#));
+        }
+
+        // `dx serve --platform desktop` opens the window straight through tao/wry, bypassing
+        // the `[bundle].icon` path in Dioxus.toml entirely (that one's only read by `dx
+        // bundle`'s packaging step) — without an explicit icon here the taskbar falls back to
+        // whatever the OS/webview backend defaults to (e.g. the system's default browser
+        // icon). Decode the same square PNG bundling uses so dev and packaged builds match.
+        let icon_png = include_bytes!("../assets/icon-512.png");
+        let icon = image::load_from_memory(icon_png)
+            .expect("assets/icon-512.png must be a valid image")
+            .into_rgba8();
+        let (icon_width, icon_height) = icon.dimensions();
+        let window_icon =
+            dioxus_desktop::tao::window::Icon::from_rgba(icon.into_raw(), icon_width, icon_height)
+                .expect("assets/icon-512.png must be a valid RGBA icon");
+
+        dioxus::LaunchBuilder::new()
+            .with_cfg(
+                dioxus_desktop::Config::new()
+                    .with_custom_head(head)
+                    .with_icon(window_icon),
+            )
+            .launch(App);
+    }
+    #[cfg(all(not(feature = "server"), not(feature = "desktop")))]
     dioxus::launch(App);
 
     // On the server, we can use `dioxus::serve` to create a server that serves our app.
@@ -376,6 +443,22 @@ fn App() -> Element {
 
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
+    // Offline-mode transport: GameChannel wraps `socket` (unchanged, real-websocket
+    // behavior — the server build, which also renders this UI for SSR, only ever uses
+    // that path) plus, client builds only, a LocalChannel that routes ClientEvents
+    // straight into local_engine instead of over the network once `offline_mode` is
+    // flipped true (see Home()'s "Play Offline" action). See game_channel.rs's doc
+    // comment for why the split is cfg-gated rather than a runtime Option.
+    #[cfg(not(feature = "server"))]
+    let local_channel_handle = dx_rpg::local_channel::LocalChannel::new();
+    #[cfg(not(feature = "server"))]
+    let offline_mode = use_signal(|| false);
+    #[cfg(not(feature = "server"))]
+    let game_channel =
+        dx_rpg::game_channel::GameChannel::new(socket, local_channel_handle, offline_mode);
+    #[cfg(feature = "server")]
+    let game_channel = dx_rpg::game_channel::GameChannel::new(socket);
+
     // synced storage
     // login_name drives which page is rendered (LoginPage vs home content). Starting with
     // the server default (DISCONNECTED_USER) on both the server binary and the WASM client
@@ -513,11 +596,17 @@ fn App() -> Element {
     //
     // Wrapped in an outer reconnect loop: `use_websocket` establishes the connection once and
     use_future(move || {
+        // `socket` stays the real websocket handle, used only by the reconnect logic
+        // further down (which is meaningless in offline mode — nothing to reconnect
+        // to). Everything that should route through offline mode when active goes
+        // through `game_channel` instead. Both are Copy, freely re-capturable on every
+        // invocation of this closure (use_future's FnMut) with no explicit clone needed.
         let mut socket = socket;
+        let mut game_channel = game_channel;
         async move {
             loop {
                 tracing::info!("[client] ws-loop starting");
-                while let Ok(event) = socket.recv().await {
+                while let Ok(event) = game_channel.recv().await {
                     tracing::debug!("[client] ws-loop: received an event");
                     match event {
                         ServerEvent::NewClientOnExistingPlayer(msg, client_id) => {
@@ -528,7 +617,7 @@ fn App() -> Element {
                             if login_name_session_local_sync != *DISCONNECTED_USER
                                 && login_id_session_local_sync != NO_CLIENT_ID
                             {
-                                let _ = socket
+                                let _ = game_channel
                                     .clone()
                                     .send(ClientEvent::AddPlayer(
                                         login_name_session_local_sync.clone(),
@@ -541,13 +630,13 @@ fn App() -> Element {
                                     login_name_session_local_sync,
                                     login_id_session_local_sync
                                 );
-                                let _ = socket
+                                let _ = game_channel
                                     .clone()
                                     .send(ClientEvent::RequestSavedGameList(
                                         login_name_session_local_sync.clone(),
                                     ))
                                     .await;
-                                let _ = socket
+                                let _ = game_channel
                                     .clone()
                                     .send(ClientEvent::RequestOnGoingGamesList)
                                     .await;
@@ -582,7 +671,7 @@ fn App() -> Element {
                                     "ReconnectAllSessions for player {}",
                                     login_name_session_local_sync
                                 );
-                                let _ = socket
+                                let _ = game_channel
                                     .clone()
                                     .send(ClientEvent::AddPlayer(
                                         login_name_session_local_sync.clone(),
@@ -636,6 +725,17 @@ fn App() -> Element {
                         }
                     }
                 }
+                // In offline mode, game_channel.recv() only fails if LocalChannel's
+                // sender was dropped — shouldn't happen while the app is alive, but if
+                // it somehow did, there's no real server to reconnect to (attempting one
+                // would defeat the whole point of offline mode). Just retry the local
+                // recv loop instead of falling into the real-network reconnect below.
+                #[cfg(not(feature = "server"))]
+                if offline_mode() {
+                    tracing::warn!("[client] ws-loop: local channel closed unexpectedly, retrying");
+                    continue;
+                }
+
                 tracing::warn!(
                     "[client] ws-loop: connection lost (deserialization error or socket closed), reconnecting"
                 );
@@ -647,6 +747,26 @@ fn App() -> Element {
                 const MAX_RECONNECT_BACKOFF: std::time::Duration =
                     std::time::Duration::from_secs(10);
                 loop {
+                    // This loop has its own long sleeps between attempts and no other
+                    // exit condition besides a successful reconnect — which never comes
+                    // without a real server. If "Play Offline" is clicked while stuck
+                    // here (very likely: on a fresh launch with nothing listening on
+                    // SERVER_URL, the very first connection attempt fails immediately,
+                    // dropping straight into this loop before the user has had time to
+                    // click anything), it would otherwise keep retrying/sleeping forever
+                    // and never hand control back to the outer `while let Ok(event) =
+                    // game_channel.recv().await` above — so the local channel's queued
+                    // events (InitClient, UpdateServerData, ...) never get drained and
+                    // the game screen stays blank. Bail out back to the top of the outer
+                    // loop as soon as offline mode is seen, where `game_channel.recv()`
+                    // will correctly route to the local channel instead.
+                    #[cfg(not(feature = "server"))]
+                    if offline_mode() {
+                        tracing::info!(
+                            "[client] ws-loop: offline mode activated mid-reconnect, abandoning it"
+                        );
+                        break;
+                    }
                     let reconnect_result = on_rcv_client_event(WebSocketOptions::new()).await;
                     let reconnected = reconnect_result.is_ok();
                     if let Err(ref err) = reconnect_result {
@@ -666,7 +786,7 @@ fn App() -> Element {
         }
     });
 
-    use_context_provider(|| socket);
+    use_context_provider(|| game_channel);
     use_context_provider(|| player_client_id);
     use_context_provider(|| login_name_session_local_sync);
     use_context_provider(|| login_id_session_local_sync);

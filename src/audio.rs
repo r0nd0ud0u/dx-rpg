@@ -57,6 +57,17 @@ fn sfx_asset(cue: SoundCue) -> Asset {
 /// gesture, so that first play() is silently rejected (some embedded webviews,
 /// e.g. VS Code's, are more permissive and don't hit this). A one-time listener
 /// below retries as soon as the very first gesture happens anywhere on the page.
+///
+/// Desktop/mobile-only wrinkle: `dioxus-asset-resolver`'s native protocol handler
+/// (what actually serves `asset!()` files in those builds) has no MIME mapping for
+/// `.ogg` — or any audio format — at all, and falls back to `Content-Type:
+/// text/html` for anything it doesn't recognize. The webview then correctly
+/// refuses to play a resource declared as HTML (`NotSupportedError`), regardless
+/// of whether the right GStreamer codecs are installed. `loadAsBlobUrl` below
+/// fetches the bytes ourselves and wraps them in a `Blob` with an explicit,
+/// correct type, bypassing whatever Content-Type the asset server actually sent —
+/// harmless overhead on web, where this bug doesn't exist, so no platform-specific
+/// branch is needed.
 pub fn init_audio_bridge() {
     document::eval(
         r#"
@@ -78,14 +89,33 @@ pub fn init_audio_bridge() {
             ['pointerdown', 'keydown', 'touchstart'].forEach(
                 (evt) => document.addEventListener(evt, resumeOnFirstGesture)
             );
+            const loadAsBlobUrl = (src) =>
+                fetch(src)
+                    .then((r) => r.blob())
+                    .then((b) => URL.createObjectURL(new Blob([b], { type: 'audio/ogg' })));
             window.__dxAudio = {
                 bgm,
                 playMusic(src, volume, muted) {
-                    if (bgm.src.indexOf(src) === -1) {
-                        bgm.src = src;
-                    }
                     bgm.volume = muted ? 0 : volume;
-                    bgm.play().catch((e) => console.warn(`[dxAudio] playMusic failed: ${src}: ${describe(e)}`));
+                    if (bgm.dataset.logicalSrc === src) {
+                        bgm.play().catch((e) => console.warn(`[dxAudio] playMusic failed: ${src}: ${describe(e)}`));
+                        return;
+                    }
+                    bgm.dataset.logicalSrc = src;
+                    loadAsBlobUrl(src).then((url) => {
+                        // A newer playMusic call may have already changed the desired
+                        // track while this fetch was in flight — don't clobber it.
+                        if (bgm.dataset.logicalSrc !== src) {
+                            URL.revokeObjectURL(url);
+                            return;
+                        }
+                        const oldUrl = bgm.src;
+                        bgm.src = url;
+                        if (oldUrl && oldUrl.startsWith('blob:')) {
+                            URL.revokeObjectURL(oldUrl);
+                        }
+                        bgm.play().catch((e) => console.warn(`[dxAudio] playMusic failed: ${src}: ${describe(e)}`));
+                    }).catch((e) => console.warn(`[dxAudio] playMusic failed: ${src}: ${describe(e)}`));
                 },
                 stopMusic() {
                     bgm.pause();
@@ -97,9 +127,15 @@ pub fn init_audio_bridge() {
                     if (muted || volume <= 0) {
                         return;
                     }
-                    const sfx = new Audio(src);
-                    sfx.volume = volume;
-                    sfx.play().catch((e) => console.warn(`[dxAudio] playSfx failed: ${src}: ${describe(e)}`));
+                    loadAsBlobUrl(src).then((url) => {
+                        const sfx = new Audio(url);
+                        sfx.volume = volume;
+                        sfx.addEventListener('ended', () => URL.revokeObjectURL(url));
+                        sfx.play().catch((e) => {
+                            console.warn(`[dxAudio] playSfx failed: ${src}: ${describe(e)}`);
+                            URL.revokeObjectURL(url);
+                        });
+                    }).catch((e) => console.warn(`[dxAudio] playSfx failed: ${src}: ${describe(e)}`));
                 },
             };
         }

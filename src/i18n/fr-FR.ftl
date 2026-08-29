@@ -14,6 +14,7 @@ quit-dialog-title = Quitter la partie
 quit-dialog-body = Êtes-vous sûr de vouloir quitter la partie ?
 
 navbar-server-settings = 🌐 Serveur
+navbar-fullscreen-toggle = Plein écran
 server-settings-title = Connexion au serveur
 server-settings-current = Actuellement connecté à : { $url }
 server-settings-placeholder = https://votre-serveur.exemple.com
@@ -162,6 +163,8 @@ login-choose-password-placeholder = Choisissez un mot de passe
 login-invalid-login = Identifiants invalides
 login-name-taken = Ce nom est déjà pris.
 login-sign-up-button = S'inscrire →
+login-offline-title = ✈️ Jouer hors ligne
+login-offline-hint = Sans compte, sans serveur — choisissez un univers et lancez une partie solo locale.
 
 ## create server page
 create-server-title = 🏰 Créer une partie

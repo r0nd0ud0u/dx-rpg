@@ -6,7 +6,8 @@ use crate::common::{
     CtxAppLang, CtxAudioSettings, CtxAutoSaveScenario, Route, SERVER_NAME, lang_from_app_lang,
     photo_src,
 };
-use crate::websocket_handler::event::{ClientEvent, ServerEvent};
+use crate::game_channel::GameChannel;
+use crate::websocket_handler::event::ClientEvent;
 use crate::websocket_handler::msg_from_client::send_disconnect_from_server_data;
 use crate::{
     board_game_components::gameboard::GameBoard,
@@ -16,7 +17,6 @@ use crate::{
         sheet::{Sheet, SheetSide},
     },
 };
-use dioxus::fullstack::{CborEncoding, UseWebsocket};
 use dioxus::prelude::*;
 use dioxus_i18n::t;
 use lib_rpg::{
@@ -108,7 +108,7 @@ fn EndStatePanels() -> Element {
 #[component]
 pub fn QuitGameButton() -> Element {
     // context
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let local_login_name_session = use_context::<Signal<String>>();
 
     rsx! {
@@ -130,7 +130,7 @@ pub fn QuitGameButton() -> Element {
 #[component]
 pub fn RunningGamePage() -> Element {
     // context
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let server_data = use_context::<Signal<ServerData>>();
     let local_login_name_session = use_context::<Signal<String>>();
     let _auto_save_scenario = use_context::<CtxAutoSaveScenario>().0;

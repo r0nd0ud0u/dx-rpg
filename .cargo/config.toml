@@ -4,6 +4,14 @@ git-fetch-with-cli = true
 [target.wasm32-unknown-unknown]
 rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
 
+# The desktop client overflows the main thread's stack on startup in debug builds.
+# Windows' default main-thread stack is 1 MB (Linux gives 8 MB), and MSVC bakes that
+# limit into the executable header at link time, so it cannot be raised at runtime the
+# way std::thread::Builder::stack_size can for spawned threads. /STACK sets the header
+# value; 16 MB matches the headroom the other platforms already have.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/STACK:16777216"]
+
 [profile.release]
 opt-level = "z"
 debug = false

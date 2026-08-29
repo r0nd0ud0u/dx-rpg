@@ -2,11 +2,7 @@ use crate::{
     common::DISCONNECTED_USER,
     websocket_handler::{NO_CLIENT_ID, msg_from_client::send_disconnect_from_server_data},
 };
-use dioxus::{
-    fullstack::{CborEncoding, UseWebsocket},
-    logger::tracing,
-    prelude::*,
-};
+use dioxus::{logger::tracing, prelude::*};
 use dioxus_i18n::t;
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
@@ -25,9 +21,9 @@ use crate::{
         input::Input,
         sidebar::{Sidebar, SidebarTrigger},
     },
+    game_channel::GameChannel,
     websocket_handler::{
-        event::{ClientEvent, ServerEvent},
-        msg_from_client::send_disconnect_from_server_data as send_quit,
+        event::ClientEvent, msg_from_client::send_disconnect_from_server_data as send_quit,
     },
 };
 
@@ -51,7 +47,7 @@ fn is_signed_in(username: &str) -> bool {
 #[component]
 pub fn Navbar() -> Element {
     // contexts
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let mut local_login_name_session = use_context::<Signal<String>>();
     let mut local_login_id_session = use_context::<Signal<i64>>();
     let server_data = use_context::<Signal<ServerData>>();
@@ -113,6 +109,27 @@ pub fn Navbar() -> Element {
     // `cfg!(target_arch = "wasm32")`, since #[cfg] attributes aren't supported inside
     // rsx!;).
     let mut server_settings_open = use_signal(|| false);
+    // Desktop-only fullscreen toggle. `is_fullscreen` is declared unconditionally (a
+    // plain use_signal, harmless on every platform) so the button's label can always
+    // read it; `dioxus_desktop::use_window()` itself only exists on desktop builds, so
+    // it's real-cfg-gated — the button's onclick body below is gated the same way, and
+    // is simply a no-op closure on non-desktop builds where the button never renders
+    // (see the `if cfg!(all(feature = "desktop", not(feature = "server")))` around it
+    // further down).
+    //
+    // Also excludes `feature = "server"`: `dx serve --platform desktop` builds this
+    // crate's companion fullstack server binary *with the `desktop` feature still
+    // enabled* (not a clean `server`-only build) — so without this extra exclusion,
+    // `use_window()` gets called during that server's SSR pass too, where there is no
+    // real webview window to find, and panics ("Could not find context
+    // Rc<DesktopService>"), taking down every page render on that server.
+    #[cfg_attr(
+        not(all(feature = "desktop", not(feature = "server"))),
+        allow(unused_mut)
+    )]
+    let mut is_fullscreen = use_signal(|| false);
+    #[cfg(all(feature = "desktop", not(feature = "server")))]
+    let desktop_window = dioxus_desktop::use_window();
     // Mobile-only nav drawer (Sidebar) — the desktop controls group is duplicated
     // into it (CSS-gated visibility, see .navbar-desktop-group/.navbar-mobile-trigger
     // in main.css) so narrow screens get a proper drawer instead of a cramped row.
@@ -206,6 +223,30 @@ pub fn Navbar() -> Element {
                                 server_settings_open.set(true);
                             },
                             {t!("navbar-server-settings")}
+                        }
+                    }
+                    // Fullscreen toggle (desktop only)
+                    if cfg!(all(feature = "desktop", not(feature = "server"))) {
+                        Button {
+                            variant: ButtonVariant::Outline,
+                            onclick: {
+                                // `desktop_window` (a non-`Copy` `Rc`-backed handle) is also
+                                // captured by the Sidebar drawer's duplicate button further
+                                // down — clone here so each `move` closure gets its own handle
+                                // instead of fighting over the one declared at the top of this
+                                // component.
+                                #[cfg(all(feature = "desktop", not(feature = "server")))]
+                                let desktop_window = desktop_window.clone();
+                                move |_| {
+                                    #[cfg(all(feature = "desktop", not(feature = "server")))]
+                                    {
+                                        let next = !is_fullscreen();
+                                        desktop_window.set_fullscreen(next);
+                                        is_fullscreen.set(next);
+                                    }
+                                }
+                            },
+                            {if is_fullscreen() { "🗗" } else { "🗖" }}
                         }
                     }
                     // Change-password trigger (signed-in users, only while USE_PASSWORD is on)
@@ -623,6 +664,16 @@ pub fn Navbar() -> Element {
                     },
                     {t!("help-title")}
                 }
+                Button {
+                    variant: ButtonVariant::Outline,
+                    onclick: move |_| {
+                        sound_settings_open.set(true);
+                        mobile_nav_open.set(false);
+                    },
+                    {if (audio_settings.muted)() { "🔇" } else { "🔊" }}
+                    " "
+                    {t!("sound-settings-title")}
+                }
                 if cfg!(all(not(target_arch = "wasm32"), not(feature = "server"))) {
                     Button {
                         variant: ButtonVariant::Outline,
@@ -634,6 +685,27 @@ pub fn Navbar() -> Element {
                             mobile_nav_open.set(false);
                         },
                         {t!("navbar-server-settings")}
+                    }
+                }
+                if cfg!(all(feature = "desktop", not(feature = "server"))) {
+                    Button {
+                        variant: ButtonVariant::Outline,
+                        onclick: {
+                            #[cfg(all(feature = "desktop", not(feature = "server")))]
+                            let desktop_window = desktop_window.clone();
+                            move |_| {
+                                #[cfg(all(feature = "desktop", not(feature = "server")))]
+                                {
+                                    let next = !is_fullscreen();
+                                    desktop_window.set_fullscreen(next);
+                                    is_fullscreen.set(next);
+                                }
+                                mobile_nav_open.set(false);
+                            }
+                        },
+                        {if is_fullscreen() { "🗗" } else { "🗖" }}
+                        " "
+                        {t!("navbar-fullscreen-toggle")}
                     }
                 }
                 if is_quit_visible(&server_data().core_game_data.game_phase) {

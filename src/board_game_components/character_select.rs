@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use dioxus::{
-    fullstack::{CborEncoding, UseWebsocket},
-    prelude::*,
-};
+use dioxus::prelude::*;
 use dioxus_i18n::t;
 use lib_rpg::{
     character_mod::character::Character,
@@ -20,7 +17,8 @@ use crate::{
         button::{Button, ButtonVariant},
         sheet::{Sheet, SheetContent, SheetDescription, SheetHeader, SheetSide, SheetTitle},
     },
-    websocket_handler::event::{ClientEvent, ServerEvent},
+    game_channel::GameChannel,
+    websocket_handler::event::ClientEvent,
 };
 
 /// Stats shown on the hero detail panel, in display order.
@@ -238,7 +236,7 @@ fn CharCardItem(
     taken_by: Option<String>,
     mut detail_char: Signal<Option<String>>,
 ) -> Element {
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let sd_signal = use_context::<Signal<ServerData>>();
     let max_hp = c.stats.all_stats.get(HP).map(|s| s.max).unwrap_or(0);
 

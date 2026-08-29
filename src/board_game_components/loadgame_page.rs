@@ -1,10 +1,10 @@
-use dioxus::fullstack::CborEncoding;
+use dioxus::logger::tracing;
 use dioxus::prelude::*;
-use dioxus::{fullstack::UseWebsocket, logger::tracing};
 use dioxus_i18n::t;
 
+use crate::game_channel::GameChannel;
 use crate::utils::server_file_utils::{SaveSlotInfo, delete_game, get_save_slots};
-use crate::websocket_handler::event::{ClientEvent, ServerEvent};
+use crate::websocket_handler::event::ClientEvent;
 use crate::{
     common::Route,
     components::button::{Button, ButtonVariant},
@@ -12,7 +12,7 @@ use crate::{
 
 #[component]
 pub fn LoadGame() -> Element {
-    let socket = use_context::<UseWebsocket<ClientEvent, ServerEvent, CborEncoding>>();
+    let socket = use_context::<GameChannel>();
     let local_login_name_session = use_context::<Signal<String>>();
 
     let mut slots: Signal<Vec<SaveSlotInfo>> = use_signal(Vec::new);
