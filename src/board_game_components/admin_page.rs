@@ -6,7 +6,9 @@ use crate::{
     board_game_components::{
         admin_tab_characters::AdminCharactersTab, admin_tab_equipment::AdminEquipmentTab,
         admin_tab_scenarios::AdminScenariosTab, admin_tab_users::AdminUsersTab,
+        common_comp::BackButton,
     },
+    common::Route,
 };
 
 #[derive(Clone, PartialEq)]
@@ -33,6 +35,7 @@ pub fn AdminPage() -> Element {
     if !admin_enabled() {
         return rsx! {
             div { class: "home-container",
+                BackButton { target: Route::Home {}.into() }
                 h2 { class: "rpg-title", {t!("admin-panel-title")} }
                 p { class: "rpg-subtitle", {t!("admin-panel-disabled")} }
             }
@@ -41,6 +44,7 @@ pub fn AdminPage() -> Element {
 
     rsx! {
         div { class: "admin-page-container",
+            BackButton { target: Route::Home {}.into() }
             h2 { class: "rpg-title", {t!("admin-panel-title")} }
 
             div { class: "admin-tabs",

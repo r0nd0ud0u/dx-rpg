@@ -7,7 +7,9 @@ use crate::components::button::ButtonVariant;
 use crate::{
     auth_manager::server_fn::list_universes_server,
     board_game_components::{
-        character_select::CharacterSelect, common_comp::ButtonLink, startgame_page::RunningGamePage,
+        character_select::CharacterSelect,
+        common_comp::{BackButton, ButtonLink},
+        startgame_page::RunningGamePage,
     },
     common::{Route, SERVER_NAME},
     components::button::Button,
@@ -60,6 +62,21 @@ pub fn LobbyPage() -> Element {
             || server_data_snap.core_game_data.game_phase == GamePhase::Loading
         {
             div { class: "lobby-page",
+                BackButton {
+                    target: Route::Home {}.into(),
+                    onclick: move |_| {
+                        async move {
+                            let _ = socket
+                                .send(
+                                    ClientEvent::DisconnectFromServerData(
+                                        SERVER_NAME(),
+                                        local_login_name_session(),
+                                    ),
+                                )
+                                .await;
+                        }
+                    },
+                }
                 h2 { class: "rpg-title",
                     if server_data_snap.core_game_data.game_phase == GamePhase::InitGame {
                         {t!("lobby-title")}

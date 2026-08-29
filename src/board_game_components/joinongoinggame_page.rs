@@ -3,7 +3,9 @@ use dioxus_i18n::t;
 use lib_rpg::server::server_manager::OnGoingGame;
 
 use crate::{
-    board_game_components::common_comp::ButtonLink, common::Route, game_channel::GameChannel,
+    board_game_components::common_comp::{BackButton, ButtonLink},
+    common::Route,
+    game_channel::GameChannel,
     websocket_handler::msg_from_client::send_join_server_data,
 };
 
@@ -18,6 +20,7 @@ pub fn JoinOngoingGame() -> Element {
 
     rsx! {
         div { class: "ongoing-games-container",
+            BackButton { target: Route::Home {}.into() }
             h2 { class: "rpg-title", {t!("join-ongoing-title")} }
             if snap_ongoing_games.is_empty() {
                 p { class: "rpg-subtitle", {t!("join-ongoing-empty")} }

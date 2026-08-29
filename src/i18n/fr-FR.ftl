@@ -9,6 +9,7 @@ lang-select-label = Langue
 common-close = Fermer
 common-cancel = Annuler
 common-confirm = Confirmer
+common-back = Retour
 
 quit-dialog-title = Quitter la partie
 quit-dialog-body = Êtes-vous sûr de vouloir quitter la partie ?

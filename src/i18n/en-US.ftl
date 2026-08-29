@@ -9,6 +9,7 @@ lang-select-label = Language
 common-close = Close
 common-cancel = Cancel
 common-confirm = Confirm
+common-back = Back
 
 quit-dialog-title = Quit Game
 quit-dialog-body = Are you sure you want to quit the game?
