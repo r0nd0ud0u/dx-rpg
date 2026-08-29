@@ -48,8 +48,10 @@ fn main() {
     #[cfg(not(target_arch = "wasm32"))]
     dotenv().ok();
 
-    // Init logger
-    let _ = dioxus::logger::init(
+    // Init logger. Also mirrors every log line into an in-memory buffer the admin-only
+    // DebugConsole reads from — see src/debug_console.rs for why: mobile builds have no
+    // attached console to read stdout/logcat from.
+    dx_rpg::debug_console::init(
         std::env::var("LOG_LEVEL")
             .unwrap_or_else(|_| "info".to_owned())
             .parse::<Level>()

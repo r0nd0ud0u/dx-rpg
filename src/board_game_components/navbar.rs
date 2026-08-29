@@ -9,6 +9,7 @@ use lib_rpg::server::server_manager::{GamePhase, ServerData};
 use crate::{
     audio::{self, MusicTrack},
     auth_manager::server_fn::{change_password, get_use_password, logout},
+    board_game_components::debug_console::DebugConsole,
     common::{
         ADMIN, CtxAppLang, CtxAudioSettings, CtxSyncedInsecureCerts, CtxSyncedServerUrl, Route,
     },
@@ -66,6 +67,7 @@ pub fn Navbar() -> Element {
     let mut help_open = use_signal(|| false);
     let mut quit_open = use_signal(|| false);
     let mut sound_settings_open = use_signal(|| false);
+    let mut debug_console_open = use_signal(|| false);
 
     // Which background track (if any) should be playing, decided from the current
     // GamePhase. Navbar is the shared #[layout] component mounted on every route, so
@@ -210,6 +212,15 @@ pub fn Navbar() -> Element {
                         variant: ButtonVariant::Outline,
                         onclick: move |_| sound_settings_open.set(true),
                         {if (audio_settings.muted)() { "🔇" } else { "🔊" }}
+                    }
+                    // Debug console trigger (admin only) — see debug_console.rs for why:
+                    // no attached developer console on mobile.
+                    if is_admin_link_visible(&snap_local_login_name_session) {
+                        Button {
+                            variant: ButtonVariant::Outline,
+                            onclick: move |_| debug_console_open.set(true),
+                            {t!("navbar-debug-console")}
+                        }
                     }
                     // Server settings trigger (native only — excluded from web-server SSR
                     // so the hydration stream matches the wasm32 client's render)
@@ -494,6 +505,14 @@ pub fn Navbar() -> Element {
                 }
             }
 
+            // Debug console dialog (admin only)
+            if is_admin_link_visible(&snap_local_login_name_session) {
+                DebugConsole {
+                    open: debug_console_open(),
+                    on_open_change: move |v| debug_console_open.set(v),
+                }
+            }
+
             // Server settings dialog (native only — excluded from web-server SSR)
             if cfg!(all(not(target_arch = "wasm32"), not(feature = "server"))) {
                 AlertDialogRoot {
@@ -673,6 +692,16 @@ pub fn Navbar() -> Element {
                     {if (audio_settings.muted)() { "🔇" } else { "🔊" }}
                     " "
                     {t!("sound-settings-title")}
+                }
+                if is_admin_link_visible(&snap_local_login_name_session) {
+                    Button {
+                        variant: ButtonVariant::Outline,
+                        onclick: move |_| {
+                            debug_console_open.set(true);
+                            mobile_nav_open.set(false);
+                        },
+                        {t!("navbar-debug-console")}
+                    }
                 }
                 if cfg!(all(not(target_arch = "wasm32"), not(feature = "server"))) {
                     Button {
