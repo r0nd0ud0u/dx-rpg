@@ -67,12 +67,19 @@ impl GameChannel {
         }
     }
 
-    /// Never called on the server build — `send`/`recv` only reference this from
-    /// inside a `#[cfg(not(feature = "server"))]` block, since the server has no
-    /// concept of offline mode at all (see this module's doc comment).
+    /// Whether this session is currently in offline (single-player-only) mode — used
+    /// internally by `send`/`recv` to pick a backend, and by `Navbar`'s
+    /// connection-status badge to hide itself (nothing to be up or down when there's
+    /// no network backend at all). Always `false` on the server build, which has no
+    /// concept of offline mode (see this module's doc comment).
     #[cfg(not(feature = "server"))]
-    fn is_offline(&self) -> bool {
+    pub fn is_offline(&self) -> bool {
         (self.offline)()
+    }
+
+    #[cfg(feature = "server")]
+    pub fn is_offline(&self) -> bool {
+        false
     }
 
     /// Starts an offline session (see `LocalChannel::activate`) and flips the routing

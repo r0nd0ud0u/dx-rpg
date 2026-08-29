@@ -13,6 +13,10 @@ common-confirm = Confirmer
 quit-dialog-title = Quitter la partie
 quit-dialog-body = Êtes-vous sûr de vouloir quitter la partie ?
 
+navbar-connection-connected = Connecté
+navbar-connection-reconnecting = Reconnexion…
+navbar-connection-latency = Connecté — { $ms } ms
+
 navbar-debug-console = 🐞 Débogage
 debug-console-title = Console de débogage
 debug-console-empty = Aucun journal capturé pour le moment.

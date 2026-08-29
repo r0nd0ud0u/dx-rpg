@@ -110,6 +110,10 @@ pub enum ClientEvent {
     RequestUnlockTalent(String, String, String),   // server_name, character_id_name, talent_id
     RequestRespecTalents(String, String),          // server_name, character_id_name
     RequestMarkTalentSeen(String, String),         // server_name, character_id_name
+    /// Round-trip latency probe — opaque nonce, echoed back verbatim in `ServerEvent::Pong`.
+    /// The client times its own send-to-receive gap (see main.rs's ping loop); the nonce
+    /// only guards against matching a reply to a stale, already-timed-out request.
+    Ping(u64),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -126,6 +130,8 @@ pub enum ServerEvent {
     OverworldEntered(String), // map_id — lightweight trigger; no complex types
     UpdateOverworld(Box<OverworldState>), // Lightweight update for plain movement steps that don't touch combat state
     UpdateCombat(Box<CombatUpdate>), // Lightweight combat-only update sent after an ordinary attack
+    /// Reply to `ClientEvent::Ping` — see its doc comment.
+    Pong(u64),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -445,6 +451,16 @@ pub async fn on_rcv_client_event(
                                     request_mark_talent_seen(&server_name, &character_id_name);
                                 } else {
                                     tracing::warn!("Client {} is not authorized to act on server {} (view-only)", client_id, server_name);
+                                }
+                            }
+                            Ok(ClientEvent::Ping(nonce)) => {
+                                // Answered directly over `socket`, not routed through `tx`/
+                                // `CLIENTS` like the broadcast-style events above — this is a
+                                // point-to-point latency probe for this one connection, and
+                                // going straight back out avoids queuing behind unrelated
+                                // outgoing traffic to the same client.
+                                if socket.send(ServerEvent::Pong(nonce)).await.is_err() {
+                                    tracing::warn!("Client {} Pong send failed", client_id);
                                 }
                             }
                             Err(_) => {

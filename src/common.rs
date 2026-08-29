@@ -160,6 +160,30 @@ pub struct CtxAudioSettings {
     pub muted: Signal<bool>,
 }
 
+/// State of the client's websocket link to the server, tracked by the reconnect loop in
+/// `main.rs`'s ws-loop `use_future` and surfaced in `Navbar` as a small status badge —
+/// on a flaky desktop/mobile connection the game otherwise just silently stops
+/// responding, with no indication of whether that's a bug or the network.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ConnectionStatus {
+    Connected,
+    Reconnecting,
+}
+
+/// See [`ConnectionStatus`]. Declared in `App()`, same reasoning as the other `Ctx*`
+/// context newtypes above.
+#[derive(Clone, Copy)]
+pub struct CtxConnectionStatus(pub Signal<ConnectionStatus>);
+
+/// Most recent round-trip latency to the server in milliseconds, measured by `main.rs`'s
+/// ping loop (`ClientEvent::Ping`/`ServerEvent::Pong`). `None` means either no measurement
+/// has completed yet (just connected) or the last one timed out — a bad-but-not-fully-dropped
+/// connection (e.g. severe wifi congestion) can leave the websocket technically open while
+/// pings stop arriving, which `ConnectionStatus` alone can't distinguish from a healthy idle
+/// link. Rendered in `Navbar` as a filling wifi icon rather than the raw number.
+#[derive(Clone, Copy)]
+pub struct CtxConnectionLatency(pub Signal<Option<u64>>);
+
 /// Converts the app's "en"/"fr" locale string into lib-rpg's `Lang` enum —
 /// the one conversion boundary between the two crates' locale representations
 /// (lib-rpg has no dioxus/unic_langid dependency).

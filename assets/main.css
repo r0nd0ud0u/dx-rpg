@@ -63,6 +63,27 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     border-radius: var(--r-sm);
 }
 
+/* Connection-signal icon (Navbar) — a filling wifi glyph standing in for connection
+   quality (see connection_bars() in navbar.rs for why this is latency-based rather than
+   a real wifi-strength reading). Each of the 4 segments (3 arcs + the base dot) is
+   toggled between .lit/.dim individually. Reconnecting forces every segment into the
+   danger color and pulses, so a full drop reads distinctly from "connected but weak". */
+.navbar-connection-icon { display: inline-flex; vertical-align: middle; }
+.navbar-connection-icon .lit { color: var(--rpg-success); }
+.navbar-connection-icon .dim { color: var(--rpg-text-muted); opacity: 0.35; }
+.navbar-connection-icon.reconnecting .lit,
+.navbar-connection-icon.reconnecting .dim {
+    color: var(--rpg-danger);
+    opacity: 1;
+}
+.navbar-connection-icon.reconnecting {
+    animation: navbar-connection-pulse 1.5s ease-in-out infinite;
+}
+@keyframes navbar-connection-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
 .navbar-lang-select {
     border: 1px solid var(--primary-color-6);
     background-color: var(--light, var(--primary-color)) var(--dark, var(--primary-color-3));

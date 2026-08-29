@@ -11,8 +11,9 @@ use dioxus_sdk_storage::{StorageBacking, set_dir};
 use dotenv::dotenv;
 use dx_rpg::{
     common::{
-        CtxAppLang, CtxAtkPanelOrders, CtxAudioSettings, CtxAutoSaveScenario, CtxDeviceToken,
-        CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
+        ConnectionStatus, CtxAppLang, CtxAtkPanelOrders, CtxAudioSettings, CtxAutoSaveScenario,
+        CtxConnectionLatency, CtxConnectionStatus, CtxDeviceToken, CtxShopEnabled,
+        CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
         CtxSyncedInsecureCerts, CtxSyncedServerUrl, CtxToggleAtkAnimation, DISCONNECTED_USER,
         DX_COMP_CSS, Route, SERVER_NAME, SYNCED_AUDIO_MUTED_KEY, SYNCED_DEVICE_TOKEN_KEY,
         SYNCED_MUSIC_VOLUME_KEY, SYNCED_SFX_VOLUME_KEY,
@@ -432,6 +433,22 @@ fn App() -> Element {
     let mut toggle_atk_animation = use_signal(|| false);
     // Set to Some(map_id) by the lightweight OverworldEntered event.
     let mut overworld_map_id: Signal<Option<String>> = use_signal(|| None);
+    // Tracks the websocket link itself (see the ws-loop below) — surfaced in Navbar as a
+    // status badge so a flaky desktop/mobile connection is visible instead of the game
+    // just silently stopping responding. Starts optimistic: `use_websocket` below
+    // attempts the connection synchronously, and the ws-loop flips this to
+    // `Reconnecting` immediately if that first attempt already failed.
+    let mut connection_status = use_signal(|| ConnectionStatus::Connected);
+    // Last measured round-trip latency to the server, from the ping loop below — `None`
+    // before the first measurement or after one times out (see `CtxConnectionLatency`'s
+    // doc comment for why that case matters separately from `connection_status`).
+    let mut latency_ms: Signal<Option<u64>> = use_signal(|| None);
+    // (nonce, sent-at) of the ping currently awaiting a Pong. Shared between the ping
+    // loop (writes it on send, reads it back to detect a timeout) and the main ws-loop's
+    // `ServerEvent::Pong` handler (clears it on a matching reply). The nonce guards
+    // against a `Pong` for an already-timed-out ping arriving late and being mistaken
+    // for a reply to the next one.
+    let mut pending_ping: Signal<Option<(u64, web_time::Instant)>> = use_signal(|| None);
 
     // Log which server URL this client is about to talk to (server-fn calls + websocket) —
     // same-origin implicit on web/server, explicit remote target on native — to make
@@ -725,6 +742,14 @@ fn App() -> Element {
                                 .core_game_data
                                 .apply_combat_update(*combat_update);
                         }
+                        ServerEvent::Pong(nonce) => {
+                            if let Some((pending_nonce, sent_at)) = pending_ping()
+                                && pending_nonce == nonce
+                            {
+                                latency_ms.set(Some(sent_at.elapsed().as_millis() as u64));
+                                pending_ping.set(None);
+                            }
+                        }
                     }
                 }
                 // In offline mode, game_channel.recv() only fails if LocalChannel's
@@ -741,6 +766,9 @@ fn App() -> Element {
                 tracing::warn!(
                     "[client] ws-loop: connection lost (deserialization error or socket closed), reconnecting"
                 );
+                connection_status.set(ConnectionStatus::Reconnecting);
+                latency_ms.set(None);
+                pending_ping.set(None);
 
                 // Capped exponential backoff: reconnect quickly on the first attempts (matters
                 // for a briefly backgrounded mobile client racing the server's grace period),
@@ -779,10 +807,44 @@ fn App() -> Element {
                     socket.set(reconnect_result);
                     if reconnected {
                         tracing::info!("[client] ws-loop: reconnected");
+                        connection_status.set(ConnectionStatus::Connected);
                         break;
                     }
                     dioxus_sdk_time::sleep(backoff).await;
                     backoff = (backoff * 2).min(MAX_RECONNECT_BACKOFF);
+                }
+            }
+        }
+    });
+
+    // Latency probe: measures round-trip time to the server independently of the ws-loop
+    // above, since a websocket can stay technically open under severe network congestion
+    // while still not usefully delivering data — `connection_status` alone would keep
+    // reporting `Connected` through that. One ping per `PING_INTERVAL`; if no `Pong`
+    // arrives before the next one is due, that round is treated as lost (`latency_ms` ->
+    // `None`) rather than waiting indefinitely.
+    use_future(move || {
+        let game_channel = game_channel;
+        async move {
+            // Also doubles as the timeout window for the previous ping (see below) — no
+            // point pinging more often than that window anyway.
+            const PING_INTERVAL: std::time::Duration = std::time::Duration::from_secs(4);
+            let mut nonce: u64 = 0;
+            loop {
+                if game_channel.is_offline() {
+                    dioxus_sdk_time::sleep(PING_INTERVAL).await;
+                    continue;
+                }
+                nonce = nonce.wrapping_add(1);
+                let sent_at = web_time::Instant::now();
+                pending_ping.set(Some((nonce, sent_at)));
+                let _ = game_channel.send(ClientEvent::Ping(nonce)).await;
+                dioxus_sdk_time::sleep(PING_INTERVAL).await;
+                // Still the ping we just sent, unanswered a full interval later: give up on
+                // it rather than let a stale Pong keep matching a much later ping's nonce.
+                if matches!(pending_ping(), Some((pending_nonce, _)) if pending_nonce == nonce) {
+                    latency_ms.set(None);
+                    pending_ping.set(None);
                 }
             }
         }
@@ -800,6 +862,8 @@ fn App() -> Element {
     });
     use_context_provider(|| server_data);
     use_context_provider(|| overworld_map_id);
+    use_context_provider(|| CtxConnectionStatus(connection_status));
+    use_context_provider(|| CtxConnectionLatency(latency_ms));
     use_context_provider(|| ongoing_games);
     use_context_provider(|| saved_game_list);
     use_context_provider(|| all_characters_names);

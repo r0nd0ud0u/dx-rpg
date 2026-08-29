@@ -11,7 +11,8 @@ use crate::{
     auth_manager::server_fn::{change_password, get_use_password, logout},
     board_game_components::debug_console::DebugConsole,
     common::{
-        ADMIN, CtxAppLang, CtxAudioSettings, CtxSyncedInsecureCerts, CtxSyncedServerUrl, Route,
+        ADMIN, ConnectionStatus, CtxAppLang, CtxAudioSettings, CtxConnectionLatency,
+        CtxConnectionStatus, CtxSyncedInsecureCerts, CtxSyncedServerUrl, Route,
     },
     components::{
         alert_dialog::{
@@ -44,6 +45,82 @@ fn is_signed_in(username: &str) -> bool {
     username != DISCONNECTED_USER.as_str()
 }
 
+/// Whether the connection-status badge should be shown: only while signed in to a real
+/// (non-offline) session — offline mode has no network backend to be up or down, and
+/// there's nothing to report before sign-in either.
+fn is_connection_status_visible(username: &str, is_offline: bool) -> bool {
+    is_signed_in(username) && !is_offline
+}
+
+/// Number of bars (0-4) to light up in the connection-signal icon. This is a latency
+/// bucket, not a real wifi-strength reading — no cross-platform API here (browser or
+/// native webview) can read the OS's actual radio signal, so round-trip time to our own
+/// server is the closest available proxy, same trick most multiplayer games use.
+/// `Reconnecting` is always 0 — rendered in a distinct (danger, pulsing) color by
+/// `ConnectionSignalIcon` rather than just looking like a weak signal.
+fn connection_bars(status: ConnectionStatus, latency_ms: Option<u64>) -> u8 {
+    if status == ConnectionStatus::Reconnecting {
+        return 0;
+    }
+    match latency_ms {
+        // Connected but no completed measurement yet (just (re)connected, or the last
+        // ping timed out) — treat as weak rather than claiming a strength we don't know.
+        None => 1,
+        Some(ms) if ms < 100 => 4,
+        Some(ms) if ms < 300 => 3,
+        Some(ms) if ms < 600 => 2,
+        Some(_) => 1,
+    }
+}
+
+/// Tooltip text for the connection-signal icon.
+fn connection_status_title(status: ConnectionStatus, latency_ms: Option<u64>) -> String {
+    match (status, latency_ms) {
+        (ConnectionStatus::Reconnecting, _) => t!("navbar-connection-reconnecting"),
+        (ConnectionStatus::Connected, Some(ms)) => {
+            t!("navbar-connection-latency", ms : ms.to_string())
+        }
+        (ConnectionStatus::Connected, None) => t!("navbar-connection-connected"),
+    }
+}
+
+/// Filling wifi icon standing in for connection quality (see `connection_bars`).
+/// Reconnecting pulses in the danger color via the `.reconnecting` class (main.css)
+/// regardless of `bars` (always 0 in that state) so a full drop reads distinctly from
+/// "connected but weak".
+#[component]
+fn ConnectionSignalIcon(bars: u8, reconnecting: bool) -> Element {
+    let icon_class = if reconnecting {
+        "navbar-connection-icon reconnecting"
+    } else {
+        "navbar-connection-icon"
+    };
+    let seg_class = |threshold: u8| if bars >= threshold { "lit" } else { "dim" };
+    rsx! {
+        svg {
+            class: icon_class,
+            view_box: "0 0 24 24",
+            fill: "none",
+            stroke: "currentColor",
+            "stroke-width": "2",
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round",
+            width: "20",
+            height: "20",
+            path { class: seg_class(4), d: "M1.42 9a16 16 0 0 1 21.16 0" }
+            path { class: seg_class(3), d: "M5 12.55a11 11 0 0 1 14.08 0" }
+            path { class: seg_class(2), d: "M8.53 16.11a6 6 0 0 1 6.95 0" }
+            line {
+                class: seg_class(1),
+                x1: "12",
+                y1: "20",
+                x2: "12.01",
+                y2: "20",
+            }
+        }
+    }
+}
+
 /// Shared navbar component.
 #[component]
 pub fn Navbar() -> Element {
@@ -59,6 +136,8 @@ pub fn Navbar() -> Element {
     let mut synced_server_url = use_context::<CtxSyncedServerUrl>().0;
     let mut synced_insecure_certs = use_context::<CtxSyncedInsecureCerts>().0;
     let mut audio_settings = use_context::<CtxAudioSettings>();
+    let connection_status = use_context::<CtxConnectionStatus>().0;
+    let latency_ms = use_context::<CtxConnectionLatency>().0;
 
     // nav
     let navigator = use_navigator();
@@ -281,6 +360,15 @@ pub fn Navbar() -> Element {
                             onclick: move |_| quit_open.set(true),
                             r#type: "button",
                             {t!("navbar-quit-game")}
+                        }
+                    }
+                    if is_connection_status_visible(&snap_local_login_name_session, socket.is_offline()) {
+                        span {
+                            title: connection_status_title(connection_status(), latency_ms()),
+                            ConnectionSignalIcon {
+                                bars: connection_bars(connection_status(), latency_ms()),
+                                reconnecting: connection_status() == ConnectionStatus::Reconnecting,
+                            }
                         }
                     }
                     if is_signed_in(&snap_local_login_name_session) {
@@ -761,6 +849,15 @@ pub fn Navbar() -> Element {
                         {t!("navbar-change-password")}
                     }
                 }
+                if is_connection_status_visible(&snap_local_login_name_session, socket.is_offline()) {
+                    span {
+                        title: connection_status_title(connection_status(), latency_ms()),
+                        ConnectionSignalIcon {
+                            bars: connection_bars(connection_status(), latency_ms()),
+                            reconnecting: connection_status() == ConnectionStatus::Reconnecting,
+                        }
+                    }
+                }
                 if is_signed_in(&snap_local_login_name_session) {
                     span { class: "navbar-user", "👤 {snap_local_login_name_session}" }
                 }
@@ -879,5 +976,30 @@ mod tests {
     fn signed_in_is_the_inverse_of_disconnected_placeholder() {
         assert!(is_signed_in("some-user"));
         assert!(!is_signed_in(DISCONNECTED_USER.as_str()));
+    }
+
+    #[test]
+    fn connection_status_hidden_when_signed_out_or_offline() {
+        assert!(is_connection_status_visible("some-user", false));
+        assert!(!is_connection_status_visible(
+            DISCONNECTED_USER.as_str(),
+            false
+        ));
+        assert!(!is_connection_status_visible("some-user", true));
+    }
+
+    #[test]
+    fn connection_bars_always_zero_while_reconnecting() {
+        assert_eq!(connection_bars(ConnectionStatus::Reconnecting, None), 0);
+        assert_eq!(connection_bars(ConnectionStatus::Reconnecting, Some(20)), 0);
+    }
+
+    #[test]
+    fn connection_bars_scale_with_latency() {
+        assert_eq!(connection_bars(ConnectionStatus::Connected, None), 1);
+        assert_eq!(connection_bars(ConnectionStatus::Connected, Some(50)), 4);
+        assert_eq!(connection_bars(ConnectionStatus::Connected, Some(200)), 3);
+        assert_eq!(connection_bars(ConnectionStatus::Connected, Some(450)), 2);
+        assert_eq!(connection_bars(ConnectionStatus::Connected, Some(900)), 1);
     }
 }

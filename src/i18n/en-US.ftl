@@ -13,6 +13,10 @@ common-confirm = Confirm
 quit-dialog-title = Quit Game
 quit-dialog-body = Are you sure you want to quit the game?
 
+navbar-connection-connected = Connected
+navbar-connection-reconnecting = Reconnecting…
+navbar-connection-latency = Connected — { $ms } ms
+
 navbar-debug-console = 🐞 Debug
 debug-console-title = Debug Console
 debug-console-empty = No logs captured yet.
