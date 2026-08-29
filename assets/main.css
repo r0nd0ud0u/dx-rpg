@@ -859,7 +859,17 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 .save-slot-name { font-weight: 700; font-size: .95rem; color: var(--rpg-text); }
 .save-slot-scenario { font-size: .78rem; color: var(--rpg-teal); }
 .save-slot-date { font-size: .75rem; color: var(--rpg-text-muted); }
-.save-slot-actions { margin-top: var(--sp-sm); width: 100%; }
+/* Stacked (not side-by-side): a player moving fast through save slots should
+   land on the safe "load/continue" action by default, not a same-row
+   destructive one within easy mis-click range — see create_server_page.rs. */
+.save-slot-actions {
+    margin-top: var(--sp-sm);
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-sm);
+}
+.save-slot-actions .button { width: 100%; }
 
 /* Universe selector on create-game page */
 .universe-selector { width: 100%; max-width: 800px; margin-bottom: var(--sp-xl); }

@@ -175,7 +175,10 @@ create-server-singleplayer-hint = One player controls all heroes.
 create-server-multiplayer-hint = Each connected player picks one hero.
 create-server-step2 = 2️⃣ Choose a Save Slot
 create-server-empty-slot = Empty Slot { $index }
-create-server-overwrite-play = ▶ Overwrite & Play
+create-server-continue-play = ▶ Continue
+create-server-overwrite-play = 🗑 Overwrite & Play
+create-server-overwrite-confirm-title = Overwrite this save?
+create-server-overwrite-confirm-body = This will permanently delete this saved adventure and start a new one in its place. This cannot be undone.
 create-server-load-game = Load Game
 create-server-load-game-desc = Continue a saved adventure
 
