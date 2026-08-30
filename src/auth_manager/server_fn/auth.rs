@@ -419,6 +419,34 @@ pub async fn get_permissions() -> Result<HashSet<String>> {
     Ok(user.permissions)
 }
 
+/// Whether `user` holds the "Admin::View" permission seeded for the Admin account alone
+/// (see `db.rs`) — split out from `require_admin` below purely so it's unit-testable
+/// against a plain `User` value, without needing a real `Session`/DB-backed auth session.
+#[cfg(feature = "server")]
+fn has_admin_permission(user: Option<&User>) -> bool {
+    user.is_some_and(|user| user.permissions.contains("Admin::View"))
+}
+
+/// Server-side gate for every admin-only endpoint (the `admin_*`/scenario/equipment/attack
+/// CRUD functions in `admin_users.rs`, `admin_characters.rs`, `admin_equipment.rs`,
+/// `admin_scenarios.rs`, `admin_attacks.rs`). Until this existed, those endpoints had no
+/// authorization check at all: the client only *hides* the Admin Panel link for non-"Admin"
+/// usernames (see `is_admin_link_visible` in navbar.rs), which is cosmetic, not security — a
+/// raw HTTP request (curl, or a device that's simply still logged in and never explicitly
+/// signed out) could call them directly with no login of any kind. This checks the
+/// session's actual user against the "Admin::View" permission seeded for the Admin account
+/// alone (see `db.rs`), the same permission `get_permissions` above already validates.
+#[cfg(feature = "server")]
+pub fn require_admin(auth: &Session) -> Result<(), ServerFnError> {
+    if has_admin_permission(auth.current_user.as_ref()) {
+        Ok(())
+    } else {
+        Err(ServerFnError::new(
+            "Unauthorized: admin access required.".to_owned(),
+        ))
+    }
+}
+
 #[post("/api/user/logout", auth: Session)]
 pub async fn logout() -> Result<(), ServerFnError> {
     let name = match get_user_name().await {
@@ -592,5 +620,38 @@ mod tests {
                 None => std::env::remove_var("USE_PASSWORD"),
             }
         }
+    }
+
+    fn user_with_permissions(perms: &[&str]) -> User {
+        User {
+            id: 1,
+            anonymous: false,
+            username: "Admin".to_owned(),
+            permissions: perms.iter().map(|p| p.to_string()).collect(),
+            is_connected: true,
+        }
+    }
+
+    /// The actual gate every `admin_*` endpoint now runs behind — see `require_admin`'s
+    /// doc comment for why this needed to exist at all (the endpoints had no server-side
+    /// authorization check whatsoever before).
+    #[test]
+    fn admin_permission_required_and_sufficient() {
+        assert!(has_admin_permission(Some(&user_with_permissions(&[
+            "Admin::View"
+        ]))));
+    }
+
+    #[test]
+    fn non_admin_user_is_rejected() {
+        assert!(!has_admin_permission(Some(&user_with_permissions(&[
+            "Category::View"
+        ]))));
+        assert!(!has_admin_permission(Some(&user_with_permissions(&[]))));
+    }
+
+    #[test]
+    fn no_current_user_is_rejected() {
+        assert!(!has_admin_permission(None));
     }
 }

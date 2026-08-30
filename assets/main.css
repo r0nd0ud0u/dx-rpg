@@ -232,6 +232,35 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     box-shadow: 0 4px 14px rgba(43,108,176,.4);
 }
 
+/* Session-expired banner (LoginPage) — shown once when the client discovers its stored
+   login no longer has a live server session behind it (see CtxSessionExpired). Sits
+   above the auth cards, not inside them, since it applies to the whole page. */
+.session-expired-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-md);
+    width: 100%;
+    max-width: 680px;
+    margin-bottom: var(--sp-lg);
+    padding: var(--sp-sm) var(--sp-md);
+    border: 1px solid var(--rpg-danger);
+    border-radius: var(--r-sm);
+    background: color-mix(in srgb, var(--rpg-danger) 12%, transparent);
+    color: var(--rpg-danger-light);
+    font-size: .9rem;
+}
+.session-expired-dismiss {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 var(--sp-xs);
+}
+.session-expired-dismiss:hover { color: var(--rpg-text); }
+
 /* AUTH (LOGIN) */
 .auth-grid {
     display: grid;

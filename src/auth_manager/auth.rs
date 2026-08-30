@@ -31,11 +31,25 @@ impl Authentication<User, i64, SqlitePool> for User {
     async fn load_user(userid: i64, pool: Option<&SqlitePool>) -> Result<User, anyhow::Error> {
         let db = pool.unwrap();
 
-        let sqluser = sqlx::query_as::<_, SqlUser>("SELECT * FROM users WHERE id = $1")
+        // `fetch_optional`, not `fetch_one`: `userid` here can be `ANONYMOUS_SESSION_USER_ID`
+        // (see main.rs), which by construction never matches a row in `users` — every
+        // cookie-less/never-logged-in request resolves to that id, so this must succeed
+        // with an empty/anonymous `User` rather than erroring (this used to `.unwrap()`
+        // straight into a panic on exactly that path before `ANONYMOUS_SESSION_USER_ID`
+        // existed as a distinct id from any real account).
+        let Some(sqluser) = sqlx::query_as::<_, SqlUser>("SELECT * FROM users WHERE id = $1")
             .bind(userid)
-            .fetch_one(db)
-            .await
-            .unwrap();
+            .fetch_optional(db)
+            .await?
+        else {
+            return Ok(User {
+                id: userid,
+                anonymous: true,
+                username: String::new(),
+                permissions: HashSet::new(),
+                is_connected: false,
+            });
+        };
 
         //lets just get all the tokens the user can use, we will only use the full permissions if modifying them.
         let sql_user_perms = sqlx::query_as::<_, SqlPermissionTokens>(

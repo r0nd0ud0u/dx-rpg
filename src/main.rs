@@ -12,8 +12,8 @@ use dotenv::dotenv;
 use dx_rpg::{
     common::{
         ConnectionStatus, CtxAppLang, CtxAtkPanelOrders, CtxAudioSettings, CtxAutoSaveScenario,
-        CtxConnectionLatency, CtxConnectionStatus, CtxDeviceToken, CtxShopEnabled,
-        CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
+        CtxConnectionLatency, CtxConnectionStatus, CtxDeviceToken, CtxSessionExpired,
+        CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
         CtxSyncedInsecureCerts, CtxSyncedServerUrl, CtxToggleAtkAnimation, DISCONNECTED_USER,
         DX_COMP_CSS, Route, SERVER_NAME, SYNCED_AUDIO_MUTED_KEY, SYNCED_DEVICE_TOKEN_KEY,
         SYNCED_MUSIC_VOLUME_KEY, SYNCED_SFX_VOLUME_KEY,
@@ -208,14 +208,24 @@ fn main() {
         use axum_session::{SessionConfig, SessionLayer, SessionStore};
         use axum_session_auth::AuthConfig;
         use axum_session_sqlx::SessionSqlitePool;
-        use dx_rpg::{
-            auth_manager::{
-                auth::AuthLayer,
-                db::get_db,
-                server_fn::{auth_rate_limit, update_all_connection_status},
-            },
-            websocket_handler::STARTING_CLIENT_ID,
+        use dx_rpg::auth_manager::{
+            auth::AuthLayer,
+            db::get_db,
+            server_fn::{auth_rate_limit, update_all_connection_status},
         };
+
+        // The id `AuthSession` assigns a request with no (or an invalid) session cookie.
+        // Must never equal a real `users.id` — db.rs seeds real accounts at 1 (Admin) and
+        // 2 (Guest), with ids from 3 up handed out by SQLite's own autoincrement for
+        // every account registered since. This used to reuse `websocket_handler::
+        // STARTING_CLIENT_ID` (also `1`) for an entirely unrelated numbering scheme (the
+        // per-websocket-connection client id counter) — which meant every anonymous,
+        // cookie-less request loaded the real Admin row (including its real "Admin::View"
+        // permission) as `current_user`, making every `require_admin` check pass for
+        // literally anyone. `0` is safe: SQLite `INTEGER PRIMARY KEY` rowids are always
+        // >= 1, and `User::load_user` (auth.rs) now returns a proper empty-permission
+        // anonymous user for an id with no matching row instead of panicking.
+        const ANONYMOUS_SESSION_USER_ID: i64 = 0;
 
         let bind_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_owned());
         let bind_port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_owned());
@@ -245,17 +255,47 @@ fn main() {
         // initialize data manager
         init_data_manager().await;
 
+        // Session lifetime — deliberately explicit rather than accepting axum_session's
+        // silent defaults. This is the actual mechanism that closes "left the app signed
+        // in forever, then lost the phone": once a session has sat idle for
+        // SESSION_IDLE_TIMEOUT_HOURS (renewed by any authenticated request the player
+        // actually makes — logging in, admin actions, changing their password, ...), or
+        // SESSION_MAX_LIFETIME_DAYS have passed regardless of activity, `auth.current_user`
+        // reverts to anonymous and every `auth: Session`-gated endpoint (login, admin
+        // panel, ...) rejects the request — see `require_admin` in server_fn/auth.rs.
+        // `AdminPage` is what turns that rejection into a clean "your session expired,
+        // please sign in again" prompt instead of a raw error.
+        let session_idle_timeout = chrono::Duration::hours(
+            std::env::var("SESSION_IDLE_TIMEOUT_HOURS")
+                .ok()
+                .and_then(|v| v.parse::<i64>().ok())
+                .unwrap_or(24),
+        );
+        let session_max_lifetime = chrono::Duration::days(
+            std::env::var("SESSION_MAX_LIFETIME_DAYS")
+                .ok()
+                .and_then(|v| v.parse::<i64>().ok())
+                .unwrap_or(30),
+        );
+
         // Create an axum router that dioxus will attach the app to
         Ok(dioxus::server::router(App)
             .route("/img-srv/{filename}", axum::routing::get(serve_img_handler))
             .layer(axum::middleware::from_fn(auth_rate_limit))
-            .layer(AuthLayer::new(Some(pool.clone())).with_config(
-                AuthConfig::<i64>::default().with_anonymous_user_id(Some(STARTING_CLIENT_ID)),
-            ))
+            .layer(
+                AuthLayer::new(Some(pool.clone())).with_config(
+                    AuthConfig::<i64>::default()
+                        .with_anonymous_user_id(Some(ANONYMOUS_SESSION_USER_ID)),
+                ),
+            )
             .layer(SessionLayer::new(
                 SessionStore::<SessionSqlitePool>::new(
                     Some(pool.clone().into()),
-                    SessionConfig::default().with_table_name("test_table"),
+                    SessionConfig::default()
+                        .with_table_name("test_table")
+                        .with_lifetime(session_idle_timeout)
+                        .with_max_lifetime(session_max_lifetime)
+                        .with_max_age(Some(session_max_lifetime)),
                 )
                 .await?,
             )))
@@ -439,6 +479,9 @@ fn App() -> Element {
     // attempts the connection synchronously, and the ws-loop flips this to
     // `Reconnecting` immediately if that first attempt already failed.
     let mut connection_status = use_signal(|| ConnectionStatus::Connected);
+    // See `CtxSessionExpired`'s doc comment — set by `AdminPage` when it discovers the
+    // live server session no longer matches the identity persisted locally.
+    let session_expired = use_signal(|| false);
     // Last measured round-trip latency to the server, from the ping loop below — `None`
     // before the first measurement or after one times out (see `CtxConnectionLatency`'s
     // doc comment for why that case matters separately from `connection_status`).
@@ -863,6 +906,7 @@ fn App() -> Element {
     use_context_provider(|| server_data);
     use_context_provider(|| overworld_map_id);
     use_context_provider(|| CtxConnectionStatus(connection_status));
+    use_context_provider(|| CtxSessionExpired(session_expired));
     use_context_provider(|| CtxConnectionLatency(latency_ms));
     use_context_provider(|| ongoing_games);
     use_context_provider(|| saved_game_list);

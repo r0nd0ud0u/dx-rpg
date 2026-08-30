@@ -1,3 +1,5 @@
+#[cfg(feature = "server")]
+use crate::auth_manager::{auth::Session, server_fn::require_admin};
 use dioxus::prelude::*;
 
 /// Summary of one scenario shown in the admin scenario list.
@@ -38,8 +40,9 @@ fn parse_scenario_info(path: &std::path::Path, universe: &str) -> Option<AdminSc
 }
 
 /// Returns the list of all scenarios by scanning the scenarios directory on disk.
-#[post("/api/admin_list_scenarios")]
+#[post("/api/admin_list_scenarios", auth: Session)]
 pub async fn admin_list_scenarios() -> Result<Vec<AdminScenarioInfo>, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     let scenarios_dir = Path::new(OFFLINE_PATH).join("scenarios");
@@ -86,8 +89,9 @@ pub async fn admin_list_scenarios() -> Result<Vec<AdminScenarioInfo>, ServerFnEr
 }
 
 /// Returns sorted list of distinct universe names (empty string = no universe).
-#[post("/api/get_available_universes")]
+#[post("/api/get_available_universes", auth: Session)]
 pub async fn get_available_universes() -> Result<Vec<String>, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::DATA_MANAGER;
     let dm = DATA_MANAGER
         .lock()
@@ -96,8 +100,9 @@ pub async fn get_available_universes() -> Result<Vec<String>, ServerFnError> {
 }
 
 /// Returns scenario filenames (stems) for a given universe.
-#[post("/api/list_scenarios_for_universe")]
+#[post("/api/list_scenarios_for_universe", auth: Session)]
 pub async fn list_scenarios_for_universe(universe: String) -> Result<Vec<String>, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::{DATA_MANAGER, OFFLINE_PATH};
     use std::path::Path;
     let _dm = DATA_MANAGER
@@ -145,11 +150,12 @@ pub struct ScenarioDetail {
 }
 
 /// Returns a structured ScenarioDetail for the admin edit form.
-#[post("/api/get_scenario_detail")]
+#[post("/api/get_scenario_detail", auth: Session)]
 pub async fn get_scenario_detail(
     universe: String,
     file_stem: String,
 ) -> Result<ScenarioDetail, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     let path = Path::new(OFFLINE_PATH)
@@ -217,12 +223,13 @@ pub async fn get_scenario_detail(
 }
 
 /// Saves a scenario from form fields (converts to JSON and writes to disk).
-#[post("/api/save_scenario_detail")]
+#[post("/api/save_scenario_detail", auth: Session)]
 pub async fn save_scenario_detail(
     universe: String,
     file_stem: String,
     detail: ScenarioDetail,
 ) -> Result<(), ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::{DATA_MANAGER, OFFLINE_PATH};
     use std::path::Path;
 
@@ -299,11 +306,12 @@ pub async fn save_scenario_detail(
 }
 
 /// Returns full JSON content of a scenario file.
-#[post("/api/get_scenario_json")]
+#[post("/api/get_scenario_json", auth: Session)]
 pub async fn get_scenario_json(
     universe: String,
     file_stem: String,
 ) -> Result<String, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     let path = Path::new(OFFLINE_PATH)
@@ -315,12 +323,13 @@ pub async fn get_scenario_json(
 }
 
 /// Saves (creates or overwrites) a scenario JSON file and reloads the data manager.
-#[post("/api/save_scenario_json")]
+#[post("/api/save_scenario_json", auth: Session)]
 pub async fn save_scenario_json(
     universe: String,
     file_stem: String,
     json_content: String,
 ) -> Result<(), ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::{DATA_MANAGER, OFFLINE_PATH};
     use std::path::Path;
     serde_json::from_str::<serde_json::Value>(&json_content)
@@ -342,11 +351,12 @@ pub async fn save_scenario_json(
 }
 
 /// Deletes a scenario JSON file and reloads the data manager.
-#[post("/api/delete_scenario_json")]
+#[post("/api/delete_scenario_json", auth: Session)]
 pub async fn delete_scenario_json(
     universe: String,
     file_stem: String,
 ) -> Result<(), ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::{DATA_MANAGER, OFFLINE_PATH};
     use std::path::Path;
     let path = Path::new(OFFLINE_PATH)

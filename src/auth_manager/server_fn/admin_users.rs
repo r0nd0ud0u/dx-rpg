@@ -1,5 +1,5 @@
 #[cfg(feature = "server")]
-use crate::auth_manager::{db::get_db, model::SqlUser};
+use crate::auth_manager::{auth::Session, db::get_db, model::SqlUser, server_fn::require_admin};
 use dioxus::prelude::*;
 
 /// Returns true if the Admin CRUD panel is enabled (controlled by `ADMIN_ENABLED` env var).
@@ -21,8 +21,9 @@ pub struct AdminUserInfo {
 }
 
 /// Returns the list of all users with lightweight metadata, for the admin panel.
-#[post("/api/admin_list_users")]
+#[post("/api/admin_list_users", auth: Session)]
 pub async fn admin_list_users() -> Result<Vec<AdminUserInfo>, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::SAVED_DATA;
     use lib_rpg::{common::constants::paths_const::GAMES_DIR, utils::list_dirs_in_dir};
 

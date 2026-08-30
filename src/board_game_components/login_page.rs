@@ -8,7 +8,7 @@ use crate::websocket_handler::NO_CLIENT_ID;
 use crate::websocket_handler::event::ClientEvent;
 use crate::{
     auth_manager::server_fn::{get_use_password, login, register},
-    common::{CtxDeviceToken, Route},
+    common::{CtxDeviceToken, CtxSessionExpired, Route},
     components::{
         button::{Button, ButtonVariant},
         input::Input,
@@ -27,6 +27,7 @@ pub fn LoginPage() -> Element {
     let mut local_login_name_session = use_context::<Signal<String>>();
     let mut local_login_id_session = use_context::<Signal<i64>>();
     let mut device_token = use_context::<CtxDeviceToken>().0;
+    let mut session_expired = use_context::<CtxSessionExpired>().0;
     // nav
     let navigator = use_navigator();
     // logon
@@ -63,6 +64,17 @@ pub fn LoginPage() -> Element {
             div { class: "rotate-scale-up",
                 h1 { class: "rpg-title", {t!("home-title")} }
             }
+            if session_expired() {
+                div { class: "session-expired-banner",
+                    span { {t!("login-session-expired")} }
+                    button {
+                        class: "session-expired-dismiss",
+                        "aria-label": t!("common-close"),
+                        onclick: move |_| session_expired.set(false),
+                        "×"
+                    }
+                }
+            }
             div { class: "auth-grid",
                 // --- Sign in card ---
                 div { class: "rpg-card auth-card",
@@ -98,6 +110,7 @@ pub fn LoginPage() -> Element {
                             tracing::info!("Attempting to log in with username: {}", username());
                             match login(username(), password(), use_pw()).await {
                                 Ok(proof) => {
+                                    session_expired.set(false);
                                     logon_answer.set(t!("login-success", username : username()));
                                     // The server only just handed us this proof because a real
                                     // login succeeded — persist it as our device_token so
@@ -176,6 +189,7 @@ pub fn LoginPage() -> Element {
                                 Ok(()) => {
                                     match login(register_name(), register_password(), use_pw()).await {
                                         Ok(proof) => {
+                                            session_expired.set(false);
                                             device_token.set(proof.clone());
                                             *local_login_name_session.write() = register_name();
                                             let sql_id = (get_user_id().await)
