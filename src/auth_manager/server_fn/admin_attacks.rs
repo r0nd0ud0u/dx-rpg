@@ -1,3 +1,5 @@
+#[cfg(feature = "server")]
+use crate::auth_manager::{auth::Session, server_fn::require_admin};
 use dioxus::prelude::*;
 
 /// Key fields of an attack for structured form editing.
@@ -25,8 +27,9 @@ pub struct AttackFormData {
 }
 
 /// Returns the list of attack file stems for a given character.
-#[post("/api/admin_list_attacks")]
+#[post("/api/admin_list_attacks", auth: Session)]
 pub async fn admin_list_attacks(character_name: String) -> Result<Vec<String>, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     let dir = Path::new(OFFLINE_PATH).join("attack").join(&character_name);
@@ -48,11 +51,12 @@ pub async fn admin_list_attacks(character_name: String) -> Result<Vec<String>, S
 }
 
 /// Returns the raw JSON of an attack file.
-#[post("/api/admin_get_attack_json")]
+#[post("/api/admin_get_attack_json", auth: Session)]
 pub async fn admin_get_attack_json(
     character_name: String,
     attack_name: String,
 ) -> Result<String, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     let path = Path::new(OFFLINE_PATH)
@@ -64,12 +68,13 @@ pub async fn admin_get_attack_json(
 }
 
 /// Saves the raw JSON of an attack file (validates JSON first).
-#[post("/api/admin_save_attack_json")]
+#[post("/api/admin_save_attack_json", auth: Session)]
 pub async fn admin_save_attack_json(
     character_name: String,
     attack_name: String,
     json_content: String,
 ) -> Result<(), ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     serde_json::from_str::<serde_json::Value>(&json_content)
@@ -83,11 +88,12 @@ pub async fn admin_save_attack_json(
 }
 
 /// Deletes an attack file for a character.
-#[post("/api/admin_delete_attack")]
+#[post("/api/admin_delete_attack", auth: Session)]
 pub async fn admin_delete_attack(
     character_name: String,
     attack_name: String,
 ) -> Result<(), ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     let path = Path::new(OFFLINE_PATH)
@@ -99,11 +105,12 @@ pub async fn admin_delete_attack(
 }
 
 /// Returns the key fields of an attack for form-based editing.
-#[post("/api/admin_get_attack_form")]
+#[post("/api/admin_get_attack_form", auth: Session)]
 pub async fn admin_get_attack_form(
     character_name: String,
     attack_name: String,
 ) -> Result<AttackFormData, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     let path = Path::new(OFFLINE_PATH)
@@ -142,12 +149,13 @@ pub async fn admin_get_attack_form(
 }
 
 /// Saves an attack from form fields, reconstructing the full JSON.
-#[post("/api/admin_save_attack_form")]
+#[post("/api/admin_save_attack_form", auth: Session)]
 pub async fn admin_save_attack_form(
     character_name: String,
     attack_name: String,
     form: AttackFormData,
 ) -> Result<(), ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     let effet: serde_json::Value = serde_json::from_str(&form.effet_json)

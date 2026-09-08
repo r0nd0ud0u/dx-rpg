@@ -1,8 +1,11 @@
+#[cfg(feature = "server")]
+use crate::auth_manager::{auth::Session, server_fn::require_admin};
 use dioxus::prelude::*;
 
 /// Returns a list of top-level equipment type directories (e.g. "body", "characters").
-#[post("/api/admin_list_equipment_types")]
+#[post("/api/admin_list_equipment_types", auth: Session)]
 pub async fn admin_list_equipment_types() -> Result<Vec<String>, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     let dir = Path::new(OFFLINE_PATH).join("equipment");
@@ -22,10 +25,11 @@ pub async fn admin_list_equipment_types() -> Result<Vec<String>, ServerFnError> 
 }
 
 /// Returns category subdirectories for a given equipment type.
-#[post("/api/admin_list_equipment_categories")]
+#[post("/api/admin_list_equipment_categories", auth: Session)]
 pub async fn admin_list_equipment_categories(
     eq_type: String,
 ) -> Result<Vec<String>, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     if eq_type.contains("..") || eq_type.contains('/') || eq_type.contains('\\') {
@@ -48,11 +52,12 @@ pub async fn admin_list_equipment_categories(
 }
 
 /// Returns the list of equipment item stems for a given type and category.
-#[post("/api/admin_list_equipment_items")]
+#[post("/api/admin_list_equipment_items", auth: Session)]
 pub async fn admin_list_equipment_items(
     eq_type: String,
     category: String,
 ) -> Result<Vec<String>, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     if eq_type.contains("..")
@@ -85,12 +90,13 @@ pub async fn admin_list_equipment_items(
 }
 
 /// Returns the raw JSON of an equipment item file.
-#[post("/api/admin_get_equipment_json")]
+#[post("/api/admin_get_equipment_json", auth: Session)]
 pub async fn admin_get_equipment_json(
     eq_type: String,
     category: String,
     item_name: String,
 ) -> Result<String, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     if eq_type.contains("..") || category.contains("..") || item_name.contains("..") {
@@ -106,13 +112,14 @@ pub async fn admin_get_equipment_json(
 }
 
 /// Saves the raw JSON of an equipment item file (validates JSON first).
-#[post("/api/admin_save_equipment_json")]
+#[post("/api/admin_save_equipment_json", auth: Session)]
 pub async fn admin_save_equipment_json(
     eq_type: String,
     category: String,
     item_name: String,
     json_content: String,
 ) -> Result<(), ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     if eq_type.contains("..") || category.contains("..") || item_name.contains("..") {
@@ -132,12 +139,13 @@ pub async fn admin_save_equipment_json(
 }
 
 /// Deletes an equipment item file.
-#[post("/api/admin_delete_equipment")]
+#[post("/api/admin_delete_equipment", auth: Session)]
 pub async fn admin_delete_equipment(
     eq_type: String,
     category: String,
     item_name: String,
 ) -> Result<(), ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     if eq_type.contains("..") || category.contains("..") || item_name.contains("..") {
@@ -155,12 +163,13 @@ pub async fn admin_delete_equipment(
 /// Creates a new equipment item, copying the stats template from an existing
 /// item in the same category (so every stat key is present at zero).
 /// Returns `Err` if the item already exists.
-#[post("/api/admin_create_equipment")]
+#[post("/api/admin_create_equipment", auth: Session)]
 pub async fn admin_create_equipment(
     eq_type: String,
     category: String,
     item_name: String,
 ) -> Result<(), ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     if eq_type.contains("..")
@@ -226,8 +235,9 @@ pub async fn admin_create_equipment(
 
 /// Returns a list of available image filenames.
 /// Reads from PHOTOS_PATH env var (default: "photos").
-#[post("/api/list_available_images")]
+#[post("/api/list_available_images", auth: Session)]
 pub async fn list_available_images() -> Result<Vec<String>, ServerFnError> {
+    require_admin(&auth)?;
     let photos_dir = std::env::var("PHOTOS_PATH").unwrap_or_else(|_| "photos".to_owned());
     let mut names: Vec<String> = match std::fs::read_dir(&photos_dir) {
         Ok(entries) => entries
@@ -270,12 +280,13 @@ pub struct EquipmentFormData {
 }
 
 /// Returns the key fields of an equipment item for form-based editing.
-#[post("/api/admin_get_equipment_form")]
+#[post("/api/admin_get_equipment_form", auth: Session)]
 pub async fn admin_get_equipment_form(
     eq_type: String,
     category: String,
     item_name: String,
 ) -> Result<EquipmentFormData, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     if eq_type.contains("..") || category.contains("..") || item_name.contains("..") {
@@ -316,13 +327,14 @@ pub async fn admin_get_equipment_form(
 }
 
 /// Saves an equipment item from form fields, preserving any extra JSON fields.
-#[post("/api/admin_save_equipment_form")]
+#[post("/api/admin_save_equipment_form", auth: Session)]
 pub async fn admin_save_equipment_form(
     eq_type: String,
     category: String,
     item_name: String,
     form: EquipmentFormData,
 ) -> Result<(), ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     if eq_type.contains("..") || category.contains("..") || item_name.contains("..") {
@@ -360,8 +372,9 @@ pub async fn admin_save_equipment_form(
 // ── Universe creation ─────────────────────────────────────────────────────────
 
 /// Creates a new universe directory under characters/ and scenarios/.
-#[post("/api/admin_create_universe")]
+#[post("/api/admin_create_universe", auth: Session)]
 pub async fn admin_create_universe(universe_name: String) -> Result<(), ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     if universe_name.is_empty()
@@ -384,11 +397,12 @@ pub async fn admin_create_universe(universe_name: String) -> Result<(), ServerFn
 /// Uploads a photo to the images directory.
 /// `file_data_base64` must be a standard base64-encoded string of the image bytes.
 /// The filename must have a valid image extension and no path separators.
-#[post("/api/upload_photo")]
+#[post("/api/upload_photo", auth: Session)]
 pub async fn upload_photo(
     file_name: String,
     file_data_base64: String,
 ) -> Result<String, ServerFnError> {
+    require_admin(&auth)?;
     use std::path::Path;
     if file_name.contains("..") || file_name.contains('/') || file_name.contains('\\') {
         return Err(ServerFnError::new("Invalid filename".to_owned()));

@@ -175,6 +175,16 @@ pub enum ConnectionStatus {
 #[derive(Clone, Copy)]
 pub struct CtxConnectionStatus(pub Signal<ConnectionStatus>);
 
+/// Set when the client discovers its *server-side* auth session no longer backs the
+/// identity it locally believes it's signed in as (see `AdminPage`'s permission check) —
+/// e.g. the account's session expired from being idle past the server's session
+/// lifespan (`SessionConfig` in `main.rs`), which matters most for a device that was
+/// simply never signed out of (lost, shared, or just left logged in for a long time).
+/// `LoginPage` shows a "session expired, please sign in again" banner while this is
+/// true, then clears it once the player dismisses it or logs back in.
+#[derive(Clone, Copy)]
+pub struct CtxSessionExpired(pub Signal<bool>);
+
 /// Most recent round-trip latency to the server in milliseconds, measured by `main.rs`'s
 /// ping loop (`ClientEvent::Ping`/`ServerEvent::Pong`). `None` means either no measurement
 /// has completed yet (just connected) or the last one timed out — a bad-but-not-fully-dropped

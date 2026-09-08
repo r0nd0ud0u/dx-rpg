@@ -1,3 +1,5 @@
+#[cfg(feature = "server")]
+use crate::auth_manager::{auth::Session, server_fn::require_admin};
 use dioxus::prelude::*;
 
 /// Summary of one character (hero or boss) for the admin panel.
@@ -58,8 +60,9 @@ pub struct CharacterFormData {
 }
 
 /// Returns the list of hero characters for the admin panel.
-#[post("/api/admin_list_characters")]
+#[post("/api/admin_list_characters", auth: Session)]
 pub async fn admin_list_characters() -> Result<Vec<AdminCharacterInfo>, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::DATA_MANAGER;
     use lib_rpg::character_mod::character::CharacterKind;
     let dm = DATA_MANAGER
@@ -90,8 +93,9 @@ pub async fn admin_list_characters() -> Result<Vec<AdminCharacterInfo>, ServerFn
 }
 
 /// Returns the list of boss characters for the admin panel.
-#[post("/api/admin_list_bosses")]
+#[post("/api/admin_list_bosses", auth: Session)]
 pub async fn admin_list_bosses() -> Result<Vec<AdminCharacterInfo>, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::DATA_MANAGER;
     let dm = DATA_MANAGER
         .lock()
@@ -155,11 +159,12 @@ pub async fn list_universes_server() -> Result<Vec<String>, ServerFnError> {
 }
 
 /// Returns the raw JSON of a character file for the admin editor.
-#[post("/api/admin_get_character_json")]
+#[post("/api/admin_get_character_json", auth: Session)]
 pub async fn admin_get_character_json(
     universe: String,
     character_name: String,
 ) -> Result<String, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     let path = Path::new(OFFLINE_PATH)
@@ -171,12 +176,13 @@ pub async fn admin_get_character_json(
 }
 
 /// Saves the raw JSON of a character file (validates JSON first) and reloads DATA_MANAGER.
-#[post("/api/admin_save_character_json")]
+#[post("/api/admin_save_character_json", auth: Session)]
 pub async fn admin_save_character_json(
     universe: String,
     character_name: String,
     json_content: String,
 ) -> Result<(), ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::{DATA_MANAGER, OFFLINE_PATH};
     use std::path::Path;
     serde_json::from_str::<serde_json::Value>(&json_content)
@@ -199,11 +205,12 @@ pub async fn admin_save_character_json(
 }
 
 /// Returns the key fields of a character for form-based editing.
-#[post("/api/admin_get_character_form")]
+#[post("/api/admin_get_character_form", auth: Session)]
 pub async fn admin_get_character_form(
     universe: String,
     character_name: String,
 ) -> Result<CharacterFormData, ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::OFFLINE_PATH;
     use std::path::Path;
     let path = Path::new(OFFLINE_PATH)
@@ -265,12 +272,13 @@ pub async fn admin_get_character_form(
 }
 
 /// Saves key character fields back into the JSON file, preserving other fields.
-#[post("/api/admin_save_character_form")]
+#[post("/api/admin_save_character_form", auth: Session)]
 pub async fn admin_save_character_form(
     universe: String,
     character_name: String,
     form: CharacterFormData,
 ) -> Result<(), ServerFnError> {
+    require_admin(&auth)?;
     use crate::common::{DATA_MANAGER, OFFLINE_PATH};
     use std::path::Path;
     let path = Path::new(OFFLINE_PATH)

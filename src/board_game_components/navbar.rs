@@ -363,8 +363,7 @@ pub fn Navbar() -> Element {
                         }
                     }
                     if is_connection_status_visible(&snap_local_login_name_session, socket.is_offline()) {
-                        span {
-                            title: connection_status_title(connection_status(), latency_ms()),
+                        span { title: connection_status_title(connection_status(), latency_ms()),
                             ConnectionSignalIcon {
                                 bars: connection_bars(connection_status(), latency_ms()),
                                 reconnecting: connection_status() == ConnectionStatus::Reconnecting,
@@ -850,8 +849,7 @@ pub fn Navbar() -> Element {
                     }
                 }
                 if is_connection_status_visible(&snap_local_login_name_session, socket.is_offline()) {
-                    span {
-                        title: connection_status_title(connection_status(), latency_ms()),
+                    span { title: connection_status_title(connection_status(), latency_ms()),
                         ConnectionSignalIcon {
                             bars: connection_bars(connection_status(), latency_ms()),
                             reconnecting: connection_status() == ConnectionStatus::Reconnecting,

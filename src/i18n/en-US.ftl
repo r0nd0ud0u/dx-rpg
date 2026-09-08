@@ -124,6 +124,7 @@ home-join-game-desc = Join an ongoing adventure
 ## admin page shell
 admin-panel-title = 🛡️ Admin Panel
 admin-panel-disabled = The admin panel is disabled.
+admin-panel-access-denied = You don't have access to the admin panel.
 admin-tab-users = 👤 Users
 admin-tab-scenarios = 📜 Scenarios
 admin-tab-characters = 🧙 Characters
@@ -166,6 +167,7 @@ login-empty-fields = Please enter a username and password.
 login-username-placeholder = Your username
 login-password-placeholder = Password
 login-success = { $username } logged in
+login-session-expired = Your session has expired. Please sign in again.
 login-sign-in-button = Sign In →
 login-create-account-title = Create Account
 login-choose-username-placeholder = Choose a username
