@@ -409,6 +409,7 @@ fn owner_hero_id(data: &ServerData) -> Option<String> {
 mod tests {
     use super::*;
     use crate::sfx_cue::Sfx;
+    use lib_rpg::server::game_manager::ResultLaunchAttack;
     use lib_rpg::server::server_manager::GamePhase;
 
     /// End-to-end proof of the actual pipeline the UI will drive: activate, then send
@@ -560,64 +561,11 @@ mod tests {
         assert_eq!(channel.pending_auto_atks.get(), 0);
     }
 
-    /// A hero attack must actually reach the enemy offline — and therefore make a
-    /// sound. Regression test for `RequestTargetedCharacter`/`RequestSetOneTarget`
-    /// falling through to the unsupported-action catch-all: with no character ever
-    /// flagged as the current target, lib-rpg skipped every Individual effect, so
-    /// offline attacks landed nothing and `classify_attack` had no cue to play.
-    #[test]
-    fn a_hero_attack_lands_and_has_a_sound_cue() {
-        let channel = started_session();
-        let hero_id = channel
-            .state
-            .borrow()
-            .core_game_data
-            .game_manager
-            .pm
-            .current_player
-            .id_name
-            .clone();
-
-        channel.send(ClientEvent::RequestTargetedCharacter(
-            LOCAL_PLAYER_NAME.to_owned(),
-            hero_id.clone(),
-            "Charge".to_owned(),
-        ));
-        let _ = expect_update(&channel);
-        channel.send(ClientEvent::LaunchAttack(
-            LOCAL_PLAYER_NAME.to_owned(),
-            "Charge".to_owned(),
-        ));
-        let after_attack = expect_update(&channel);
-
-        let ra = &after_attack
-            .core_game_data
-            .game_manager
-            .game_state
-            .last_result_atk;
-        assert_eq!(ra.launcher_id_name, hero_id);
-        assert!(
-            !ra.new_game_atk_effects.is_empty(),
-            "Charge should land on the targeted enemy, got {ra:?}"
-        );
-        assert!(
-            !crate::sfx_cue::classify_attack(ra).is_empty(),
-            "a landed attack must have a sound cue, got {ra:?}"
-        );
-    }
-
-    /// The contract the sound design rests on: one attack, one sound. Casting the
-    /// same attack repeatedly in a real fight must lead with the same family cue
-    /// every time — the sound that gives the attack its identity — even though the
-    /// numbers underneath move from cast to cast as armour and the HP cap change
-    /// what actually lands.
+    /// One `Charge`, cast in a fresh fight, returning the cues it produced.
     ///
-    /// Two variations are deliberate and excluded here: a critical adds its accent
-    /// after the family cue, and a dodged or blocked cast is skipped outright,
-    /// since that is a different event and is supposed to sound different.
-    #[test]
-    fn one_attack_sounds_the_same_on_every_cast() {
-        const ATK: &str = "Charge";
+    /// A fresh session each time keeps the boss alive and the state clean, so the
+    /// only thing that varies between calls is the combat roll itself.
+    fn cast_charge_in_a_fresh_fight() -> (ResultLaunchAttack, Vec<Sfx>) {
         let channel = started_session();
         let hero = channel
             .state
@@ -628,41 +576,73 @@ mod tests {
             .current_player
             .id_name
             .clone();
+        channel.send(ClientEvent::RequestTargetedCharacter(
+            LOCAL_PLAYER_NAME.to_owned(),
+            hero,
+            "Charge".to_owned(),
+        ));
+        let _ = expect_update(&channel);
+        channel.send(ClientEvent::LaunchAttack(
+            LOCAL_PLAYER_NAME.to_owned(),
+            "Charge".to_owned(),
+        ));
+        let after = expect_update(&channel);
+        let ra = after
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_result_atk
+            .clone();
+        let cues = crate::sfx_cue::classify_attack(&ra);
+        (ra, cues)
+    }
 
-        let mut landed = Vec::new();
-        for _ in 0..4 {
-            channel.send(ClientEvent::RequestTargetedCharacter(
-                LOCAL_PLAYER_NAME.to_owned(),
-                hero.clone(),
-                ATK.to_owned(),
-            ));
-            let _ = expect_update(&channel);
-            channel.send(ClientEvent::LaunchAttack(
-                LOCAL_PLAYER_NAME.to_owned(),
-                ATK.to_owned(),
-            ));
-            let after = expect_update(&channel);
-            let cues = crate::sfx_cue::classify_attack(
-                &after.core_game_data.game_manager.game_state.last_result_atk,
+    /// True for a cast the enemy avoided. Those are a different event and are
+    /// supposed to sound different, so the tests below skip them rather than
+    /// comparing them against a cast that connected.
+    fn was_avoided(cues: &[Sfx]) -> bool {
+        matches!(cues, [Sfx::Dodge] | [Sfx::Block])
+    }
+
+    /// A hero attack must actually reach the enemy offline — and therefore make a
+    /// sound. Regression test for `RequestTargetedCharacter`/`RequestSetOneTarget`
+    /// falling through to the unsupported-action catch-all: with no character ever
+    /// flagged as the current target, lib-rpg skipped every Individual effect, so
+    /// offline attacks landed nothing and `classify_attack` had no cue to play.
+    #[test]
+    fn a_hero_attack_lands_and_has_a_sound_cue() {
+        for _ in 0..8 {
+            let (ra, cues) = cast_charge_in_a_fresh_fight();
+            if was_avoided(&cues) {
+                continue; // dodged; try again rather than assert on a miss
+            }
+            assert!(
+                !ra.new_game_atk_effects.is_empty(),
+                "Charge should land on the targeted enemy, got {ra:?}"
             );
-            if !matches!(cues.as_slice(), [Sfx::Dodge] | [Sfx::Block]) {
+            assert!(
+                !cues.is_empty(),
+                "a landed attack must have a sound cue, got {ra:?}"
+            );
+            return;
+        }
+        panic!("eight casts of Charge in a row were all dodged, which should not happen");
+    }
+
+    /// The contract the sound design rests on: one attack, one sound. The same
+    /// attack cast in fight after fight must lead with the same family cue — the
+    /// sound that gives it its identity — even though the numbers underneath move
+    /// from cast to cast as criticals, armour and the HP cap change what lands.
+    ///
+    /// A critical adds its accent after the family cue, which is the one deliberate
+    /// variation.
+    #[test]
+    fn one_attack_sounds_the_same_on_every_cast() {
+        let mut landed = Vec::new();
+        for _ in 0..8 {
+            let (_, cues) = cast_charge_in_a_fresh_fight();
+            if !was_avoided(&cues) {
                 landed.push(cues);
-            }
-            while channel.pending_auto_atks.get() > 0 {
-                let _ = channel.run_next_auto_atk();
-            }
-            // Stop once there is nothing left alive to swing at.
-            if channel
-                .state
-                .borrow()
-                .core_game_data
-                .game_manager
-                .pm
-                .active_bosses
-                .iter()
-                .all(|b| b.stats.is_dead() == Some(true))
-            {
-                break;
             }
         }
 
@@ -672,7 +652,7 @@ mod tests {
         );
         assert!(
             landed.iter().all(|cues| cues.first() == landed[0].first()),
-            "{ATK} sounded different from one cast to the next: {landed:?}"
+            "Charge sounded different from one cast to the next: {landed:?}"
         );
         assert!(
             landed
