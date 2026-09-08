@@ -7,6 +7,7 @@ use crate::common::{
     photo_src,
 };
 use crate::game_channel::GameChannel;
+use crate::sfx_cue::Sfx;
 use crate::websocket_handler::event::ClientEvent;
 use crate::websocket_handler::msg_from_client::send_disconnect_from_server_data;
 use crate::{
@@ -153,14 +154,8 @@ pub fn RunningGamePage() -> Element {
         if status != last_announced_status() {
             last_announced_status.set(status.clone());
             match status {
-                GameStatus::EndOfGame => audio::play_sfx(
-                    lib_rpg::common::sound_cue::SoundCue::GameOver,
-                    audio_settings,
-                ),
-                GameStatus::EndOfScenario => audio::play_sfx(
-                    lib_rpg::common::sound_cue::SoundCue::Victory,
-                    audio_settings,
-                ),
+                GameStatus::EndOfGame => audio::play_sfx(Sfx::GameOver, audio_settings),
+                GameStatus::EndOfScenario => audio::play_sfx(Sfx::Victory, audio_settings),
                 _ => {}
             }
         }

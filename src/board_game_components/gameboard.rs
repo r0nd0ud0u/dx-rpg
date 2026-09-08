@@ -1,7 +1,6 @@
 use dioxus::logger::tracing;
 use lib_rpg::{
     character_mod::buffers::BufKinds,
-    common::sound_cue::classify_result_atk,
     server::{
         game_manager::ResultLaunchAttack, players_manager::GameAtkEffect,
         server_manager::ServerData,
@@ -16,6 +15,7 @@ use crate::{
     },
     components::button::{Button, ButtonVariant},
     game_channel::GameChannel,
+    sfx_cue::classify_attack,
     websocket_handler::event::ClientEvent,
 };
 use dioxus::prelude::*;
@@ -50,8 +50,8 @@ pub fn GameBoard() -> Element {
 
     // Combat sound effects: fire the sfx for a new attack result exactly once. Deduped on
     // (turn_nb, round_nb, launcher_id_name) rather than watching `logs` text, since
-    // `classify_result_atk` reads the same structured `ResultLaunchAttack` the server
-    // already computes (see lib-rpg's `common::sound_cue`).
+    // `classify_attack` reads the same structured `ResultLaunchAttack` the server
+    // already computes (see `crate::sfx_cue`).
     let audio_settings = use_context::<CtxAudioSettings>();
     let mut last_sfx_result_key = use_signal(|| (0usize, 0usize, String::new()));
     use_effect(move || {
@@ -64,7 +64,7 @@ pub fn GameBoard() -> Element {
         let key = (ra.turn_nb, ra.round_nb, ra.launcher_id_name.clone());
         if !ra.launcher_id_name.is_empty() && key != last_sfx_result_key() {
             last_sfx_result_key.set(key);
-            for cue in classify_result_atk(&ra) {
+            for cue in classify_attack(&ra) {
                 audio::play_sfx(cue, audio_settings);
             }
         }
