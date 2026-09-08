@@ -11,10 +11,16 @@
 //! shapes exist for multiplayer don't apply here.
 #![cfg(not(feature = "server"))]
 
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+    time::Duration,
+};
 
 use futures::{StreamExt, channel::mpsc, lock::Mutex as AsyncMutex};
-use lib_rpg::server::{scenario::ScenarioState, server_manager::ServerData};
+use lib_rpg::server::{
+    game_state::GameStatus, scenario::ScenarioState, server_manager::ServerData,
+};
 
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 
@@ -27,6 +33,11 @@ use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 pub(crate) const LOCAL_PLAYER_NAME: &str = "Player";
 const LOCAL_CLIENT_ID: u32 = 0;
 
+/// Pause before each enemy attack of an auto round, matching the 3s the server paces
+/// its `AutoAtkIsDone` events by (`event.rs`'s `process_ennemy_atk`) — long enough to
+/// read the log line and hear the hit before the next boss swings.
+const AUTO_ATK_DELAY: Duration = Duration::from_millis(3000);
+
 #[derive(Clone)]
 pub struct LocalChannel {
     tx: mpsc::UnboundedSender<ServerEvent>,
@@ -36,6 +47,8 @@ pub struct LocalChannel {
     // panics instead of just waiting its turn).
     rx: Rc<AsyncMutex<mpsc::UnboundedReceiver<ServerEvent>>>,
     state: Rc<RefCell<ServerData>>,
+    /// Enemy attacks still owed for the current auto round — see [`Self::recv`].
+    pending_auto_atks: Rc<Cell<i64>>,
 }
 
 impl LocalChannel {
@@ -48,6 +61,7 @@ impl LocalChannel {
             tx,
             rx: Rc::new(AsyncMutex::new(rx)),
             state: Rc::new(RefCell::new(ServerData::default())),
+            pending_auto_atks: Rc::new(Cell::new(0)),
         }
     }
 
@@ -58,6 +72,7 @@ impl LocalChannel {
     pub fn activate(&self) {
         crate::embedded_data::register();
         *self.state.borrow_mut() = ServerData::default();
+        self.pending_auto_atks.set(0);
 
         let all_heroes =
             lib_rpg::server::data_manager::DataManager::try_new(crate::common::OFFLINE_PATH)
@@ -72,9 +87,53 @@ impl LocalChannel {
     /// Applies `msg` to the local game state and reports the result back, matching the
     /// shape `GameChannel::send` expects.
     pub fn send(&self, msg: ClientEvent) {
+        // The server runs the enemy's turn right after the player's action, not as part
+        // of it (`event.rs`: `update_core_game_data_after_atk` then `process_ennemy_atk`)
+        // — mirror that split here, so `recv` can pace the enemy attacks out one by one.
+        let player_acted = matches!(
+            msg,
+            ClientEvent::LaunchAttack(..)
+                | ClientEvent::UsePotion(..)
+                | ClientEvent::UsePartyPotion(..)
+        );
         for event in dispatch(&self.state, msg) {
             self.push(event);
         }
+        if player_acted {
+            self.queue_auto_atks();
+        }
+    }
+
+    /// The offline counterpart of the server's `process_ennemy_atk`: once the player has
+    /// acted, count the bosses that act before the next hero gets a turn. Without this,
+    /// offline combat simply stopped at the end of the player's attack — the enemy's turn
+    /// was never played at all, so the boss never hit back.
+    fn queue_auto_atks(&self) {
+        let game_manager = &self.state.borrow().core_game_data.game_manager;
+        if game_manager.is_round_auto() {
+            self.pending_auto_atks
+                .set(game_manager.process_nb_bosses_atk_in_a_row());
+        }
+    }
+
+    /// Plays one owed enemy attack. `launch_attack(None)` is lib-rpg's "the character
+    /// whose turn it is picks its own attack", the very call the server makes for each
+    /// `AutoAtkIsDone`.
+    fn run_next_auto_atk(&self) -> ServerEvent {
+        self.pending_auto_atks.set(self.pending_auto_atks.get() - 1);
+        {
+            let mut data = self.state.borrow_mut();
+            let game_manager = &mut data.core_game_data.game_manager;
+            // One boss of a multi-boss round can end the game; the ones queued behind it
+            // must not keep swinging afterwards (same guard as the server's
+            // `update_core_game_data_after_atk`).
+            if game_manager.game_state.status == GameStatus::EndOfGame {
+                self.pending_auto_atks.set(0);
+            } else {
+                let _ = game_manager.launch_attack(None);
+            }
+        }
+        update_event(&self.state)
     }
 
     pub async fn recv(&self) -> Option<ServerEvent> {
@@ -83,7 +142,22 @@ impl LocalChannel {
         // (App()'s receive loop) — never concurrently with itself — so `.lock().await`
         // always acquires immediately in practice; it's an async mutex (not a plain
         // `RefCell`) specifically so holding the guard across `.next().await` is sound.
-        self.rx.lock().await.next().await
+        let mut rx = self.rx.lock().await;
+        // Whatever the player's own action already queued goes out first and instantly —
+        // only once the UI is up to date with it do the enemy's attacks start landing.
+        match rx.try_recv() {
+            Ok(event) => return Some(event),
+            Err(e) if e.is_closed() => return None, // closed and drained
+            Err(_) => {}                            // nothing queued right now
+        }
+        if self.pending_auto_atks.get() > 0 {
+            // Released before the wait: `send` must stay responsive while the enemy round
+            // plays out, and nothing else ever needs the receiver meanwhile.
+            drop(rx);
+            dioxus_sdk_time::sleep(AUTO_ATK_DELAY).await;
+            return Some(self.run_next_auto_atk());
+        }
+        rx.next().await
     }
 
     fn push(&self, event: ServerEvent) {
@@ -169,6 +243,91 @@ fn dispatch(state: &Rc<RefCell<ServerData>>, msg: ClientEvent) -> Vec<ServerEven
             let mut data = state.borrow_mut();
             if let Err(e) = crate::local_engine::start_local_game(&mut data.core_game_data) {
                 dioxus::logger::tracing::error!("offline mode: StartGame failed: {e}");
+            }
+            drop(data);
+            vec![update_event(state)]
+        }
+
+        // Picking an attack: flags every character it could legally reach, which is what
+        // `character_page.rs` highlights as selectable. Mirrors the server's
+        // `request_set_targeted_characters`.
+        //
+        // Not optional plumbing: lib-rpg only applies an Individual Enemy/Ally effect to a
+        // character whose `is_current_target` is set (`is_effect_applied` in
+        // `rounds_information.rs`). While these two events fell through to the
+        // unsupported-action catch-all, every hero attack offline landed on nobody at all
+        // — no damage, no log line, and no sound, since an attack with no effects has no
+        // sound cue to classify.
+        ClientEvent::RequestTargetedCharacter(_server_name, launcher_name, atk_name) => {
+            let mut data = state.borrow_mut();
+            data.core_game_data
+                .game_manager
+                .pm
+                .set_targeted_characters(&launcher_name, &atk_name);
+            drop(data);
+            vec![update_event(state)]
+        }
+
+        // Clicking one of those highlighted characters: narrows the attack down to it.
+        // Mirrors the server's `request_set_one_target`.
+        ClientEvent::RequestSetOneTarget(_server_name, launcher_name, atk_name, target_name) => {
+            let mut data = state.borrow_mut();
+            data.core_game_data.game_manager.pm.set_one_target(
+                &launcher_name,
+                &atk_name,
+                &target_name,
+            );
+            drop(data);
+            vec![update_event(state)]
+        }
+
+        // Picking a consumable: flags who it can be used on, the same way
+        // `RequestTargetedCharacter` does for an attack.
+        ClientEvent::RequestTargetForConsumable(
+            _server_name,
+            _player_name,
+            consumable_name,
+            is_party,
+        ) => {
+            let mut data = state.borrow_mut();
+            crate::local_engine::set_consumable_targets(
+                &mut data.core_game_data,
+                &consumable_name,
+                is_party,
+            );
+            drop(data);
+            vec![update_event(state)]
+        }
+
+        // Drinking a potion mid-fight. Note this is two things, not one: the potion
+        // itself, and the turn it costs — the server does the same
+        // (`use_potion_handler`, then `update_core_game_data_after_atk(None)`), and
+        // the enemy round that follows is queued by `send`.
+        ClientEvent::UsePotion(_server_name, _player_name, consumable_name, target_id_name) => {
+            drink_in_combat(state, &consumable_name, &target_id_name, false)
+        }
+        ClientEvent::UsePartyPotion(
+            _server_name,
+            _player_name,
+            consumable_name,
+            target_id_name,
+        ) => drink_in_combat(state, &consumable_name, &target_id_name, true),
+
+        // Drinking a potion outside combat: self-administered, costs no turn.
+        ClientEvent::UseOverworldConsumable(
+            _server_name,
+            hero_id_name,
+            consumable_name,
+            is_party,
+        ) => {
+            let mut data = state.borrow_mut();
+            if let Err(e) = crate::local_engine::use_overworld_consumable(
+                &mut data.core_game_data,
+                &hero_id_name,
+                &consumable_name,
+                is_party,
+            ) {
+                dioxus::logger::tracing::error!("offline mode: UseOverworldConsumable failed: {e}");
             }
             drop(data);
             vec![update_event(state)]
@@ -288,6 +447,30 @@ fn dispatch(state: &Rc<RefCell<ServerData>>, msg: ClientEvent) -> Vec<ServerEven
     }
 }
 
+/// Shared body of the two combat-potion events, which differ only in which stock
+/// the consumable comes from.
+fn drink_in_combat(
+    state: &Rc<RefCell<ServerData>>,
+    consumable_name: &str,
+    target_id_name: &str,
+    is_party: bool,
+) -> Vec<ServerEvent> {
+    let mut data = state.borrow_mut();
+    if let Err(e) = crate::local_engine::use_consumable_in_combat(
+        &mut data.core_game_data,
+        consumable_name,
+        target_id_name,
+        is_party,
+    ) {
+        dioxus::logger::tracing::error!("offline mode: using {consumable_name:?} failed: {e}");
+    } else {
+        // Drinking is this character's action for the turn.
+        let _ = data.core_game_data.game_manager.launch_attack(None);
+    }
+    drop(data);
+    vec![update_event(state)]
+}
+
 fn update_event(state: &Rc<RefCell<ServerData>>) -> ServerEvent {
     ServerEvent::UpdateServerData(Box::new(state.borrow().clone()))
 }
@@ -306,6 +489,8 @@ fn owner_hero_id(data: &ServerData) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sfx_cue::Sfx;
+    use lib_rpg::server::game_manager::ResultLaunchAttack;
     use lib_rpg::server::server_manager::GamePhase;
 
     /// End-to-end proof of the actual pipeline the UI will drive: activate, then send
@@ -384,6 +569,345 @@ mod tests {
         // test's job is proving the channel plumbing round-trips real state, not
         // re-proving combat math local_engine::tests already covers.
         assert_eq!(after_attack.core_game_data.server_name, LOCAL_PLAYER_NAME);
+    }
+
+    /// The enemy actually gets its turn offline. Before this, `dispatch` ran the
+    /// player's attack and stopped there — the server-side `process_ennemy_atk` step
+    /// had no offline counterpart, so a boss never once hit back in local mode.
+    #[test]
+    fn the_enemy_round_is_played_after_the_hero_attacks() {
+        let channel = started_session();
+        let after_start = channel.state.borrow().clone();
+
+        let hero_id = after_start
+            .core_game_data
+            .game_manager
+            .pm
+            .current_player
+            .id_name
+            .clone();
+        let atk_name = after_start
+            .core_game_data
+            .game_manager
+            .pm
+            .current_player
+            .attacks_list
+            .keys()
+            .next()
+            .cloned()
+            .expect("hero should have at least one attack");
+        channel.send(ClientEvent::LaunchAttack(
+            LOCAL_PLAYER_NAME.to_owned(),
+            atk_name,
+        ));
+
+        // The player's own attack is still reported first and without any delay.
+        let after_attack = expect_update(&channel);
+        assert_eq!(
+            after_attack
+                .core_game_data
+                .game_manager
+                .game_state
+                .last_result_atk
+                .launcher_id_name,
+            hero_id
+        );
+        // ...and the boss whose turn it now is has been queued to answer it.
+        assert!(
+            channel.pending_auto_atks.get() > 0,
+            "expected the boss round to be queued, order_to_play={:?}",
+            after_attack
+                .core_game_data
+                .game_manager
+                .game_state
+                .order_to_play
+        );
+
+        // Stepping the queue directly rather than through `recv`, which would sit out
+        // the real AUTO_ATK_DELAY between attacks — the pacing is a UI concern, what
+        // matters here is that the attack happens at all and comes from the enemy.
+        let ServerEvent::UpdateServerData(after_boss) = channel.run_next_auto_atk() else {
+            panic!("an enemy attack should report a full state update");
+        };
+        let boss_atk = &after_boss
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_result_atk;
+        assert!(
+            boss_atk.is_boss_atk,
+            "expected a boss attack, got {boss_atk:?}"
+        );
+        assert_ne!(boss_atk.launcher_id_name, hero_id);
+        assert_eq!(channel.pending_auto_atks.get(), 0);
+    }
+
+    /// Drinking a potion mid-fight has to reach `game_state.last_consumable_use`,
+    /// because that bumped `seq` is the only thing `Navbar` watches to play the
+    /// potion sound. Offline, `UsePotion` used to fall through to the
+    /// unsupported-action catch-all: the potion was never drunk, nothing healed,
+    /// and no sound played — while the same potion taken outside a fight worked.
+    #[test]
+    fn a_potion_drunk_in_combat_heals_and_reports_itself() {
+        let channel = started_session();
+        // A fresh party carries nothing — potions are loot — so put one in the bag
+        // the same way the game does when one drops.
+        let (hero, potion) = {
+            let mut data = channel.state.borrow_mut();
+            let player = &mut data.core_game_data.game_manager.pm.current_player;
+            player.inventory.add_small_potion();
+            (
+                player.id_name.clone(),
+                player.inventory.consumables[0].name.clone(),
+            )
+        };
+        let held_before = channel
+            .state
+            .borrow()
+            .core_game_data
+            .game_manager
+            .pm
+            .current_player
+            .inventory
+            .consumables
+            .iter()
+            .filter(|c| c.name == potion)
+            .count();
+        let seq_before = channel
+            .state
+            .borrow()
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_consumable_use
+            .seq;
+
+        channel.send(ClientEvent::RequestTargetForConsumable(
+            LOCAL_PLAYER_NAME.to_owned(),
+            LOCAL_PLAYER_NAME.to_owned(),
+            potion.clone(),
+            false,
+        ));
+        let _ = expect_update(&channel);
+        channel.send(ClientEvent::UsePotion(
+            LOCAL_PLAYER_NAME.to_owned(),
+            LOCAL_PLAYER_NAME.to_owned(),
+            potion.clone(),
+            hero.clone(),
+        ));
+        let after = expect_update(&channel);
+
+        let use_result = &after
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_consumable_use;
+        assert_eq!(use_result.consumable_name, potion, "got {use_result:?}");
+        assert_eq!(use_result.target_id_name, hero);
+        assert!(
+            use_result.seq > seq_before,
+            "seq must advance or Navbar dedupes the sound away: {use_result:?}"
+        );
+        // ...and it was actually drunk, not merely announced.
+        let left = after
+            .core_game_data
+            .game_manager
+            .pm
+            .current_player
+            .inventory
+            .consumables
+            .iter()
+            .filter(|c| c.name == potion)
+            .count();
+        assert_eq!(
+            left,
+            held_before - 1,
+            "the potion should have been consumed"
+        );
+    }
+
+    /// The out-of-combat half of the same gap: a consumable used from the character
+    /// sheet is self-administered and costs no turn, but it must report itself the
+    /// same way so it makes the same sound.
+    #[test]
+    fn a_potion_drunk_outside_combat_reports_itself_too() {
+        let channel = started_session();
+        let (hero, potion) = {
+            let mut data = channel.state.borrow_mut();
+            let player = &mut data.core_game_data.game_manager.pm.current_player;
+            player.inventory.add_small_potion();
+            let hero = player.id_name.clone();
+            let potion = player.inventory.consumables[0].name.clone();
+            // The overworld path reads the party list, not the current player's copy.
+            data.core_game_data
+                .game_manager
+                .pm
+                .modify_active_character(&hero);
+            (hero, potion)
+        };
+        let round_before = channel
+            .state
+            .borrow()
+            .core_game_data
+            .game_manager
+            .game_state
+            .current_round;
+
+        channel.send(ClientEvent::UseOverworldConsumable(
+            LOCAL_PLAYER_NAME.to_owned(),
+            hero.clone(),
+            potion.clone(),
+            false,
+        ));
+        let after = expect_update(&channel);
+
+        let use_result = &after
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_consumable_use;
+        assert_eq!(use_result.consumable_name, potion, "got {use_result:?}");
+        assert_eq!(use_result.launcher_id_name, hero);
+        assert!(use_result.seq > 0, "seq must advance: {use_result:?}");
+        assert_eq!(
+            after.core_game_data.game_manager.game_state.current_round, round_before,
+            "drinking outside combat must not cost a turn"
+        );
+    }
+
+    /// One `Charge`, cast in a fresh fight, returning the cues it produced.
+    ///
+    /// A fresh session each time keeps the boss alive and the state clean, so the
+    /// only thing that varies between calls is the combat roll itself.
+    fn cast_charge_in_a_fresh_fight() -> (ResultLaunchAttack, Vec<Sfx>) {
+        let channel = started_session();
+        let hero = channel
+            .state
+            .borrow()
+            .core_game_data
+            .game_manager
+            .pm
+            .current_player
+            .id_name
+            .clone();
+        channel.send(ClientEvent::RequestTargetedCharacter(
+            LOCAL_PLAYER_NAME.to_owned(),
+            hero,
+            "Charge".to_owned(),
+        ));
+        let _ = expect_update(&channel);
+        channel.send(ClientEvent::LaunchAttack(
+            LOCAL_PLAYER_NAME.to_owned(),
+            "Charge".to_owned(),
+        ));
+        let after = expect_update(&channel);
+        let ra = after
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_result_atk
+            .clone();
+        let cues = crate::sfx_cue::classify_attack(&ra);
+        (ra, cues)
+    }
+
+    /// True for a cast the enemy avoided. Those are a different event and are
+    /// supposed to sound different, so the tests below skip them rather than
+    /// comparing them against a cast that connected.
+    fn was_avoided(cues: &[Sfx]) -> bool {
+        matches!(cues, [Sfx::Dodge] | [Sfx::Block])
+    }
+
+    /// A hero attack must actually reach the enemy offline — and therefore make a
+    /// sound. Regression test for `RequestTargetedCharacter`/`RequestSetOneTarget`
+    /// falling through to the unsupported-action catch-all: with no character ever
+    /// flagged as the current target, lib-rpg skipped every Individual effect, so
+    /// offline attacks landed nothing and `classify_attack` had no cue to play.
+    #[test]
+    fn a_hero_attack_lands_and_has_a_sound_cue() {
+        for _ in 0..8 {
+            let (ra, cues) = cast_charge_in_a_fresh_fight();
+            if was_avoided(&cues) {
+                continue; // dodged; try again rather than assert on a miss
+            }
+            assert!(
+                !ra.new_game_atk_effects.is_empty(),
+                "Charge should land on the targeted enemy, got {ra:?}"
+            );
+            assert!(
+                !cues.is_empty(),
+                "a landed attack must have a sound cue, got {ra:?}"
+            );
+            return;
+        }
+        panic!("eight casts of Charge in a row were all dodged, which should not happen");
+    }
+
+    /// The contract the sound design rests on: one attack, one sound. The same
+    /// attack cast in fight after fight must lead with the same family cue — the
+    /// sound that gives it its identity — even though the numbers underneath move
+    /// from cast to cast as criticals, armour and the HP cap change what lands.
+    ///
+    /// A critical adds its accent after the family cue, which is the one deliberate
+    /// variation.
+    #[test]
+    fn one_attack_sounds_the_same_on_every_cast() {
+        let mut landed = Vec::new();
+        for _ in 0..8 {
+            let (_, cues) = cast_charge_in_a_fresh_fight();
+            if !was_avoided(&cues) {
+                landed.push(cues);
+            }
+        }
+
+        assert!(
+            landed.len() >= 2,
+            "expected at least two landed casts to compare, got {landed:?}"
+        );
+        assert!(
+            landed.iter().all(|cues| cues.first() == landed[0].first()),
+            "Charge sounded different from one cast to the next: {landed:?}"
+        );
+        assert!(
+            landed
+                .iter()
+                .all(|cues| cues[1..].iter().all(|cue| *cue == Sfx::CriticalHit)),
+            "the only cue allowed on top of the family is the crit accent: {landed:?}"
+        );
+    }
+
+    /// An offline session driven up to the first hero's turn, through the same
+    /// ClientEvent sequence the UI sends.
+    fn started_session() -> LocalChannel {
+        let channel = LocalChannel::new();
+        channel.activate();
+
+        let init = futures::executor::block_on(channel.recv()).expect("InitClient");
+        let ServerEvent::InitClient(_, heroes) = init else {
+            panic!("expected InitClient first, got {init:?}");
+        };
+        let hero_name = heroes
+            .iter()
+            .find(|h| h.universe == "lotr")
+            .expect("at least one lotr hero")
+            .db_full_name
+            .clone();
+        channel.send(ClientEvent::InitializeGame(
+            LOCAL_PLAYER_NAME.to_owned(),
+            LOCAL_PLAYER_NAME.to_owned(),
+            "lotr".to_owned(),
+            true,
+        ));
+        let _ = expect_update(&channel);
+        channel.send(ClientEvent::AddCharacterOnServerData(
+            LOCAL_PLAYER_NAME.to_owned(),
+            LOCAL_PLAYER_NAME.to_owned(),
+            hero_name,
+        ));
+        let _ = expect_update(&channel);
+        channel.send(ClientEvent::StartGame(LOCAL_PLAYER_NAME.to_owned()));
+        let _ = expect_update(&channel);
+        channel
     }
 
     fn expect_update(channel: &LocalChannel) -> ServerData {

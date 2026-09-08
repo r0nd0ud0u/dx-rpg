@@ -24,6 +24,7 @@ use crate::{
         sidebar::{Sidebar, SidebarTrigger},
     },
     game_channel::GameChannel,
+    sfx_cue::Sfx,
     websocket_handler::{
         event::ClientEvent, msg_from_client::send_disconnect_from_server_data as send_quit,
     },
@@ -182,7 +183,7 @@ pub fn Navbar() -> Element {
             .clone();
         if !consumable_use.launcher_id_name.is_empty() && consumable_use.seq != last_potion_seq() {
             last_potion_seq.set(consumable_use.seq);
-            audio::play_sfx(lib_rpg::common::sound_cue::SoundCue::Potion, audio_settings);
+            audio::play_sfx(Sfx::Potion, audio_settings);
         }
     });
 
@@ -581,7 +582,7 @@ pub fn Navbar() -> Element {
                                     oninput: move |e: FormEvent| {
                                         (audio_settings.sfx_volume).set(e.value().parse().unwrap_or(80));
                                     },
-                                    onchange: move |_| audio::play_sfx(lib_rpg::common::sound_cue::SoundCue::Hit, audio_settings),
+                                    onchange: move |_| audio::play_sfx(Sfx::Strike, audio_settings),
                                 }
                             }
                         }

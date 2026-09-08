@@ -9,6 +9,7 @@ pub mod game_channel;
 pub mod i18n;
 pub mod local_channel;
 pub mod local_engine;
+pub mod sfx_cue;
 pub mod utils;
 pub mod websocket_handler;
 pub mod widgets;

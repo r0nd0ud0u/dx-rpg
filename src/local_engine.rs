@@ -13,8 +13,13 @@
 #![cfg(not(feature = "server"))]
 
 use anyhow::{Context, bail};
-use lib_rpg::server::{
-    core_game_data::CoreGameData, data_manager::DataManager, server_manager::GamePhase,
+use lib_rpg::{
+    common::log_data::LogData,
+    server::{
+        core_game_data::CoreGameData, data_manager::DataManager, game_state::ConsumableUseResult,
+        server_manager::GamePhase,
+    },
+    utils::format_string_with_timestamp,
 };
 
 use crate::common::OFFLINE_PATH;
@@ -216,6 +221,125 @@ pub fn dismiss_dialog(core: &mut CoreGameData) {
 /// core.
 pub fn exit_overworld(core: &mut CoreGameData) {
     core.game_phase = GamePhase::Running;
+}
+
+/// Flags the characters `consumable_name` may be used on, so `character_page.rs`
+/// can highlight them. Mirrors `request_target_for_consumable_handler`'s core.
+pub fn set_consumable_targets(core: &mut CoreGameData, consumable_name: &str, is_party: bool) {
+    let pm = &mut core.game_manager.pm;
+    let launcher_id = pm.current_player.id_name.clone();
+    let consumable = if is_party {
+        pm.party_consumables
+            .iter()
+            .find(|c| c.name == consumable_name)
+            .cloned()
+    } else {
+        pm.current_player
+            .inventory
+            .consumables
+            .iter()
+            .find(|c| c.name == consumable_name)
+            .cloned()
+    };
+    match consumable {
+        Some(c) => pm.set_targeted_characters_for_consumable(&launcher_id, &c),
+        None => dioxus::logger::tracing::warn!(
+            "offline mode: consumable {consumable_name:?} not found on the current player"
+        ),
+    }
+}
+
+/// Uses a consumable on `target_id_name` during combat, from the current player's
+/// own inventory or from the shared party stock. Mirrors `use_potion_handler` /
+/// `use_party_potion_handler`'s core (minus the broadcast plumbing).
+///
+/// Records the use in `game_state.last_consumable_use` with a bumped `seq`, which
+/// is the only thing that tells the client a potion was drunk — `Navbar`'s
+/// potion-sound effect watches exactly that field, so an offline potion is silent
+/// without it.
+pub fn use_consumable_in_combat(
+    core: &mut CoreGameData,
+    consumable_name: &str,
+    target_id_name: &str,
+    is_party: bool,
+) -> anyhow::Result<()> {
+    let game_state = core.game_manager.game_state.clone();
+    let pm = &mut core.game_manager.pm;
+    let launcher_id = pm.current_player.id_name.clone();
+
+    let effects = if is_party {
+        pm.use_party_consumable_on_target(consumable_name, target_id_name, &game_state)
+    } else {
+        pm.use_consumable_on_target(consumable_name, target_id_name, &game_state)
+    }
+    .with_context(|| format!("using consumable {consumable_name:?} on {target_id_name:?}"))?;
+
+    // The potion left the current player's copy of the inventory; push that back
+    // into `active_heroes` or it reappears on the next update.
+    pm.modify_active_character(&launcher_id);
+
+    let party = if is_party { " (party)" } else { "" };
+    let stat_delta: i64 = effects.iter().map(|e| e.real_amount_tx).sum();
+    let header = format!("💊 {launcher_id} uses {consumable_name}{party} on {target_id_name}");
+    let message = if stat_delta == 0 {
+        header.clone()
+    } else {
+        format!("{header} ({stat_delta:+})")
+    };
+    core.game_manager.logs.push(LogData {
+        message: format_string_with_timestamp(&message),
+        color: String::new(),
+    });
+    core.last_action_header = header;
+    core.game_manager.game_state.last_consumable_use = ConsumableUseResult {
+        launcher_id_name: launcher_id,
+        target_id_name: target_id_name.to_owned(),
+        consumable_name: consumable_name.to_owned(),
+        seq: game_state.last_consumable_use.seq + 1,
+    };
+    Ok(())
+}
+
+/// Uses a consumable outside combat: always self-administered by `hero_id_name`,
+/// and unlike [`use_consumable_in_combat`] it costs no turn and draws no counter-
+/// attack. Mirrors `use_overworld_consumable_handler`'s core.
+pub fn use_overworld_consumable(
+    core: &mut CoreGameData,
+    hero_id_name: &str,
+    consumable_name: &str,
+    is_party: bool,
+) -> anyhow::Result<()> {
+    let game_state = core.game_manager.game_state.clone();
+    let pm = &mut core.game_manager.pm;
+
+    if is_party {
+        pm.use_party_consumable(hero_id_name, consumable_name, &game_state)?;
+    } else {
+        let hero = pm
+            .get_mut_active_hero_character(hero_id_name)
+            .with_context(|| format!("hero {hero_id_name:?} is not in the active party"))?;
+        let consumable = hero
+            .inventory
+            .consumables
+            .iter()
+            .find(|c| c.name == consumable_name)
+            .cloned()
+            .with_context(|| format!("{hero_id_name:?} has no {consumable_name:?}"))?;
+        let launcher_stats = hero.stats.clone();
+        hero.use_consumable(consumable, &game_state, &launcher_stats)?;
+    }
+
+    core.game_manager.logs.push(LogData {
+        message: format_string_with_timestamp(&format!("💊 {hero_id_name} uses {consumable_name}")),
+        color: String::new(),
+    });
+    core.game_manager.game_state.last_consumable_use = ConsumableUseResult {
+        launcher_id_name: hero_id_name.to_owned(),
+        target_id_name: hero_id_name.to_owned(),
+        consumable_name: consumable_name.to_owned(),
+        seq: game_state.last_consumable_use.seq + 1,
+    };
+    Ok(())
 }
 
 #[cfg(test)]

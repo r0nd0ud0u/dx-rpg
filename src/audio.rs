@@ -1,16 +1,20 @@
 use dioxus::prelude::*;
-use lib_rpg::common::sound_cue::SoundCue;
 
-use crate::common::CtxAudioSettings;
+use crate::{common::CtxAudioSettings, sfx_cue::Sfx};
 
 const MUSIC_HOME: Asset = asset!("/assets/audio/music/home.ogg");
 const MUSIC_OVERWORLD: Asset = asset!("/assets/audio/music/overworld.ogg");
 
-const SFX_HIT: Asset = asset!("/assets/audio/sfx/hit.ogg");
+const SFX_STRIKE: Asset = asset!("/assets/audio/sfx/strike.ogg");
+const SFX_ARCANE: Asset = asset!("/assets/audio/sfx/arcane.ogg");
+const SFX_HEAVY: Asset = asset!("/assets/audio/sfx/heavy.ogg");
+const SFX_RAGE: Asset = asset!("/assets/audio/sfx/rage.ogg");
 const SFX_CRITICAL: Asset = asset!("/assets/audio/sfx/critical.ogg");
 const SFX_DODGE: Asset = asset!("/assets/audio/sfx/dodge.ogg");
 const SFX_BLOCK: Asset = asset!("/assets/audio/sfx/block.ogg");
 const SFX_HEAL: Asset = asset!("/assets/audio/sfx/heal.ogg");
+const SFX_BUFF: Asset = asset!("/assets/audio/sfx/buff.ogg");
+const SFX_DEBUFF: Asset = asset!("/assets/audio/sfx/debuff.ogg");
 const SFX_POTION: Asset = asset!("/assets/audio/sfx/potion.ogg");
 const SFX_VICTORY: Asset = asset!("/assets/audio/sfx/victory.ogg");
 const SFX_GAMEOVER: Asset = asset!("/assets/audio/sfx/gameover.ogg");
@@ -32,16 +36,21 @@ impl MusicTrack {
     }
 }
 
-fn sfx_asset(cue: SoundCue) -> Asset {
-    match cue {
-        SoundCue::Hit => SFX_HIT,
-        SoundCue::CriticalHit => SFX_CRITICAL,
-        SoundCue::Dodge => SFX_DODGE,
-        SoundCue::Block => SFX_BLOCK,
-        SoundCue::Heal => SFX_HEAL,
-        SoundCue::Potion => SFX_POTION,
-        SoundCue::Victory => SFX_VICTORY,
-        SoundCue::GameOver => SFX_GAMEOVER,
+fn sfx_asset(sfx: Sfx) -> Asset {
+    match sfx {
+        Sfx::Strike => SFX_STRIKE,
+        Sfx::Arcane => SFX_ARCANE,
+        Sfx::Heavy => SFX_HEAVY,
+        Sfx::Rage => SFX_RAGE,
+        Sfx::CriticalHit => SFX_CRITICAL,
+        Sfx::Dodge => SFX_DODGE,
+        Sfx::Block => SFX_BLOCK,
+        Sfx::Heal => SFX_HEAL,
+        Sfx::Buff => SFX_BUFF,
+        Sfx::Debuff => SFX_DEBUFF,
+        Sfx::Potion => SFX_POTION,
+        Sfx::Victory => SFX_VICTORY,
+        Sfx::GameOver => SFX_GAMEOVER,
     }
 }
 
@@ -89,10 +98,27 @@ pub fn init_audio_bridge() {
             ['pointerdown', 'keydown', 'touchstart'].forEach(
                 (evt) => document.addEventListener(evt, resumeOnFirstGesture)
             );
-            const loadAsBlobUrl = (src) =>
-                fetch(src)
-                    .then((r) => r.blob())
-                    .then((b) => URL.createObjectURL(new Blob([b], { type: 'audio/ogg' })));
+            // One blob URL per asset, kept for the lifetime of the page: sfx fire
+            // several times per turn and re-fetching + re-wrapping the same file on
+            // every play added audible latency to the first frames of the sound.
+            const blobUrls = new Map();
+            // Strong references to the one-shots currently sounding; see playSfx.
+            const playing = new Set();
+            const loadAsBlobUrl = (src) => {
+                let pending = blobUrls.get(src);
+                if (!pending) {
+                    pending = fetch(src)
+                        .then((r) => r.blob())
+                        .then((b) => URL.createObjectURL(new Blob([b], { type: 'audio/ogg' })))
+                        .catch((e) => {
+                            // Don't cache a failure — a later play should retry.
+                            blobUrls.delete(src);
+                            throw e;
+                        });
+                    blobUrls.set(src, pending);
+                }
+                return pending;
+            };
             window.__dxAudio = {
                 bgm,
                 playMusic(src, volume, muted) {
@@ -105,15 +131,12 @@ pub fn init_audio_bridge() {
                     loadAsBlobUrl(src).then((url) => {
                         // A newer playMusic call may have already changed the desired
                         // track while this fetch was in flight — don't clobber it.
+                        // The blob url itself is owned by `blobUrls`, so it is never
+                        // revoked here: switching tracks back and forth reuses it.
                         if (bgm.dataset.logicalSrc !== src) {
-                            URL.revokeObjectURL(url);
                             return;
                         }
-                        const oldUrl = bgm.src;
                         bgm.src = url;
-                        if (oldUrl && oldUrl.startsWith('blob:')) {
-                            URL.revokeObjectURL(oldUrl);
-                        }
                         bgm.play().catch((e) => console.warn(`[dxAudio] playMusic failed: ${src}: ${describe(e)}`));
                     }).catch((e) => console.warn(`[dxAudio] playMusic failed: ${src}: ${describe(e)}`));
                 },
@@ -130,10 +153,17 @@ pub fn init_audio_bridge() {
                     loadAsBlobUrl(src).then((url) => {
                         const sfx = new Audio(url);
                         sfx.volume = volume;
-                        sfx.addEventListener('ended', () => URL.revokeObjectURL(url));
+                        // Held until it finishes. Nothing else references a one-shot
+                        // once play() has been called, and an element collected
+                        // mid-playback is silently cut off — which is exactly what an
+                        // intermittently missing sound effect looks like.
+                        playing.add(sfx);
+                        const release = () => playing.delete(sfx);
+                        sfx.addEventListener('ended', release);
+                        sfx.addEventListener('error', release);
                         sfx.play().catch((e) => {
+                            release();
                             console.warn(`[dxAudio] playSfx failed: ${src}: ${describe(e)}`);
-                            URL.revokeObjectURL(url);
                         });
                     }).catch((e) => console.warn(`[dxAudio] playSfx failed: ${src}: ${describe(e)}`));
                 },
@@ -170,9 +200,11 @@ pub fn set_music_volume(settings: CtxAudioSettings) {
     ));
 }
 
-/// Plays a one-shot sound effect for the given combat cue.
-pub fn play_sfx(cue: SoundCue, settings: CtxAudioSettings) {
-    let src = sfx_asset(cue);
+/// Plays one of the sounds `sfx_cue` picked, exactly as authored: the same attack
+/// always sounds identical, with no per-play pitch variation, so a family stays
+/// recognisable by ear.
+pub fn play_sfx(sfx: Sfx, settings: CtxAudioSettings) {
+    let src = sfx_asset(sfx);
     let volume = settings.sfx_volume.read().max(0) as f64 / 100.0;
     let muted = *settings.muted.read();
     document::eval(&format!(
