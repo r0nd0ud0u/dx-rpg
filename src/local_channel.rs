@@ -90,7 +90,12 @@ impl LocalChannel {
         // The server runs the enemy's turn right after the player's action, not as part
         // of it (`event.rs`: `update_core_game_data_after_atk` then `process_ennemy_atk`)
         // — mirror that split here, so `recv` can pace the enemy attacks out one by one.
-        let player_acted = matches!(msg, ClientEvent::LaunchAttack(..));
+        let player_acted = matches!(
+            msg,
+            ClientEvent::LaunchAttack(..)
+                | ClientEvent::UsePotion(..)
+                | ClientEvent::UsePartyPotion(..)
+        );
         for event in dispatch(&self.state, msg) {
             self.push(event);
         }
@@ -276,6 +281,58 @@ fn dispatch(state: &Rc<RefCell<ServerData>>, msg: ClientEvent) -> Vec<ServerEven
             vec![update_event(state)]
         }
 
+        // Picking a consumable: flags who it can be used on, the same way
+        // `RequestTargetedCharacter` does for an attack.
+        ClientEvent::RequestTargetForConsumable(
+            _server_name,
+            _player_name,
+            consumable_name,
+            is_party,
+        ) => {
+            let mut data = state.borrow_mut();
+            crate::local_engine::set_consumable_targets(
+                &mut data.core_game_data,
+                &consumable_name,
+                is_party,
+            );
+            drop(data);
+            vec![update_event(state)]
+        }
+
+        // Drinking a potion mid-fight. Note this is two things, not one: the potion
+        // itself, and the turn it costs — the server does the same
+        // (`use_potion_handler`, then `update_core_game_data_after_atk(None)`), and
+        // the enemy round that follows is queued by `send`.
+        ClientEvent::UsePotion(_server_name, _player_name, consumable_name, target_id_name) => {
+            drink_in_combat(state, &consumable_name, &target_id_name, false)
+        }
+        ClientEvent::UsePartyPotion(
+            _server_name,
+            _player_name,
+            consumable_name,
+            target_id_name,
+        ) => drink_in_combat(state, &consumable_name, &target_id_name, true),
+
+        // Drinking a potion outside combat: self-administered, costs no turn.
+        ClientEvent::UseOverworldConsumable(
+            _server_name,
+            hero_id_name,
+            consumable_name,
+            is_party,
+        ) => {
+            let mut data = state.borrow_mut();
+            if let Err(e) = crate::local_engine::use_overworld_consumable(
+                &mut data.core_game_data,
+                &hero_id_name,
+                &consumable_name,
+                is_party,
+            ) {
+                dioxus::logger::tracing::error!("offline mode: UseOverworldConsumable failed: {e}");
+            }
+            drop(data);
+            vec![update_event(state)]
+        }
+
         ClientEvent::LaunchAttack(_server_name, atk_name) => {
             let mut data = state.borrow_mut();
             let _ = data
@@ -388,6 +445,30 @@ fn dispatch(state: &Rc<RefCell<ServerData>>, msg: ClientEvent) -> Vec<ServerEven
             Vec::new()
         }
     }
+}
+
+/// Shared body of the two combat-potion events, which differ only in which stock
+/// the consumable comes from.
+fn drink_in_combat(
+    state: &Rc<RefCell<ServerData>>,
+    consumable_name: &str,
+    target_id_name: &str,
+    is_party: bool,
+) -> Vec<ServerEvent> {
+    let mut data = state.borrow_mut();
+    if let Err(e) = crate::local_engine::use_consumable_in_combat(
+        &mut data.core_game_data,
+        consumable_name,
+        target_id_name,
+        is_party,
+    ) {
+        dioxus::logger::tracing::error!("offline mode: using {consumable_name:?} failed: {e}");
+    } else {
+        // Drinking is this character's action for the turn.
+        let _ = data.core_game_data.game_manager.launch_attack(None);
+    }
+    drop(data);
+    vec![update_event(state)]
 }
 
 fn update_event(state: &Rc<RefCell<ServerData>>) -> ServerEvent {
@@ -559,6 +640,139 @@ mod tests {
         );
         assert_ne!(boss_atk.launcher_id_name, hero_id);
         assert_eq!(channel.pending_auto_atks.get(), 0);
+    }
+
+    /// Drinking a potion mid-fight has to reach `game_state.last_consumable_use`,
+    /// because that bumped `seq` is the only thing `Navbar` watches to play the
+    /// potion sound. Offline, `UsePotion` used to fall through to the
+    /// unsupported-action catch-all: the potion was never drunk, nothing healed,
+    /// and no sound played — while the same potion taken outside a fight worked.
+    #[test]
+    fn a_potion_drunk_in_combat_heals_and_reports_itself() {
+        let channel = started_session();
+        // A fresh party carries nothing — potions are loot — so put one in the bag
+        // the same way the game does when one drops.
+        let (hero, potion) = {
+            let mut data = channel.state.borrow_mut();
+            let player = &mut data.core_game_data.game_manager.pm.current_player;
+            player.inventory.add_small_potion();
+            (
+                player.id_name.clone(),
+                player.inventory.consumables[0].name.clone(),
+            )
+        };
+        let held_before = channel
+            .state
+            .borrow()
+            .core_game_data
+            .game_manager
+            .pm
+            .current_player
+            .inventory
+            .consumables
+            .iter()
+            .filter(|c| c.name == potion)
+            .count();
+        let seq_before = channel
+            .state
+            .borrow()
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_consumable_use
+            .seq;
+
+        channel.send(ClientEvent::RequestTargetForConsumable(
+            LOCAL_PLAYER_NAME.to_owned(),
+            LOCAL_PLAYER_NAME.to_owned(),
+            potion.clone(),
+            false,
+        ));
+        let _ = expect_update(&channel);
+        channel.send(ClientEvent::UsePotion(
+            LOCAL_PLAYER_NAME.to_owned(),
+            LOCAL_PLAYER_NAME.to_owned(),
+            potion.clone(),
+            hero.clone(),
+        ));
+        let after = expect_update(&channel);
+
+        let use_result = &after
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_consumable_use;
+        assert_eq!(use_result.consumable_name, potion, "got {use_result:?}");
+        assert_eq!(use_result.target_id_name, hero);
+        assert!(
+            use_result.seq > seq_before,
+            "seq must advance or Navbar dedupes the sound away: {use_result:?}"
+        );
+        // ...and it was actually drunk, not merely announced.
+        let left = after
+            .core_game_data
+            .game_manager
+            .pm
+            .current_player
+            .inventory
+            .consumables
+            .iter()
+            .filter(|c| c.name == potion)
+            .count();
+        assert_eq!(
+            left,
+            held_before - 1,
+            "the potion should have been consumed"
+        );
+    }
+
+    /// The out-of-combat half of the same gap: a consumable used from the character
+    /// sheet is self-administered and costs no turn, but it must report itself the
+    /// same way so it makes the same sound.
+    #[test]
+    fn a_potion_drunk_outside_combat_reports_itself_too() {
+        let channel = started_session();
+        let (hero, potion) = {
+            let mut data = channel.state.borrow_mut();
+            let player = &mut data.core_game_data.game_manager.pm.current_player;
+            player.inventory.add_small_potion();
+            let hero = player.id_name.clone();
+            let potion = player.inventory.consumables[0].name.clone();
+            // The overworld path reads the party list, not the current player's copy.
+            data.core_game_data
+                .game_manager
+                .pm
+                .modify_active_character(&hero);
+            (hero, potion)
+        };
+        let round_before = channel
+            .state
+            .borrow()
+            .core_game_data
+            .game_manager
+            .game_state
+            .current_round;
+
+        channel.send(ClientEvent::UseOverworldConsumable(
+            LOCAL_PLAYER_NAME.to_owned(),
+            hero.clone(),
+            potion.clone(),
+            false,
+        ));
+        let after = expect_update(&channel);
+
+        let use_result = &after
+            .core_game_data
+            .game_manager
+            .game_state
+            .last_consumable_use;
+        assert_eq!(use_result.consumable_name, potion, "got {use_result:?}");
+        assert_eq!(use_result.launcher_id_name, hero);
+        assert!(use_result.seq > 0, "seq must advance: {use_result:?}");
+        assert_eq!(
+            after.core_game_data.game_manager.game_state.current_round, round_before,
+            "drinking outside combat must not cost a turn"
+        );
     }
 
     /// One `Charge`, cast in a fresh fight, returning the cues it produced.
