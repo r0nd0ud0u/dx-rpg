@@ -582,7 +582,7 @@ pub fn Navbar() -> Element {
                                     oninput: move |e: FormEvent| {
                                         (audio_settings.sfx_volume).set(e.value().parse().unwrap_or(80));
                                     },
-                                    onchange: move |_| audio::play_sfx(Sfx::Hit, audio_settings),
+                                    onchange: move |_| audio::play_sfx(Sfx::Strike, audio_settings),
                                 }
                             }
                         }

@@ -1,9 +1,18 @@
 //! Which sound effect a game event should play, from the client's point of view.
 //!
+//! **An attack sounds like what it costs to cast.** The four cost families lib-rpg
+//! models — mana, vigour, berserk, or nothing at all — each get their own impact
+//! sound ([`Sfx::Arcane`], [`Sfx::Heavy`], [`Sfx::Rage`], [`Sfx::Strike`]), so a
+//! given attack always sounds the same and you can hear what kind of blow landed
+//! before reading the log. A critical hit isn't a family of its own: it layers a
+//! bright accent over whichever family sound just played, so it reads as the same
+//! attack hitting harder. Healing overrides all of it — a cast that gives HP back
+//! sounds like a cure, whatever it cost.
+//!
 //! [`lib_rpg::common::sound_cue::classify_result_atk`] is the server-side half of
-//! this: it looks at the HP delta of every landed effect and returns
-//! [`SoundCue::Hit`] / [`SoundCue::CriticalHit`] / [`SoundCue::Heal`], plus the
-//! dodge/block cues. That covers damage and instant cures, but leaves two
+//! this. It owns the rule that a dodge or a block outranks everything else (the
+//! attack never connected, so no family sound at all), which is why it is still
+//! called here — but it only ever looks at HP deltas, so on its own it leaves two
 //! families of attacks with nothing to play:
 //!
 //! * **Pure support casts** — attacks whose effects only move non-HP stats
@@ -11,31 +20,40 @@
 //!   Every effect reports `real_amount_tx == 0`, so the classifier returns no
 //!   cue at all and the cast lands in total silence.
 //! * **Lasting regens** — `Essence Régénératrice` and friends. The first tick of
-//!   the heal-over-time does report an HP gain, so these play the same short
+//!   the heal-over-time does report an HP gain, so these would play the same short
 //!   `heal` blip as a one-shot cure; a five-turn blessing ends up sounding like
 //!   a UI confirmation, which is why it reads as "no sound" in play.
 //!
-//! [`classify_attack`] re-classifies both from the effect parameters the server
-//! already sends, so every landed attack makes a sound and support casts sound
-//! like support. Kept client-side because it is a presentation decision, in the
+//! Both are re-classified here from the effect parameters the server already
+//! sends. Kept client-side because all of this is a presentation decision, in the
 //! spirit of `sound_cue`'s own "playback is a client/UI concern" note — if it
 //! ever needs to be shared with another front-end, it can move upstream as-is.
 
 use lib_rpg::{
-    character_mod::buffers::BufKinds,
+    character_mod::{
+        buffers::BufKinds,
+        effect::{EffectParam, is_effet_hot_or_dot},
+    },
     common::{
-        constants::all_target_const::TARGET_ENNEMY,
+        constants::{all_target_const::TARGET_ENNEMY, stats_const::HP},
         sound_cue::{SoundCue, classify_result_atk},
     },
     server::{game_manager::ResultLaunchAttack, players_manager::GameAtkEffect},
 };
 
-/// Every sound the client can play. A superset of [`SoundCue`]: the server has no
-/// notion of the two support cues, which exist purely to give buff/debuff casts a
-/// voice.
+/// Every sound the client can play.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Sfx {
-    Hit,
+    /// Damage from an attack that costs nothing — the basic strike ("Charge").
+    Strike,
+    /// Damage from a mana-cost attack.
+    Arcane,
+    /// Damage from a vigour-cost attack.
+    Heavy,
+    /// Damage from a berserk-cost attack.
+    Rage,
+    /// Accent layered *over* a family sound when the attack crit — never played
+    /// on its own, which is why it carries no low end (see `scripts/gen_sfx.py`).
     CriticalHit,
     Dodge,
     Block,
@@ -50,66 +68,85 @@ pub enum Sfx {
     GameOver,
 }
 
-impl From<SoundCue> for Sfx {
-    fn from(cue: SoundCue) -> Self {
-        match cue {
-            SoundCue::Hit => Sfx::Hit,
-            SoundCue::CriticalHit => Sfx::CriticalHit,
-            SoundCue::Dodge => Sfx::Dodge,
-            SoundCue::Block => Sfx::Block,
-            SoundCue::Heal => Sfx::Heal,
-            SoundCue::Potion => Sfx::Potion,
-            SoundCue::Victory => Sfx::Victory,
-            SoundCue::GameOver => Sfx::GameOver,
-        }
-    }
-}
-
 /// Classifies an attack result into the sounds to play, most-significant first.
 ///
-/// Starts from the server-side classification and fills its two gaps (see the
-/// module docs): a heal that is really a regen becomes [`Sfx::Buff`], and a cast
-/// that landed effects but earned no cue at all becomes [`Sfx::Buff`] or
-/// [`Sfx::Debuff`] depending on who it landed on.
+/// Several cues can come back at once, and the caller plays them together: an
+/// attack that damages one character and heals another gets both, and a critical
+/// always comes back with the family sound it accents.
 pub fn classify_attack(ra: &ResultLaunchAttack) -> Vec<Sfx> {
-    let cues: Vec<Sfx> = classify_result_atk(ra).into_iter().map(Sfx::from).collect();
-
-    // A dodge/block is the whole story of the attack — nothing else connected.
-    if matches!(cues.as_slice(), [Sfx::Dodge] | [Sfx::Block]) {
-        return cues;
+    // lib-rpg owns this priority rule: a dodged or blocked attack didn't connect,
+    // so it has no sound of its own to speak over.
+    let outcome = classify_result_atk(ra);
+    if outcome.contains(&SoundCue::Dodge) {
+        return vec![Sfx::Dodge];
+    }
+    if outcome.contains(&SoundCue::Block) {
+        return vec![Sfx::Block];
     }
 
-    // Nothing damaged and nothing cured, but effects did land: a support cast.
+    let effects = &ra.new_game_atk_effects;
+    let damaged = effects.iter().any(is_damage);
+    let restored = effects.iter().any(is_restore);
+
+    // Nothing damaged and nothing restored, but effects did land: a support cast.
     // Its polarity is decided by who the landed effects were aimed at.
-    if cues.is_empty() {
-        if ra.new_game_atk_effects.is_empty() {
+    if !damaged && !restored {
+        if effects.is_empty() {
             return Vec::new();
         }
-        return if ra.new_game_atk_effects.iter().any(is_aimed_at_enemy) {
+        return if effects.iter().any(is_aimed_at_enemy) {
             vec![Sfx::Debuff]
         } else {
             vec![Sfx::Buff]
         };
     }
 
-    // A heal whose every restoring effect ticks over several turns is a regen,
-    // not a cure — give it the blessing chime instead of the one-shot heal blip.
-    // An instant restore, of HP or of any other stat, is left alone.
-    if matches!(cues.as_slice(), [Sfx::Heal]) {
-        let mut restores = ra
-            .new_game_atk_effects
-            .iter()
-            .filter(|e| is_restore(e))
-            .peekable();
-        if restores.peek().is_some() && restores.all(is_lasting) {
-            return vec![Sfx::Buff];
-        }
+    let mut cues = Vec::new();
+    if damaged {
+        cues.push(damage_family(ra));
     }
-
+    if restored {
+        cues.push(restore_cue(effects));
+    }
+    // Last, so the accent rides on top of the blow it belongs to. Damage only:
+    // heals can crit too, and the accent is built as an impact — over a regen
+    // chime it just sounds like a different, harsher spell.
+    if damaged && effects.iter().any(|e| e.effect_outcome.is_critical) {
+        cues.push(Sfx::CriticalHit);
+    }
     cues
 }
 
-fn effect_param(effect: &GameAtkEffect) -> &lib_rpg::character_mod::effect::EffectParam {
+/// The impact sound for an attack, chosen by the resource it charges. No attack in
+/// the game data charges two at once; if one ever does, the most distinctive family
+/// wins rather than playing two impacts over each other.
+fn damage_family(ra: &ResultLaunchAttack) -> Sfx {
+    // Every effect of one attack carries the same `atk_type`, so the first is enough.
+    let Some(atk) = ra.new_game_atk_effects.first().map(|e| &e.atk_type) else {
+        return Sfx::Strike;
+    };
+    if atk.berseck_cost > 0 {
+        Sfx::Rage
+    } else if atk.mana_cost > 0 {
+        Sfx::Arcane
+    } else if atk.vigor_cost > 0 {
+        Sfx::Heavy
+    } else {
+        Sfx::Strike
+    }
+}
+
+/// A restore that ticks over several turns is a regen, not a cure — it gets the
+/// blessing chime instead of the one-shot heal.
+fn restore_cue(effects: &[GameAtkEffect]) -> Sfx {
+    if effects.iter().filter(|e| is_restore(e)).all(is_lasting) {
+        Sfx::Buff
+    } else {
+        Sfx::Heal
+    }
+}
+
+fn effect_param(effect: &GameAtkEffect) -> &EffectParam {
     &effect.processed_effect_param.input_effect_param
 }
 
@@ -117,10 +154,44 @@ fn is_aimed_at_enemy(effect: &GameAtkEffect) -> bool {
     effect_param(effect).target_kind == TARGET_ENNEMY
 }
 
-/// An effect that gave something back — HP, mana, vigour. This is exactly what
-/// lib-rpg reads as [`SoundCue::Heal`].
+/// Which way an effect moves current HP: negative for damage, positive for
+/// healing, `None` for anything that isn't an HP change at all.
+///
+/// Read from the effect's own parameters before what actually landed, because the
+/// amount that landed is not stable from cast to cast: a cure on an ally already
+/// at full HP reports `real_amount_tx == 0` once the HP cap has eaten it, and a
+/// blow fully absorbed by armour does the same. An attack has to sound like itself
+/// every time, so the sound follows what the effect was *for*.
+///
+/// Restricting this to HP is what keeps two other kinds of effect from being
+/// mistaken for heals — both found by running this against the real game data:
+/// the aggro almost every damage attack generates for its launcher, and resource
+/// refunds like `Fracas des Abysses`'s +20 Vigor to its caster. Both report a
+/// positive `real_amount_tx` exactly like a cure does. A cast whose only effect is
+/// a non-HP change still gets a sound: with nothing damaged and nothing healed it
+/// falls through to the support-cast branch above.
+fn hp_direction(effect: &GameAtkEffect) -> Option<i64> {
+    let buffer = &effect_param(effect).buffer;
+    // `is_effet_hot_or_dot` is lib-rpg's own list of the effect kinds that move a
+    // *current* stat; `ChangeMaxStat` on HP raises the ceiling and is a buff.
+    if buffer.stats_name != HP || !is_effet_hot_or_dot(&buffer.kind) {
+        return None;
+    }
+    // A few effects carry their amount somewhere other than `value` (a passive
+    // feeding off the previous turn's damage, say); fall back to what landed.
+    Some(if buffer.value != 0 {
+        buffer.value
+    } else {
+        effect.effect_outcome.real_amount_tx
+    })
+}
+
+fn is_damage(effect: &GameAtkEffect) -> bool {
+    hp_direction(effect).is_some_and(|amount| amount < 0)
+}
+
 fn is_restore(effect: &GameAtkEffect) -> bool {
-    effect.effect_outcome.real_amount_tx > 0
+    hp_direction(effect).is_some_and(|amount| amount > 0)
 }
 
 /// True for an effect that keeps applying after the turn it was cast on — the
@@ -135,6 +206,7 @@ mod tests {
     use super::*;
     use lib_rpg::{
         character_mod::{
+            attack_type::AttackType,
             buffers::Buffer,
             effect::{EffectOutcome, EffectParam, ProcessedEffectParam},
         },
@@ -145,10 +217,35 @@ mod tests {
         server::players_manager::DodgeInfo,
     };
 
-    /// One landed effect: `stat` moved by `real_amount_tx` on `target_kind`,
-    /// lasting `nb_turns` turns.
-    fn effect(target_kind: &str, stat: &str, real_amount_tx: i64, nb_turns: i64) -> GameAtkEffect {
+    #[derive(Clone, Copy, Default)]
+    struct Cost {
+        mana: u64,
+        vigor: u64,
+        berseck: u64,
+    }
+
+    const FREE: Cost = Cost {
+        mana: 0,
+        vigor: 0,
+        berseck: 0,
+    };
+
+    /// One landed effect of an attack costing `cost`: `stat` moved by
+    /// `real_amount_tx` on `target_kind`, lasting `nb_turns` turns.
+    fn effect(
+        cost: Cost,
+        target_kind: &str,
+        stat: &str,
+        real_amount_tx: i64,
+        nb_turns: i64,
+    ) -> GameAtkEffect {
         GameAtkEffect {
+            atk_type: AttackType {
+                mana_cost: cost.mana,
+                vigor_cost: cost.vigor,
+                berseck_cost: cost.berseck,
+                ..Default::default()
+            },
             processed_effect_param: ProcessedEffectParam {
                 input_effect_param: EffectParam {
                     target_kind: target_kind.to_owned(),
@@ -156,6 +253,9 @@ mod tests {
                     buffer: Buffer {
                         stats_name: stat.to_owned(),
                         kind: BufKinds::ChangeCurrentStat,
+                        // Mirrors the real data, where the effect's own value and
+                        // the amount it lands carry the same sign.
+                        value: real_amount_tx,
                         ..Default::default()
                     },
                     ..Default::default()
@@ -177,18 +277,45 @@ mod tests {
         }
     }
 
+    /// A hit sounds like what the attack charged for it — the whole point of the
+    /// family split, so that one attack always sounds like itself.
     #[test]
-    fn plain_damage_still_hits() {
+    fn damage_sounds_like_the_resource_it_cost() {
+        let damage = |cost| classify_attack(&result(vec![effect(cost, TARGET_ENNEMY, HP, -30, 1)]));
+        assert_eq!(damage(FREE), vec![Sfx::Strike]);
+        assert_eq!(damage(Cost { mana: 8, ..FREE }), vec![Sfx::Arcane]);
+        assert_eq!(damage(Cost { vigor: 5, ..FREE }), vec![Sfx::Heavy]);
         assert_eq!(
-            classify_attack(&result(vec![effect(TARGET_ENNEMY, HP, -30, 1)])),
-            vec![Sfx::Hit]
+            damage(Cost {
+                berseck: 12,
+                ..FREE
+            }),
+            vec![Sfx::Rage]
         );
     }
 
     #[test]
-    fn instant_cure_stays_a_heal() {
+    fn a_critical_accents_its_family_rather_than_replacing_it() {
+        let mut crit = effect(Cost { vigor: 5, ..FREE }, TARGET_ENNEMY, HP, -60, 1);
+        crit.effect_outcome.is_critical = true;
         assert_eq!(
-            classify_attack(&result(vec![effect(TARGET_ALLY, HP, 30, 1)])),
+            classify_attack(&result(vec![crit])),
+            vec![Sfx::Heavy, Sfx::CriticalHit]
+        );
+    }
+
+    /// Healing outranks the cost family: a cast that gives HP back sounds like a
+    /// cure even though it charged mana.
+    #[test]
+    fn an_instant_cure_sounds_like_a_heal_not_like_its_cost() {
+        assert_eq!(
+            classify_attack(&result(vec![effect(
+                Cost { mana: 10, ..FREE },
+                TARGET_ALLY,
+                HP,
+                30,
+                1
+            )])),
             vec![Sfx::Heal]
         );
     }
@@ -197,7 +324,33 @@ mod tests {
     fn lasting_regen_becomes_a_buff() {
         // Essence Régénératrice: +20 HP a turn for five turns.
         assert_eq!(
-            classify_attack(&result(vec![effect(TARGET_ALLY, HP, 20, 5)])),
+            classify_attack(&result(vec![effect(
+                Cost { mana: 8, ..FREE },
+                TARGET_ALLY,
+                HP,
+                20,
+                5
+            )])),
+            vec![Sfx::Buff]
+        );
+    }
+
+    /// Heals crit too, and Thalia's Essence Régénératrice does so often enough to
+    /// notice: the accent must not turn one cast of an attack into a different
+    /// sound from the next.
+    #[test]
+    fn a_critical_heal_gets_no_impact_accent() {
+        let mut crit = effect(Cost { mana: 8, ..FREE }, TARGET_ALLY, HP, 20, 5);
+        crit.effect_outcome.is_critical = true;
+        assert_eq!(classify_attack(&result(vec![crit])), vec![Sfx::Buff]);
+    }
+
+    /// Only HP counts as healing: a mana refund is a support effect, and gets the
+    /// buff chime rather than the cure.
+    #[test]
+    fn a_mana_restore_is_not_a_heal() {
+        assert_eq!(
+            classify_attack(&result(vec![effect(FREE, TARGET_ALLY, "Mana", 30, 1)])),
             vec![Sfx::Buff]
         );
     }
@@ -208,8 +361,8 @@ mod tests {
         // classifies nothing and the cast used to be silent.
         assert_eq!(
             classify_attack(&result(vec![
-                effect(TARGET_HIMSELF, "Physical armor", 0, 3),
-                effect(TARGET_HIMSELF, "Magic armor", 0, 3),
+                effect(FREE, TARGET_HIMSELF, "Physical armor", 0, 3),
+                effect(FREE, TARGET_HIMSELF, "Magic armor", 0, 3),
             ])),
             vec![Sfx::Buff]
         );
@@ -218,41 +371,54 @@ mod tests {
     #[test]
     fn stat_only_enemy_cast_becomes_a_debuff() {
         assert_eq!(
-            classify_attack(&result(vec![effect(TARGET_ENNEMY, "Dodge", 0, 3)])),
+            classify_attack(&result(vec![effect(FREE, TARGET_ENNEMY, "Dodge", 0, 3)])),
             vec![Sfx::Debuff]
         );
     }
 
     #[test]
-    fn a_regen_that_also_damages_keeps_the_impact() {
+    fn an_attack_that_both_damages_and_regenerates_gets_both_cues() {
         let cues = classify_attack(&result(vec![
-            effect(TARGET_ENNEMY, HP, -25, 1),
-            effect(TARGET_ALLY, HP, 20, 5),
+            effect(Cost { vigor: 4, ..FREE }, TARGET_ENNEMY, HP, -25, 1),
+            effect(Cost { vigor: 4, ..FREE }, TARGET_ALLY, HP, 20, 5),
         ]));
-        assert!(cues.contains(&Sfx::Hit), "{cues:?} should keep the impact");
-        assert!(
-            !cues.contains(&Sfx::Buff),
-            "{cues:?} should not add a buff chime"
-        );
+        assert_eq!(cues, vec![Sfx::Heavy, Sfx::Buff]);
+    }
+
+    /// A blow's side effects report positive amounts just like a heal does — the
+    /// aggro it generates, and the vigour `Fracas des Abysses` refunds to its
+    /// caster. Caught against real game data, where it made a sword blow classify
+    /// as a cure.
+    #[test]
+    fn the_side_effects_of_a_blow_do_not_make_it_a_heal() {
+        let cost = Cost { vigor: 13, ..FREE };
+        let cues = classify_attack(&result(vec![
+            effect(cost, TARGET_ENNEMY, HP, -75, 1),
+            effect(cost, TARGET_ENNEMY, "Dodge", -5, 3),
+            effect(cost, TARGET_HIMSELF, "Vigor", 20, 1),
+            effect(cost, TARGET_HIMSELF, "Aggro", 25, 1),
+        ]));
+        assert_eq!(cues, vec![Sfx::Heavy]);
+    }
+
+    /// Healing an ally who is already at full HP lands nothing — the HP cap eats
+    /// it — but it is still the same cure and must still sound like one.
+    #[test]
+    fn a_cure_that_lands_nothing_still_sounds_like_a_cure() {
+        let mut capped = effect(Cost { mana: 10, ..FREE }, TARGET_ALLY, HP, 40, 1);
+        capped.effect_outcome.real_amount_tx = 0;
+        assert_eq!(classify_attack(&result(vec![capped])), vec![Sfx::Heal]);
     }
 
     #[test]
     fn dodge_is_the_whole_story() {
-        let mut ra = result(vec![effect(TARGET_ENNEMY, HP, -30, 1)]);
+        let mut ra = result(vec![effect(FREE, TARGET_ENNEMY, HP, -30, 1)]);
         ra.all_dodging = vec![DodgeInfo {
             name: "boss".to_owned(),
             is_dodging: true,
             is_blocking: false,
         }];
         assert_eq!(classify_attack(&ra), vec![Sfx::Dodge]);
-    }
-
-    #[test]
-    fn an_instant_mana_restore_stays_a_heal() {
-        assert_eq!(
-            classify_attack(&result(vec![effect(TARGET_ALLY, "Mana", 30, 1)])),
-            vec![Sfx::Heal]
-        );
     }
 
     #[test]

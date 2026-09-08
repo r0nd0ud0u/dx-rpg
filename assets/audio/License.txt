@@ -1,15 +1,22 @@
 Audio assets — sources and licenses (all CC0, no attribution required)
 
-	sfx/critical.ogg  — impactMetal_heavy_000.ogg,  Kenney "Impact Sounds" (kenney.nl/assets/impact-sounds)
 	sfx/block.ogg     — impactPlate_heavy_000.ogg,  Kenney "Impact Sounds" (kenney.nl/assets/impact-sounds)
 	sfx/dodge.ogg     — cloth2.ogg,                 Kenney "RPG Audio" (kenney.nl/assets/rpg-audio)
-	sfx/heal.ogg      — confirmation_002.ogg,       Kenney "Interface Sounds" (kenney.nl/assets/interface-sounds)
 	sfx/victory.ogg   — confirmation_004.ogg,       Kenney "Interface Sounds" (kenney.nl/assets/interface-sounds)
 	sfx/gameover.ogg  — error_001.ogg,              Kenney "Interface Sounds" (kenney.nl/assets/interface-sounds)
-	sfx/hit.ogg       — synthesised by scripts/gen_sfx.py (this project)
-	sfx/potion.ogg    — synthesised by scripts/gen_sfx.py (this project)
-	sfx/buff.ogg      — synthesised by scripts/gen_sfx.py (this project)
-	sfx/debuff.ogg    — synthesised by scripts/gen_sfx.py (this project)
+
+	Synthesised by scripts/gen_sfx.py (this project) — the four attack
+	families, the crit accent layered over them, and the support cues:
+
+	sfx/strike.ogg    — attack costing nothing
+	sfx/arcane.ogg    — attack costing mana
+	sfx/heavy.ogg     — attack costing vigour
+	sfx/rage.ogg      — attack costing berserk
+	sfx/critical.ogg  — crit accent
+	sfx/heal.ogg      — instant cure
+	sfx/buff.ogg      — lasting boon
+	sfx/debuff.ogg    — lasting affliction
+	sfx/potion.ogg    — consumable used
 
 	music/home.ogg      — "Just Saying Tho" by the Short Loops Background Music Pack author
 	music/overworld.ogg — "A Brand New Wisdom" by the Short Loops Background Music Pack author
@@ -29,7 +36,9 @@ Audio assets — sources and licenses (all CC0, no attribution required)
 	under assets/audio/ for a better-fitting one at any time; the code only
 	depends on the filenames listed above, not their content.
 
-	The four sfx marked "synthesised by scripts/gen_sfx.py" are our own, and
-	are released under the same CC0 terms. They are generated rather than
-	sampled: re-run `python3 scripts/gen_sfx.py` to rebuild them after editing
-	a synthesis recipe in that script.
+	The synthesised sfx listed above are our own, and are released under the
+	same CC0 terms. They are generated rather than sampled: re-run
+	`python3 scripts/gen_sfx.py` to rebuild them all, or name one
+	(`... gen_sfx.py strike`) to rebuild just that one, after editing its
+	synthesis recipe in that script. Which sound a given attack plays is
+	decided in src/sfx_cue.rs.

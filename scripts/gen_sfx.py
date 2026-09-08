@@ -15,13 +15,29 @@ differ byte for byte, because libvorbis stamps a random stream serial into each
 one. Re-running therefore always shows up as a binary diff; that is the
 container, not the sound.
 
-Design notes, per sound:
+An attack sounds like *what it costs to cast* (see `src/sfx_cue.rs`), so a given
+attack always sounds the same and its family is audible before you read the log:
 
-* `hit`     — the sound of every basic strike ("Charge"), so it is heard more
-              than anything else in the game. A dry mid-weight thump with a
-              short noise crack: reads as a physical blow and, unlike a metallic
-              clang, does not get fatiguing on the tenth repeat. The bridge adds
-              a small random pitch offset per play for the same reason.
+* `strike`  — costs nothing: the basic attack ("Charge"). Heard more than
+              anything else in the game, so it is built as a swing into a hard,
+              bright impact rather than a bare thud — the short whoosh in front
+              of the transient is what stops it from going flat on the tenth
+              repeat. The bridge adds a small random pitch offset per play for
+              the same reason.
+* `arcane`  — costs mana: a rising charge into a bright inharmonic burst over a
+              low thump, so it still lands as a hit and not just a chime.
+* `heavy`   — costs vigour: a longer, lower swing into a wide crunch with real
+              sub weight. The physical-effort counterpart to `arcane`.
+* `rage`    — costs berserk: a detuned growl swelling into a saturated slam.
+              Grittiest of the four on purpose.
+* `critical`— not a family of its own: a short, bright, low-end-free accent that
+              layers *over* whichever family sound just played, so a crit reads
+              as the same attack hitting harder.
+
+And the non-damage cues:
+
+* `heal`    — an instant cure: a warm rising fifth on soft bells. Shorter and
+              rounder than `buff`, which has to stay distinguishable from it.
 * `potion`  — must read as *relief*, not as glassware: a cork, three gulps, then
               a warm rising major arpeggio over a low root. The rising major
               third/fifth is what makes it feel like survival rather than like
@@ -232,17 +248,99 @@ def write_wav(path: str, stereo: list[tuple[float, float]]) -> None:
 # --------------------------------------------------------------------------
 
 
-def make_hit() -> Signal:
-    """Basic physical strike: sub weight + pitched thump + a noise crack."""
-    out = buf(0.30)
-    # The crack: a filtered noise burst, brief enough to read as a transient.
-    mix_into(out, envelope(svf(noise(0.09, seed=11), 1900.0, q=1.0), attack=0.0006, decay=0.020), 0.0, 0.50)
-    mix_into(out, envelope(svf(noise(0.04, seed=12), 4200.0, q=1.4, mode="high"), attack=0.0003, decay=0.005), 0.0, 0.28)
-    # The body: a fast downward bend is what makes it a blow rather than a beep.
-    mix_into(out, tone(0.26, 95.0, attack=0.001, decay=0.045, bend=(3.4, 0.020), partials=((1.0, 1.0), (2.0, 0.22))), 0.0, 0.95)
-    # The weight underneath.
-    mix_into(out, tone(0.26, 54.0, attack=0.004, decay=0.075), 0.0, 0.55)
-    return saturate(out, 1.3)
+def make_strike() -> Signal:
+    """No-cost basic strike: a swing into a hard, bright impact."""
+    out = buf(0.40)
+    # The swing. Cut off exactly where the impact starts, so it reads as
+    # anticipation rather than as a separate sound.
+    swing = svf(noise(0.085, seed=51), lambda t: 500.0 + 2600.0 * (t / 0.085) ** 2, q=0.7)
+    mix_into(out, envelope(swing, attack=0.030, decay=0.030), 0.0, 0.22)
+
+    at = 0.085
+    # Two transients: a mid slap for the weight of the blow, a brief top crack
+    # for its edge.
+    mix_into(out, envelope(svf(noise(0.09, seed=52), 2600.0, q=1.1), attack=0.0004, decay=0.016), at, 0.55)
+    mix_into(out, envelope(svf(noise(0.05, seed=53), 5200.0, q=1.4, mode="high"), attack=0.0002, decay=0.004), at, 0.30)
+    # Body: the fast downward bend is what makes it a blow rather than a beep.
+    mix_into(out, tone(0.26, 105.0, attack=0.001, decay=0.048, bend=(3.6, 0.018), partials=((1.0, 1.0), (2.0, 0.25), (3.0, 0.10))), at, 0.90)
+    # A short mid ring so the tail isn't dead air.
+    mix_into(out, tone(0.22, 430.0, attack=0.002, decay=0.055, partials=((1.0, 1.0), (2.4, 0.18))), at, 0.16)
+    mix_into(out, tone(0.26, 56.0, attack=0.004, decay=0.075), at, 0.55)
+    return saturate(out, 1.4)
+
+
+def make_arcane() -> Signal:
+    """Mana-cost attack: a rising charge into a bright inharmonic burst."""
+    out = buf(0.95)
+    charge = svf(noise(0.12, seed=61), lambda t: 700.0 + 5000.0 * (t / 0.12) ** 2, q=0.5)
+    mix_into(out, envelope(charge, attack=0.050, decay=0.030), 0.0, 0.18)
+
+    at = 0.12
+    mix_into(out, envelope(svf(noise(0.10, seed=62), 3200.0, q=0.9), attack=0.0005, decay=0.026), at, 0.55)
+    burst = buf(0.70)
+    for freq, amp in ((523.25, 1.0), (783.99, 0.55), (1174.66, 0.30)):
+        mix_into(burst, tone(0.65, freq, attack=0.003, decay=0.17, partials=((1.0, 1.0), (2.76, 0.18)), bend=(1.25, 0.05)), 0.0, 0.34 * amp)
+    # The low thump underneath: without it a spell reads as a chime, not a hit.
+    mix_into(burst, tone(0.30, 82.0, attack=0.002, decay=0.065, bend=(2.2, 0.020), partials=((1.0, 1.0), (2.0, 0.22))), 0.0, 0.95)
+    mix_into(out, reverb(burst, wet=0.22, decay=0.40, tail=0.30, seed=6), at)
+    return saturate(out, 2.2)
+
+
+def make_heavy() -> Signal:
+    """Vigour-cost attack: a long low swing into a wide crunch."""
+    out = buf(0.60)
+    swing = svf(noise(0.14, seed=71), lambda t: 250.0 + 1500.0 * (t / 0.14) ** 2, q=0.6)
+    mix_into(out, envelope(swing, attack=0.060, decay=0.040), 0.0, 0.30)
+
+    at = 0.14
+    mix_into(out, envelope(svf(noise(0.12, seed=72), 1400.0, q=0.8), attack=0.0006, decay=0.028), at, 0.55)
+    mix_into(out, envelope(svf(noise(0.05, seed=73), 3800.0, q=1.2, mode="high"), attack=0.0003, decay=0.006), at, 0.20)
+    mix_into(out, tone(0.34, 78.0, attack=0.001, decay=0.075, bend=(3.0, 0.028), partials=((1.0, 1.0), (2.0, 0.28), (3.0, 0.12))), at, 1.00)
+    mix_into(out, tone(0.34, 44.0, attack=0.005, decay=0.120), at, 0.60)
+    mix_into(out, tone(0.28, 240.0, attack=0.003, decay=0.080, partials=((1.0, 1.0), (1.7, 0.20))), at, 0.15)
+    return saturate(out, 1.6)
+
+
+def make_rage() -> Signal:
+    """Berserk-cost attack: a detuned growl swelling into a saturated slam."""
+    out = buf(0.65)
+    # Two close frequencies beat against each other; saturation turns that into grit.
+    growl = buf(0.16)
+    for freq in (58.0, 61.5):
+        mix_into(growl, tone(0.16, freq, attack=0.020, decay=0.120, partials=((1.0, 1.0), (2.0, 0.50), (3.0, 0.35), (5.0, 0.20))), 0.0, 0.50)
+    mix_into(out, saturate(growl, 2.2), 0.0, 0.22)
+
+    at = 0.16
+    mix_into(out, envelope(svf(noise(0.14, seed=81), 900.0, q=0.7), attack=0.0008, decay=0.045), at, 0.55)
+    slam = buf(0.42)
+    mix_into(slam, tone(0.40, 70.0, attack=0.001, decay=0.090, bend=(3.2, 0.030), partials=((1.0, 1.0), (2.0, 0.40), (3.0, 0.25), (4.0, 0.12))), 0.0, 1.00)
+    mix_into(slam, tone(0.40, 41.0, attack=0.004, decay=0.140), 0.0, 0.65)
+    mix_into(out, saturate(slam, 2.0), at)
+    return saturate(out, 1.15)
+
+
+def make_critical() -> Signal:
+    """Crit accent. Layered over a family impact by `classify_attack`, so it
+    carries no low end of its own — all it adds is the bright shatter on top."""
+    out = buf(0.55)
+    mix_into(out, envelope(svf(noise(0.08, seed=101), 6000.0, q=0.8, mode="high"), attack=0.0003, decay=0.012), 0.0, 0.50)
+    shards = buf(0.45)
+    for at, freq in ((0.0, 1567.98), (0.035, 2093.00), (0.070, 2637.02)):
+        mix_into(shards, tone(0.40, freq, attack=0.001, decay=0.10, partials=((1.0, 1.0), (2.76, 0.25))), at, 0.30)
+    mix_into(out, reverb(shards, wet=0.30, decay=0.35, tail=0.25, seed=10), 0.0)
+    return saturate(out, 1.8)
+
+
+def make_heal() -> Signal:
+    """An instant cure: a warm rising fifth on soft bells, over a low root."""
+    out = buf(0.95)
+    mix_into(out, swell(svf(noise(0.50, seed=91), 4000.0, q=0.5, mode="high"), attack=0.10, release=0.30), 0.0, 0.06)
+    bells = buf(0.80)
+    for at, freq in ((0.0, 587.33), (0.09, 880.00)):
+        mix_into(bells, tone(0.70, freq, attack=0.012, decay=0.28, partials=((1.0, 1.0), (2.0, 0.22), (3.0, 0.07)), vibrato=(5.5, 0.003)), at, 0.34)
+    mix_into(bells, swell(tone(0.70, 293.66, attack=0.040, decay=0.55, partials=((1.0, 1.0), (1.5, 0.30))), attack=0.08, release=0.30), 0.0, 0.22)
+    mix_into(out, reverb(bells, wet=0.28, decay=0.40, tail=0.30, seed=9), 0.02)
+    return out
 
 
 def make_potion() -> Signal:
@@ -319,9 +417,15 @@ def make_debuff() -> Signal:
 #
 # Levels are set relative to each other, not just normalized: impacts land
 # loudest because they need to cut through, support cues sit back a little so a
-# stream of buffs never buries the music.
+# stream of buffs never buries the music, and `critical` sits well below all of
+# them because it is only ever heard on top of another sound.
 SOUNDS = {
-    "hit": (make_hit, -3.0, 0.0),
+    "strike": (make_strike, -2.5, 0.0),
+    "arcane": (make_arcane, -2.5, 0.005),
+    "heavy": (make_heavy, -4.5, 0.0),
+    "rage": (make_rage, -6.3, 0.0),
+    "critical": (make_critical, -7.0, 0.006),
+    "heal": (make_heal, -4.5, 0.006),
     "potion": (make_potion, -3.0, 0.006),
     "buff": (make_buff, -4.0, 0.008),
     "debuff": (make_debuff, -4.0, 0.008),

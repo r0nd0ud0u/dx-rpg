@@ -88,6 +88,14 @@ tracing-subscriber = { version = "0.3.23", default-features = false, features = 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 tracing-wasm = "0.2.1"
 
+# Linux desktop only. GTK3 (which tao/wry render through) derives the Wayland
+# xdg-shell app_id from g_get_prgname(); main.rs pins that at startup so the
+# taskbar can resolve the app's icon — see the comment there for the full story.
+# Same version tao's gtk 0.18 already pulls in, so this is a re-use of a crate
+# that is in the tree either way, not a new dependency.
+[target.'cfg(all(unix, not(target_os = "macos"), not(target_os = "android"), not(target_os = "ios")))'.dependencies]
+glib = { version = "0.18", optional = true }
+
 [features]
 default = ["server"]
 server = [
@@ -107,7 +115,7 @@ server = [
     "dep:data-encoding",
 ]
 web = ["dioxus/web"]
-desktop = ["dioxus/desktop", "dep:dioxus-desktop", "dep:image"]
+desktop = ["dioxus/desktop", "dep:dioxus-desktop", "dep:image", "dep:glib"]
 mobile = ["dioxus/mobile"]
 
 [profile]

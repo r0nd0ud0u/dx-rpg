@@ -172,11 +172,33 @@ fn main() {
             head.push_str(&format!(r#"<link rel="stylesheet" href="{href}">"#));
         }
 
+        // Wayland has no per-window icon protocol that GTK3 implements, so the
+        // `with_icon` call below only ever reaches X11, Windows and macOS. On a Wayland
+        // session the compositor instead resolves a window's taskbar icon by matching its
+        // xdg-shell app_id against an installed .desktop file (here:
+        // /usr/share/applications/rpg-adventure.desktop, shipped by the .deb/.rpm, whose
+        // Icon= points at the hicolor icon installed alongside it). GTK3 takes that app_id
+        // straight from `g_get_prgname()`, which defaults to the basename of argv[0] — and
+        // `dx serve` doesn't run `target/.../app/rpg-adventure`, it runs a per-build copy of
+        // it named `rpg-adventure-<hash>` (so it can replace the original while the app is
+        // running). That hashed name matches no .desktop file, so the compositor falls back
+        // to an unrelated app's icon. Pinning the program name keeps the app_id stable and
+        // identical between `dx serve` and an installed build. Must run before the event
+        // loop is built, since that's what calls gtk_init().
+        #[cfg(all(
+            unix,
+            not(target_os = "macos"),
+            not(target_os = "android"),
+            not(target_os = "ios")
+        ))]
+        glib::set_prgname(Some("rpg-adventure"));
+
         // `dx serve --platform desktop` opens the window straight through tao/wry, bypassing
         // the `[bundle].icon` path in Dioxus.toml entirely (that one's only read by `dx
         // bundle`'s packaging step) — without an explicit icon here the taskbar falls back to
         // whatever the OS/webview backend defaults to (e.g. the system's default browser
         // icon). Decode the same square PNG bundling uses so dev and packaged builds match.
+        // X11/Windows/macOS only, per the Wayland note above.
         let icon_png = include_bytes!("../assets/icon-512.png");
         let icon = image::load_from_memory(icon_png)
             .expect("assets/icon-512.png must be a valid image")

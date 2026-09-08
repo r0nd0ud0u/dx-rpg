@@ -5,7 +5,10 @@ use crate::{common::CtxAudioSettings, sfx_cue::Sfx};
 const MUSIC_HOME: Asset = asset!("/assets/audio/music/home.ogg");
 const MUSIC_OVERWORLD: Asset = asset!("/assets/audio/music/overworld.ogg");
 
-const SFX_HIT: Asset = asset!("/assets/audio/sfx/hit.ogg");
+const SFX_STRIKE: Asset = asset!("/assets/audio/sfx/strike.ogg");
+const SFX_ARCANE: Asset = asset!("/assets/audio/sfx/arcane.ogg");
+const SFX_HEAVY: Asset = asset!("/assets/audio/sfx/heavy.ogg");
+const SFX_RAGE: Asset = asset!("/assets/audio/sfx/rage.ogg");
 const SFX_CRITICAL: Asset = asset!("/assets/audio/sfx/critical.ogg");
 const SFX_DODGE: Asset = asset!("/assets/audio/sfx/dodge.ogg");
 const SFX_BLOCK: Asset = asset!("/assets/audio/sfx/block.ogg");
@@ -35,7 +38,10 @@ impl MusicTrack {
 
 fn sfx_asset(sfx: Sfx) -> Asset {
     match sfx {
-        Sfx::Hit => SFX_HIT,
+        Sfx::Strike => SFX_STRIKE,
+        Sfx::Arcane => SFX_ARCANE,
+        Sfx::Heavy => SFX_HEAVY,
+        Sfx::Rage => SFX_RAGE,
         Sfx::CriticalHit => SFX_CRITICAL,
         Sfx::Dodge => SFX_DODGE,
         Sfx::Block => SFX_BLOCK,
@@ -45,21 +51,6 @@ fn sfx_asset(sfx: Sfx) -> Asset {
         Sfx::Potion => SFX_POTION,
         Sfx::Victory => SFX_VICTORY,
         Sfx::GameOver => SFX_GAMEOVER,
-    }
-}
-
-/// How far the playback rate of a sound may wander from 1.0, per play.
-///
-/// The strike sounds fire on nearly every action of every turn, and an identical
-/// waveform repeated that often stops reading as an impact and starts reading as
-/// a glitch. A few percent of random detune — the standard trick for repeated
-/// game impacts — is enough to keep them sounding alive. Stingers that play once
-/// per scenario (victory, game over) stay dead-on so they always land the same.
-fn sfx_pitch_variation(sfx: Sfx) -> f64 {
-    match sfx {
-        Sfx::Hit | Sfx::CriticalHit | Sfx::Block | Sfx::Dodge => 0.06,
-        Sfx::Heal | Sfx::Buff | Sfx::Debuff | Sfx::Potion => 0.02,
-        Sfx::Victory | Sfx::GameOver => 0.0,
     }
 }
 
@@ -111,6 +102,8 @@ pub fn init_audio_bridge() {
             // several times per turn and re-fetching + re-wrapping the same file on
             // every play added audible latency to the first frames of the sound.
             const blobUrls = new Map();
+            // Strong references to the one-shots currently sounding; see playSfx.
+            const playing = new Set();
             const loadAsBlobUrl = (src) => {
                 let pending = blobUrls.get(src);
                 if (!pending) {
@@ -153,26 +146,25 @@ pub fn init_audio_bridge() {
                 setMusicVolume(volume, muted) {
                     bgm.volume = muted ? 0 : volume;
                 },
-                playSfx(src, volume, muted, variation) {
+                playSfx(src, volume, muted) {
                     if (muted || volume <= 0) {
                         return;
                     }
                     loadAsBlobUrl(src).then((url) => {
                         const sfx = new Audio(url);
                         sfx.volume = volume;
-                        // Detune this one play a little so the same impact heard turn
-                        // after turn doesn't read as a looping sample. Media elements
-                        // default to preservesPitch=true, which would resample the
-                        // sound to the same pitch and defeat the whole point, so it
-                        // has to be turned off first (the prefixed spellings are for
-                        // older webviews, which is what the mobile builds run on).
-                        if (variation > 0) {
-                            sfx.preservesPitch = false;
-                            sfx.mozPreservesPitch = false;
-                            sfx.webkitPreservesPitch = false;
-                            sfx.playbackRate = 1 + (Math.random() * 2 - 1) * variation;
-                        }
-                        sfx.play().catch((e) => console.warn(`[dxAudio] playSfx failed: ${src}: ${describe(e)}`));
+                        // Held until it finishes. Nothing else references a one-shot
+                        // once play() has been called, and an element collected
+                        // mid-playback is silently cut off — which is exactly what an
+                        // intermittently missing sound effect looks like.
+                        playing.add(sfx);
+                        const release = () => playing.delete(sfx);
+                        sfx.addEventListener('ended', release);
+                        sfx.addEventListener('error', release);
+                        sfx.play().catch((e) => {
+                            release();
+                            console.warn(`[dxAudio] playSfx failed: ${src}: ${describe(e)}`);
+                        });
                     }).catch((e) => console.warn(`[dxAudio] playSfx failed: ${src}: ${describe(e)}`));
                 },
             };
@@ -208,16 +200,14 @@ pub fn set_music_volume(settings: CtxAudioSettings) {
     ));
 }
 
-/// Plays a one-shot sound effect. Takes anything that converts into an [`Sfx`],
-/// so lib-rpg's `SoundCue` can still be passed straight through at the call sites
-/// that already have one.
-pub fn play_sfx(sfx: impl Into<Sfx>, settings: CtxAudioSettings) {
-    let sfx = sfx.into();
+/// Plays one of the sounds `sfx_cue` picked, exactly as authored: the same attack
+/// always sounds identical, with no per-play pitch variation, so a family stays
+/// recognisable by ear.
+pub fn play_sfx(sfx: Sfx, settings: CtxAudioSettings) {
     let src = sfx_asset(sfx);
-    let variation = sfx_pitch_variation(sfx);
     let volume = settings.sfx_volume.read().max(0) as f64 / 100.0;
     let muted = *settings.muted.read();
     document::eval(&format!(
-        "window.__dxAudio && window.__dxAudio.playSfx('{src}', {volume}, {muted}, {variation});"
+        "window.__dxAudio && window.__dxAudio.playSfx('{src}', {volume}, {muted});"
     ));
 }
