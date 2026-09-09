@@ -91,6 +91,15 @@ impl GameChannel {
         self.offline.set(true);
     }
 
+    /// Leaves offline mode, so `send`/`recv` go back to the real socket. Signing out
+    /// of an offline session calls this: without it the session name is cleared but
+    /// the channel keeps answering itself, and the login page can never reach a
+    /// server again without restarting the app.
+    #[cfg(not(feature = "server"))]
+    pub fn go_online(&mut self) {
+        self.offline.set(false);
+    }
+
     pub async fn send(&self, msg: ClientEvent) -> Result<(), GameChannelError> {
         #[cfg(not(feature = "server"))]
         if self.is_offline() {

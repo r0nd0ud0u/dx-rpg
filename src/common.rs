@@ -81,6 +81,19 @@ pub const SYNCED_DEVICE_TOKEN_KEY: &str = "synced_device_token";
 pub const SYNCED_MUSIC_VOLUME_KEY: &str = "synced_music_volume";
 pub const SYNCED_SFX_VOLUME_KEY: &str = "synced_sfx_volume";
 pub const SYNCED_AUDIO_MUTED_KEY: &str = "synced_audio_muted";
+/// Whether the background music keeps playing once the app is no longer on screen —
+/// switched to another app on mobile, or another tab on the web. Off by default:
+/// a game that keeps singing after you have left it is usually a nuisance and a
+/// drain on the battery, but some players like having the score on, so it is a
+/// setting rather than a rule.
+pub const SYNCED_BACKGROUND_AUDIO_KEY: &str = "synced_background_audio";
+
+/// Overworld map zoom level, persisted locally. Device-local rather than
+/// per-account on purpose: a comfortable zoom depends on the screen it is read on,
+/// so a phone and a desktop want different values for the same player — and unlike
+/// the server-side user settings it worked through before, this one also survives
+/// an offline session, which has no server to store anything on.
+pub const SYNCED_OVERWORLD_ZOOM_KEY: &str = "synced_overworld_zoom";
 
 // ── Per-setting context newtypes ─────────────────────────────────────────────
 // Each wraps a `Signal<bool>` in a distinct type so that Dioxus context lookup
@@ -149,6 +162,17 @@ pub struct CtxSyncedInsecureCerts(pub Signal<bool>);
 #[derive(Clone, Copy)]
 pub struct CtxDeviceToken(pub Signal<String>);
 
+/// Overworld map zoom, as a scale factor (`1.0` = 100%). Persisted via
+/// `SYNCED_OVERWORLD_ZOOM_KEY`, declared in `App()` for the same reasons as
+/// `CtxSyncedServerUrl`, and read/written by `board_game_components/overworld.rs`.
+///
+/// Declared in `App()` rather than in `OverworldMap` so the value is already loaded
+/// when the map mounts: the map is unmounted for the whole of a fight and remounted
+/// on the way back out, and anything it loads itself starts over from the default
+/// every single time.
+#[derive(Clone, Copy)]
+pub struct CtxOverworldZoom(pub Signal<f32>);
+
 /// Audio playback settings — music volume, sfx volume (each 0-100), and a mute-all
 /// toggle. Persisted via `SYNCED_MUSIC_VOLUME_KEY`/`SYNCED_SFX_VOLUME_KEY`/
 /// `SYNCED_AUDIO_MUTED_KEY`, declared in `App()`, and read by `audio.rs`'s
@@ -158,6 +182,8 @@ pub struct CtxAudioSettings {
     pub music_volume: Signal<i32>,
     pub sfx_volume: Signal<i32>,
     pub muted: Signal<bool>,
+    /// See `SYNCED_BACKGROUND_AUDIO_KEY`.
+    pub background: Signal<bool>,
 }
 
 /// State of the client's websocket link to the server, tracked by the reconnect loop in

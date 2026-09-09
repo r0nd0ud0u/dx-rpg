@@ -35,6 +35,7 @@ server-settings-saved = Saved — restart the app for this to take effect.
 
 sound-settings-title = Sound Settings
 sound-settings-muted = Mute all sound
+sound-settings-background = Keep music playing in the background
 sound-settings-music-volume = Music volume
 sound-settings-sfx-volume = Sound effects volume
 

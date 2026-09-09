@@ -405,7 +405,9 @@ fn cleanup_after_user_deletion(username: &str) {
 pub async fn get_permissions() -> Result<HashSet<String>> {
     use axum_session_auth::{Auth, Rights};
 
-    let user = auth.current_user.unwrap();
+    let user = auth
+        .current_user
+        .or_unauthorized("no signed-in user in this session")?;
 
     Auth::<User, i64, sqlx::SqlitePool>::build([axum::http::Method::GET], false)
         .requires(Rights::any([
@@ -463,14 +465,29 @@ pub async fn logout() -> Result<(), ServerFnError> {
     }
 }
 
+/// The signed-in user's name, or a 401 when this request carries no session.
+///
+/// `auth.current_user` is `None` far more often than it looks: a client keeps its
+/// username in local storage, so it still believes it is signed in after the
+/// server-side session has gone — an app update, a server restart, or simply an
+/// expired cookie. Unwrapping here panicked the request handler every time one of
+/// those clients called `logout`, which is exactly the state the player was trying
+/// to get out of.
 #[post("/api/user/name", auth: Session)]
 pub async fn get_user_name() -> Result<String> {
-    Ok(auth.current_user.unwrap().username)
+    Ok(auth
+        .current_user
+        .or_unauthorized("no signed-in user in this session")?
+        .username)
 }
 
+/// The signed-in user's id, or a 401. Same reasoning as [`get_user_name`].
 #[post("/api/get/user/id", auth: Session)]
 pub async fn get_user_id() -> Result<i64> {
-    Ok(auth.current_user.unwrap().id)
+    Ok(auth
+        .current_user
+        .or_unauthorized("no signed-in user in this session")?
+        .id)
 }
 
 #[cfg(feature = "server")]

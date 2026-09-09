@@ -78,13 +78,22 @@ fn sfx_asset(sfx: Sfx) -> Asset {
 /// harmless overhead on web, where this bug doesn't exist, so no platform-specific
 /// branch is needed.
 pub fn init_audio_bridge() {
-    document::eval(
-        r#"
+    // Prepended rather than interpolated: the script below is full of `{}` and
+    // `${}`, none of which would survive being a format string.
+    let script = format!(
+        "window.__dxPauseOnBlur = {};\n{BRIDGE_JS}",
+        cfg!(feature = "mobile")
+    );
+    document::eval(&script);
+}
+
+const BRIDGE_JS: &str = r#"
         if (!window.__dxAudio) {
             const bgm = document.createElement('audio');
             bgm.loop = true;
             document.body.appendChild(bgm);
             const describe = (e) => (e && (e.name || e.message)) ? `${e.name}: ${e.message}` : String(e);
+            const PAUSE_ON_BLUR = !!window.__dxPauseOnBlur;
             const resumeOnFirstGesture = () => {
                 if (bgm.paused && bgm.src) {
                     bgm.play()
@@ -104,6 +113,77 @@ pub fn init_audio_bridge() {
             const blobUrls = new Map();
             // Strong references to the one-shots currently sounding; see playSfx.
             const playing = new Set();
+
+            // Whether the music is allowed to keep going once the app leaves the
+            // screen. Mirrors the player's setting; see `set_background_audio`.
+            let backgroundAudio = false;
+            // Set only when *we* paused the music because the app went away, so
+            // coming back never restarts music that was deliberately stopped —
+            // combat silences the track on purpose (see Navbar's music effect).
+            let pausedForBackground = false;
+            const setAway = (away) => {
+                if (away) {
+                    if (!backgroundAudio && !bgm.paused) {
+                        bgm.pause();
+                        pausedForBackground = true;
+                        updateMediaSession();
+                    }
+                } else if (pausedForBackground) {
+                    pausedForBackground = false;
+                    bgm.play()
+                        .then(updateMediaSession)
+                        .catch((e) => console.warn(`[dxAudio] resume failed: ${describe(e)}`));
+                }
+            };
+            // The standard signal, and the only one needed on the web: switching tab
+            // or locking the phone fires it. `pagehide`/`pageshow` cover being frozen
+            // rather than hidden, which is what iOS does.
+            document.addEventListener('visibilitychange', () => setAway(document.hidden));
+            window.addEventListener('pagehide', () => setAway(true));
+            window.addEventListener('pageshow', () => setAway(false));
+            // PAUSE_ON_BLUR is set from Rust and is true only on the mobile build:
+            // Android's WebView does not reliably deliver `visibilitychange` when the
+            // app is backgrounded, so losing window focus is taken as leaving too.
+            // Deliberately not done on desktop, where a window blur just means the
+            // player clicked something else on the same screen and killing the music
+            // for that would be obnoxious.
+            if (PAUSE_ON_BLUR) {
+                window.addEventListener('blur', () => setAway(true));
+                window.addEventListener('focus', () => setAway(false));
+            }
+
+            // Asks the host to show transport controls for the music — on Android
+            // that is the lock-screen/notification-shade media card, which is what
+            // gives the player a way to stop background audio without coming back
+            // into the app. Whether it actually appears is up to the embedder:
+            // Chrome and Safari honour it, and a plain Android WebView may define
+            // the API while never surfacing a notification for it. Harmless where
+            // it is ignored.
+            const updateMediaSession = () => {
+                if (!('mediaSession' in navigator)) {
+                    return;
+                }
+                try {
+                    if (typeof MediaMetadata === 'function') {
+                        navigator.mediaSession.metadata = new MediaMetadata({ title: 'RPG Adventure' });
+                    }
+                    navigator.mediaSession.playbackState = bgm.paused ? 'paused' : 'playing';
+                    const stop = () => {
+                        pausedForBackground = false;
+                        bgm.pause();
+                        navigator.mediaSession.playbackState = 'paused';
+                    };
+                    navigator.mediaSession.setActionHandler('pause', stop);
+                    navigator.mediaSession.setActionHandler('stop', stop);
+                    navigator.mediaSession.setActionHandler('play', () => {
+                        bgm.play()
+                            .then(() => { navigator.mediaSession.playbackState = 'playing'; })
+                            .catch((e) => console.warn(`[dxAudio] play failed: ${describe(e)}`));
+                    });
+                } catch (e) {
+                    console.warn(`[dxAudio] mediaSession unavailable: ${describe(e)}`);
+                }
+            };
             const loadAsBlobUrl = (src) => {
                 let pending = blobUrls.get(src);
                 if (!pending) {
@@ -124,7 +204,9 @@ pub fn init_audio_bridge() {
                 playMusic(src, volume, muted) {
                     bgm.volume = muted ? 0 : volume;
                     if (bgm.dataset.logicalSrc === src) {
-                        bgm.play().catch((e) => console.warn(`[dxAudio] playMusic failed: ${src}: ${describe(e)}`));
+                        bgm.play()
+                            .then(updateMediaSession)
+                            .catch((e) => console.warn(`[dxAudio] playMusic failed: ${src}: ${describe(e)}`));
                         return;
                     }
                     bgm.dataset.logicalSrc = src;
@@ -137,11 +219,25 @@ pub fn init_audio_bridge() {
                             return;
                         }
                         bgm.src = url;
-                        bgm.play().catch((e) => console.warn(`[dxAudio] playMusic failed: ${src}: ${describe(e)}`));
+                        bgm.play()
+                            .then(updateMediaSession)
+                            .catch((e) => console.warn(`[dxAudio] playMusic failed: ${src}: ${describe(e)}`));
                     }).catch((e) => console.warn(`[dxAudio] playMusic failed: ${src}: ${describe(e)}`));
                 },
                 stopMusic() {
+                    // Deliberate, so coming back from the background must not undo it.
+                    pausedForBackground = false;
                     bgm.pause();
+                    updateMediaSession();
+                },
+
+                /// Mirrors the player's "keep playing in the background" setting, and
+                /// applies it immediately if the app is already off screen.
+                setBackgroundAudio(enabled) {
+                    backgroundAudio = enabled;
+                    // Applies right away, so turning it off while the app is already
+                    // in the background stops the music then and there.
+                    setAway(document.hidden);
                 },
                 setMusicVolume(volume, muted) {
                     bgm.volume = muted ? 0 : volume;
@@ -169,9 +265,7 @@ pub fn init_audio_bridge() {
                 },
             };
         }
-        "#,
-    );
-}
+        "#;
 
 /// Starts (or switches to) a looping background track, respecting the current
 /// volume/mute settings. `src` values are always compile-time asset paths
@@ -197,6 +291,16 @@ pub fn set_music_volume(settings: CtxAudioSettings) {
     let muted = *settings.muted.read();
     document::eval(&format!(
         "window.__dxAudio && window.__dxAudio.setMusicVolume({volume}, {muted});"
+    ));
+}
+
+/// Tells the bridge whether the music may keep playing once the app leaves the
+/// screen. Applied immediately, so switching it off while the app is already in
+/// the background stops the music there and then.
+pub fn set_background_audio(settings: CtxAudioSettings) {
+    let enabled = *settings.background.read();
+    document::eval(&format!(
+        "window.__dxAudio && window.__dxAudio.setBackgroundAudio({enabled});"
     ));
 }
 
