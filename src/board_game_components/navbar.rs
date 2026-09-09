@@ -40,6 +40,55 @@ fn is_quit_visible(phase: &GamePhase) -> bool {
     *phase == GamePhase::Running
 }
 
+/// Ends the current session. The caller navigates home afterwards either way.
+///
+/// **The local session is always cleared, whatever the server says.** The username
+/// lives in local storage, so the client goes on believing it is signed in long
+/// after the server-side session has gone — after an app update, a server restart,
+/// or an expired cookie. In exactly that state `logout()` fails, and a version of
+/// this that returned early on the error left the player permanently stuck: the
+/// button they were pressing to escape a stale session was the one thing the stale
+/// session prevented. Signing out locally is always safe — it only forgets
+/// credentials — so the server call is best-effort notification, not a gate.
+///
+/// An offline session has no server to notify at all: `logout()` is a server
+/// function, so there it fails outright. Clearing the local session and dropping
+/// back onto the real socket (so the login page can reach a server again) is the
+/// whole of signing out there.
+// `mut socket` is only needed for the `go_online()` call below, which the server
+// build cfgs out along with the whole notion of offline mode.
+#[cfg_attr(feature = "server", allow(unused_mut))]
+async fn sign_out(
+    mut socket: GameChannel,
+    mut login_name_session: Signal<String>,
+    mut login_id_session: Signal<i64>,
+) {
+    let name = login_name_session();
+    if name == *DISCONNECTED_USER {
+        return;
+    }
+    #[cfg(not(feature = "server"))]
+    let offline = socket.is_offline();
+    #[cfg(feature = "server")]
+    let offline = false;
+
+    if offline {
+        #[cfg(not(feature = "server"))]
+        socket.go_online();
+    } else {
+        if let Err(e) = logout().await {
+            tracing::warn!("server-side sign-out for {name} failed, clearing locally: {e}");
+        }
+        // Sent regardless: it drops the player from the server's roster, and a
+        // server that just refused the logout is all the more likely to be holding
+        // a stale entry for them.
+        let _ = socket.send(ClientEvent::RequestLogOut(name.clone())).await;
+    }
+    tracing::info!("{name} is signed out");
+    *login_name_session.write() = (*DISCONNECTED_USER).to_string();
+    *login_id_session.write() = NO_CLIENT_ID;
+}
+
 /// Whether the current username represents a signed-in user (vs. the
 /// disconnected placeholder), i.e. whether the sign-out label/state applies.
 fn is_signed_in(username: &str) -> bool {
@@ -127,8 +176,8 @@ fn ConnectionSignalIcon(bars: u8, reconnecting: bool) -> Element {
 pub fn Navbar() -> Element {
     // contexts
     let socket = use_context::<GameChannel>();
-    let mut local_login_name_session = use_context::<Signal<String>>();
-    let mut local_login_id_session = use_context::<Signal<i64>>();
+    let local_login_name_session = use_context::<Signal<String>>();
+    let local_login_id_session = use_context::<Signal<i64>>();
     let server_data = use_context::<Signal<ServerData>>();
     let mut app_lang = use_context::<CtxAppLang>().0;
     // Native clients only — see the doc comment on CtxSyncedServerUrl in common.rs for why
@@ -378,22 +427,8 @@ pub fn Navbar() -> Element {
                         style: "width: 160px; box-sizing: border-box; text-align: center; white-space: nowrap;",
                         variant: if is_signed_in(&snap_local_login_name_session) { ButtonVariant::Destructive } else { ButtonVariant::Secondary },
                         onclick: move |_| async move {
-                            if local_login_name_session() != *DISCONNECTED_USER {
-                                match logout().await {
-                                    Ok(_) => {
-                                        tracing::info!("{} is logged out", local_login_name_session());
-                                        let _ = socket
-                                            .clone()
-                                            .send(ClientEvent::RequestLogOut(local_login_name_session()))
-                                            .await;
-                                        *local_login_name_session.write() = (*DISCONNECTED_USER).to_string();
-                                        *local_login_id_session.write() = NO_CLIENT_ID;
-                                    }
-                                    Err(_) => {
-                                        tracing::info!("Error on {} logout", local_login_name_session())
-                                    }
-                                }
-                            }
+                            sign_out(socket, local_login_name_session, local_login_id_session)
+                                .await;
                             navigator.push(Route::Home {});
                         },
                         if is_signed_in(&snap_local_login_name_session) {
@@ -863,22 +898,8 @@ pub fn Navbar() -> Element {
                 Button {
                     variant: if is_signed_in(&snap_local_login_name_session) { ButtonVariant::Destructive } else { ButtonVariant::Secondary },
                     onclick: move |_| async move {
-                        if local_login_name_session() != *DISCONNECTED_USER {
-                            match logout().await {
-                                Ok(_) => {
-                                    tracing::info!("{} is logged out", local_login_name_session());
-                                    let _ = socket
-                                        .clone()
-                                        .send(ClientEvent::RequestLogOut(local_login_name_session()))
-                                        .await;
-                                    *local_login_name_session.write() = (*DISCONNECTED_USER).to_string();
-                                    *local_login_id_session.write() = NO_CLIENT_ID;
-                                }
-                                Err(_) => {
-                                    tracing::info!("Error on {} logout", local_login_name_session())
-                                }
-                            }
-                        }
+                        sign_out(socket, local_login_name_session, local_login_id_session)
+                            .await;
                         mobile_nav_open.set(false);
                         let navigator = use_navigator();
                         navigator.push(Route::Home {});

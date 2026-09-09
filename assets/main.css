@@ -1872,24 +1872,42 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
        on mobile, that pushes the whole tooltip off-screen and invisible.
        Render below the trigger instead (like side="bottom"), centered and
        capped to the viewport width. */
-    .tooltip-content {
+    /* The `html` prefix is load-bearing, not decoration: components/tooltip/style.css
+       declares the same `.tooltip-content` selectors and is linked *after* main.css,
+       so at equal specificity it wins on source order and these overrides never
+       applied at all. `html .tooltip-content` outranks it. */
+    html .tooltip-content {
+        width: auto;
         max-width: min(400px, calc(100vw - 32px));
     }
-    .tooltip-content[data-side="left"],
-    .tooltip-content[data-side="right"] {
+    html .tooltip-content[data-side="left"],
+    html .tooltip-content[data-side="right"] {
         top: 100%;
         left: 50%;
         right: auto;
         margin: 8px 0 0 0;
         transform: translateX(-50%);
     }
-    .tooltip-content[data-side="left"]::after,
-    .tooltip-content[data-side="right"]::after {
+    html .tooltip-content[data-side="left"]::after,
+    html .tooltip-content[data-side="right"]::after {
         top: auto;
         bottom: calc(100% - 0.25rem);
         left: 50%;
         right: auto;
         border-radius: 0.1rem 0 0;
+    }
+    /* Talent tooltips span their row instead of being a fixed 400px box centred on
+       it. On the Android WebView `100vw` reports the fake ~980px layout viewport,
+       not the phone, so the cap above cannot be trusted there — measuring against
+       the row (which lives inside the sheet) always fits, whatever the WebView
+       thinks the viewport is. */
+    html .talent-node-row .tooltip-content[data-side="left"],
+    html .talent-node-row .tooltip-content[data-side="right"] {
+        left: 0;
+        right: 0;
+        width: auto;
+        max-width: none;
+        transform: none;
     }
 }
 
@@ -1926,6 +1944,7 @@ html.force-mobile-nav .game-toolbar-mobile-trigger .sidebar-trigger {
     display: flex;
 }
 html.force-mobile-nav .tooltip-content {
+    width: auto;
     max-width: min(400px, calc(100vw - 32px));
 }
 html.force-mobile-nav .tooltip-content[data-side="left"],
@@ -1943,6 +1962,20 @@ html.force-mobile-nav .tooltip-content[data-side="right"]::after {
     left: 50%;
     right: auto;
     border-radius: 0.1rem 0 0;
+}
+
+/* Talent tooltips span their row rather than being a fixed 400px box centred on
+   it — this is the case that matters most on Android, where `100vw` reports the
+   fake ~980px layout viewport rather than the phone, so the max-width cap above
+   clamps nothing. The row is inside the sheet, so measuring against it fits by
+   construction. */
+html.force-mobile-nav .talent-node-row .tooltip-content[data-side="left"],
+html.force-mobile-nav .talent-node-row .tooltip-content[data-side="right"] {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+    transform: none;
 }
 
 /* ── Small phones portrait (≤ 480 px) ──────────────────────────────────── */
@@ -2276,6 +2309,15 @@ html.force-mobile-nav .tooltip-content[data-side="right"]::after {
 .talent-path { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .talent-path-title { font-size: 0.72rem; font-weight: 700; color: var(--rpg-text-muted, #8a8fa8); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; padding-bottom: 2px; border-bottom: 1px solid var(--rpg-border-light, rgba(255,255,255,0.12)); }
 .talent-node-row { width: 100%; }
+/* `.tooltip` is `width: fit-content` (see components/tooltip/style.css for why),
+   which here shrinks the wrapper to the talent's *text* — so the Button's
+   `width:100%` resolves against that shrunk box instead of the row, and the
+   tooltip then centres itself on a narrow trigger rather than on the row. Only
+   overridden for talent rows, leaving the fit-content default intact everywhere
+   else. */
+.talent-node-row .tooltip,
+.talent-node-row .tooltip-trigger,
+.talent-node-row .tooltip-trigger > div { display: block; width: 100%; }
 .talent-node-row--capstone { border: 1px solid var(--rpg-gold, #c9a227); border-radius: 6px; padding: 2px; }
 .talent-node-label { display: inline-flex; align-items: center; gap: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; justify-content: center; }
 .talent-capstone-badge { color: var(--rpg-gold, #c9a227); }

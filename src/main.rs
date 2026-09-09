@@ -12,11 +12,12 @@ use dotenv::dotenv;
 use dx_rpg::{
     common::{
         ConnectionStatus, CtxAppLang, CtxAtkPanelOrders, CtxAudioSettings, CtxAutoSaveScenario,
-        CtxConnectionLatency, CtxConnectionStatus, CtxDeviceToken, CtxSessionExpired,
-        CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp, CtxShowHeroAggro,
-        CtxSyncedInsecureCerts, CtxSyncedServerUrl, CtxToggleAtkAnimation, DISCONNECTED_USER,
-        DX_COMP_CSS, Route, SERVER_NAME, SYNCED_AUDIO_MUTED_KEY, SYNCED_DEVICE_TOKEN_KEY,
-        SYNCED_MUSIC_VOLUME_KEY, SYNCED_SFX_VOLUME_KEY,
+        CtxConnectionLatency, CtxConnectionStatus, CtxDeviceToken, CtxOverworldZoom,
+        CtxSessionExpired, CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp,
+        CtxShowHeroAggro, CtxSyncedInsecureCerts, CtxSyncedServerUrl, CtxToggleAtkAnimation,
+        DISCONNECTED_USER, DX_COMP_CSS, Route, SERVER_NAME, SYNCED_AUDIO_MUTED_KEY,
+        SYNCED_DEVICE_TOKEN_KEY, SYNCED_MUSIC_VOLUME_KEY, SYNCED_OVERWORLD_ZOOM_KEY,
+        SYNCED_SFX_VOLUME_KEY,
     },
     components::{
         alert_dialog, button, drag_and_drop_list, input, label, popover, select, separator, sheet,
@@ -577,6 +578,10 @@ fn App() -> Element {
         use_synced_storage::<LocalStorage, i32>(SYNCED_SFX_VOLUME_KEY.to_owned(), || 80);
     let audio_muted_local_sync =
         use_synced_storage::<LocalStorage, bool>(SYNCED_AUDIO_MUTED_KEY.to_owned(), || false);
+    let overworld_zoom_local_sync =
+        use_synced_storage::<LocalStorage, f32>(SYNCED_OVERWORLD_ZOOM_KEY.to_owned(), || {
+            dx_rpg::board_game_components::overworld::DEFAULT_ZOOM
+        });
     // Native-only server URL/TLS-validation override, editable from the Navbar's Server
     // settings dialog; declared here (not in Navbar) since use_synced_storage there
     // stack-overflows the app (Navbar is a #[layout] component, not the route root).
@@ -925,6 +930,7 @@ fn App() -> Element {
         sfx_volume: sfx_volume_local_sync,
         muted: audio_muted_local_sync,
     });
+    use_context_provider(|| CtxOverworldZoom(overworld_zoom_local_sync));
     use_context_provider(|| server_data);
     use_context_provider(|| overworld_map_id);
     use_context_provider(|| CtxConnectionStatus(connection_status));
