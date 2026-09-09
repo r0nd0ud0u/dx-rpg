@@ -10,7 +10,6 @@ use crate::board_game_components::admin_page::AdminPage;
 use crate::board_game_components::create_server_page::CreateServer;
 use crate::board_game_components::home_page::Home;
 use crate::board_game_components::joinongoinggame_page::JoinOngoingGame;
-use crate::board_game_components::loadgame_page::LoadGame;
 use crate::board_game_components::lobby_page::LobbyPage;
 use crate::board_game_components::navbar::Navbar;
 use crate::board_game_components::startgame_page::RunningGamePage;
@@ -51,8 +50,6 @@ pub enum Route {
     LobbyPage {},
     #[route("/running-game")]
     RunningGamePage {},
-    #[route("/load-game")]
-    LoadGame {},
     #[route("/current-game")]
     JoinOngoingGame {},
 }

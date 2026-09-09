@@ -8,7 +8,7 @@ use crate::{
     auth_manager::server_fn::list_universes_server,
     board_game_components::{
         character_select::CharacterSelect,
-        common_comp::{BackButton, ButtonLink},
+        common_comp::{BackHistoryButton, ButtonLink},
         startgame_page::RunningGamePage,
     },
     common::{Route, SERVER_NAME},
@@ -62,8 +62,7 @@ pub fn LobbyPage() -> Element {
             || server_data_snap.core_game_data.game_phase == GamePhase::Loading
         {
             div { class: "lobby-page",
-                BackButton {
-                    target: Route::Home {}.into(),
+                BackHistoryButton {
                     onclick: move |_| {
                         async move {
                             let _ = socket

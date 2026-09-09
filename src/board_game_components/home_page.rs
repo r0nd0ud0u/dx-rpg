@@ -3,7 +3,7 @@ use dioxus_i18n::t;
 use lib_rpg::server::server_manager::{GamePhase, ServerData};
 
 use crate::{
-    board_game_components::login_page::LoginPage,
+    board_game_components::login_page::{LoginPage, PlayOfflineCard},
     common::{DISCONNECTED_USER, Route},
     game_channel::GameChannel,
     websocket_handler::event::ClientEvent,
@@ -22,6 +22,20 @@ pub fn Home() -> Element {
     if user_name == *DISCONNECTED_USER {
         rsx! {
             LoginPage {}
+        }
+    } else if socket.is_offline() {
+        // An offline session has no server to create or join — the only thing this
+        // page can offer is starting another local game. Reached by tapping the
+        // navbar brand mid-session, which used to land on the two server actions
+        // and leave an offline player with nothing they could actually do.
+        rsx! {
+            div { class: "home-container",
+                div { class: "rotate-scale-up",
+                    h1 { class: "rpg-title", {t!("home-title")} }
+                }
+                p { class: "rpg-subtitle", {t!("home-welcome", user_name : user_name.clone())} }
+                PlayOfflineCard {}
+            }
         }
     } else {
         rsx! {

@@ -148,18 +148,11 @@ admin-users-delete-success = ✅ User deleted.
 admin-users-delete-error = ❌ This name cannot be deleted.
 
 ## load game page
-loadgame-title = 💾 Load Game
 loadgame-fetch-error = Failed to load saves: { $error }
-loadgame-count-one = { $count } saved adventure
-loadgame-count-other = { $count } saved adventures
-loadgame-empty = No saved games found.
-loadgame-empty-hint = Create a new game first.
 loadgame-slot-scenario = 📜 { $scenario } (Lvl { $level })
 loadgame-mode-solo = 🎮 Solo
 loadgame-mode-multi = 👥 Multi ({ $players }p)
 loadgame-universe = 🌐 { $universe }
-loadgame-load-button = ▶ Load
-loadgame-delete-button = 🗑 Delete
 
 ## login page
 login-sign-in-title = Sign In
@@ -195,8 +188,6 @@ create-server-continue-play = ▶ Continue
 create-server-overwrite-play = 🗑 Overwrite & Play
 create-server-overwrite-confirm-title = Overwrite this save?
 create-server-overwrite-confirm-body = This will permanently delete this saved adventure and start a new one in its place. This cannot be undone.
-create-server-load-game = Load Game
-create-server-load-game-desc = Continue a saved adventure
 
 ## lobby page
 lobby-title = ⚔️ Lobby

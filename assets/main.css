@@ -317,18 +317,6 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 }
 
 /* LOAD GAME PAGE */
-.load-game-card {
-    background: var(--rpg-bg-card);
-    border: 1px solid var(--rpg-border-light);
-    border-radius: var(--r-lg);
-    padding: var(--sp-md);
-    width: 100%;
-    max-width: 440px;
-    max-height: 52vh;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--rpg-border-light) transparent;
-}
 .game-list { display:flex; flex-direction:column; gap:6px; }
 .game-item {
     display:flex; align-items:center; gap:10px;
@@ -357,13 +345,6 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 .game-item-icon { font-size:1rem; flex-shrink:0; opacity:.7; }
 .game-item-name { flex:1; font-family:ui-monospace, monospace; font-size:.82rem; letter-spacing:.02em; }
 .game-item-check { color: var(--rpg-gold); font-weight:700; font-size:1rem; }
-.load-empty {
-    display:flex; flex-direction:column; align-items:center; gap:8px;
-    padding: var(--sp-xl);
-    color: var(--rpg-text-muted); font-size:.9rem;
-}
-.load-empty span { font-size:2.5rem; }
-.load-actions { display:flex; gap: var(--sp-md); flex-wrap:wrap; justify-content:center; }
 
 /* LOBBY */
 .lobby-page { display:flex; flex-direction:column; align-items:center; gap: var(--sp-lg); padding: var(--sp-lg) var(--sp-md); }
@@ -1857,7 +1838,6 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     .create-server-section { padding: var(--sp-md); }
 
     /* Load game */
-    .load-game-card { max-width: 100%; }
 
     /* Scenario end */
     .scenario-end-page { padding: var(--sp-lg) var(--sp-sm); }
@@ -1998,9 +1978,6 @@ html.force-mobile-nav .talent-node-row .tooltip-content[data-side="right"] {
     .mode-toggle { flex-direction: column; }
 
     /* Load-game action buttons: full width & stacked */
-    .load-actions                           { flex-direction: column; align-items: stretch; }
-    .load-actions .button-link              { width: 100%; }
-    .load-actions .button-link .header-text { width: 100%; text-align: center; }
 
     /* Scenario-end action buttons: same treatment */
     .scenario-actions { flex-direction: column; align-items: stretch; }
