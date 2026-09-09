@@ -594,6 +594,17 @@ pub fn Navbar() -> Element {
                                 }
                                 span { {t!("sound-settings-muted")} }
                             }
+                            label { style: "display:flex; align-items:center; gap:0.5rem; cursor:pointer;",
+                                input {
+                                    r#type: "checkbox",
+                                    checked: (audio_settings.background)(),
+                                    onchange: move |e: FormEvent| {
+                                        (audio_settings.background).set(e.checked());
+                                        audio::set_background_audio(audio_settings);
+                                    },
+                                }
+                                span { {t!("sound-settings-background")} }
+                            }
                             label { style: "display:flex; flex-direction:column; gap:0.25rem;",
                                 span { {t!("sound-settings-music-volume")} }
                                 Input {

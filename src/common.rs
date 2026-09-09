@@ -81,6 +81,12 @@ pub const SYNCED_DEVICE_TOKEN_KEY: &str = "synced_device_token";
 pub const SYNCED_MUSIC_VOLUME_KEY: &str = "synced_music_volume";
 pub const SYNCED_SFX_VOLUME_KEY: &str = "synced_sfx_volume";
 pub const SYNCED_AUDIO_MUTED_KEY: &str = "synced_audio_muted";
+/// Whether the background music keeps playing once the app is no longer on screen —
+/// switched to another app on mobile, or another tab on the web. Off by default:
+/// a game that keeps singing after you have left it is usually a nuisance and a
+/// drain on the battery, but some players like having the score on, so it is a
+/// setting rather than a rule.
+pub const SYNCED_BACKGROUND_AUDIO_KEY: &str = "synced_background_audio";
 
 /// Overworld map zoom level, persisted locally. Device-local rather than
 /// per-account on purpose: a comfortable zoom depends on the screen it is read on,
@@ -176,6 +182,8 @@ pub struct CtxAudioSettings {
     pub music_volume: Signal<i32>,
     pub sfx_volume: Signal<i32>,
     pub muted: Signal<bool>,
+    /// See `SYNCED_BACKGROUND_AUDIO_KEY`.
+    pub background: Signal<bool>,
 }
 
 /// State of the client's websocket link to the server, tracked by the reconnect loop in

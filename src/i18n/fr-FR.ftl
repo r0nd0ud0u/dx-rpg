@@ -35,6 +35,7 @@ server-settings-saved = Enregistré — redémarrez l'application pour appliquer
 
 sound-settings-title = Réglages sonores
 sound-settings-muted = Couper tous les sons
+sound-settings-background = Continuer la musique en arrière-plan
 sound-settings-music-volume = Volume de la musique
 sound-settings-sfx-volume = Volume des effets sonores
 

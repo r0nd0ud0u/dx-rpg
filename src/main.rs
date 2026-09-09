@@ -16,8 +16,8 @@ use dx_rpg::{
         CtxSessionExpired, CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp,
         CtxShowHeroAggro, CtxSyncedInsecureCerts, CtxSyncedServerUrl, CtxToggleAtkAnimation,
         DISCONNECTED_USER, DX_COMP_CSS, Route, SERVER_NAME, SYNCED_AUDIO_MUTED_KEY,
-        SYNCED_DEVICE_TOKEN_KEY, SYNCED_MUSIC_VOLUME_KEY, SYNCED_OVERWORLD_ZOOM_KEY,
-        SYNCED_SFX_VOLUME_KEY,
+        SYNCED_BACKGROUND_AUDIO_KEY, SYNCED_DEVICE_TOKEN_KEY, SYNCED_MUSIC_VOLUME_KEY,
+        SYNCED_OVERWORLD_ZOOM_KEY, SYNCED_SFX_VOLUME_KEY,
     },
     components::{
         alert_dialog, button, drag_and_drop_list, input, label, popover, select, separator, sheet,
@@ -578,6 +578,8 @@ fn App() -> Element {
         use_synced_storage::<LocalStorage, i32>(SYNCED_SFX_VOLUME_KEY.to_owned(), || 80);
     let audio_muted_local_sync =
         use_synced_storage::<LocalStorage, bool>(SYNCED_AUDIO_MUTED_KEY.to_owned(), || false);
+    let background_audio_local_sync =
+        use_synced_storage::<LocalStorage, bool>(SYNCED_BACKGROUND_AUDIO_KEY.to_owned(), || false);
     let overworld_zoom_local_sync =
         use_synced_storage::<LocalStorage, f32>(SYNCED_OVERWORLD_ZOOM_KEY.to_owned(), || {
             dx_rpg::board_game_components::overworld::DEFAULT_ZOOM
@@ -624,8 +626,19 @@ fn App() -> Element {
 
     // Sets up the background-music/sfx `<audio>` elements once. Same document::eval
     // approach as the theme effect above — works on web, desktop, and mobile alike.
-    use_effect(|| {
+    //
+    // The bridge starts with background audio off, so the player's stored setting has
+    // to be pushed in right behind it or a session would silently ignore it until the
+    // checkbox was touched again.
+    let audio_settings = CtxAudioSettings {
+        music_volume: music_volume_local_sync,
+        sfx_volume: sfx_volume_local_sync,
+        muted: audio_muted_local_sync,
+        background: background_audio_local_sync,
+    };
+    use_effect(move || {
         dx_rpg::audio::init_audio_bridge();
+        dx_rpg::audio::set_background_audio(audio_settings);
     });
 
     // Android's WebView (used by the native mobile client) never enables "wide viewport"
@@ -929,6 +942,7 @@ fn App() -> Element {
         music_volume: music_volume_local_sync,
         sfx_volume: sfx_volume_local_sync,
         muted: audio_muted_local_sync,
+        background: background_audio_local_sync,
     });
     use_context_provider(|| CtxOverworldZoom(overworld_zoom_local_sync));
     use_context_provider(|| server_data);
