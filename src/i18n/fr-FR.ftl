@@ -148,18 +148,11 @@ admin-users-delete-success = ✅ Utilisateur supprimé.
 admin-users-delete-error = ❌ Ce nom ne peut pas être supprimé.
 
 ## load game page
-loadgame-title = 💾 Charger une partie
 loadgame-fetch-error = Échec du chargement des sauvegardes : { $error }
-loadgame-count-one = { $count } aventure sauvegardée
-loadgame-count-other = { $count } aventures sauvegardées
-loadgame-empty = Aucune partie sauvegardée trouvée.
-loadgame-empty-hint = Créez d'abord une nouvelle partie.
 loadgame-slot-scenario = 📜 { $scenario } (Niv { $level })
 loadgame-mode-solo = 🎮 Solo
 loadgame-mode-multi = 👥 Multi ({ $players }j)
 loadgame-universe = 🌐 { $universe }
-loadgame-load-button = ▶ Charger
-loadgame-delete-button = 🗑 Supprimer
 
 ## login page
 login-sign-in-title = Connexion
@@ -195,8 +188,6 @@ create-server-continue-play = ▶ Continuer
 create-server-overwrite-play = 🗑 Écraser et jouer
 create-server-overwrite-confirm-title = Écraser cette sauvegarde ?
 create-server-overwrite-confirm-body = Cette action supprimera définitivement cette aventure sauvegardée pour en démarrer une nouvelle à la place. Cette action est irréversible.
-create-server-load-game = Charger une partie
-create-server-load-game-desc = Continuez une aventure sauvegardée
 
 ## lobby page
 lobby-title = ⚔️ Salon

@@ -231,8 +231,11 @@ pub fn LoginPage() -> Element {
     }
 }
 
-/// A third card next to sign-in/sign-up: pick a universe and jump straight into a
-/// local, no-server single-player game (see `game_channel.rs`/`local_channel.rs`).
+/// Pick a universe and jump straight into a local, no-server single-player game
+/// (see `game_channel.rs`/`local_channel.rs`). Shown as a third card next to
+/// sign-in/sign-up on this page, and as the *only* action on `Home` once the
+/// session is already offline — where creating or joining a server is not
+/// something an offline player can do.
 /// Absent entirely on the server build — a `#[cfg]`-swapped no-op twin below, rather
 /// than an `if cfg!(...)` inside the rsx above, because the real body references
 /// `GameChannel::go_offline`/`local_engine::list_universes`, which don't exist in that
@@ -240,7 +243,7 @@ pub fn LoginPage() -> Element {
 /// needing to compile).
 #[cfg(not(feature = "server"))]
 #[component]
-fn PlayOfflineCard() -> Element {
+pub fn PlayOfflineCard() -> Element {
     let socket = use_context::<GameChannel>();
     let mut local_login_name_session = use_context::<Signal<String>>();
     let navigator = use_navigator();
@@ -290,6 +293,6 @@ fn PlayOfflineCard() -> Element {
 
 #[cfg(feature = "server")]
 #[component]
-fn PlayOfflineCard() -> Element {
+pub fn PlayOfflineCard() -> Element {
     rsx! {}
 }

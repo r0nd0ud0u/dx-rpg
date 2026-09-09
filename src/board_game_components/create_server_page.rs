@@ -13,10 +13,7 @@ use crate::{
     },
     game_channel::GameChannel,
     utils::server_file_utils::{SaveSlotInfo, delete_game, get_save_slots},
-    websocket_handler::{
-        event::ClientEvent,
-        msg_from_client::{request_update_saved_game_list_display, send_initialize_game},
-    },
+    websocket_handler::{event::ClientEvent, msg_from_client::send_initialize_game},
 };
 
 #[component]
@@ -229,24 +226,6 @@ pub fn CreateServer() -> Element {
                             }
                         }
                     }
-                }
-            }
-
-            div { class: "action-grid",
-                div { class: "action-card",
-                    span { class: "action-icon", "💾" }
-                    Link {
-                        class: "header-text",
-                        to: Route::LoadGame {},
-                        onclick: move |_| {
-                            let user_name = local_login_name_session();
-                            async move {
-                                request_update_saved_game_list_display(socket, &user_name).await;
-                            }
-                        },
-                        {t!("create-server-load-game")}
-                    }
-                    p { class: "action-desc", {t!("create-server-load-game-desc")} }
                 }
             }
         }
