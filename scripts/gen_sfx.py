@@ -443,10 +443,8 @@ def make_debuff() -> Signal:
 
 # name -> (renderer, peak level in dBFS, stereo spread in seconds)
 #
-# Levels are set relative to each other, not just normalized: impacts land
-# loudest because they need to cut through, support cues sit back a little so a
-# stream of buffs never buries the music, and `critical` sits well below all of
-# them because it is only ever heard on top of another sound.
+# Levels are relative, not just normalized: impacts cut through, support cues sit back,
+# and `critical` sits well below both — it is only ever heard on top of another sound.
 SOUNDS = {
     "strike": (make_strike, -2.5, 0.0),
     "arcane": (make_arcane, -2.5, 0.005),

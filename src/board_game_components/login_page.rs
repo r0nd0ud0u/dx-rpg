@@ -43,13 +43,9 @@ pub fn LoginPage() -> Element {
     let set_register = move |e: FormEvent| register_name.set(e.value());
     let set_register_pw = move |e: FormEvent| register_password.set(e.value());
 
-    // Fetch the USE_PASSWORD flag from the server. Deliberately a client-only
-    // use_effect + spawn (not use_resource): use_resource's value gets resolved during
-    // SSR and embedded in the page for hydration, which hits a known Dioxus hydration
-    // bug (https://github.com/DioxusLabs/dioxus/issues/3583) that crashes the client
-    // with "Error deserializing data: Semantic(Some(0), \"expected bool\")" and leaves
-    // the whole page unresponsive (can't type, clicks land on stale handlers). This
-    // mirrors the same pattern already used for `is_admin_enabled` in admin_page.rs.
+    // use_effect + spawn, not use_resource: use_resource resolves during SSR and embeds the
+    // value for hydration, hitting DioxusLabs/dioxus#3583 — the page comes up unresponsive.
+    // Same pattern as `is_admin_enabled` in admin_page.rs.
     let mut use_pw = use_signal(|| false);
     use_effect(move || {
         spawn(async move {
@@ -236,11 +232,8 @@ pub fn LoginPage() -> Element {
 /// sign-in/sign-up on this page, and as the *only* action on `Home` once the
 /// session is already offline — where creating or joining a server is not
 /// something an offline player can do.
-/// Absent entirely on the server build — a `#[cfg]`-swapped no-op twin below, rather
-/// than an `if cfg!(...)` inside the rsx above, because the real body references
-/// `GameChannel::go_offline`/`local_engine::list_universes`, which don't exist in that
-/// build at all (`cfg!(...)` is a runtime check — it doesn't stop those calls from
-/// needing to compile).
+/// A `#[cfg]`-swapped no-op on the server build: `cfg!()` is a runtime check, and the real
+/// body calls `go_offline`/`list_universes`, which don't exist there.
 #[cfg(not(feature = "server"))]
 #[component]
 pub fn PlayOfflineCard() -> Element {

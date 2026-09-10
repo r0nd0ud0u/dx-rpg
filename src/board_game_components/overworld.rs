@@ -27,9 +27,8 @@ const ZOOM_GRID: f32 = 0.05;
 
 /// Moves the zoom one step and clamps it to the allowed range.
 ///
-/// Snapped back onto the grid afterwards, because the result is persisted and fed
-/// straight back in on the next press: in f32 `0.85 + 0.1 + 0.1` is `1.0500001`,
-/// and left alone that error compounds for as long as the player keeps pressing.
+/// Snapped back onto the grid: the result is persisted and fed back in on the next press,
+/// so f32 error (`0.85 + 0.1 + 0.1` is `1.0500001`) would compound.
 pub fn step_zoom(current: f32, steps: i32) -> f32 {
     let stepped = current + steps as f32 * ZOOM_STEP;
     let snapped = (stepped / ZOOM_GRID).round() * ZOOM_GRID;

@@ -14,17 +14,11 @@ pub fn ButtonLink(
     }
 }
 
-/// Consistent "back" affordance for every top-level page reached by navigating forward
-/// from somewhere else (Home, CreateServer, JoinOngoingGame, AdminPage, and the
-/// lobby's pre-game screen). Always in the same spot (top-left, above the page title) and
-/// always a single click straight to an explicit `target` route — not history-based
-/// "go back" (which could land on a stale intermediate state depending on how the player
-/// arrived), and no confirmation dialog, since every call site only wires this up where
-/// leaving has no destructive side effect (pass `onclick` for any cleanup that does need
-/// to run first, e.g. disconnecting from a server that was only tentatively joined).
-/// `RunningGamePage` deliberately has no `BackButton`: it already has its own quit flow
-/// (`QuitGameButton` / Navbar's Quit-game dialog), which needs the confirmation step this
-/// button intentionally skips.
+/// "Back" affordance for top-level pages, always top-left above the title, always a single
+/// click to an explicit `target` (use `BackHistoryButton` when the right destination
+/// depends on how the player arrived). No confirmation — pass `onclick` for cleanup that
+/// must run first, e.g. leaving a tentatively-joined server. `RunningGamePage` has none:
+/// its quit flow needs the confirmation this skips.
 #[component]
 pub fn BackButton(target: NavigationTarget, onclick: Option<EventHandler<MouseEvent>>) -> Element {
     rsx! {
@@ -35,13 +29,9 @@ pub fn BackButton(target: NavigationTarget, onclick: Option<EventHandler<MouseEv
     }
 }
 
-/// Back control that steps through the router's own history rather than pointing at
-/// one fixed route.
-///
-/// For pages reachable from more than one place, where the right destination is
-/// wherever the player actually came from: the lobby, for instance, is reached from
-/// the create-server page, the join-game list, and the offline card, and a fixed
-/// target sends two of those three somewhere the player has never been.
+/// Back control that steps through the router's history instead of a fixed route, for
+/// pages reachable from several places — the lobby is entered from create-server, the
+/// join list and the offline card, and any fixed target is wrong for two of them.
 #[component]
 pub fn BackHistoryButton(onclick: Option<EventHandler<MouseEvent>>) -> Element {
     let navigator = use_navigator();

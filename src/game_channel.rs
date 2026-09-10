@@ -1,25 +1,16 @@
 //! Abstracts "send a `ClientEvent`, receive `ServerEvent`s back" over either a real
-//! websocket (remote or local server, unchanged from before this module existed) or —
-//! client builds only — a direct in-process call into `local_engine` for offline mode
-//! (see `local_channel.rs`). The ~17 files that just do
-//! `socket.send(ClientEvent::X(...)).await` don't need to know or care which backend is
-//! active; they only need `use_context::<UseWebsocket<ClientEvent, ServerEvent,
-//! CborEncoding>>()` swapped for `use_context::<GameChannel>()`.
+//! websocket or — client builds only — a direct in-process call into `local_engine` for
+//! offline mode (see `local_channel.rs`). Call sites just `socket.send(...).await` and
+//! don't know which backend is active.
 //!
-//! `GameChannel` always holds the real websocket handle too, unconditionally — the
-//! server build (which also renders this same UI for SSR) only ever uses that variant;
-//! there's no "offline mode" concept server-side, so `Local`/`offline` are entirely
-//! absent from that build rather than merely unused.
+//! The websocket handle is always present; `Local`/`offline` are cfg'd out of the server
+//! build entirely, which has no notion of offline mode.
 //!
-//! `local` is wrapped in `CopyValue` (not held directly) so `GameChannel` itself stays
-//! `Copy`, matching `UseWebsocket`'s ergonomics exactly — every one of the ~17 call
-//! sites already does `onclick: move |_| async move { socket.send(...).await }`, which
-//! needs `socket` to be freely re-capturable on every click (an `FnMut` closure moving a
-//! non-`Copy` value into its own inner `async move` block only implements `FnOnce`,
-//! i.e. "usable for exactly one click"). `LocalChannel` itself deliberately stays
-//! `Rc`/`RefCell`-based, not `CopyValue`-based — `CopyValue::new` requires an active
-//! Dioxus component scope, which would break `local_channel.rs`'s own unit tests (they
-//! construct a `LocalChannel` directly, no `VirtualDom` running at all).
+//! `local` is wrapped in `CopyValue` so `GameChannel` stays `Copy` like `UseWebsocket`:
+//! call sites do `move |_| async move { socket.send(...) }`, and an `FnMut` closure that
+//! moves a non-`Copy` value into an inner `async move` is only `FnOnce` — usable for one
+//! click. `LocalChannel` itself stays `Rc`/`RefCell`: `CopyValue::new` needs a live
+//! component scope, which its unit tests don't have.
 
 use dioxus::fullstack::{CborEncoding, UseWebsocket};
 #[cfg(not(feature = "server"))]
@@ -43,11 +34,8 @@ pub struct GameChannel {
     remote: UseWebsocket<ClientEvent, ServerEvent, CborEncoding>,
     #[cfg(not(feature = "server"))]
     local: CopyValue<crate::local_channel::LocalChannel>,
-    /// Which backend `send`/`recv` actually use. A `Signal` (not a plain bool) so
-    /// flipping it from the Home page's "Play Offline" button is immediately visible
-    /// to every clone of this `GameChannel` already handed out via context — same
-    /// reason the rest of this codebase threads settings through `Signal`-wrapped
-    /// context newtypes rather than plain values.
+    /// Which backend `send`/`recv` use. A `Signal` so flipping it is visible to every
+    /// `GameChannel` clone already handed out via context.
     #[cfg(not(feature = "server"))]
     offline: dioxus::prelude::Signal<bool>,
 }
@@ -67,11 +55,8 @@ impl GameChannel {
         }
     }
 
-    /// Whether this session is currently in offline (single-player-only) mode — used
-    /// internally by `send`/`recv` to pick a backend, and by `Navbar`'s
-    /// connection-status badge to hide itself (nothing to be up or down when there's
-    /// no network backend at all). Always `false` on the server build, which has no
-    /// concept of offline mode (see this module's doc comment).
+    /// Offline (single-player) mode: picks the backend, and hides Navbar's connection
+    /// badge. Always `false` on the server build.
     #[cfg(not(feature = "server"))]
     pub fn is_offline(&self) -> bool {
         (self.offline)()
@@ -82,19 +67,16 @@ impl GameChannel {
         false
     }
 
-    /// Starts an offline session (see `LocalChannel::activate`) and flips the routing
-    /// flag so every existing `.send()`/`.recv()` call site transparently switches to
-    /// it — call once, from the Home page's "Play Offline" action.
+    /// Starts an offline session (`LocalChannel::activate`) and switches every call site
+    /// over to it.
     #[cfg(not(feature = "server"))]
     pub fn go_offline(&mut self) {
         self.local.read().activate();
         self.offline.set(true);
     }
 
-    /// Leaves offline mode, so `send`/`recv` go back to the real socket. Signing out
-    /// of an offline session calls this: without it the session name is cleared but
-    /// the channel keeps answering itself, and the login page can never reach a
-    /// server again without restarting the app.
+    /// Back to the real socket. Sign-out calls this, or the login page could never reach
+    /// a server again without an app restart.
     #[cfg(not(feature = "server"))]
     pub fn go_online(&mut self) {
         self.offline.set(false);
@@ -115,30 +97,17 @@ impl GameChannel {
     pub async fn recv(&mut self) -> Result<ServerEvent, GameChannelError> {
         #[cfg(not(feature = "server"))]
         {
-            // Cloned out of the CopyValue's temporary read guard (cheap — LocalChannel
-            // is just a bundle of Rc clones) before awaiting: the guard itself can't
-            // live across the .await (it's a short-lived borrow), but the owned
-            // LocalChannel clone can.
+            // Cloned out of the read guard before awaiting — the guard can't cross an
+            // `.await`, the clone (a bundle of Rcs) can.
             let local = self.local.read().clone();
             if self.is_offline() {
-                // Steady-state offline: never poll `remote` here — nothing is
-                // listening on SERVER_URL in offline mode, so if it resolves
-                // immediately (rather than just hanging) on every call, racing it on
-                // every single iteration would busy-spin instead of `local.recv()`'s
-                // proper async wait for the next real event.
+                // Never poll `remote` here: nothing listens on SERVER_URL offline, and if
+                // it resolves immediately racing it would busy-spin.
                 return local.recv().await.ok_or(GameChannelError::LocalClosed);
             }
-            // Not offline *yet* — but `go_offline()` can be called by the "Play
-            // Offline" button while *this exact* call is already in flight (this is
-            // an `&mut self` method on a long-running receive loop, called fresh each
-            // iteration, so "in flight" here means this specific `remote.recv()`
-            // future, not a stale one from a previous call). Race both so the
-            // transition is noticed immediately instead of waiting for `remote.recv()`
-            // to resolve on its own, which it may never do. `local` is polled first
-            // and preferred whenever both are simultaneously ready: before
-            // `go_offline()` has ever run, `local`'s channel has nothing queued, so it
-            // simply never resolves here — a harmless always-pending branch that never
-            // disadvantages a normal online session.
+            // Not offline yet, but `go_offline()` can fire while this `remote.recv()` is
+            // in flight — which may never resolve on its own. Race both; `local` wins
+            // ties and stays pending until `go_offline()` has run.
             let local_fut = local.recv();
             let remote_fut = self.remote.recv();
             futures::pin_mut!(local_fut);

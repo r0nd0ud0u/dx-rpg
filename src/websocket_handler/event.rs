@@ -484,17 +484,12 @@ pub async fn on_rcv_client_event(
     }))
 }
 
-/// Whether `name` currently has at least one live, registered websocket connection —
-/// the real-time source of truth `login()` checks in addition to the DB's `is_connected`
-/// flag, since that flag can lag behind (or outlive) the actual live connection state
-/// (a crash that skipped clean disconnect, a reconnect racing the grace-period timer, etc.).
-/// Returns true if `client_id` may submit game actions on `server_name` — either the server's
-/// owner, or a party member who joined via the lobby (assigned at least one character via
-/// `AddCharacterOnServerData`). A client that only reached the server through a bare
-/// `JoinServerData` — e.g. "Join Ongoing Game", spectating an already-started game without ever
-/// picking a character in the lobby — is read-only: it still receives `ServerData`/board updates
-/// like any other `players_info` member (see `send_server_event_to_clients`'s membership filter),
-/// but is blocked here from acting.
+/// Whether `name` has a live registered websocket. `login()` checks this as well as the
+/// DB's `is_connected`, which can lag or outlive the real connection (crash, reconnect
+/// racing the grace period).
+/// Whether `client_id` may act on `server_name`: the owner, or a lobby member who was
+/// assigned a character. A bare `JoinServerData` client (spectating via "Join Ongoing
+/// Game") still receives updates but is read-only.
 #[cfg(feature = "server")]
 fn client_can_act(server_name: &str, client_id: u32) -> bool {
     let sm = lock_server_manager();
@@ -520,17 +515,13 @@ pub fn is_username_connected(name: &str) -> bool {
         .is_some_and(|ids| !ids.is_empty())
 }
 
-/// Registers `id` under `name` in `sm.players`, but only if `device_token` matches the
-/// device currently recognized as owning the login for `name` — or no device is recognized
-/// yet, in which case this call claims the lock. Rejects (no-op) a mismatched device_token,
-/// which is how a stale client with a cached session for `name` on a different device gets
-/// blocked from silently rejoining once another device has genuinely logged in as `name`
-/// (see `login_all_sessions`, which resets the lock on every fresh login).
+/// Registers `id` under `name`, if `device_token` matches the device holding the login (or
+/// claims it when none does). A mismatch is a no-op — that's what stops a stale client on
+/// another device from rejoining after someone else logs in as `name` (`login_all_sessions`
+/// resets the lock).
 ///
-/// `device_token` must also match `name`'s current entry in `LOGIN_PROOFS` — a secret the
-/// server only ever hands out from a successful `login()` call — otherwise this is a raw
-/// websocket connection (or a tampered/stale client) trying to claim a username it never
-/// actually authenticated as, and the call is rejected outright.
+/// `device_token` must also match `LOGIN_PROOFS[name]`, a secret only `login()` hands out,
+/// so a raw websocket can't claim a username it never authenticated as.
 #[cfg(feature = "server")]
 pub fn add_player(name: String, id: u32, device_token: String) {
     use crate::auth_manager::server_fn::auth::LOGIN_PROOFS;
@@ -814,17 +805,10 @@ pub async fn send_disconnection_to_server_manager(client_id: u32) {
     // ----------------------------------------
     //  Grace period (no locks held)
     // ----------------------------------------
-    // A page reload (F5) closes this socket and opens a brand new one within
-    // milliseconds, briefly dropping the connection count to zero even though the
-    // same user is about to reconnect. Clearing is_connected immediately would open
-    // a window where a second browser's login() sees "not connected" and is allowed
-    // to log in as this user while the original session is still alive (mid-reload);
-    // closing the game immediately would do the same for the in-progress session.
-    // Defer both, and skip them entirely if `username` has reconnected (anywhere —
-    // checked via `sm.players`, not `servers_data.players_info`, which reconnecting
-    // via `add_player_to_server` does update but the retain() above does not: it
-    // mutates a clone returned by `get_server_data_by_player_id`, not the real
-    // entry in `sm.servers_data`) by the time the grace period elapses.
+    // A reload drops the connection count to zero for milliseconds. Clearing is_connected
+    // at once would let a second browser's login() slip in while the original session is
+    // still alive. Defer both, and skip if `username` reconnected meanwhile — checked via
+    // `sm.players`, since the retain() above mutates a clone, not `sm.servers_data`.
     let username_for_grace = username.clone();
     tokio::spawn(async move {
         sleep(DISCONNECT_GRACE_PERIOD).await;

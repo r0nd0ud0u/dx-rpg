@@ -1,14 +1,10 @@
 //! Client-only: the offline-mode backend for `GameChannel` (see `game_channel.rs`).
-//! Turns a `ClientEvent` into real game-state changes by calling `local_engine`/lib-rpg
-//! directly — no network, no websocket — and reports back via the exact same
-//! `ServerEvent` shapes the UI already knows how to handle.
+//! Applies a `ClientEvent` by calling `local_engine`/lib-rpg directly and reports back in
+//! the same `ServerEvent` shapes the UI already handles.
 //!
-//! Deliberately simple rather than matching the server's per-action optimized update
-//! shapes (`UpdateCombat`/`UpdateOverworld`/...): every handled action just re-emits one
-//! full `ServerEvent::UpdateServerData(Box::new(current_state))`, which the existing
-//! receive loop in `main.rs`'s `App()` already applies correctly. There's exactly one
-//! local player, so the bandwidth/broadcast-efficiency reasons those lighter update
-//! shapes exist for multiplayer don't apply here.
+//! Every action re-emits one full `UpdateServerData` rather than the server's optimized
+//! per-action shapes (`UpdateCombat`/`UpdateOverworld`/...): with a single local player,
+//! the broadcast-efficiency reasons those exist don't apply.
 #![cfg(not(feature = "server"))]
 
 use std::{
@@ -24,12 +20,9 @@ use lib_rpg::server::{
 
 use crate::websocket_handler::event::{ClientEvent, ServerEvent};
 
-// `pub(crate)`: the "Play Offline" entry point (login_page.rs) needs this exact value
-// too — it must set `local_login_name_session` and `SERVER_NAME` (via
-// `send_initialize_game`'s `user_name` argument) to the same string this module uses
-// for `owner_player_name`, or the several `owner_player_name == local_login_name_session()`
-// host-only-controls checks scattered through startgame_page.rs (load next scenario,
-// save game, ...) would never pass during an offline session.
+// `pub(crate)`: login_page.rs must set `local_login_name_session` and `SERVER_NAME` to
+// this same value, or startgame_page.rs's `owner_player_name == local_login_name_session()`
+// host-only checks never pass offline.
 pub(crate) const LOCAL_PLAYER_NAME: &str = "Player";
 const LOCAL_CLIENT_ID: u32 = 0;
 
@@ -41,10 +34,8 @@ const AUTO_ATK_DELAY: Duration = Duration::from_millis(3000);
 #[derive(Clone)]
 pub struct LocalChannel {
     tx: mpsc::UnboundedSender<ServerEvent>,
-    // An async-aware lock, not `RefCell`: `recv` needs to hold this across an `.await`
-    // (for the whole duration of `.next().await`), which a plain `RefCell`'s guard
-    // isn't safe to do (it can't yield to other tasks, so a would-be second borrow
-    // panics instead of just waiting its turn).
+    // Async lock, not `RefCell`: `recv` holds it across `.next().await`, where a
+    // `RefCell` guard would panic on a second borrow instead of waiting.
     rx: Rc<AsyncMutex<mpsc::UnboundedReceiver<ServerEvent>>>,
     state: Rc<RefCell<ServerData>>,
     /// Enemy attacks still owed for the current auto round — see [`Self::recv`].
@@ -52,9 +43,8 @@ pub struct LocalChannel {
 }
 
 impl LocalChannel {
-    /// Constructs an inert local channel — cheap, safe to always create alongside the
-    /// real websocket (see `GameChannel`), whether or not the user ever picks offline
-    /// mode. Doesn't touch game data until `activate()` is called.
+    /// An inert channel, cheap to always create alongside the real websocket. Touches no
+    /// game data until `activate()`.
     pub fn new() -> Self {
         let (tx, rx) = mpsc::unbounded();
         Self {
@@ -65,10 +55,9 @@ impl LocalChannel {
         }
     }
 
-    /// Starts an offline single-player session: registers embedded game data, resets
-    /// local state, and pushes the same `InitClient` a real server sends right after a
-    /// websocket connects — so the character-select UI (which reads the hero list from
-    /// that event) works unchanged. Call once, when the user picks "Play Offline".
+    /// Starts an offline session: registers embedded data, resets state, and pushes the
+    /// same `InitClient` a real server sends on connect, so character-select works
+    /// unchanged.
     pub fn activate(&self) {
         crate::embedded_data::register();
         *self.state.borrow_mut() = ServerData::default();
@@ -87,9 +76,8 @@ impl LocalChannel {
     /// Applies `msg` to the local game state and reports the result back, matching the
     /// shape `GameChannel::send` expects.
     pub fn send(&self, msg: ClientEvent) {
-        // The server runs the enemy's turn right after the player's action, not as part
-        // of it (`event.rs`: `update_core_game_data_after_atk` then `process_ennemy_atk`)
-        // — mirror that split here, so `recv` can pace the enemy attacks out one by one.
+        // Mirrors the server's split (`update_core_game_data_after_atk` then
+        // `process_ennemy_atk`) so `recv` can pace enemy attacks out one by one.
         let player_acted = matches!(
             msg,
             ClientEvent::LaunchAttack(..)
@@ -104,10 +92,8 @@ impl LocalChannel {
         }
     }
 
-    /// The offline counterpart of the server's `process_ennemy_atk`: once the player has
-    /// acted, count the bosses that act before the next hero gets a turn. Without this,
-    /// offline combat simply stopped at the end of the player's attack — the enemy's turn
-    /// was never played at all, so the boss never hit back.
+    /// Offline counterpart of `process_ennemy_atk`: counts the bosses that act before the
+    /// next hero. Without it the boss never hits back.
     fn queue_auto_atks(&self) {
         let game_manager = &self.state.borrow().core_game_data.game_manager;
         if game_manager.is_round_auto() {
@@ -116,9 +102,8 @@ impl LocalChannel {
         }
     }
 
-    /// Plays one owed enemy attack. `launch_attack(None)` is lib-rpg's "the character
-    /// whose turn it is picks its own attack", the very call the server makes for each
-    /// `AutoAtkIsDone`.
+    /// Plays one owed enemy attack. `launch_attack(None)` lets the acting character pick
+    /// its own attack, as the server does per `AutoAtkIsDone`.
     fn run_next_auto_atk(&self) -> ServerEvent {
         self.pending_auto_atks.set(self.pending_auto_atks.get() - 1);
         {
@@ -137,11 +122,9 @@ impl LocalChannel {
     }
 
     pub async fn recv(&self) -> Option<ServerEvent> {
-        // `rx` is only ever locked for the duration of a single `.next().await` call,
-        // and `recv` is only ever called from GameChannel::recv's one call site
-        // (App()'s receive loop) — never concurrently with itself — so `.lock().await`
-        // always acquires immediately in practice; it's an async mutex (not a plain
-        // `RefCell`) specifically so holding the guard across `.next().await` is sound.
+        // Locked only for one `.next().await`, and `recv` has a single non-concurrent
+        // caller, so this always acquires immediately. Async mutex so the guard may cross
+        // the await.
         let mut rx = self.rx.lock().await;
         // Whatever the player's own action already queued goes out first and instantly —
         // only once the UI is up to date with it do the enemy's attacks start landing.
@@ -171,36 +154,23 @@ impl Default for LocalChannel {
     }
 }
 
-/// Handles one `ClientEvent` against local state, returning the `ServerEvent`(s) to
-/// report back. Actions outside offline mode's supported subset (multiplayer lobby,
-/// shop, admin) are logged and produce no events — a deliberate no-op, not a panic,
-/// since the UI paths that would trigger them shouldn't be reachable in offline mode
-/// (no "join game" screen, no shop button) but "silently does nothing" is a much safer
-/// failure mode than crashing if one is reached anyway.
+/// Handles one `ClientEvent` against local state. Actions outside offline mode's subset
+/// (multiplayer lobby, shop, admin) are logged and produce no events — their UI isn't
+/// reachable offline, and a no-op beats a panic if one ever is.
 fn dispatch(state: &Rc<RefCell<ServerData>>, msg: ClientEvent) -> Vec<ServerEvent> {
     match msg {
         ClientEvent::InitializeGame(server_name, player_name, universe, is_single_player) => {
             match crate::local_engine::new_local_game(&universe) {
                 Ok(mut core) => {
                     core.is_single_player = is_single_player;
-                    // Must match whatever the caller passed as `server_name` here —
-                    // the receive loop copies this straight into the app-wide
-                    // `SERVER_NAME` signal (main.rs's `UpdateServerData` handler),
-                    // which `lobby_page.rs`'s "show the Start Game button" host check
-                    // (`SERVER_NAME() == local_login_name_session()`) compares against
-                    // `local_login_name_session()`. A previous hardcoded placeholder
-                    // here ("offline", disagreeing with whatever name the login flow
-                    // actually used) made that check permanently false, silently
-                    // hiding the Start Game button for the rest of the session.
+                    // Must match the caller's `server_name`: it becomes the app-wide
+                    // `SERVER_NAME`, which lobby_page.rs compares against
+                    // `local_login_name_session()` to show Start Game. A hardcoded
+                    // placeholder here made that check permanently false.
                     core.server_name = server_name;
-                    // Mirrors the real server's `init_new_game_by_player` ->
-                    // `add_server_data_with_player` -> `add_player_to_server`, which
-                    // pre-creates an empty `PlayerInfo` entry for the joining player as
-                    // soon as the game/lobby exists, before any character is picked.
-                    // Without this, `players_info` stays empty and
-                    // `character_select.rs`'s `CharacterSelect` — which early-returns
-                    // blank whenever `players_info.is_empty()` — never renders anything
-                    // to click at all, and the lobby's player count never leaves 0.
+                    // Mirrors the server pre-creating an empty `PlayerInfo` when the lobby
+                    // exists. Without it `CharacterSelect` early-returns blank (it requires
+                    // a non-empty `players_info`) and the player count never leaves 0.
                     core.players_nb = 1;
                     let mut data = state.borrow_mut();
                     data.core_game_data = core;
@@ -248,16 +218,10 @@ fn dispatch(state: &Rc<RefCell<ServerData>>, msg: ClientEvent) -> Vec<ServerEven
             vec![update_event(state)]
         }
 
-        // Picking an attack: flags every character it could legally reach, which is what
-        // `character_page.rs` highlights as selectable. Mirrors the server's
-        // `request_set_targeted_characters`.
-        //
-        // Not optional plumbing: lib-rpg only applies an Individual Enemy/Ally effect to a
-        // character whose `is_current_target` is set (`is_effect_applied` in
-        // `rounds_information.rs`). While these two events fell through to the
-        // unsupported-action catch-all, every hero attack offline landed on nobody at all
-        // — no damage, no log line, and no sound, since an attack with no effects has no
-        // sound cue to classify.
+        // Flags every character the attack can reach, as the server's
+        // `request_set_targeted_characters` does. Required, not cosmetic: lib-rpg only
+        // applies an Individual effect to a character with `is_current_target` set, so
+        // without these every offline attack landed on nobody.
         ClientEvent::RequestTargetedCharacter(_server_name, launcher_name, atk_name) => {
             let mut data = state.borrow_mut();
             data.core_game_data
@@ -343,11 +307,8 @@ fn dispatch(state: &Rc<RefCell<ServerData>>, msg: ClientEvent) -> Vec<ServerEven
             vec![update_event(state)]
         }
 
-        // Mirrors the real server's `set_universe_on_server_data`. `InitializeGame` already
-        // applies the universe it was handed, so in the normal flow this arrives carrying the
-        // same value and is a no-op — but it is also sent on its own when the universe picker
-        // changes, and falling through to the catch-all left `core.universe` and the scenario
-        // list stale (logged as "unsupported action SetUniverse").
+        // Mirrors `set_universe_on_server_data`. Usually a no-op after `InitializeGame`, but
+        // it also arrives alone when the universe picker changes.
         ClientEvent::SetUniverse(_server_name, universe) => {
             let mut data = state.borrow_mut();
             match crate::local_engine::scenarios_for_universe(&universe) {
@@ -642,11 +603,9 @@ mod tests {
         assert_eq!(channel.pending_auto_atks.get(), 0);
     }
 
-    /// Drinking a potion mid-fight has to reach `game_state.last_consumable_use`,
-    /// because that bumped `seq` is the only thing `Navbar` watches to play the
-    /// potion sound. Offline, `UsePotion` used to fall through to the
-    /// unsupported-action catch-all: the potion was never drunk, nothing healed,
-    /// and no sound played — while the same potion taken outside a fight worked.
+    /// A combat potion must reach `game_state.last_consumable_use` — that bumped `seq` is
+    /// all `Navbar` watches to play the sound. `UsePotion` used to hit the catch-all, so
+    /// offline the potion was never drunk at all.
     #[test]
     fn a_potion_drunk_in_combat_heals_and_reports_itself() {
         let channel = started_session();
@@ -818,11 +777,9 @@ mod tests {
         matches!(cues, [Sfx::Dodge] | [Sfx::Block])
     }
 
-    /// A hero attack must actually reach the enemy offline — and therefore make a
-    /// sound. Regression test for `RequestTargetedCharacter`/`RequestSetOneTarget`
-    /// falling through to the unsupported-action catch-all: with no character ever
-    /// flagged as the current target, lib-rpg skipped every Individual effect, so
-    /// offline attacks landed nothing and `classify_attack` had no cue to play.
+    /// Regression test: with `RequestTargetedCharacter`/`RequestSetOneTarget` hitting the
+    /// catch-all, no character was ever the current target, so lib-rpg skipped every
+    /// Individual effect and offline attacks landed nothing.
     #[test]
     fn a_hero_attack_lands_and_has_a_sound_cue() {
         for _ in 0..8 {
@@ -843,10 +800,8 @@ mod tests {
         panic!("eight casts of Charge in a row were all dodged, which should not happen");
     }
 
-    /// The contract the sound design rests on: one attack, one sound. The same
-    /// attack cast in fight after fight must lead with the same family cue — the
-    /// sound that gives it its identity — even though the numbers underneath move
-    /// from cast to cast as criticals, armour and the HP cap change what lands.
+    /// One attack, one sound: the same attack must lead with the same family cue every
+    /// cast, though criticals, armour and the HP cap change what actually lands.
     ///
     /// A critical adds its accent after the family cue, which is the one deliberate
     /// variation.

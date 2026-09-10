@@ -91,11 +91,9 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     border-radius: var(--r-sm);
 }
 
-/* Connection-signal icon (Navbar) — a filling wifi glyph standing in for connection
-   quality (see connection_bars() in navbar.rs for why this is latency-based rather than
-   a real wifi-strength reading). Each of the 4 segments (3 arcs + the base dot) is
-   toggled between .lit/.dim individually. Reconnecting forces every segment into the
-   danger color and pulses, so a full drop reads distinctly from "connected but weak". */
+/* Connection-signal icon (Navbar): 4 segments (3 arcs + base dot) toggled .lit/.dim.
+   Latency-based, not real signal strength — see connection_bars() in navbar.rs.
+   Reconnecting pulses every segment in the danger colour. */
 .navbar-connection-icon { display: inline-flex; vertical-align: middle; }
 .navbar-connection-icon .lit { color: var(--rpg-success); }
 .navbar-connection-icon .dim { color: var(--rpg-text-muted); opacity: 0.35; }
@@ -1774,22 +1772,10 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     min-width: 220px;
 }
 
-/* =============================================
-   RESPONSIVE  —  mobile & tablet
-   Strategy: two max-width breakpoints layered on
-   top of the existing desktop-first styles.
-
-   Approach
-   ────────
-   • Desktop  (≥ 769 px) : existing rules, no change
-   • Tablet   (≤ 768 px) : collapse the 3-column game
-     board to a single column, shrink padding/type
-   • Phone    (≤ 480 px) : further compaction —
-     single-column cards, stacked action groups
-
-   The viewport meta is already present in index.html:
-     <meta name="viewport" content="width=device-width, initial-scale=1">
-   ============================================= */
+/* ── Responsive: two max-width breakpoints over the desktop-first rules ──────
+   ≤ 768 px: game board to one column, smaller padding/type
+   ≤ 480 px: single-column cards, stacked action groups
+   Viewport meta lives in index.html. */
 
 /* ── Tablet & landscape phones (≤ 768 px) ──────────────────────────────── */
 @media (max-width: 768px) {
@@ -1801,11 +1787,8 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
        of cramming/wrapping them (src/components/sidebar/). */
     .navbar-desktop-group { display: none; }
     .navbar-mobile-trigger { display: inline-flex; }
-    /* .sidebar-trigger (the actual button rendered inside the wrapper above)
-       defaults to display: none in its own component stylesheet
-       (src/components/sidebar/style.css) and expects the caller to re-enable
-       it per breakpoint — otherwise the wrapper collapses to 0×0 since its
-       only child stays hidden. */
+    /* .sidebar-trigger is display:none in components/sidebar/style.css and expects
+       the caller to re-enable it per breakpoint, or the wrapper collapses to 0×0. */
     .navbar-mobile-trigger .sidebar-trigger { display: flex; }
 
     /* Page wrappers */
@@ -1846,12 +1829,9 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
        to stay readable — stack them instead, each at full sheet width. */
     .talent-tree { flex-direction: column; gap: var(--sp-md); }
 
-    /* Tooltips: left/right side positioning (talent tree, equipment tab)
-       places the fixed 400px-wide box entirely off one edge of the trigger
-       via right:100%/left:100% — once triggers stretch to full sheet width
-       on mobile, that pushes the whole tooltip off-screen and invisible.
-       Render below the trigger instead (like side="bottom"), centered and
-       capped to the viewport width. */
+    /* side=left/right puts the fixed 400px box off one edge via right/left:100%,
+       which lands off-screen once triggers span the sheet. Render below instead,
+       centred and capped to the viewport. */
     /* The `html` prefix is load-bearing, not decoration: components/tooltip/style.css
        declares the same `.tooltip-content` selectors and is linked *after* main.css,
        so at equal specificity it wins on source order and these overrides never
@@ -1876,11 +1856,9 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
         right: auto;
         border-radius: 0.1rem 0 0;
     }
-    /* Talent tooltips span their row instead of being a fixed 400px box centred on
-       it. On the Android WebView `100vw` reports the fake ~980px layout viewport,
-       not the phone, so the cap above cannot be trusted there — measuring against
-       the row (which lives inside the sheet) always fits, whatever the WebView
-       thinks the viewport is. */
+    /* Talent tooltips span their row rather than a fixed 400px box: on Android's
+       WebView `100vw` is the fake ~980px viewport, so the cap above clamps nothing.
+       The row is inside the sheet, so it fits by construction. */
     html .talent-node-row .tooltip-content[data-side="left"],
     html .talent-node-row .tooltip-content[data-side="right"] {
         left: 0;
@@ -1892,25 +1870,12 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 }
 
 /* ── Android WebView fallback for the ≤768px rules above ────────────────
-   Android's WebView (used by the native mobile client, via the `wry` crate)
-   never enables "wide viewport" mode, so it ignores <meta name="viewport">
-   entirely and evaluates every `max-width` media query above against a fake
-   ~980px layout — meaning the ≤768px block above never matches there, no
-   matter how narrow the phone actually is. main.rs works around this by
-   measuring window.screen.width directly (which reports the real device
-   width regardless of the WebView's viewport-scaling bug) and toggling this
-   class on <html> — so these mirror the ≤768px block's display toggles
-   *and* its tooltip-content overrides (see the comment above that block):
-   without the mirror here, tooltips stayed anchored via the fixed 400px
-   left:100%/right:100% desktop rules on the Android app specifically, since
-   the media query that fixes them never matches there. Each selector below
-   pairs a `.tooltip-content` class with `[data-side=...]` the same way the
-   media-query version does, which gives it strictly higher specificity than
-   the always-on desktop rules regardless of source order, so no `!important`
-   is needed here. Real browsers (including the web build) already get this
-   correctly from the @media query, and won't ever get this class since
-   screen.width there reflects the real screen too — it's harmless,
-   redundant confirmation. */
+   Android's WebView ignores <meta viewport> and evaluates every max-width query against
+   a fake ~980px layout, so the block above never matches there. main.rs reads
+   window.screen.width and toggles this class on <html>; these mirror that block's
+   display toggles and tooltip overrides. The class+attribute selectors outrank the
+   always-on desktop rules regardless of source order, so no !important. Real browsers
+   never get the class — they already match the media query. */
 html.force-mobile-nav .navbar-desktop-group,
 html.force-mobile-nav .game-toolbar-desktop {
     display: none;
@@ -1944,11 +1909,8 @@ html.force-mobile-nav .tooltip-content[data-side="right"]::after {
     border-radius: 0.1rem 0 0;
 }
 
-/* Talent tooltips span their row rather than being a fixed 400px box centred on
-   it — this is the case that matters most on Android, where `100vw` reports the
-   fake ~980px layout viewport rather than the phone, so the max-width cap above
-   clamps nothing. The row is inside the sheet, so measuring against it fits by
-   construction. */
+/* Talent tooltips span their row: `100vw` is the fake ~980px viewport here, so the cap
+   above clamps nothing. The row is inside the sheet and fits by construction. */
 html.force-mobile-nav .talent-node-row .tooltip-content[data-side="left"],
 html.force-mobile-nav .talent-node-row .tooltip-content[data-side="right"] {
     left: 0;
@@ -2286,12 +2248,9 @@ html.force-mobile-nav .talent-node-row .tooltip-content[data-side="right"] {
 .talent-path { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .talent-path-title { font-size: 0.72rem; font-weight: 700; color: var(--rpg-text-muted, #8a8fa8); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; padding-bottom: 2px; border-bottom: 1px solid var(--rpg-border-light, rgba(255,255,255,0.12)); }
 .talent-node-row { width: 100%; }
-/* `.tooltip` is `width: fit-content` (see components/tooltip/style.css for why),
-   which here shrinks the wrapper to the talent's *text* — so the Button's
-   `width:100%` resolves against that shrunk box instead of the row, and the
-   tooltip then centres itself on a narrow trigger rather than on the row. Only
-   overridden for talent rows, leaving the fit-content default intact everywhere
-   else. */
+/* `.tooltip` is `width: fit-content` (see components/tooltip/style.css), which shrinks
+   the wrapper to the talent's text — so the Button's `width:100%` and the tooltip both
+   measure a narrow box instead of the row. Talent rows only. */
 .talent-node-row .tooltip,
 .talent-node-row .tooltip-trigger,
 .talent-node-row .tooltip-trigger > div { display: block; width: 100%; }

@@ -67,25 +67,17 @@ fn main() {
     // server URL must be set explicitly before launch.
     #[cfg(all(not(feature = "server"), not(target_arch = "wasm32")))]
     {
-        // dioxus-sdk-storage's LocalStorage falls back to a filesystem backend on native
-        // targets and panics if this isn't called before first use — the browser build never
-        // hits this path since it uses the browser's actual localStorage instead.
-        //
-        // On Android, `directories::BaseDirs::new()` (used internally by set_dir!()) returns
-        // None because the `directories` crate doesn't support Android — unwrapping it panics
-        // and leaves the screen white. Use the app's known internal data path instead.
+        // LocalStorage uses a filesystem backend on native and panics without this. On
+        // Android `set_dir!()` panics too — `directories` has no Android support — so pass
+        // the app's data path explicitly.
         #[cfg(target_os = "android")]
         set_dir!("/data/data/com.aogin.rpgadventure/files/rpg-adventure");
         #[cfg(not(target_os = "android"))]
         set_dir!();
 
-        // Resolution order: a runtime env var (e.g. `dx serve`) always wins, for dev
-        // convenience; then whatever the user last saved via the in-app Server settings
-        // dialog (board_game_components/navbar.rs) — read straight off disk here since
-        // main() runs before any component/hook exists; then the value baked in at
-        // *compile* time (via `option_env!`, see build.rs) — the only option available to
-        // an installed Android APK, which has no shell to read env vars from and no prior
-        // launch to have saved anything from; then a hardcoded fallback.
+        // Order: runtime env var (dev), then the in-app Server settings dialog's saved
+        // value (read off disk — main() predates any hook), then the compile-time bake
+        // (build.rs — the only option an installed APK has), then a fallback.
         let persisted_server_url =
             LocalStorage::get::<String>(&dx_rpg::common::SYNCED_SERVER_URL_KEY.to_owned())
                 .filter(|s: &String| !s.is_empty());
@@ -97,14 +89,9 @@ fn main() {
         tracing::info!("Native client connecting to server at {server_url}");
         dioxus::fullstack::set_server_url(Box::leak(server_url.into_boxed_str()));
 
-        // Opt-in escape hatch for a server behind a self-signed/untrusted TLS certificate
-        // (e.g. a dev or home-lab deployment with no real domain for Let's Encrypt). Off by
-        // default: this disables certificate validation for every request the client makes
-        // (server-fn calls *and* the websocket handshake both go through the same underlying
-        // reqwest client), so it must only be used against a server you trust on a network you
-        // trust — it removes protection against a MITM impersonating the server. Same
-        // runtime-env, then-persisted, then-compile-time-baked fallback as SERVER_URL above,
-        // for the same reasons.
+        // Opt-in escape hatch for a self-signed server cert. Disables validation for every
+        // request (server fns and the websocket share one reqwest client), so it removes MITM
+        // protection — trusted networks only. Same resolution order as SERVER_URL above.
         let persisted_insecure_certs =
             LocalStorage::get::<bool>(&dx_rpg::common::SYNCED_INSECURE_CERTS_KEY.to_owned());
         let insecure_accept_invalid_certs = std::env::var("INSECURE_ACCEPT_INVALID_CERTS")
@@ -127,31 +114,19 @@ fn main() {
         }
     }
 
-    // Registers the offlines/ game data (embedded at compile time by build.rs) with
-    // lib-rpg, so offline mode's local game engine can construct a DataManager the same
-    // way the server does — before any component/hook exists, same reasoning as the
-    // server-URL resolution above running this early. A no-op on the server build (the
-    // module is cfg'd out there entirely; see embedded_data.rs).
+    // Registers the build.rs-embedded offlines/ data with lib-rpg so offline mode can build
+    // a DataManager. Must run before any hook exists. Cfg'd out of the server build.
     #[cfg(not(feature = "server"))]
     dx_rpg::embedded_data::register();
 
-    // On the client, we simply launch the app as normal, taking over the main thread.
-    //
-    // Desktop only: `document::Link` stylesheets declared in App()'s rsx! (below) are
-    // injected into <head> via a queued effect that runs *after* the webview's first
-    // paint — a real flash-of-unstyled-content on launch, not present on web (where
-    // the browser parses <link> tags from the served HTML's <head> before painting
-    // anything). `Config::with_custom_head` splices content into <head> of the initial
-    // HTML dioxus-desktop serves, before the webview ever renders — so build the same
-    // stylesheet list here and hand it in up front. The App()-root document::Link
-    // entries stay in place regardless: web still needs them (this custom_head path is
-    // desktop-only), and on desktop they just harmlessly re-apply the same hrefs.
+    // Desktop only: App()'s `document::Link` stylesheets are injected by an effect that
+    // runs after the webview's first paint, so the launch flashes unstyled.
+    // `with_custom_head` puts them in the initial HTML instead. The App()-root links stay
+    // — web needs them, and on desktop they harmlessly re-apply the same hrefs.
     #[cfg(all(not(feature = "server"), feature = "desktop"))]
     {
-        // Same stylesheets App()'s rsx! below loads via document::Link, so this list and
-        // that one must be kept in sync by hand — there's no single source both can share,
-        // since one is a `const` list consumed here in `main()` and the other is markup
-        // inside the `App` component.
+        // Must be kept in sync by hand with App()'s document::Link list: one is a const
+        // here, the other is markup inside the component.
         let stylesheets: &[Asset] = &[
             MAIN_CSS,
             dx_rpg::common::DX_COMP_CSS,
@@ -173,19 +148,11 @@ fn main() {
             head.push_str(&format!(r#"<link rel="stylesheet" href="{href}">"#));
         }
 
-        // Wayland has no per-window icon protocol that GTK3 implements, so the
-        // `with_icon` call below only ever reaches X11, Windows and macOS. On a Wayland
-        // session the compositor instead resolves a window's taskbar icon by matching its
-        // xdg-shell app_id against an installed .desktop file (here:
-        // /usr/share/applications/rpg-adventure.desktop, shipped by the .deb/.rpm, whose
-        // Icon= points at the hicolor icon installed alongside it). GTK3 takes that app_id
-        // straight from `g_get_prgname()`, which defaults to the basename of argv[0] — and
-        // `dx serve` doesn't run `target/.../app/rpg-adventure`, it runs a per-build copy of
-        // it named `rpg-adventure-<hash>` (so it can replace the original while the app is
-        // running). That hashed name matches no .desktop file, so the compositor falls back
-        // to an unrelated app's icon. Pinning the program name keeps the app_id stable and
-        // identical between `dx serve` and an installed build. Must run before the event
-        // loop is built, since that's what calls gtk_init().
+        // `with_icon` below never reaches Wayland — GTK3 implements no per-window icon
+        // protocol there. The compositor matches the xdg-shell app_id against an installed
+        // .desktop file instead, and GTK3 takes that app_id from `g_get_prgname()`, i.e.
+        // basename(argv[0]). `dx serve` runs a hashed copy (`rpg-adventure-<hash>`) that
+        // matches no .desktop file, so pin the name. Must precede gtk_init().
         #[cfg(all(
             unix,
             not(target_os = "macos"),
@@ -194,11 +161,8 @@ fn main() {
         ))]
         glib::set_prgname(Some("rpg-adventure"));
 
-        // `dx serve --platform desktop` opens the window straight through tao/wry, bypassing
-        // the `[bundle].icon` path in Dioxus.toml entirely (that one's only read by `dx
-        // bundle`'s packaging step) — without an explicit icon here the taskbar falls back to
-        // whatever the OS/webview backend defaults to (e.g. the system's default browser
-        // icon). Decode the same square PNG bundling uses so dev and packaged builds match.
+        // `dx serve` opens the window straight through tao/wry, bypassing Dioxus.toml's
+        // `[bundle].icon` (read only by `dx bundle`), so set it here from the same PNG.
         // X11/Windows/macOS only, per the Wayland note above.
         let icon_png = include_bytes!("../assets/icon-512.png");
         let icon = image::load_from_memory(icon_png)
@@ -220,12 +184,8 @@ fn main() {
     #[cfg(all(not(feature = "server"), not(feature = "desktop")))]
     dioxus::launch(App);
 
-    // On the server, we can use `dioxus::serve` to create a server that serves our app.
-    //
-    // The `serve` function takes a closure that returns a `Future` which resolves to an `axum::Router`.
-    //
-    // We return a `Router` such that dioxus sets up logging, hot-reloading, devtools, and wires up the
-    // IP and PORT environment variables to our server.
+    // `dioxus::serve` takes a closure returning an `axum::Router` and wires up logging,
+    // hot-reloading, devtools and the IP/PORT env vars.
     #[cfg(feature = "server")]
     dioxus::serve(|| async {
         use axum_session::{SessionConfig, SessionLayer, SessionStore};
@@ -237,17 +197,11 @@ fn main() {
             server_fn::{auth_rate_limit, update_all_connection_status},
         };
 
-        // The id `AuthSession` assigns a request with no (or an invalid) session cookie.
-        // Must never equal a real `users.id` — db.rs seeds real accounts at 1 (Admin) and
-        // 2 (Guest), with ids from 3 up handed out by SQLite's own autoincrement for
-        // every account registered since. This used to reuse `websocket_handler::
-        // STARTING_CLIENT_ID` (also `1`) for an entirely unrelated numbering scheme (the
-        // per-websocket-connection client id counter) — which meant every anonymous,
-        // cookie-less request loaded the real Admin row (including its real "Admin::View"
-        // permission) as `current_user`, making every `require_admin` check pass for
-        // literally anyone. `0` is safe: SQLite `INTEGER PRIMARY KEY` rowids are always
-        // >= 1, and `User::load_user` (auth.rs) now returns a proper empty-permission
-        // anonymous user for an id with no matching row instead of panicking.
+        // Id for a request with no valid session cookie. Must never match a real
+        // `users.id` — db.rs seeds Admin at 1, so reusing `STARTING_CLIENT_ID` (also 1) made
+        // every cookie-less request load Admin and pass `require_admin`. SQLite rowids start
+        // at 1, so `0` is safe; `User::load_user` returns an empty-permission anonymous user
+        // for an unknown id.
         const ANONYMOUS_SESSION_USER_ID: i64 = 0;
 
         let bind_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_owned());
@@ -264,11 +218,8 @@ fn main() {
             is_main_server
         );
 
-        // Only the designated main/local server instance resets connection status for
-        // every user at start (to avoid stale is_connected from a previous run). A second
-        // server process pointed at the same database (e.g. a secondary/staging instance)
-        // must NOT do this — it would wipe out is_connected for users genuinely connected
-        // to the main instance right now.
+        // Only the main instance clears stale is_connected at start; a second process on the
+        // same database would wipe the flag for users live on the main one.
         if is_main_server {
             update_all_connection_status(false).await.unwrap();
         }
@@ -278,16 +229,10 @@ fn main() {
         // initialize data manager
         init_data_manager().await;
 
-        // Session lifetime — deliberately explicit rather than accepting axum_session's
-        // silent defaults. This is the actual mechanism that closes "left the app signed
-        // in forever, then lost the phone": once a session has sat idle for
-        // SESSION_IDLE_TIMEOUT_HOURS (renewed by any authenticated request the player
-        // actually makes — logging in, admin actions, changing their password, ...), or
-        // SESSION_MAX_LIFETIME_DAYS have passed regardless of activity, `auth.current_user`
-        // reverts to anonymous and every `auth: Session`-gated endpoint (login, admin
-        // panel, ...) rejects the request — see `require_admin` in server_fn/auth.rs.
-        // `AdminPage` is what turns that rejection into a clean "your session expired,
-        // please sign in again" prompt instead of a raw error.
+        // Explicit rather than axum_session's defaults: after SESSION_IDLE_TIMEOUT_HOURS
+        // idle (renewed by any authenticated request) or SESSION_MAX_LIFETIME_DAYS outright,
+        // `current_user` reverts to anonymous and `auth: Session` endpoints reject.
+        // `AdminPage` turns that into a "session expired" prompt.
         let session_idle_timeout = chrono::Duration::hours(
             std::env::var("SESSION_IDLE_TIMEOUT_HOURS")
                 .ok()
@@ -496,11 +441,8 @@ fn App() -> Element {
     let mut toggle_atk_animation = use_signal(|| false);
     // Set to Some(map_id) by the lightweight OverworldEntered event.
     let mut overworld_map_id: Signal<Option<String>> = use_signal(|| None);
-    // Tracks the websocket link itself (see the ws-loop below) — surfaced in Navbar as a
-    // status badge so a flaky desktop/mobile connection is visible instead of the game
-    // just silently stopping responding. Starts optimistic: `use_websocket` below
-    // attempts the connection synchronously, and the ws-loop flips this to
-    // `Reconnecting` immediately if that first attempt already failed.
+    // Websocket link state, shown as Navbar's status badge. Starts optimistic —
+    // `use_websocket` connects synchronously and the ws-loop flips it on failure.
     let mut connection_status = use_signal(|| ConnectionStatus::Connected);
     // See `CtxSessionExpired`'s doc comment — set by `AdminPage` when it discovers the
     // live server session no longer matches the identity persisted locally.
@@ -509,11 +451,8 @@ fn App() -> Element {
     // before the first measurement or after one times out (see `CtxConnectionLatency`'s
     // doc comment for why that case matters separately from `connection_status`).
     let mut latency_ms: Signal<Option<u64>> = use_signal(|| None);
-    // (nonce, sent-at) of the ping currently awaiting a Pong. Shared between the ping
-    // loop (writes it on send, reads it back to detect a timeout) and the main ws-loop's
-    // `ServerEvent::Pong` handler (clears it on a matching reply). The nonce guards
-    // against a `Pong` for an already-timed-out ping arriving late and being mistaken
-    // for a reply to the next one.
+    // (nonce, sent-at) of the ping awaiting a Pong. The nonce stops a late Pong from a
+    // timed-out ping being read as a reply to the next one.
     let mut pending_ping: Signal<Option<(u64, web_time::Instant)>> = use_signal(|| None);
 
     // Log which server URL this client is about to talk to (server-fn calls + websocket) —
@@ -528,12 +467,8 @@ fn App() -> Element {
 
     let socket = use_websocket(|| on_rcv_client_event(WebSocketOptions::new()));
 
-    // Offline-mode transport: GameChannel wraps `socket` (unchanged, real-websocket
-    // behavior — the server build, which also renders this UI for SSR, only ever uses
-    // that path) plus, client builds only, a LocalChannel that routes ClientEvents
-    // straight into local_engine instead of over the network once `offline_mode` is
-    // flipped true (see Home()'s "Play Offline" action). See game_channel.rs's doc
-    // comment for why the split is cfg-gated rather than a runtime Option.
+    // GameChannel wraps `socket` plus, on client builds, a LocalChannel that routes into
+    // local_engine once `offline_mode` flips. See game_channel.rs for why it's cfg-gated.
     #[cfg(not(feature = "server"))]
     let local_channel_handle = dx_rpg::local_channel::LocalChannel::new();
     #[cfg(not(feature = "server"))]
@@ -544,13 +479,9 @@ fn App() -> Element {
     #[cfg(feature = "server")]
     let game_channel = dx_rpg::game_channel::GameChannel::new(socket);
 
-    // synced storage
-    // login_name drives which page is rendered (LoginPage vs home content). Starting with
-    // the server default (DISCONNECTED_USER) on both the server binary and the WASM client
-    // ensures the hydration render produces the same component tree on both sides — avoiding
-    // a known Dioxus SSR hydration bug (https://github.com/DioxusLabs/dioxus/issues/3583)
-    // that mis-aligns the SSR data stream when the client renders different components than
-    // the server.  On native (desktop/mobile), use_synced_storage handles everything.
+    // login_name picks the page (LoginPage vs home), so both sides must start at
+    // DISCONNECTED_USER or hydration renders different trees — DioxusLabs/dioxus#3583.
+    // Native has no hydration, so use_synced_storage is fine there.
     #[cfg(any(target_arch = "wasm32", feature = "server"))]
     let mut login_name_session_local_sync = use_signal(|| DISCONNECTED_USER.clone());
     #[cfg(all(not(target_arch = "wasm32"), not(feature = "server")))]
@@ -584,13 +515,9 @@ fn App() -> Element {
         use_synced_storage::<LocalStorage, f32>(SYNCED_OVERWORLD_ZOOM_KEY.to_owned(), || {
             dx_rpg::board_game_components::overworld::DEFAULT_ZOOM
         });
-    // Native-only server URL/TLS-validation override, editable from the Navbar's Server
-    // settings dialog; declared here (not in Navbar) since use_synced_storage there
-    // stack-overflows the app (Navbar is a #[layout] component, not the route root).
-    // Hooks must run in the same order on every platform, so these are declared
-    // unconditionally but fall back to an inert signal off native — a real
-    // use_synced_storage there hits a Dioxus SSR hydration bug
-    // (https://github.com/DioxusLabs/dioxus/issues/3583).
+    // Native-only server URL/TLS override from Navbar's settings dialog. Declared here
+    // because use_synced_storage in Navbar (a #[layout] component) stack-overflows.
+    // Declared unconditionally for hook order, inert off native — DioxusLabs/dioxus#3583.
     #[cfg(all(not(target_arch = "wasm32"), not(feature = "server")))]
     let synced_server_url =
         use_synced_storage::<LocalStorage, String>(SYNCED_SERVER_URL_KEY.to_owned(), || {
@@ -624,12 +551,8 @@ fn App() -> Element {
         document::eval("document.documentElement.setAttribute('data-theme', 'dark');");
     });
 
-    // Sets up the background-music/sfx `<audio>` elements once. Same document::eval
-    // approach as the theme effect above — works on web, desktop, and mobile alike.
-    //
-    // The bridge starts with background audio off, so the player's stored setting has
-    // to be pushed in right behind it or a session would silently ignore it until the
-    // checkbox was touched again.
+    // Sets up the music/sfx `<audio>` elements once. The bridge starts with background
+    // audio off, so the stored setting has to be pushed in right behind it.
     let audio_settings = CtxAudioSettings {
         music_volume: music_volume_local_sync,
         sfx_volume: sfx_volume_local_sync,
@@ -641,16 +564,10 @@ fn App() -> Element {
         dx_rpg::audio::set_background_audio(audio_settings);
     });
 
-    // Android's WebView (used by the native mobile client) never enables "wide viewport"
-    // mode, so it ignores <meta name="viewport"> and evaluates every `@media (max-width:
-    // ...)` rule in main.css against a fake ~980px layout — the mobile nav/toolbar
-    // hamburger breakpoint (see .navbar-desktop-group/.navbar-mobile-trigger and
-    // .game-toolbar-desktop/.game-toolbar-mobile-trigger) never matches there no matter how
-    // narrow the phone screen actually is. window.screen.width reports the real device
-    // width regardless of that bug, so toggle a class on <html> from it as a fallback the
-    // CSS in main.css (the `html.force-mobile-nav` rules) also hooks into. Harmless no-op
-    // on platforms where the media query already works correctly (screen.width there
-    // matches the real viewport too, so this just redundantly confirms the same state).
+    // Android's WebView ignores <meta viewport> and evaluates every `max-width` query
+    // against a fake ~980px layout, so main.css's mobile breakpoints never match there.
+    // `window.screen.width` reports the real width, so toggle `html.force-mobile-nav` from
+    // it (see the matching rules in main.css). Redundant but harmless elsewhere.
     use_effect(|| {
         document::eval(
             r#"
@@ -665,12 +582,8 @@ fn App() -> Element {
         );
     });
 
-    // On web: restore login_name from localStorage after the initial hydration render, then
-    // persist any future changes.  The first call of the effect (immediately after hydration)
-    // reads localStorage and updates the signal if a saved session exists — triggering a
-    // re-render that shows the correct page.  Subsequent calls (on signal changes) persist
-    // the new value so it survives page reloads.  An Rc<Cell<bool>> flag guards the
-    // first-vs-subsequent distinction within the same browser session.
+    // Web only: the first run (just after hydration) restores login_name from localStorage;
+    // later runs persist changes. The Rc<Cell<bool>> tells the two apart.
     #[cfg(target_arch = "wasm32")]
     {
         use std::{cell::Cell, rc::Rc};
@@ -698,11 +611,8 @@ fn App() -> Element {
     //
     // Wrapped in an outer reconnect loop: `use_websocket` establishes the connection once and
     use_future(move || {
-        // `socket` stays the real websocket handle, used only by the reconnect logic
-        // further down (which is meaningless in offline mode — nothing to reconnect
-        // to). Everything that should route through offline mode when active goes
-        // through `game_channel` instead. Both are Copy, freely re-capturable on every
-        // invocation of this closure (use_future's FnMut) with no explicit clone needed.
+        // `socket` is only for the reconnect logic below (meaningless offline); everything
+        // else goes through `game_channel`. Both are Copy, so no clones needed.
         let mut socket = socket;
         let mut game_channel = game_channel;
         async move {
@@ -835,11 +745,8 @@ fn App() -> Element {
                         }
                     }
                 }
-                // In offline mode, game_channel.recv() only fails if LocalChannel's
-                // sender was dropped — shouldn't happen while the app is alive, but if
-                // it somehow did, there's no real server to reconnect to (attempting one
-                // would defeat the whole point of offline mode). Just retry the local
-                // recv loop instead of falling into the real-network reconnect below.
+                // Offline, recv() only fails if LocalChannel's sender was dropped, and there
+                // is no server to reconnect to — retry locally instead.
                 #[cfg(not(feature = "server"))]
                 if offline_mode() {
                     tracing::warn!("[client] ws-loop: local channel closed unexpectedly, retrying");
@@ -860,19 +767,10 @@ fn App() -> Element {
                 const MAX_RECONNECT_BACKOFF: std::time::Duration =
                     std::time::Duration::from_secs(10);
                 loop {
-                    // This loop has its own long sleeps between attempts and no other
-                    // exit condition besides a successful reconnect — which never comes
-                    // without a real server. If "Play Offline" is clicked while stuck
-                    // here (very likely: on a fresh launch with nothing listening on
-                    // SERVER_URL, the very first connection attempt fails immediately,
-                    // dropping straight into this loop before the user has had time to
-                    // click anything), it would otherwise keep retrying/sleeping forever
-                    // and never hand control back to the outer `while let Ok(event) =
-                    // game_channel.recv().await` above — so the local channel's queued
-                    // events (InitClient, UpdateServerData, ...) never get drained and
-                    // the game screen stays blank. Bail out back to the top of the outer
-                    // loop as soon as offline mode is seen, where `game_channel.recv()`
-                    // will correctly route to the local channel instead.
+                    // Without this the loop retries forever (its only exit is a successful
+                    // reconnect), never returning to the outer `game_channel.recv()` — so
+                    // clicking "Play Offline" while stuck here would leave the local
+                    // channel's queued events undrained and the screen blank.
                     #[cfg(not(feature = "server"))]
                     if offline_mode() {
                         tracing::info!(
@@ -900,12 +798,9 @@ fn App() -> Element {
         }
     });
 
-    // Latency probe: measures round-trip time to the server independently of the ws-loop
-    // above, since a websocket can stay technically open under severe network congestion
-    // while still not usefully delivering data — `connection_status` alone would keep
-    // reporting `Connected` through that. One ping per `PING_INTERVAL`; if no `Pong`
-    // arrives before the next one is due, that round is treated as lost (`latency_ms` ->
-    // `None`) rather than waiting indefinitely.
+    // Round-trip probe, separate from the ws-loop: a congested socket stays open and
+    // `Connected` while delivering nothing. One ping per `PING_INTERVAL`; no Pong before the
+    // next is due counts as lost.
     use_future(move || {
         let game_channel = game_channel;
         async move {

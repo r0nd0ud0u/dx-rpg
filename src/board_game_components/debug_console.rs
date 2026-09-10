@@ -25,11 +25,8 @@ const REFRESH_INTERVAL: Duration = Duration::from_millis(1000);
 /// from an installed app without a cable and a second machine).
 #[component]
 pub fn DebugConsole(open: bool, on_open_change: EventHandler<bool>) -> Element {
-    // `open` is a plain prop, not a Signal, so a raw read of it inside use_effect below
-    // wouldn't register as a tracked dependency and the effect would never rerun after
-    // mount. Mirroring it into a Signal here (updated on every render, which happens
-    // whenever the parent passes a new value) gives the effect something reactive to
-    // watch for the open/close transition.
+    // `open` is a plain prop, so reading it in the effect below tracks nothing. Mirror it
+    // into a Signal, updated each render, to give the effect something reactive to watch.
     let mut open_signal = use_signal(|| open);
     if open_signal() != open {
         open_signal.set(open);
