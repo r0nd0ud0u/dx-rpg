@@ -31,6 +31,12 @@
   line-height: 1.4;
 }
 
+/* Set by init_positioning() when the box had to be nudged to stay on screen: the arrow
+   would point somewhere the trigger isn't. */
+.tooltip-content[data-shifted="true"]::after {
+  display: none;
+}
+
 .tooltip-content::after {
   position: absolute;
   border-width: 0.25rem;

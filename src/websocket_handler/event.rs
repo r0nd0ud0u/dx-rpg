@@ -212,7 +212,6 @@ pub async fn on_rcv_client_event(
 
                     // Incoming message from client
                     res = socket.recv() => {
-                        tracing::info!("Receiving message from client {}, message: {:?}", client_id, res);
                         match res {
                             Ok(ClientEvent::LoginAllSessions(username, sql_id, device_token)) => {
                                 tracing::info!("Received set_name request from client {}: {:?}", sql_id, username);
