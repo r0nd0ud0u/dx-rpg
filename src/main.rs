@@ -564,6 +564,11 @@ fn App() -> Element {
         dx_rpg::audio::set_background_audio(audio_settings);
     });
 
+    // Keeps open tooltips inside the viewport whatever `side` the call site picked.
+    use_effect(|| {
+        dx_rpg::components::tooltip::init_positioning();
+    });
+
     // Android's WebView ignores <meta viewport> and evaluates every `max-width` query
     // against a fake ~980px layout, so main.css's mobile breakpoints never match there.
     // `window.screen.width` reports the real width, so toggle `html.force-mobile-nav` from
