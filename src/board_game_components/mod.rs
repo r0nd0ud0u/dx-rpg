@@ -19,3 +19,4 @@ pub mod navbar;
 pub mod overworld;
 pub mod popover_comp;
 pub mod startgame_page;
+pub mod tutorial;

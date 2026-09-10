@@ -86,6 +86,11 @@ pub const SYNCED_BACKGROUND_AUDIO_KEY: &str = "synced_background_audio";
 /// screen, and this also works offline, where there is no server to store settings on.
 pub const SYNCED_OVERWORLD_ZOOM_KEY: &str = "synced_overworld_zoom";
 
+/// Whether this device has already been shown the how-to-play dialog. Device-local
+/// rather than per-account: the point is that a first-time player gets the tutorial
+/// without asking for it, and that includes the offline mode, where there is no account.
+pub const SYNCED_TUTORIAL_SEEN_KEY: &str = "synced_tutorial_seen";
+
 // ── Per-setting context newtypes ─────────────────────────────────────────────
 // Each wraps a `Signal<bool>` in a distinct type so that Dioxus context lookup
 // (which is keyed by TypeId) stores and retrieves them independently.
@@ -146,6 +151,12 @@ pub struct CtxSyncedInsecureCerts(pub Signal<bool>);
 /// via context (declared in `App()`) for the same reasons as `CtxSyncedServerUrl`.
 #[derive(Clone, Copy)]
 pub struct CtxDeviceToken(pub Signal<String>);
+
+/// Whether the how-to-play dialog has already been shown on this device — see
+/// `SYNCED_TUTORIAL_SEEN_KEY`. Declared in `App()` for the same reason as
+/// `CtxSyncedServerUrl`, and flipped by `Navbar` when the dialog closes.
+#[derive(Clone, Copy)]
+pub struct CtxTutorialSeen(pub Signal<bool>);
 
 /// Overworld zoom as a scale factor (`1.0` = 100%), via `SYNCED_OVERWORLD_ZOOM_KEY`.
 /// Declared in `App()`, not `OverworldMap`: the map is unmounted for the whole of a

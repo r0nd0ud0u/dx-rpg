@@ -2519,3 +2519,212 @@ html.force-mobile-nav .talent-node-row .tooltip-content[data-side="right"] {
     min-width: 32px;
     text-align: center;
 }
+
+/* ── How-to-play dialog (board_game_components/tutorial.rs) ─────────── */
+
+/* Wider than the default 32rem alert dialog: the tab strip needs the room, and a
+   help panel that is one word per line is the wall of text this replaced. */
+.alert-dialog.help-dialog {
+    max-width: min(50rem, calc(100% - 2rem));
+    width: 100%;
+    text-align: left;
+}
+.alert-dialog.help-dialog .dx-alert-dialog-description {
+    margin: 0;
+    color: var(--rpg-text-muted, #7a8fa8);
+    font-size: 0.88rem;
+}
+
+/* Scroll the panels, not the whole dialog, so the tab strip stays reachable. */
+.help-body {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+}
+.tabs.help-tabs {
+    gap: 0.75rem;
+}
+.tabs.help-tabs .tabs-list {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--rpg-border-light, #2a3a55);
+}
+.tabs.help-tabs .tabs-trigger {
+    padding: 6px 10px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+.tabs.help-tabs .tabs-trigger[data-state="active"] {
+    background: color-mix(in srgb, var(--rpg-gold, #c9a227) 22%, transparent);
+    color: var(--rpg-gold-light, #e8c547);
+}
+.help-panel {
+    display: flex;
+    max-height: min(58vh, 30rem);
+    flex-direction: column;
+    padding: 0.25rem 0.5rem 0.25rem 0;
+    gap: 0.85rem;
+    overflow-y: auto;
+    scrollbar-color: var(--rpg-gold, #c9a227) transparent;
+    scrollbar-width: thin;
+}
+.help-panel::-webkit-scrollbar {
+    width: 6px;
+}
+.help-panel::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--rpg-gold, #c9a227) 55%, transparent);
+}
+
+/* Numbered cards — the three steps a new player actually has to follow. */
+.help-step {
+    display: flex;
+    align-items: flex-start;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--rpg-border-light, #2a3a55);
+    border-left: 3px solid var(--rpg-gold, #c9a227);
+    border-radius: 8px;
+    background: var(--rpg-bg-card, #0f1623);
+    gap: 0.8rem;
+}
+.help-step-number {
+    display: flex;
+    width: 1.9rem;
+    height: 1.9rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--rpg-gold, #c9a227) 20%, transparent);
+    color: var(--rpg-gold-light, #e8c547);
+    flex-shrink: 0;
+    font-size: 1rem;
+    font-weight: 800;
+}
+.help-step-title {
+    margin: 0 0 0.15rem;
+    color: var(--rpg-text, #e2e8f0);
+    font-size: 1rem;
+    font-weight: 700;
+}
+.help-step-body,
+.help-block-body {
+    margin: 0;
+    color: var(--rpg-text-muted, #7a8fa8);
+    font-size: 0.9rem;
+    line-height: 1.55;
+}
+
+.help-block-title {
+    margin: 0 0 0.15rem;
+    color: var(--rpg-gold, #c9a227);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+.help-block {
+    padding-left: 0.1rem;
+}
+
+.help-callout {
+    padding: 0.65rem 0.8rem;
+    border: 1px solid color-mix(in srgb, var(--rpg-teal, #00d4b1) 45%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--rpg-teal, #00d4b1) 10%, transparent);
+}
+.help-callout-title {
+    margin: 0 0 0.15rem;
+    color: var(--rpg-teal, #00d4b1);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+.help-callout-body {
+    margin: 0;
+    color: var(--rpg-text, #e2e8f0);
+    font-size: 0.9rem;
+    line-height: 1.55;
+}
+
+.help-note {
+    margin: 0;
+    color: var(--rpg-text-muted, #7a8fa8);
+    font-size: 0.85rem;
+    font-style: italic;
+    line-height: 1.5;
+}
+.help-section-title {
+    margin: 0;
+    color: var(--rpg-gold, #c9a227);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+/* Icon legend and pro tips: one idea per line, no numbering — they are a reference
+   to scan, not a sequence to follow. */
+.help-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.help-bullet {
+    margin: 0;
+    padding-left: 0.9rem;
+    position: relative;
+    color: var(--rpg-text, #e2e8f0);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+.help-bullet::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--rpg-gold, #c9a227);
+}
+
+.help-keys {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--rpg-border-light, #2a3a55);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.help-keys-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0.45rem 0.7rem;
+    background: var(--rpg-bg-card, #0f1623);
+    gap: 0.75rem;
+}
+.help-keys-row + .help-keys-row {
+    border-top: 1px solid var(--rpg-border-light, #2a3a55);
+}
+.help-keys-label {
+    color: var(--rpg-text, #e2e8f0);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+.help-keys-value {
+    color: var(--rpg-text-muted, #7a8fa8);
+    font-size: 0.85rem;
+    text-align: right;
+}
+
+/* Phones: the tab strip scrolls sideways instead of wrapping into four rows and
+   pushing the content off screen. */
+@media (max-width: 768px) {
+    .alert-dialog.help-dialog {
+        padding: 20px 14px 14px;
+    }
+    /* One scrolling row instead of three wrapped ones; the right-edge fade is the
+       only hint that there are more tabs. */
+    .tabs.help-tabs .tabs-list {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        mask-image: linear-gradient(to right, #000 88%, transparent);
+        scrollbar-width: none;
+    }
+    .tabs.help-tabs .tabs-list::-webkit-scrollbar {
+        display: none;
+    }
+    .help-panel {
+        max-height: 60vh;
+    }
+}

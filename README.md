@@ -136,6 +136,34 @@ When creating a server, choose between:
 
 The **Inventory sheet** adapts to the mode: in single-player it shows a tab per hero so you can inspect each character's stats & equipment; in multiplayer it shows only your own hero's data.
 
+### How to Play tutorial (❓)
+
+The ❓ button in the navbar (and the "How to play" entry in the mobile drawer) opens the
+in-game tutorial — `board_game_components/tutorial.rs`, rendered as an `AlertDialog` with
+one tab per subject rather than a single scrolling manual:
+
+| Tab | Covers |
+|-----|--------|
+| 🚀 First steps | Create/join a game, pick a hero, the attack → target → confirm loop, offline play, and a legend of the in-game icons (⚔️ 💊 🎯 ⚡ 🔒) |
+| ⚔️ Combat | Attack list and energy costs, potions costing your action, Speed-based turn order and the bonus round, crits/dodges/blocks, where to read the fight (Logs, Game Stats, Settings) |
+| 🗺️ Overworld | Move / interact / zoom controls, grass encounters, boss NPCs and door unlocks |
+| 🎒 Gear & gold | Store and Bag, half-price buy-back, equipping from the Inventory sheet, where gold comes from |
+| 🏆 Progression | End-of-scenario rewards, talent points, the level-13 cap, the ten stages, save slots |
+| 💡 Pro tips | Advanced play — Speed thresholds, attack-panel ordering, aggro, ultimates, Berserker blocking, difficulty-flavouring settings |
+| 🛡️ Admin | Only rendered for the admin account |
+
+Two ergonomics details:
+
+- **It opens on the tab that matches the current `GamePhase`** (`default_tab`): Combat during
+  a fight, Overworld on the map, First steps everywhere else. The tab tree is remounted on
+  each open so that choice is re-made every time.
+- **It opens itself once per device**, the first time a session is signed in (an offline game
+  counts), and then never again — the flag lives in local storage under
+  `synced_tutorial_seen` (`CtxTutorialSeen`, declared in `App()`). The check waits for a
+  signed-in session rather than firing on mount: it lands the dialog on the home page, and
+  it keeps the read out of the web hydration window, where `dioxus-sdk-storage` still serves
+  a synced signal's default instead of the stored value.
+
 ### Settings Panel (⚙️)
 
 In the game toolbar, a **Settings** sheet lets each user toggle options that are persisted per-user in the DB:
