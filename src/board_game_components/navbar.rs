@@ -9,10 +9,10 @@ use lib_rpg::server::server_manager::{GamePhase, ServerData};
 use crate::{
     audio::{self, MusicTrack},
     auth_manager::server_fn::{change_password, get_use_password, logout},
-    board_game_components::debug_console::DebugConsole,
+    board_game_components::{debug_console::DebugConsole, tutorial::HowToPlayDialog},
     common::{
         ADMIN, ConnectionStatus, CtxAppLang, CtxAudioSettings, CtxConnectionLatency,
-        CtxConnectionStatus, CtxSyncedInsecureCerts, CtxSyncedServerUrl, Route,
+        CtxConnectionStatus, CtxSyncedInsecureCerts, CtxSyncedServerUrl, CtxTutorialSeen, Route,
     },
     components::{
         alert_dialog::{
@@ -182,6 +182,32 @@ pub fn Navbar() -> Element {
 
     // dialog open states — lifted here so the roots can live outside the navbar div
     let mut help_open = use_signal(|| false);
+    // First session on this device: open the tutorial without being asked, and mark it
+    // seen straight away — a player who dismisses it immediately has still been offered
+    // it, and the ❓ button reopens it. The flag is persisted in local storage, declared
+    // in App() (see CtxTutorialSeen).
+    //
+    // The check waits for a signed-in session (an offline game counts) rather than firing
+    // on mount, for two reasons: it lands the dialog on the home page, where its first
+    // step is the next thing the player does, and it keeps it out of the hydration window
+    // on web — dioxus-sdk-storage serves a synced signal's *default* for the hydrating
+    // render and only restores the stored value one render later, so a flag read (or
+    // written) before then is the default, not what the device actually saved.
+    let mut tutorial_seen = use_context::<CtxTutorialSeen>().0;
+    let mut first_run_checked = use_signal(|| false);
+    let mut tutorial_first_run = use_signal(|| false);
+    use_effect(move || {
+        // Read inside the effect: that is what subscribes it to later sign-ins.
+        if !is_signed_in(&local_login_name_session()) || first_run_checked() {
+            return;
+        }
+        first_run_checked.set(true);
+        if !tutorial_seen() {
+            tutorial_seen.set(true);
+            tutorial_first_run.set(true);
+            help_open.set(true);
+        }
+    });
     let mut quit_open = use_signal(|| false);
     let mut sound_settings_open = use_signal(|| false);
     let mut debug_console_open = use_signal(|| false);
@@ -305,11 +331,17 @@ pub fn Navbar() -> Element {
                         option { value: "en", "🇬🇧 English" }
                         option { value: "fr", "🇫🇷 Français" }
                     }
-                    // Help trigger
+                    // Help trigger. Icon-only to fit the bar, so the label lives in the
+                    // tooltip/accessible name instead.
                     Button {
                         variant: ButtonVariant::Outline,
-                        onclick: move |_| help_open.set(true),
-                        "?"
+                        title: t!("help-title"),
+                        aria_label: t!("help-title"),
+                        onclick: move |_| {
+                            tutorial_first_run.set(false);
+                            help_open.set(true);
+                        },
+                        "❓"
                     }
                     // Sound settings trigger
                     Button {
@@ -414,135 +446,13 @@ pub fn Navbar() -> Element {
 
             // ── Dialog roots — rendered at layout level, NOT inside the navbar div ──
 
-            // Help dialog
-            AlertDialogRoot { open: help_open(), on_open_change: move |v| help_open.set(v),
-                AlertDialogContent {
-                    AlertDialogTitle { {t!("help-title")} }
-                    AlertDialogDescription {
-                        div { style: "text-align:left; line-height:1.8; max-height:70vh; overflow-y:auto; padding-right:4px;",
-                            // Getting started
-                            p { style: "font-weight:700; color:var(--rpg-gold); margin-bottom:2px;",
-                                {t!("help-section-getting-started")}
-                            }
-                            p { {t!("help-step-1")} }
-                            p { {t!("help-step-2")} }
-                            p { {t!("help-step-3")} }
-
-                            // Game mode
-                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                {t!("help-section-game-modes")}
-                            }
-                            p { {t!("help-mode-multiplayer")} }
-                            p { {t!("help-mode-singleplayer")} }
-
-                            // Lobby & character selection
-                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                {t!("help-section-lobby")}
-                            }
-                            p { {t!("help-step-4")} }
-                            p { {t!("help-step-5")} }
-
-                            // Combat
-                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                {t!("help-section-combat")}
-                            }
-                            p { {t!("help-step-6")} }
-                            p { {t!("help-step-7")} }
-                            p { {t!("help-step-8")} }
-
-                            // Toolbar
-                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                {t!("help-section-toolbar")}
-                            }
-                            p { {t!("help-step-9")} }
-                            p { {t!("help-step-10")} }
-                            p { {t!("help-step-11")} }
-                            p { {t!("help-step-12")} }
-
-                            // Overworld
-                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                {t!("help-section-overworld")}
-                            }
-                            p { {t!("help-step-13")} }
-                            p {
-                                "    "
-                                {t!("help-overworld-move")}
-                            }
-                            p {
-                                "    "
-                                {t!("help-overworld-interact")}
-                            }
-                            p {
-                                "    "
-                                {t!("help-overworld-encounter")}
-                            }
-                            p {
-                                "    "
-                                {t!("help-overworld-boss")}
-                            }
-                            p {
-                                "    "
-                                {t!("help-overworld-unlock")}
-                            }
-                            p {
-                                "    "
-                                {t!("help-overworld-back")}
-                            }
-
-                            // Store
-                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                {t!("help-section-store")}
-                            }
-                            p { {t!("help-step-14")} }
-                            p {
-                                "    "
-                                {t!("help-store-equipment")}
-                            }
-                            p {
-                                "    "
-                                {t!("help-store-consumables")}
-                            }
-                            p {
-                                "    "
-                                {t!("help-store-bag")}
-                            }
-                            p {
-                                "    "
-                                {t!("help-store-gold")}
-                            }
-
-                            // Progression
-                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                {t!("help-section-progression")}
-                            }
-                            p { {t!("help-step-15")} }
-                            p { {t!("help-step-16")} }
-                            p { {t!("help-step-17")} }
-                            p { {t!("help-step-18")} }
-
-                            // Admin
-                            p { style: "font-weight:700; color:var(--rpg-gold); margin-top:8px; margin-bottom:2px;",
-                                {t!("help-section-admin")}
-                            }
-                            p { {t!("help-step-19")} }
-                            p {
-                                "    "
-                                {t!("help-admin-users")}
-                            }
-                            p {
-                                "    "
-                                {t!("help-admin-characters")}
-                            }
-                            p {
-                                "    "
-                                {t!("help-admin-scenarios")}
-                            }
-                        }
-                    }
-                    AlertDialogAction {
-                        AlertDialogCancel { {t!("common-close")} }
-                    }
-                }
+            // How-to-play dialog — see tutorial.rs. The game phase only decides which
+            // tab it opens on.
+            HowToPlayDialog {
+                open: help_open,
+                is_admin: is_admin_link_visible(&snap_local_login_name_session),
+                phase: server_data().core_game_data.game_phase.clone(),
+                first_run: tutorial_first_run(),
             }
 
             // Sound settings dialog — sliders/mute apply live (no draft/save step, unlike
@@ -784,6 +694,7 @@ pub fn Navbar() -> Element {
                 Button {
                     variant: ButtonVariant::Outline,
                     onclick: move |_| {
+                        tutorial_first_run.set(false);
                         help_open.set(true);
                         mobile_nav_open.set(false);
                     },

@@ -2,16 +2,20 @@ use dioxus::logger::tracing;
 use lib_rpg::{
     character_mod::buffers::BufKinds,
     server::{
-        game_manager::ResultLaunchAttack, players_manager::GameAtkEffect,
+        game_manager::ResultLaunchAttack, players_manager::GameAtkEffect, scenario::ScenarioState,
         server_manager::ServerData,
     },
 };
 
 use crate::{
     audio,
-    board_game_components::character_page::{AttackList, CharacterPanel, PotionList},
+    board_game_components::{
+        character_page::{AttackList, CharacterPanel, PotionList},
+        tutorial::{CombatHint, CombatHintBar, CombatUiState, are_hints_on},
+    },
     common::{
-        CtxAppLang, CtxAudioSettings, CtxToggleAtkAnimation, SERVER_NAME, lang_from_app_lang,
+        CtxAppLang, CtxAudioSettings, CtxCombatHintsOff, CtxToggleAtkAnimation, SERVER_NAME,
+        lang_from_app_lang,
     },
     components::button::{Button, ButtonVariant},
     game_channel::GameChannel,
@@ -27,6 +31,7 @@ pub fn GameBoard() -> Element {
     let socket = use_context::<GameChannel>();
     let server_data = use_context::<Signal<ServerData>>();
     let toggle_atk_animation = use_context::<CtxToggleAtkAnimation>().0;
+    let hints_off = use_context::<CtxCombatHintsOff>().0;
 
     // eval server_data
     if server_data() == ServerData::default() {
@@ -90,12 +95,53 @@ pub fn GameBoard() -> Element {
         })
     };
 
+    // First fight of a run: coach the turn → attack → target loop on the board itself,
+    // since a player who has not opened the ❓ dialog has been told none of it. Off for
+    // spectators (no actions to coach), once any scenario is done, and once dismissed —
+    // see `are_hints_on` in tutorial.rs.
+    let (hint, hint_hero_name) = {
+        let snap = server_data.read();
+        let gm = &snap.core_game_data.game_manager;
+        let completed = gm
+            .states_scenarios
+            .values()
+            .filter(|st| **st == ScenarioState::Completed)
+            .count();
+        let current_player = gm.pm.current_player.clone();
+        // Single-player drives every hero, so whoever is up is the player's to act with.
+        let is_my_turn = if snap.core_game_data.is_single_player {
+            gm.pm
+                .active_heroes
+                .iter()
+                .any(|h| h.id_name == current_player.id_name)
+        } else {
+            my_character.as_ref() == Some(&current_player.id_name)
+        };
+        drop(snap);
+        let on = !is_spectator && are_hints_on(completed, hints_off());
+        let ui = CombatUiState {
+            is_my_turn,
+            atk_menu_open: atk_menu_display(),
+            potion_menu_open: potion_menu_display(),
+            has_selected_atk: !selected_atk_name().is_empty(),
+            has_selected_consumable: !selected_consumable().is_empty(),
+        };
+        (on.then(|| ui.hint()), current_player.db_full_name)
+    };
+    // Aiming is the one step with no labelled control — the target buttons are bare
+    // circles — so the hint bar's "click a pulsing circle" is backed by an actual pulse.
+    let board_class = if hint == Some(CombatHint::PickTarget) {
+        "grid-board hint-aim"
+    } else {
+        "grid-board"
+    };
+
     // Display the game board with characters and attacks
     rsx! {
         if is_spectator {
             div { class: "spectator-banner", {t!("gameboard-spectator-mode")} }
         }
-        div { class: "grid-board",
+        div { class: board_class,
             div {
                 // Heroes
                 for c in server_data.read().core_game_data.game_manager.pm.active_heroes.iter() {
@@ -112,6 +158,7 @@ pub fn GameBoard() -> Element {
                 }
             }
             div { class: "combat-log",
+                CombatHintBar { hint, current_hero_name: hint_hero_name }
                 if !is_spectator {
                     if atk_menu_display() {
                         AttackList {

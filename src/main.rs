@@ -12,12 +12,13 @@ use dotenv::dotenv;
 use dx_rpg::{
     common::{
         ConnectionStatus, CtxAppLang, CtxAtkPanelOrders, CtxAudioSettings, CtxAutoSaveScenario,
-        CtxConnectionLatency, CtxConnectionStatus, CtxDeviceToken, CtxOverworldZoom,
-        CtxSessionExpired, CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy, CtxShowBossHp,
-        CtxShowHeroAggro, CtxSyncedInsecureCerts, CtxSyncedServerUrl, CtxToggleAtkAnimation,
-        DISCONNECTED_USER, DX_COMP_CSS, Route, SERVER_NAME, SYNCED_AUDIO_MUTED_KEY,
-        SYNCED_BACKGROUND_AUDIO_KEY, SYNCED_DEVICE_TOKEN_KEY, SYNCED_MUSIC_VOLUME_KEY,
-        SYNCED_OVERWORLD_ZOOM_KEY, SYNCED_SFX_VOLUME_KEY,
+        CtxCombatHintsOff, CtxConnectionLatency, CtxConnectionStatus, CtxDeviceToken,
+        CtxOverworldZoom, CtxSessionExpired, CtxShopEnabled, CtxShowAtkTooltips, CtxShowBossEnergy,
+        CtxShowBossHp, CtxShowHeroAggro, CtxSyncedInsecureCerts, CtxSyncedServerUrl,
+        CtxToggleAtkAnimation, CtxTutorialSeen, DISCONNECTED_USER, DX_COMP_CSS, Route, SERVER_NAME,
+        SYNCED_AUDIO_MUTED_KEY, SYNCED_BACKGROUND_AUDIO_KEY, SYNCED_COMBAT_HINTS_OFF_KEY,
+        SYNCED_DEVICE_TOKEN_KEY, SYNCED_MUSIC_VOLUME_KEY, SYNCED_OVERWORLD_ZOOM_KEY,
+        SYNCED_SFX_VOLUME_KEY, SYNCED_TUTORIAL_SEEN_KEY,
     },
     components::{
         alert_dialog, button, drag_and_drop_list, input, label, popover, select, separator, sheet,
@@ -515,6 +516,12 @@ fn App() -> Element {
         use_synced_storage::<LocalStorage, f32>(SYNCED_OVERWORLD_ZOOM_KEY.to_owned(), || {
             dx_rpg::board_game_components::overworld::DEFAULT_ZOOM
         });
+    // Read once at startup so a fresh install opens the how-to-play dialog by itself;
+    // Navbar sets it when the dialog is closed. See CtxTutorialSeen in common.rs.
+    let tutorial_seen_local_sync =
+        use_synced_storage::<LocalStorage, bool>(SYNCED_TUTORIAL_SEEN_KEY.to_owned(), || false);
+    let combat_hints_off_local_sync =
+        use_synced_storage::<LocalStorage, bool>(SYNCED_COMBAT_HINTS_OFF_KEY.to_owned(), || false);
     // Native-only server URL/TLS override from Navbar's settings dialog. Declared here
     // because use_synced_storage in Navbar (a #[layout] component) stack-overflows.
     // Declared unconditionally for hook order, inert off native — DioxusLabs/dioxus#3583.
@@ -845,6 +852,8 @@ fn App() -> Element {
         background: background_audio_local_sync,
     });
     use_context_provider(|| CtxOverworldZoom(overworld_zoom_local_sync));
+    use_context_provider(|| CtxTutorialSeen(tutorial_seen_local_sync));
+    use_context_provider(|| CtxCombatHintsOff(combat_hints_off_local_sync));
     use_context_provider(|| server_data);
     use_context_provider(|| overworld_map_id);
     use_context_provider(|| CtxConnectionStatus(connection_status));
