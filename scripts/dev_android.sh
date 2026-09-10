@@ -1,14 +1,10 @@
 #!/bin/bash
 # Runs the Android native client and points it at dev_web.sh's server.
 #
-# Uses `adb reverse` so the device/emulator's own 127.0.0.1:8080 tunnels straight to the dev
-# machine's 127.0.0.1:8080 — this works for both the emulator and a real device over USB, and
-# (unlike the 10.0.2.2 emulator alias) it also satisfies Android's default WebView network
-# security config, which only permits cleartext (plain http, no TLS) traffic to 127.0.0.1. That
-# matters because <img> tags are rendered by the WebView (subject to that policy) while
-# server-fn/websocket calls go through Rust's own reqwest client (not subject to it) — so
-# without the reverse tunnel, character images silently fail to load even though login and
-# gameplay work fine.
+# `adb reverse` tunnels the device's 127.0.0.1:8080 to the dev machine's, for emulator and USB
+# device alike. Unlike the 10.0.2.2 alias it also satisfies Android's WebView cleartext policy,
+# which only allows plain http to 127.0.0.1 — <img> tags go through the WebView while server-fn
+# and websocket calls use reqwest, so without it images silently fail while gameplay works.
 #
 # Usage:
 #   ./scripts/dev_android.sh                                   # emulator or real device over adb

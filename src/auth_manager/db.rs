@@ -58,14 +58,9 @@ async fn db() -> Pool<Sqlite> {
     pool.execute(r#"CREATE TABLE IF NOT EXISTS user_settings ( "username" VARCHAR(256) NOT NULL, "key" VARCHAR(64) NOT NULL, "value" VARCHAR(256) NOT NULL, PRIMARY KEY("username","key"))"#,)
             .await.unwrap();
 
-    // Seed the two default accounts (Admin, Guest) once, on true first run only.
-    // `DO NOTHING` (not `DO UPDATE`) is load-bearing: this runs on every server start,
-    // and previously used `DO UPDATE SET ... password = EXCLUDED.password` with an
-    // empty-string password literal — silently wiping any real password an admin had
-    // set via change_password() back to empty on every restart/redeploy. Combined with
-    // login()'s legacy-account bypass (empty stored password -> any password accepted),
-    // that meant Admin's password reset itself to "log in with literally anything" every
-    // time the server restarted.
+    // Seed Admin and Guest on first run only. `DO NOTHING`, never `DO UPDATE`: this runs on
+    // every start, and updating wiped any password set via change_password() back to empty —
+    // which login()'s legacy-account bypass then treats as "any password works".
     pool.execute(r#"INSERT INTO users (id, anonymous, username, password, is_connected) SELECT 1, true, 'Admin', '', false ON CONFLICT(id) DO NOTHING"#,)
             .await.unwrap();
     pool.execute(r#"INSERT INTO users (id, anonymous, username, password, is_connected) SELECT 2, false, 'Guest', '', false ON CONFLICT(id) DO NOTHING"#,)

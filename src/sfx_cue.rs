@@ -1,33 +1,15 @@
-//! Which sound effect a game event should play, from the client's point of view.
+//! Which sound effect a game event should play.
 //!
-//! **An attack sounds like what it costs to cast.** The four cost families lib-rpg
-//! models — mana, vigour, berserk, or nothing at all — each get their own impact
-//! sound ([`Sfx::Arcane`], [`Sfx::Heavy`], [`Sfx::Rage`], [`Sfx::Strike`]), so a
-//! given attack always sounds the same and you can hear what kind of blow landed
-//! before reading the log. A critical hit isn't a family of its own: it layers a
-//! bright accent over whichever family sound just played, so it reads as the same
-//! attack hitting harder. Healing overrides all of it — a cast that gives HP back
-//! sounds like a cure, whatever it cost.
+//! An attack sounds like what it costs to cast: mana, vigour, berserk or nothing each
+//! get their own impact ([`Sfx::Arcane`], [`Sfx::Heavy`], [`Sfx::Rage`], [`Sfx::Strike`]),
+//! so one attack always sounds the same. A crit layers an accent over its family rather
+//! than replacing it. Healing overrides the family.
 //!
-//! [`lib_rpg::common::sound_cue::classify_result_atk`] is the server-side half of
-//! this. It owns the rule that a dodge or a block outranks everything else (the
-//! attack never connected, so no family sound at all), which is why it is still
-//! called here — but it only ever looks at HP deltas, so on its own it leaves two
-//! families of attacks with nothing to play:
-//!
-//! * **Pure support casts** — attacks whose effects only move non-HP stats
-//!   (`Barrier`, `Withdraw`, `Furie du Mordor`, Thraïn's shields and taunts, …).
-//!   Every effect reports `real_amount_tx == 0`, so the classifier returns no
-//!   cue at all and the cast lands in total silence.
-//! * **Lasting regens** — `Essence Régénératrice` and friends. The first tick of
-//!   the heal-over-time does report an HP gain, so these would play the same short
-//!   `heal` blip as a one-shot cure; a five-turn blessing ends up sounding like
-//!   a UI confirmation, which is why it reads as "no sound" in play.
-//!
-//! Both are re-classified here from the effect parameters the server already
-//! sends. Kept client-side because all of this is a presentation decision, in the
-//! spirit of `sound_cue`'s own "playback is a client/UI concern" note — if it
-//! ever needs to be shared with another front-end, it can move upstream as-is.
+//! [`lib_rpg::common::sound_cue::classify_result_atk`] owns the dodge/block priority and
+//! is still called for it, but it only reads HP deltas — so pure support casts (no HP
+//! effect at all) return no cue, and lasting regens return the same blip as an instant
+//! cure. Both are re-classified here from the effect parameters. Client-side because it is
+//! a presentation decision; can move upstream unchanged if another front-end needs it.
 
 use lib_rpg::{
     character_mod::{
@@ -52,30 +34,25 @@ pub enum Sfx {
     Heavy,
     /// Damage from a berserk-cost attack.
     Rage,
-    /// Accent layered *over* a family sound when the attack crit — never played
-    /// on its own, which is why it carries no low end (see `scripts/gen_sfx.py`).
+    /// Layered over a family sound on a crit; carries no low end (see gen_sfx.py).
     CriticalHit,
     Dodge,
     Block,
     /// An instant cure.
     Heal,
-    /// A lasting boon landed on an ally — regen, shield, war cry.
+    /// A lasting boon on an ally — regen, shield, war cry.
     Buff,
-    /// A lasting affliction landed on an enemy with no damage of its own.
+    /// A lasting affliction on an enemy, with no damage of its own.
     Debuff,
     Potion,
     Victory,
     GameOver,
 }
 
-/// Classifies an attack result into the sounds to play, most-significant first.
-///
-/// Several cues can come back at once, and the caller plays them together: an
-/// attack that damages one character and heals another gets both, and a critical
-/// always comes back with the family sound it accents.
+/// Sounds to play, most-significant first. Several can come back at once — the caller
+/// plays them together, and a crit always comes back with the family it accents.
 pub fn classify_attack(ra: &ResultLaunchAttack) -> Vec<Sfx> {
-    // lib-rpg owns this priority rule: a dodged or blocked attack didn't connect,
-    // so it has no sound of its own to speak over.
+    // lib-rpg owns this rule: a dodged/blocked attack didn't connect.
     let outcome = classify_result_atk(ra);
     if outcome.contains(&SoundCue::Dodge) {
         return vec![Sfx::Dodge];
@@ -108,18 +85,16 @@ pub fn classify_attack(ra: &ResultLaunchAttack) -> Vec<Sfx> {
     if restored {
         cues.push(restore_cue(effects));
     }
-    // Last, so the accent rides on top of the blow it belongs to. Damage only:
-    // heals can crit too, and the accent is built as an impact — over a regen
-    // chime it just sounds like a different, harsher spell.
+    // Damage only: heals crit too, and an impact accent over a regen chime just sounds
+    // like a different spell.
     if damaged && effects.iter().any(|e| e.effect_outcome.is_critical) {
         cues.push(Sfx::CriticalHit);
     }
     cues
 }
 
-/// The impact sound for an attack, chosen by the resource it charges. No attack in
-/// the game data charges two at once; if one ever does, the most distinctive family
-/// wins rather than playing two impacts over each other.
+/// Impact sound for an attack, by the resource it charges. Nothing in the game data
+/// charges two at once; if it ever does, the most distinctive family wins.
 fn damage_family(ra: &ResultLaunchAttack) -> Sfx {
     // Every effect of one attack carries the same `atk_type`, so the first is enough.
     let Some(atk) = ra.new_game_atk_effects.first().map(|e| &e.atk_type) else {
@@ -136,8 +111,7 @@ fn damage_family(ra: &ResultLaunchAttack) -> Sfx {
     }
 }
 
-/// A restore that ticks over several turns is a regen, not a cure — it gets the
-/// blessing chime instead of the one-shot heal.
+/// A restore spread over turns is a regen, not a cure.
 fn restore_cue(effects: &[GameAtkEffect]) -> Sfx {
     if effects.iter().filter(|e| is_restore(e)).all(is_lasting) {
         Sfx::Buff
@@ -154,31 +128,20 @@ fn is_aimed_at_enemy(effect: &GameAtkEffect) -> bool {
     effect_param(effect).target_kind == TARGET_ENNEMY
 }
 
-/// Which way an effect moves current HP: negative for damage, positive for
-/// healing, `None` for anything that isn't an HP change at all.
+/// Which way an effect moves current HP: negative damages, positive heals, `None` for
+/// anything else.
 ///
-/// Read from the effect's own parameters before what actually landed, because the
-/// amount that landed is not stable from cast to cast: a cure on an ally already
-/// at full HP reports `real_amount_tx == 0` once the HP cap has eaten it, and a
-/// blow fully absorbed by armour does the same. An attack has to sound like itself
-/// every time, so the sound follows what the effect was *for*.
-///
-/// Restricting this to HP is what keeps two other kinds of effect from being
-/// mistaken for heals — both found by running this against the real game data:
-/// the aggro almost every damage attack generates for its launcher, and resource
-/// refunds like `Fracas des Abysses`'s +20 Vigor to its caster. Both report a
-/// positive `real_amount_tx` exactly like a cure does. A cast whose only effect is
-/// a non-HP change still gets a sound: with nothing damaged and nothing healed it
-/// falls through to the support-cast branch above.
+/// Read from the effect's parameters, not from what landed: an HP cap or full armour
+/// absorption zeroes `real_amount_tx`, and an attack must still sound like itself.
+/// HP-only on purpose — aggro generation and resource refunds (`Fracas des Abysses`
+/// grants its caster +20 Vigor) also report positive amounts and are not cures.
 fn hp_direction(effect: &GameAtkEffect) -> Option<i64> {
     let buffer = &effect_param(effect).buffer;
-    // `is_effet_hot_or_dot` is lib-rpg's own list of the effect kinds that move a
-    // *current* stat; `ChangeMaxStat` on HP raises the ceiling and is a buff.
+    // lib-rpg's list of kinds that move a *current* stat; ChangeMaxStat on HP is a buff.
     if buffer.stats_name != HP || !is_effet_hot_or_dot(&buffer.kind) {
         return None;
     }
-    // A few effects carry their amount somewhere other than `value` (a passive
-    // feeding off the previous turn's damage, say); fall back to what landed.
+    // Some effects carry their amount outside `value`; fall back to what landed.
     Some(if buffer.value != 0 {
         buffer.value
     } else {
@@ -194,8 +157,7 @@ fn is_restore(effect: &GameAtkEffect) -> bool {
     hp_direction(effect).is_some_and(|amount| amount > 0)
 }
 
-/// True for an effect that keeps applying after the turn it was cast on — the
-/// `ChangeCurrentStat`-over-N-turns shape lib-rpg uses for regens and DoTs.
+/// Keeps applying after the turn it was cast on — lib-rpg's regen/DoT shape.
 fn is_lasting(effect: &GameAtkEffect) -> bool {
     let param = effect_param(effect);
     param.nb_turns > 1 && param.buffer.kind == BufKinds::ChangeCurrentStat

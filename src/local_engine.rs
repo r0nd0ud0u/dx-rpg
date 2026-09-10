@@ -1,15 +1,10 @@
-//! Client-only: a local, in-process game engine for offline mode — no server, no
-//! network, calls lib-rpg's game logic directly. `event.rs`'s server-side handlers turn
-//! out to be almost entirely multiplayer broadcast plumbing (websocket client registry,
-//! per-server client lists, ...) around a thin core of plain lib-rpg calls — solo offline
-//! play doesn't need any of that plumbing, just the same lib-rpg calls made directly.
+//! Client-only: an in-process game engine for offline mode — no server, no network,
+//! calling lib-rpg directly.
 //!
-//! Three composable functions mirroring the real `InitializeGame` /
-//! `AddCharacterOnServerData` / `StartGame` client-event flow (see
-//! `local_channel.rs`, which calls these directly), each stripped of the
-//! multiplayer/broadcast bookkeeping only the server side needs (a client registry,
-//! per-server ongoing-games lists, save-to-disk, ...) — there's only ever one local
-//! player offline.
+//! `event.rs`'s server handlers are mostly multiplayer broadcast plumbing (client
+//! registry, per-server lists, save-to-disk) around a thin core of lib-rpg calls. These
+//! functions mirror the `InitializeGame` / `AddCharacterOnServerData` / `StartGame` flow
+//! with that plumbing stripped — there is only ever one local player.
 #![cfg(not(feature = "server"))]
 
 use anyhow::{Context, bail};
@@ -64,11 +59,9 @@ pub fn new_local_game(universe: &str) -> anyhow::Result<CoreGameData> {
     Ok(core)
 }
 
-/// Lists the distinct universes available in the embedded/offline data set (e.g.
-/// `["lotr", "pokemon"]`), for the "Play Offline" universe picker — no network call,
-/// mirrors `list_universes_server`'s scenario+hero union (minus its extra raw-directory
-/// scan, which only matters for an admin-only edge case: a universe with character/
-/// scenario folders present but not yet containing any actual data).
+/// Universes in the embedded data set, for the "Play Offline" picker. Mirrors
+/// `list_universes_server`'s scenario+hero union, minus its raw-directory scan (an
+/// admin-only case: folders present but still empty).
 pub fn list_universes() -> anyhow::Result<Vec<String>> {
     crate::embedded_data::register();
     let dm = DataManager::try_new(OFFLINE_PATH)?;
@@ -116,14 +109,11 @@ pub fn start_local_game(core: &mut CoreGameData) -> anyhow::Result<()> {
 }
 
 /// Loads `map_id` and switches to `GamePhase::Overworld`. Mirrors
-/// `overworld_enter_handler`'s core (minus the auto-save-on-entry, which offline mode
-/// doesn't do at all yet — see this module's doc comment).
+/// `overworld_enter_handler`, minus auto-save-on-entry (not done offline yet).
 ///
-/// `owner_hero_id`, if given, collapses `player_positions` down to just that hero's —
-/// one party sprite for the whole group, matching the real handler (which does this
-/// from `players_info`/`owner_player_name`, not available here since this module only
-/// ever touches `CoreGameData`; `local_channel.rs`'s dispatch resolves it from the full
-/// `ServerData` and passes it through).
+/// `owner_hero_id` collapses `player_positions` to one party sprite. The real handler
+/// reads it from `players_info`; this module only sees `CoreGameData`, so
+/// `local_channel.rs` resolves it and passes it in.
 pub fn enter_overworld_map(
     core: &mut CoreGameData,
     map_id: &str,
@@ -150,12 +140,9 @@ pub fn enter_overworld_map(
     Ok(())
 }
 
-/// Moves `hero_id`'s overworld sprite one step, handling the resulting encounter or
-/// map-to-map transition in place so `core` is already fully updated (fight loaded, or
-/// new map entered) by the time this returns. Mirrors `overworld_move_handler`'s core,
-/// minus the server's broadcast-shape optimization (`BroadcastOverworldOnly` vs
-/// `BroadcastFull`) — offline mode always re-emits one full state update regardless,
-/// see `local_channel.rs`.
+/// Moves `hero_id` one step, resolving any encounter or map transition in place so `core`
+/// is fully updated on return. Mirrors `overworld_move_handler`, minus the server's
+/// broadcast-shape choice — offline always re-emits full state.
 pub fn move_player(
     core: &mut CoreGameData,
     hero_id: &str,
@@ -249,14 +236,11 @@ pub fn set_consumable_targets(core: &mut CoreGameData, consumable_name: &str, is
     }
 }
 
-/// Uses a consumable on `target_id_name` during combat, from the current player's
-/// own inventory or from the shared party stock. Mirrors `use_potion_handler` /
-/// `use_party_potion_handler`'s core (minus the broadcast plumbing).
+/// Uses a consumable in combat, from the player's inventory or the party stock. Mirrors
+/// `use_potion_handler`/`use_party_potion_handler`.
 ///
-/// Records the use in `game_state.last_consumable_use` with a bumped `seq`, which
-/// is the only thing that tells the client a potion was drunk — `Navbar`'s
-/// potion-sound effect watches exactly that field, so an offline potion is silent
-/// without it.
+/// Bumps `game_state.last_consumable_use.seq` — the only thing telling the client a potion
+/// was drunk, and all `Navbar` watches to play the sound.
 pub fn use_consumable_in_combat(
     core: &mut CoreGameData,
     consumable_name: &str,
@@ -346,12 +330,9 @@ pub fn use_overworld_consumable(
 mod tests {
     use super::*;
 
-    /// End-to-end proof that offline mode's overworld path works: enter the map lotr
-    /// actually auto-enters after Start Game (see `startgame_page.rs`'s auto-effect),
-    /// confirm the party sprite collapsed to just the owner's hero, then walk one step
-    /// in every direction until one succeeds (a fresh map's exact walkable layout isn't
-    /// asserted here — that's this map's own data, not local_engine's logic — only that
-    /// `move_player` round-trips real `OverworldManager` state without erroring).
+    /// Enters the map lotr auto-enters after Start Game, checks the party sprite collapsed
+    /// to the owner's hero, then walks in each direction until one step succeeds. The map's
+    /// walkable layout is its own data — this only proves `move_player` round-trips.
     #[test]
     fn enter_overworld_then_move_round_trips_real_state() {
         crate::embedded_data::register();
@@ -470,11 +451,8 @@ mod tests {
             "hero should have at least one attack"
         );
 
-        // Not every attack necessarily produces an effect against a boss on a fresh,
-        // minimal single-hero party (e.g. an ally-only buff has nothing to target with
-        // just one hero in the party) — try each on a freshly constructed game (so
-        // cost/cooldown/turn side effects from one attempt don't affect the next) until
-        // one does, proving at least one real attack resolves correctly end to end.
+        // An ally-only buff has nothing to target in a one-hero party, so try each attack
+        // on a fresh game (no cost/cooldown carry-over) until one resolves.
         let mut found_a_landed_effect = false;
         let (mut boss_hp_before, mut boss_hp_after) = (0u64, 0u64);
         for atk_name in &atk_names {

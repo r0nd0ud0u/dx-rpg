@@ -57,71 +57,37 @@ identifier = "io.github.r0ndoudou.rpgadventure"
 publisher = "r0ndoudou"
 resources = ["assets/*"]
 
-# Desktop app icon: read directly off disk at bundle time (not through the
-# manganis asset pipeline), so a plain relative path is enough. Must be
-# square — dx derives the freedesktop hicolor icon-theme size folder
-# (hicolor/{size}x{size}/apps/) straight from this PNG's own width/height, so
-# a non-square source lands in a mismatched, badly-scaled size bucket. This
-# only reaches Linux (.deb/.rpm/AppImage) and macOS; see [bundle.windows]
-# below for the separate Windows .exe/installer icon setting, and
-# [web.app]/src/main.rs's FAVICON asset! for the web favicon — dioxus-cli
-# 0.7.10 doesn't wire any of these into the Android launcher icon, which
-# stays dx's own hardcoded default regardless of what's set here.
+# Desktop icon, read off disk at bundle time. Must be square: dx derives the hicolor
+# size folder from the PNG's own dimensions. Linux/macOS only — Windows uses
+# [bundle.windows] below, and dx 0.7.10 ignores all of these for Android
+# (see scripts/patch_android_icon.sh).
 icon = ["assets/icon-512.png"]
 
-# AppImage can't reliably bundle webkit2gtk itself (its helper processes and
-# injected-bundle .so have hardcoded path assumptions that don't relocate well
-# inside an AppImage — a known upstream limitation shared with Tauri, which uses
-# the same wry/webview backend), so the AppImage keeps needing it preinstalled on
-# the host. .deb/.rpm don't have that problem: they can declare it as a package
-# dependency and let the package manager install it, so `apt`/`dnf` pull in
-# webkit2gtk automatically instead of the user having to install it by hand.
+# .deb/.rpm declare webkit2gtk and libxdo as package deps so apt/dnf install them; the
+# AppImage can't (webkit2gtk's helpers don't relocate) and still needs them preinstalled.
+# libxdo.so.3 is a runtime need of the keyboard-shortcut support linked in by
+# bundle_to_asset.yml.
 #
-# libxdo is here for the same reason: bundle_to_asset.yml links the desktop
-# build against libxdo-dev (keyboard-shortcut support) at build time, so the
-# installed binary needs libxdo.so.3 present at runtime too, or it fails to
-# even start with "error while loading shared libraries: libxdo.so.3: cannot
-# open shared object file". Package name differs per distro family: Debian/
-# Ubuntu ships it as libxdo3, Fedora/RPM as libxdo.
-# dioxus-cli 0.7.10's BundleConfig struct (packages/cli/src/config/bundle.rs)
-# has no `rpm` field at all — a `[bundle.rpm]` table here would be silently
-# dropped by serde's default unknown-field handling. `bundle_linux_rpm()`
-# (packages/cli/src/bundler/linux.rs) reuses the *entire* DebianSettings
-# struct instead — depends, files, scripts, all of it — for the .rpm too, so
-# whatever's declared under [bundle.deb] applies to both package formats.
-# `depends` below is deb-style names ("libwebkit2gtk-4.1-0", "libxdo3"); the
-# .rpm ends up with those exact same (wrong, for RPM) names in its Requires,
-# which bundle_to_asset.yml's "Fix RPM dependency names and Release" step
-# translates to the real Fedora/RPM names (webkit2gtk4.1, libxdo) afterward.
+# dx 0.7.10 has no [bundle.rpm] table — bundle_linux_rpm() reuses DebianSettings wholesale,
+# so these deb-style names land in the .rpm's Requires too, and bundle_to_asset.yml's
+# "Fix RPM dependency names" step rewrites them (webkit2gtk4.1, libxdo).
 [bundle.deb]
 depends = ["libwebkit2gtk-4.1-0", "libxdo3"]
 
-# AppStream metadata (see the file itself for why): [bundle.deb].files packs
-# arbitrary extra files into the package at a fixed destination path, and
-# bundle_linux_rpm() reuses this same map for the .rpm — same file, same
-# destination, both package formats, no per-format duplication needed.
+# AppStream metadata (see the file for why). bundle_linux_rpm() reuses this map, so it
+# covers both package formats.
 [bundle.deb.files]
 "/usr/share/metainfo/io.github.r0ndoudou.rpgadventure.metainfo.xml" = "assets/io.github.r0ndoudou.rpgadventure.metainfo.xml"
 
-# The generic [bundle].icon list above isn't read by dx's Windows bundler at
-# all (only linux.rs/macos.rs consume it) — the .exe/MSI/NSIS icon needs this
-# separate, Windows-specific path instead. Reuses the same favicon.ico as the
-# web favicon (see src/main.rs's FAVICON asset!) since it's already a proper
-# multi-resolution .ico, not just assets/icon-512.png re-pointed here.
+# dx's Windows bundler ignores [bundle].icon above; it needs this instead. Reuses the
+# web favicon, already a multi-resolution .ico.
 [bundle.windows]
 icon_path = "assets/favicon.ico"
 
-# Without this, `dx bundle --platform android --release` silently falls back to
-# `gradlew assembleDebug` (dioxus-cli only runs `assembleRelease` when this section
-# is present), which signs with AGP's own implicit default debug keystore
-# (~/.android/debug.keystore via AGP's own preference-directory resolution, NOT the
-# android/debug.keystore committed in this repo) and regenerates a fresh throwaway
-# key on every CI run since that path is never seeded — hence APK signatures drifting
-# between releases and Android refusing to install over the previous version.
-# Pointing this at the committed debug.keystore makes signing deterministic across
-# releases. Credentials are the standard Android debug-keystore convention (alias
-# "androiddebugkey", password "android" for both store and key) — not a real secret,
-# same reasoning as committing the keystore file itself (see bundle_to_asset.yml).
+# Without this section dx runs `assembleDebug`, which signs with AGP's own unseeded
+# ~/.android/debug.keystore — a fresh key per CI run, so Android refuses to install over
+# the previous release. Pointing at the committed keystore makes signing deterministic.
+# Standard debug-keystore credentials, not a secret (see bundle_to_asset.yml).
 [bundle.android]
 jks_file = "android/debug.keystore"
 jks_password = "android"

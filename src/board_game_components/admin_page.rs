@@ -41,25 +41,18 @@ pub fn AdminPage() -> Element {
         });
     });
 
-    // Server-side re-check of the *live* session, not just the client's persisted
-    // username: `require_admin` (server_fn/auth.rs) is what actually protects every
-    // admin endpoint now, but discovering that tab-by-tab (each panel's own list/save
-    // call quietly failing) would surface as a handful of silently-logged errors instead
-    // of one clear message. Checking here, before any tab renders, catches it in one
-    // place — and distinguishes "this session expired" from "this user was never Admin"
-    // (see below), rather than treating both the same way.
+    // `require_admin` protects the endpoints themselves; checking the live session here too
+    // turns tab-by-tab silent failures into one clear message, and tells "session expired"
+    // apart from "never was Admin".
     use_effect(move || {
         spawn(async move {
             let is_admin =
                 matches!(get_permissions().await, Ok(perms) if perms.contains("Admin::View"));
             session_ok.set(is_admin);
             if !is_admin && local_login_name_session() == *ADMIN {
-                // The client still believes it's signed in as Admin, but the server
-                // disagrees — the session expired (or was revoked) since local storage
-                // never clears on its own. Drop the stale local identity so the rest of
-                // the app stops acting as if it's still authenticated, and let LoginPage
-                // explain why. A regular, non-admin user landing here instead just gets
-                // "access denied" below, with their own session left untouched.
+                // Session expired or revoked; local storage never clears itself. Drop the
+                // stale identity and let LoginPage explain. A non-admin user instead gets
+                // "access denied" below, session untouched.
                 let _ = logout().await;
                 let _ = socket
                     .send(ClientEvent::RequestLogOut(local_login_name_session()))

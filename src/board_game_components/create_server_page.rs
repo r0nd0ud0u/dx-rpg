@@ -148,14 +148,10 @@ pub fn CreateServer() -> Element {
                                     }
                                 }
                                 if selected_slot() == Some(idx) {
-                                    // The card this sits inside has its own onclick that toggles
-                                    // `selected_slot` (select/deselect) — without stopping propagation
-                                    // here, every click on a button below (including the confirm
-                                    // dialog's Cancel/Confirm, which render as DOM descendants of the
-                                    // card too) bubbles up and, since the slot is already selected,
-                                    // immediately deselects it. That unmounts this whole block —
-                                    // actions row and dialog alike — before anything can render, or
-                                    // (on Confirm) mid-flight while its overwrite is still in progress.
+                                    // The enclosing card's onclick toggles `selected_slot`, so
+                                    // without this every button below (the dialog included, a DOM
+                                    // descendant) deselects the slot and unmounts this block
+                                    // mid-click.
                                     div { onclick: move |evt: MouseEvent| evt.stop_propagation(),
                                         div { class: "save-slot-actions",
                                             // Non-destructive "continue this save" first, listed above

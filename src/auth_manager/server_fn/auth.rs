@@ -9,13 +9,10 @@ use std::collections::HashSet;
 #[cfg(feature = "server")]
 use std::{collections::HashMap, sync::Mutex};
 
-/// Per-username, server-issued secret handed out only as `login()`'s return value once a real
-/// login (password-checked or not, per `USE_PASSWORD`) has succeeded. The websocket's
-/// `AddPlayer`/`LoginAllSessions` events require the caller to present this exact value (as
-/// their `device_token`) before they're allowed to claim that username's live player slot —
-/// without it, a raw websocket connection could otherwise claim to be any username just by
-/// naming it, with no authentication at all. Overwritten on every fresh login, which is what
-/// invalidates a stale/tampered client-side copy from an earlier session.
+/// Per-username secret, returned only by a successful `login()`. The websocket's
+/// `AddPlayer`/`LoginAllSessions` require it as `device_token` before claiming a username's
+/// player slot — otherwise a raw websocket could claim any username unauthenticated.
+/// Overwritten on every login, which invalidates stale client copies.
 #[cfg(feature = "server")]
 pub static LOGIN_PROOFS: Lazy<Mutex<HashMap<String, String>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
@@ -85,15 +82,11 @@ pub async fn auth_rate_limit(
 
 /// Checks a typed password against the bcrypt hash stored in the `users.password` column.
 ///
-/// `stored` is `None`/empty for an account created (or migrated from) before `USE_PASSWORD` was
-/// enabled: there is no hash to check against, so any password is accepted and it's on the user
-/// to set a real one afterward via `change_password()`.
+/// `stored` is `None`/empty for accounts predating `USE_PASSWORD`: nothing to check, so
+/// anything is accepted until the user sets one via `change_password()`.
 ///
-/// Note the `unwrap_or(false)`: `bcrypt::verify` returns `Result<bool, BcryptError>`, where the
-/// `Err` arm means only that the *stored hash was malformed*, not that the password was wrong.
-/// Collapsing this with `.is_ok()` — as all three call sites used to — discards the `bool` that
-/// actually carries the answer and yields `true` for every password that hashes successfully,
-/// i.e. accepts anything.
+/// `unwrap_or(false)`, not `.is_ok()`: `bcrypt::verify`'s `Err` means the *stored hash* was
+/// malformed, so `.is_ok()` accepts any password against a well-formed hash.
 #[cfg(feature = "server")]
 fn password_matches(stored: Option<&str>, typed: &str) -> bool {
     match stored {
@@ -105,12 +98,9 @@ fn password_matches(stored: Option<&str>, typed: &str) -> bool {
 /// Server-side source of truth for whether passwords are enforced, read straight from the
 /// `USE_PASSWORD` env var.
 ///
-/// Every auth decision must go through this rather than through the `use_password` argument the
-/// client passes in: that argument is only a UI hint (it tells the login form whether to render
-/// the password field), and a hand-rolled HTTP request to `/api/user/login` can set it to
-/// `false` to skip the password check entirely. Same for `/api/register`, where a `false` there
-/// makes the server store no password at all — leaving a row whose NULL password then matches
-/// anything on the next login.
+/// Never use the client's `use_password` argument for an auth decision — it is a UI hint, and
+/// a hand-rolled request can set it `false` to skip the check (or, on `/api/register`, store
+/// no password at all, leaving a row that then matches anything).
 #[cfg(feature = "server")]
 fn use_password_enabled() -> bool {
     std::env::var("USE_PASSWORD")
@@ -252,11 +242,8 @@ pub async fn register(
     }
 }
 
-/// Lets a signed-in user set/change their password. If the account already has a real
-/// password (and `use_password` is true), `old_password` must match it. A legacy account
-/// with no password yet (created before USE_PASSWORD was enabled) has nothing to verify
-/// against, so any `old_password` is accepted — this is how such accounts get migrated
-/// onto a real password after logging in once via the no-password-set bypass in `login()`.
+/// Sets or changes a password. `old_password` must match when one is already set; a legacy
+/// account with none accepts anything, which is how it migrates onto a real password.
 #[post("/api/user/change_password")]
 pub async fn change_password(
     username: String,
@@ -346,11 +333,9 @@ pub async fn delete_user(
 
             if use_password {
                 if is_valid {
-                    // Only the username is matched here: `is_valid` above already checked
-                    // the typed password against the stored bcrypt hash. Re-binding the
-                    // plaintext password into the WHERE clause compared it against the
-                    // *hash* column, which never matches — the DELETE silently affected 0
-                    // rows while still reporting Ok and wiping the user's save directory.
+                    // Username only — `is_valid` already checked the password. Binding the
+                    // plaintext into the WHERE compared it against the *hash* column, so the
+                    // DELETE matched 0 rows while still reporting Ok.
                     match sqlx::query("DELETE FROM users WHERE username = ?1")
                         .bind(&username)
                         .execute(pool)
@@ -429,15 +414,9 @@ fn has_admin_permission(user: Option<&User>) -> bool {
     user.is_some_and(|user| user.permissions.contains("Admin::View"))
 }
 
-/// Server-side gate for every admin-only endpoint (the `admin_*`/scenario/equipment/attack
-/// CRUD functions in `admin_users.rs`, `admin_characters.rs`, `admin_equipment.rs`,
-/// `admin_scenarios.rs`, `admin_attacks.rs`). Until this existed, those endpoints had no
-/// authorization check at all: the client only *hides* the Admin Panel link for non-"Admin"
-/// usernames (see `is_admin_link_visible` in navbar.rs), which is cosmetic, not security — a
-/// raw HTTP request (curl, or a device that's simply still logged in and never explicitly
-/// signed out) could call them directly with no login of any kind. This checks the
-/// session's actual user against the "Admin::View" permission seeded for the Admin account
-/// alone (see `db.rs`), the same permission `get_permissions` above already validates.
+/// Server-side gate for every admin-only endpoint (`admin_*.rs`). The client only *hides* the
+/// Admin Panel link, which is cosmetic — a raw HTTP request could call these directly. Checks
+/// the session user against the "Admin::View" permission seeded in `db.rs`.
 #[cfg(feature = "server")]
 pub fn require_admin(auth: &Session) -> Result<(), ServerFnError> {
     if has_admin_permission(auth.current_user.as_ref()) {
@@ -465,14 +444,11 @@ pub async fn logout() -> Result<(), ServerFnError> {
     }
 }
 
-/// The signed-in user's name, or a 401 when this request carries no session.
+/// The signed-in user's name, or 401 when the request carries no session.
 ///
-/// `auth.current_user` is `None` far more often than it looks: a client keeps its
-/// username in local storage, so it still believes it is signed in after the
-/// server-side session has gone — an app update, a server restart, or simply an
-/// expired cookie. Unwrapping here panicked the request handler every time one of
-/// those clients called `logout`, which is exactly the state the player was trying
-/// to get out of.
+/// `current_user` is `None` whenever a client's local-storage username outlives the
+/// server session (app update, restart, expired cookie) — unwrapping panicked the handler
+/// on exactly the `logout` call meant to escape that state.
 #[post("/api/user/name", auth: Session)]
 pub async fn get_user_name() -> Result<String> {
     Ok(auth
@@ -609,9 +585,8 @@ mod tests {
     /// `USE_PASSWORD` must come from the server's own environment, never from the
     /// client-supplied argument that `login`/`register` accept purely as a UI hint.
     ///
-    /// This is the only test in the crate that touches the process environment. If another
-    /// one ever needs to, both must move behind a shared mutex — `cargo test` runs tests on
-    /// parallel threads in a single process, and `set_var` is process-global.
+    /// The only test touching the process environment. A second one must share a mutex with
+    /// this: `set_var` is process-global and tests run in parallel threads.
     #[test]
     fn use_password_enabled_reads_the_env_var() {
         let previous = std::env::var("USE_PASSWORD").ok();

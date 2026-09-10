@@ -3,13 +3,10 @@
 # Usage: ./scripts/dev_emulator.sh <avd-name> [--wipe] [--fresh]
 # List available AVDs with: emulator -list-avds
 #
-# --wipe factory-resets the AVD's data partition before boot — use this when `adb install`
-# fails with INSTALL_FAILED_INSUFFICIENT_STORAGE (a dev AVD's small default storage fills up
-# after enough install/uninstall cycles) or when you just want a known-clean device state.
-#
-# --fresh skips resuming the saved quick-boot snapshot (cold boot instead) — use this when the
-# emulator window comes up black/unresponsive or adb reports the device stuck 'offline'. Unlike
-# --wipe, this keeps installed apps and app data; it only discards the suspended session state.
+# --wipe factory-resets the data partition: for INSTALL_FAILED_INSUFFICIENT_STORAGE, or a
+# known-clean device.
+# --fresh cold-boots instead of resuming the quick-boot snapshot: for a black/unresponsive
+# window or a device stuck 'offline'. Keeps apps and data, unlike --wipe.
 AVD="${1:?Usage: $0 <avd-name> [--wipe] [--fresh]  (list available AVDs with: emulator -list-avds)}"
 shift
 EXTRA_ARGS=()

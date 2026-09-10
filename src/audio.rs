@@ -54,32 +54,17 @@ fn sfx_asset(sfx: Sfx) -> Asset {
     }
 }
 
-/// Injects the JS audio bridge once: a persistent looping `<audio>` element for
-/// music, plus a `playSfx` helper that fires a fresh `Audio()` per call so
-/// overlapping one-shots don't cut each other off. Call once from `App()`, the
-/// same way the theme/viewport `document::eval` calls in `main.rs` are — this
-/// works uniformly across web, desktop (tao/wry webview), and mobile (Android
-/// webview) since all three render through a browser engine.
+/// Injects the JS audio bridge once, from `App()`. Works on web, desktop and mobile
+/// alike — all three render through a browser engine.
 ///
-/// Browsers block audio.play() with sound until the page has had a genuine user
-/// gesture (click/key/touch) — Home's music auto-starts on mount, before any
-/// gesture, so that first play() is silently rejected (some embedded webviews,
-/// e.g. VS Code's, are more permissive and don't hit this). A one-time listener
-/// below retries as soon as the very first gesture happens anywhere on the page.
-///
-/// Desktop/mobile-only wrinkle: `dioxus-asset-resolver`'s native protocol handler
-/// (what actually serves `asset!()` files in those builds) has no MIME mapping for
-/// `.ogg` — or any audio format — at all, and falls back to `Content-Type:
-/// text/html` for anything it doesn't recognize. The webview then correctly
-/// refuses to play a resource declared as HTML (`NotSupportedError`), regardless
-/// of whether the right GStreamer codecs are installed. `loadAsBlobUrl` below
-/// fetches the bytes ourselves and wraps them in a `Blob` with an explicit,
-/// correct type, bypassing whatever Content-Type the asset server actually sent —
-/// harmless overhead on web, where this bug doesn't exist, so no platform-specific
-/// branch is needed.
+/// Two constraints shape the script:
+/// - Browsers reject `play()` until a real user gesture, and Home's music starts on
+///   mount, so a one-time gesture listener retries the first play.
+/// - `dioxus-asset-resolver` serves `asset!()` files with no MIME mapping for audio and
+///   falls back to `text/html`, which the webview refuses to play (`NotSupportedError`).
+///   `loadAsBlobUrl` re-wraps the bytes with the right type. Harmless on web.
 pub fn init_audio_bridge() {
-    // Prepended rather than interpolated: the script below is full of `{}` and
-    // `${}`, none of which would survive being a format string.
+    // Prepended, not interpolated: the script is full of `{}` and `${}`.
     let script = format!(
         "window.__dxPauseOnBlur = {};\n{BRIDGE_JS}",
         cfg!(feature = "mobile")
@@ -107,11 +92,10 @@ const BRIDGE_JS: &str = r#"
             ['pointerdown', 'keydown', 'touchstart'].forEach(
                 (evt) => document.addEventListener(evt, resumeOnFirstGesture)
             );
-            // One blob URL per asset, kept for the lifetime of the page: sfx fire
-            // several times per turn and re-fetching + re-wrapping the same file on
-            // every play added audible latency to the first frames of the sound.
+            // One blob URL per asset, kept for the page's lifetime: re-fetching on every
+            // play added audible latency to the start of the sound.
             const blobUrls = new Map();
-            // Strong references to the one-shots currently sounding; see playSfx.
+            // Strong refs to the one-shots currently sounding; see playSfx.
             const playing = new Set();
 
             // Whether the music is allowed to keep going once the app leaves the
@@ -141,24 +125,17 @@ const BRIDGE_JS: &str = r#"
             document.addEventListener('visibilitychange', () => setAway(document.hidden));
             window.addEventListener('pagehide', () => setAway(true));
             window.addEventListener('pageshow', () => setAway(false));
-            // PAUSE_ON_BLUR is set from Rust and is true only on the mobile build:
-            // Android's WebView does not reliably deliver `visibilitychange` when the
-            // app is backgrounded, so losing window focus is taken as leaving too.
-            // Deliberately not done on desktop, where a window blur just means the
-            // player clicked something else on the same screen and killing the music
-            // for that would be obnoxious.
+            // Mobile only: Android's WebView doesn't reliably fire `visibilitychange` when
+            // backgrounded, so blur counts as leaving. Not on desktop, where a blur just
+            // means the player clicked another window.
             if (PAUSE_ON_BLUR) {
                 window.addEventListener('blur', () => setAway(true));
                 window.addEventListener('focus', () => setAway(false));
             }
 
-            // Asks the host to show transport controls for the music — on Android
-            // that is the lock-screen/notification-shade media card, which is what
-            // gives the player a way to stop background audio without coming back
-            // into the app. Whether it actually appears is up to the embedder:
-            // Chrome and Safari honour it, and a plain Android WebView may define
-            // the API while never surfacing a notification for it. Harmless where
-            // it is ignored.
+            // Asks the host for transport controls — on Android, the lock-screen media card
+            // that stops background audio without reopening the app. Chrome and Safari honour
+            // it; a plain Android WebView may define the API and surface nothing.
             const updateMediaSession = () => {
                 if (!('mediaSession' in navigator)) {
                     return;
@@ -249,10 +226,8 @@ const BRIDGE_JS: &str = r#"
                     loadAsBlobUrl(src).then((url) => {
                         const sfx = new Audio(url);
                         sfx.volume = volume;
-                        // Held until it finishes. Nothing else references a one-shot
-                        // once play() has been called, and an element collected
-                        // mid-playback is silently cut off — which is exactly what an
-                        // intermittently missing sound effect looks like.
+                        // Held until it ends: nothing else references a one-shot after
+                        // play(), and a collected element is silently cut off.
                         playing.add(sfx);
                         const release = () => playing.delete(sfx);
                         sfx.addEventListener('ended', release);

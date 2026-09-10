@@ -1,20 +1,14 @@
-//! Vendored, lightly-modified copy of `dioxus_primitives::drag_and_drop_list`
-//! (DioxusLabs/components, MIT/Apache-2.0, commit `ffbc750181ea2195e20736ae3ad0c24ad9684c41`
-//! — the exact rev this project's `dioxus-primitives` dependency is pinned to).
+//! Vendored copy of `dioxus_primitives::drag_and_drop_list` (DioxusLabs/components,
+//! MIT/Apache-2.0, rev `ffbc750181ea2195e20736ae3ad0c24ad9684c41` — the rev this project
+//! pins).
 //!
-//! That pinned version manages the reordered list purely as internal state
-//! and never hands it back to the caller, so it can't be used to persist a
-//! saved order. Upstream fixed this later (a `use_drag_and_drop_list_items`
-//! hook), but that landed together with an unrelated collection/focus and
-//! css-module rewrite touching every other primitive this project already
-//! wraps (select, tabs, tooltip, popover, ...) — bumping the pin for it
-//! would be a much bigger, riskier change than this feature needs.
+//! The pinned version keeps the reordered list as internal state and never hands it back,
+//! so a saved order can't be persisted. Upstream's fix (`use_drag_and_drop_list_items`)
+//! landed with a collection/focus and css-module rewrite touching every other primitive
+//! this project wraps, so bumping the pin is far riskier than vendoring.
 //!
-//! Instead, this is the pinned-rev implementation with the minimal addition
-//! of a stable string key per item (mirrored alongside every list mutation)
-//! and a `use_drag_and_drop_list_order()` hook to read the final key order
-//! back out. All drag/keyboard interaction and accessibility behavior is
-//! otherwise unchanged from upstream.
+//! Changes: a stable string key per item, and `use_drag_and_drop_list_order()` to read the
+//! final order back. Drag, keyboard and accessibility behaviour is unchanged.
 use dioxus::prelude::*;
 use std::rc::Rc;
 

@@ -40,23 +40,14 @@ fn is_quit_visible(phase: &GamePhase) -> bool {
     *phase == GamePhase::Running
 }
 
-/// Ends the current session. The caller navigates home afterwards either way.
+/// Ends the current session; the caller navigates home either way.
 ///
-/// **The local session is always cleared, whatever the server says.** The username
-/// lives in local storage, so the client goes on believing it is signed in long
-/// after the server-side session has gone — after an app update, a server restart,
-/// or an expired cookie. In exactly that state `logout()` fails, and a version of
-/// this that returned early on the error left the player permanently stuck: the
-/// button they were pressing to escape a stale session was the one thing the stale
-/// session prevented. Signing out locally is always safe — it only forgets
-/// credentials — so the server call is best-effort notification, not a gate.
-///
-/// An offline session has no server to notify at all: `logout()` is a server
-/// function, so there it fails outright. Clearing the local session and dropping
-/// back onto the real socket (so the login page can reach a server again) is the
-/// whole of signing out there.
-// `mut socket` is only needed for the `go_online()` call below, which the server
-// build cfgs out along with the whole notion of offline mode.
+/// The local session is cleared whatever the server answers. The username lives in local
+/// storage, so the client still believes it is signed in after the server session has gone
+/// (app update, server restart, expired cookie) — exactly when `logout()` fails, and
+/// gating on it left the player stuck. Offline there is no server to notify at all, and
+/// `go_online()` is needed so the login page can reach one again.
+// `mut socket` is only for `go_online()`, cfg'd out of the server build.
 #[cfg_attr(feature = "server", allow(unused_mut))]
 async fn sign_out(
     mut socket: GameChannel,
@@ -102,12 +93,9 @@ fn is_connection_status_visible(username: &str, is_offline: bool) -> bool {
     is_signed_in(username) && !is_offline
 }
 
-/// Number of bars (0-4) to light up in the connection-signal icon. This is a latency
-/// bucket, not a real wifi-strength reading — no cross-platform API here (browser or
-/// native webview) can read the OS's actual radio signal, so round-trip time to our own
-/// server is the closest available proxy, same trick most multiplayer games use.
-/// `Reconnecting` is always 0 — rendered in a distinct (danger, pulsing) color by
-/// `ConnectionSignalIcon` rather than just looking like a weak signal.
+/// Bars (0-4) for the connection icon. A latency bucket, not real signal strength — no
+/// cross-platform API exposes the radio. `Reconnecting` is always 0, drawn in a distinct
+/// pulsing colour rather than as a weak signal.
 fn connection_bars(status: ConnectionStatus, latency_ms: Option<u64>) -> u8 {
     if status == ConnectionStatus::Reconnecting {
         return 0;
@@ -236,24 +224,12 @@ pub fn Navbar() -> Element {
         }
     });
 
-    // Server connection settings dialog — native only (gated at render time below via
-    // `cfg!(target_arch = "wasm32")`, since #[cfg] attributes aren't supported inside
-    // rsx!;).
+    // Native only, gated at render time — #[cfg] isn't supported inside rsx!.
     let mut server_settings_open = use_signal(|| false);
-    // Desktop-only fullscreen toggle. `is_fullscreen` is declared unconditionally (a
-    // plain use_signal, harmless on every platform) so the button's label can always
-    // read it; `dioxus_desktop::use_window()` itself only exists on desktop builds, so
-    // it's real-cfg-gated — the button's onclick body below is gated the same way, and
-    // is simply a no-op closure on non-desktop builds where the button never renders
-    // (see the `if cfg!(all(feature = "desktop", not(feature = "server")))` around it
-    // further down).
-    //
-    // Also excludes `feature = "server"`: `dx serve --platform desktop` builds this
-    // crate's companion fullstack server binary *with the `desktop` feature still
-    // enabled* (not a clean `server`-only build) — so without this extra exclusion,
-    // `use_window()` gets called during that server's SSR pass too, where there is no
-    // real webview window to find, and panics ("Could not find context
-    // Rc<DesktopService>"), taking down every page render on that server.
+    // Fullscreen toggle. `is_fullscreen` is unconditional so the label can read it;
+    // `use_window()` is cfg-gated. `feature = "server"` is excluded too: `dx serve
+    // --platform desktop` builds the companion server with `desktop` still on, and
+    // `use_window()` panics there during SSR ("Could not find context Rc<DesktopService>").
     #[cfg_attr(
         not(all(feature = "desktop", not(feature = "server"))),
         allow(unused_mut)
@@ -261,9 +237,8 @@ pub fn Navbar() -> Element {
     let mut is_fullscreen = use_signal(|| false);
     #[cfg(all(feature = "desktop", not(feature = "server")))]
     let desktop_window = dioxus_desktop::use_window();
-    // Mobile-only nav drawer (Sidebar) — the desktop controls group is duplicated
-    // into it (CSS-gated visibility, see .navbar-desktop-group/.navbar-mobile-trigger
-    // in main.css) so narrow screens get a proper drawer instead of a cramped row.
+    // Mobile nav drawer; the desktop controls are duplicated into it, visibility
+    // CSS-gated (.navbar-desktop-group/.navbar-mobile-trigger in main.css).
     let mut mobile_nav_open = use_signal(|| false);
     // Draft state so typing doesn't write to storage on every keystroke; populated from
     // the synced values each time the dialog is opened (see the trigger button below).
@@ -370,11 +345,8 @@ pub fn Navbar() -> Element {
                         Button {
                             variant: ButtonVariant::Outline,
                             onclick: {
-                                // `desktop_window` (a non-`Copy` `Rc`-backed handle) is also
-                                // captured by the Sidebar drawer's duplicate button further
-                                // down — clone here so each `move` closure gets its own handle
-                                // instead of fighting over the one declared at the top of this
-                                // component.
+                                // `desktop_window` is non-`Copy` and the drawer's duplicate
+                                // button captures it too — clone per closure.
                                 #[cfg(all(feature = "desktop", not(feature = "server")))]
                                 let desktop_window = desktop_window.clone();
                                 move |_| {

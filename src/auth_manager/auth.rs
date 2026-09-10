@@ -31,12 +31,9 @@ impl Authentication<User, i64, SqlitePool> for User {
     async fn load_user(userid: i64, pool: Option<&SqlitePool>) -> Result<User, anyhow::Error> {
         let db = pool.unwrap();
 
-        // `fetch_optional`, not `fetch_one`: `userid` here can be `ANONYMOUS_SESSION_USER_ID`
-        // (see main.rs), which by construction never matches a row in `users` — every
-        // cookie-less/never-logged-in request resolves to that id, so this must succeed
-        // with an empty/anonymous `User` rather than erroring (this used to `.unwrap()`
-        // straight into a panic on exactly that path before `ANONYMOUS_SESSION_USER_ID`
-        // existed as a distinct id from any real account).
+        // `fetch_optional`, not `fetch_one`: every cookie-less request resolves to
+        // `ANONYMOUS_SESSION_USER_ID` (main.rs), which matches no `users` row, so this must
+        // return an anonymous `User` rather than error.
         let Some(sqluser) = sqlx::query_as::<_, SqlUser>("SELECT * FROM users WHERE id = $1")
             .bind(userid)
             .fetch_optional(db)

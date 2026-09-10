@@ -685,26 +685,15 @@ fn AttackPanelConfig(id_name: String, attacks: Vec<AttackType>, open: Signal<boo
         }
     });
 
-    // The effect above only runs *after* the render that flips `open` to
-    // true commits, so on a freshly-mounted panel (`draft` still empty) the
-    // very first paint would otherwise show an empty drag list for a frame
-    // before the effect populates it and force-remounts the list — a visible
-    // flash on top of the sheet's normal slide-in animation. Falling back to
-    // computing it inline here means that first paint is already correct.
+    // The effect above runs only after the render that opens the panel commits, so the
+    // first paint would flash an empty list. Computing it inline makes that paint correct.
     if draft.peek().is_empty() && open() {
         draft.set(effective_order());
     }
 
-    // Native HTML5 drag-and-drop (`draggable`/`ondragstart`/`ondragover`) has
-    // no touch-input equivalent on Android's WebView (or any mobile
-    // browser) — a finger drag never fires `dragstart`. The list's keyboard
-    // fallback (Enter to grab, arrow keys to move) doesn't help there
-    // either since a touch tap on a non-`<input>` element doesn't summon a
-    // directional on-screen keyboard. So on top of the drag handle (mouse,
-    // desktop-only in practice), every row also gets explicit Up/Down
-    // buttons that directly mutate `draft` and force a remount — the same
-    // mechanism the "Sort by ..." shortcuts already use — giving touch
-    // users a working way to reorder.
+    // HTML5 drag-and-drop has no touch equivalent — a finger drag never fires `dragstart` —
+    // and the keyboard fallback needs a keyboard no tap will summon. So every row also gets
+    // Up/Down buttons that mutate `draft` and force a remount, as the sort shortcuts do.
     let items_len = draft().len();
     let items: Vec<Element> = draft()
         .iter()

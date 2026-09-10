@@ -78,18 +78,12 @@ pub const SYNCED_DEVICE_TOKEN_KEY: &str = "synced_device_token";
 pub const SYNCED_MUSIC_VOLUME_KEY: &str = "synced_music_volume";
 pub const SYNCED_SFX_VOLUME_KEY: &str = "synced_sfx_volume";
 pub const SYNCED_AUDIO_MUTED_KEY: &str = "synced_audio_muted";
-/// Whether the background music keeps playing once the app is no longer on screen —
-/// switched to another app on mobile, or another tab on the web. Off by default:
-/// a game that keeps singing after you have left it is usually a nuisance and a
-/// drain on the battery, but some players like having the score on, so it is a
-/// setting rather than a rule.
+/// Whether music keeps playing once the app leaves the screen. Off by default (battery),
+/// but some players want it, hence a setting.
 pub const SYNCED_BACKGROUND_AUDIO_KEY: &str = "synced_background_audio";
 
-/// Overworld map zoom level, persisted locally. Device-local rather than
-/// per-account on purpose: a comfortable zoom depends on the screen it is read on,
-/// so a phone and a desktop want different values for the same player — and unlike
-/// the server-side user settings it worked through before, this one also survives
-/// an offline session, which has no server to store anything on.
+/// Overworld map zoom. Device-local, not per-account: the right zoom depends on the
+/// screen, and this also works offline, where there is no server to store settings on.
 pub const SYNCED_OVERWORLD_ZOOM_KEY: &str = "synced_overworld_zoom";
 
 // ── Per-setting context newtypes ─────────────────────────────────────────────
@@ -124,11 +118,9 @@ pub struct CtxAutoSaveScenario(pub Signal<bool>);
 #[derive(Clone, Copy)]
 pub struct CtxShopEnabled(pub Signal<bool>);
 
-/// Per-character custom attack panel order, cached client-side for the
-/// current server/game (keyed by character `id_name`). Loaded on demand
-/// from `user_settings` (see `atk_panel_order_key` in `character_page.rs`)
-/// rather than eagerly like the boolean `CtxShow*` settings above, since the
-/// key space is per-character rather than a fixed handful of toggles.
+/// Per-character attack panel order, keyed by `id_name`. Loaded on demand from
+/// `user_settings` (`atk_panel_order_key` in `character_page.rs`), not eagerly like the
+/// `CtxShow*` toggles — the key space is per character, not a fixed handful.
 #[derive(Clone, Copy)]
 pub struct CtxAtkPanelOrders(pub Signal<std::collections::HashMap<String, Vec<String>>>);
 
@@ -139,17 +131,13 @@ pub struct CtxAtkPanelOrders(pub Signal<std::collections::HashMap<String, Vec<St
 #[derive(Clone, Copy)]
 pub struct CtxAppLang(pub Signal<String>);
 
-/// Native clients only: the user-chosen server address, persisted via
-/// `SYNCED_SERVER_URL_KEY` and read with priority over the compile-time-baked default
-/// on the *next* launch (see `main.rs`). Declared in `App()` and provided via context
-/// rather than called directly in `board_game_components/navbar.rs` — calling
-/// `use_synced_storage` inside a `#[layout(...)]` component instead of the route root
-/// stack-overflows the app at startup.
+/// Native only: user-chosen server address, applied on the next launch (see `main.rs`).
+/// Declared in `App()`, not Navbar — `use_synced_storage` in a `#[layout]` component
+/// stack-overflows at startup.
 #[derive(Clone, Copy)]
 pub struct CtxSyncedServerUrl(pub Signal<String>);
 
-/// Native clients only: whether to accept invalid/self-signed TLS certificates for the
-/// server above. Same persistence/priority and same App()-not-Navbar constraint as
+/// Native only: accept self-signed TLS certs for the server above. Same constraints as
 /// `CtxSyncedServerUrl`.
 #[derive(Clone, Copy)]
 pub struct CtxSyncedInsecureCerts(pub Signal<bool>);
@@ -159,14 +147,9 @@ pub struct CtxSyncedInsecureCerts(pub Signal<bool>);
 #[derive(Clone, Copy)]
 pub struct CtxDeviceToken(pub Signal<String>);
 
-/// Overworld map zoom, as a scale factor (`1.0` = 100%). Persisted via
-/// `SYNCED_OVERWORLD_ZOOM_KEY`, declared in `App()` for the same reasons as
-/// `CtxSyncedServerUrl`, and read/written by `board_game_components/overworld.rs`.
-///
-/// Declared in `App()` rather than in `OverworldMap` so the value is already loaded
-/// when the map mounts: the map is unmounted for the whole of a fight and remounted
-/// on the way back out, and anything it loads itself starts over from the default
-/// every single time.
+/// Overworld zoom as a scale factor (`1.0` = 100%), via `SYNCED_OVERWORLD_ZOOM_KEY`.
+/// Declared in `App()`, not `OverworldMap`: the map is unmounted for the whole of a
+/// fight, so anything it loads itself restarts from the default on every remount.
 #[derive(Clone, Copy)]
 pub struct CtxOverworldZoom(pub Signal<f32>);
 
@@ -198,22 +181,16 @@ pub enum ConnectionStatus {
 #[derive(Clone, Copy)]
 pub struct CtxConnectionStatus(pub Signal<ConnectionStatus>);
 
-/// Set when the client discovers its *server-side* auth session no longer backs the
-/// identity it locally believes it's signed in as (see `AdminPage`'s permission check) —
-/// e.g. the account's session expired from being idle past the server's session
-/// lifespan (`SessionConfig` in `main.rs`), which matters most for a device that was
-/// simply never signed out of (lost, shared, or just left logged in for a long time).
-/// `LoginPage` shows a "session expired, please sign in again" banner while this is
-/// true, then clears it once the player dismisses it or logs back in.
+/// Set when the server session no longer backs the identity the client believes it holds
+/// (see `AdminPage`'s check) — typically idled out past `SessionConfig`'s lifespan on a
+/// device never signed out of. `LoginPage` shows a "session expired" banner until dismissed
+/// or a new login.
 #[derive(Clone, Copy)]
 pub struct CtxSessionExpired(pub Signal<bool>);
 
-/// Most recent round-trip latency to the server in milliseconds, measured by `main.rs`'s
-/// ping loop (`ClientEvent::Ping`/`ServerEvent::Pong`). `None` means either no measurement
-/// has completed yet (just connected) or the last one timed out — a bad-but-not-fully-dropped
-/// connection (e.g. severe wifi congestion) can leave the websocket technically open while
-/// pings stop arriving, which `ConnectionStatus` alone can't distinguish from a healthy idle
-/// link. Rendered in `Navbar` as a filling wifi icon rather than the raw number.
+/// Round-trip latency in ms from `main.rs`'s ping loop. `None` means no measurement yet or
+/// the last one timed out — a congested link stays open and `Connected` while pings stop
+/// arriving. Rendered in `Navbar` as a filling wifi icon.
 #[derive(Clone, Copy)]
 pub struct CtxConnectionLatency(pub Signal<Option<u64>>);
 
@@ -228,18 +205,12 @@ pub fn lang_from_app_lang(app_lang: &str) -> lib_rpg::common::lang::Lang {
     }
 }
 
-/// Returns the URL for serving a character photo via the dynamic image route.
-/// If `photo_name` already contains an extension (has a dot), the URL is used
-/// as-is; otherwise `.png` is appended for backward-compat with legacy entries
-/// that stored only the filename stem.
+/// URL for a character photo. `.png` is appended when `photo_name` has no extension
+/// (legacy entries stored only the stem).
 ///
-/// The path is root-relative (`/img-srv/...`), which resolves correctly on web
-/// (same-origin as the Axum server). Native clients (desktop/mobile) have no
-/// same-origin relationship to the game server — their webview loads from a
-/// local asset protocol — so the path must be prefixed with the server's base
-/// URL there. `dioxus::fullstack::get_server_url()` is `""` on web (defaults to
-/// same-origin) and holds the `SERVER_URL` set via `set_server_url()` in
-/// `main.rs` on native, so prefixing only when non-empty covers both cases.
+/// Native clients aren't same-origin with the game server — their webview loads from a
+/// local asset protocol — so the root-relative path needs the server base prefixed.
+/// `get_server_url()` is `""` on web, so prefixing only when non-empty covers both.
 pub fn photo_src(photo_name: &str) -> String {
     let path = if photo_name.contains('.') {
         format!("/img-srv/{}", photo_name)
