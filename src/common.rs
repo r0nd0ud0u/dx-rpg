@@ -56,6 +56,66 @@ pub enum Route {
 
 pub const PATH_IMG: Asset = asset!("/assets/img");
 pub const DX_COMP_CSS: Asset = asset!("/assets/dx-components-theme.css");
+/// Bundled Inter subsets — see `inter_font_face_css` and `assets/fonts/Sources.txt`.
+pub const PATH_FONTS: Asset = asset!("/assets/fonts");
+
+/// The UI font stack. Inter first (bundled, see `inter_font_face_css`), then the system
+/// UI faces it most resembles, so text laid out before the face is ready — or if the
+/// asset ever fails to load — still looks like the app rather than like Times New Roman.
+pub const FONT_STACK: &str =
+    "'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif";
+
+/// Background and text of the very first paint, before any stylesheet applies. Kept in
+/// sync by hand with `--rpg-bg` / `--rpg-text` in `assets/dx-components-theme.css`; they
+/// are literals here because this string is what the webview shows *before* the token
+/// definitions are parsed.
+pub const BOOT_BG: &str = "#080c14";
+pub const BOOT_TEXT: &str = "#e2e8f0";
+
+/// `BOOT_BG` again, as the webview wants it: the colour wry paints before it has a
+/// document at all, on both native clients (`main.rs`). A test keeps the two in step.
+pub const BOOT_BG_RGBA: (u8, u8, u8, u8) = (0x08, 0x0c, 0x14, 0xff);
+
+/// `@font-face` rules for the bundled Inter files.
+///
+/// Built in Rust rather than written into a stylesheet because the asset pipeline hashes
+/// the folder name (`fonts-dxh…`, like `img-dxh…`), so a hand-written `url()` inside a CSS
+/// file would not resolve — the same reason sprites are addressed through `PATH_IMG`.
+///
+/// Two subsets per style: `latin` covers English, `latin-ext` the accented characters the
+/// French locale and the LOTR names need. `swap` rather than `block` so text is never
+/// invisible; the files are local, so the swap is a frame at most.
+pub fn inter_font_face_css() -> String {
+    // Ranges as published with the Google Fonts subsets these files came from.
+    const LATIN: &str = "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD";
+    const LATIN_EXT: &str = "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF";
+    [
+        ("normal", "latin", LATIN),
+        ("normal", "latin-ext", LATIN_EXT),
+        ("italic", "latin", LATIN),
+        ("italic", "latin-ext", LATIN_EXT),
+    ]
+    .iter()
+    .map(|(style, subset, range)| {
+        format!(
+            "@font-face{{font-family:'Inter';font-style:{style};font-weight:100 900;\
+             font-display:swap;src:url('{PATH_FONTS}/inter-{subset}-{style}.woff2') format('woff2');\
+             unicode-range:{range};}}"
+        )
+    })
+    .collect()
+}
+
+/// The handful of rules that decide what the window looks like in the moment between
+/// "webview has a document" and "the app's stylesheets are applied": the dark ground, the
+/// text colour, no default body margin, and the font stack. Inlined into the desktop
+/// index's `<head>` (see `main.rs`) so it needs no request of its own.
+pub fn boot_critical_css() -> String {
+    format!(
+        "html,body{{background-color:{BOOT_BG};color:{BOOT_TEXT};margin:0;\
+         font-family:{FONT_STACK};}}"
+    )
+}
 
 pub const OFFLINE_PATH: &str = "offlines";
 
@@ -251,6 +311,40 @@ pub fn photo_src(photo_name: &str) -> String {
 mod tests {
     use super::{lang_from_app_lang, photo_src};
     use lib_rpg::common::lang::Lang;
+
+    #[test]
+    fn font_face_css_is_one_rule_per_subset_and_style() {
+        let css = super::inter_font_face_css();
+        assert_eq!(4, css.matches("@font-face").count());
+        for file in [
+            "inter-latin-normal.woff2",
+            "inter-latin-ext-normal.woff2",
+            "inter-latin-italic.woff2",
+            "inter-latin-ext-italic.woff2",
+        ] {
+            assert!(css.contains(file), "missing {file} in {css}");
+        }
+        // The `\`-continued format strings must not leak newlines into the CSS.
+        assert!(
+            !css.contains('\n'),
+            "font-face css must stay on one line: {css}"
+        );
+    }
+
+    #[test]
+    fn boot_background_is_the_same_colour_in_both_forms() {
+        let (r, g, b, a) = super::BOOT_BG_RGBA;
+        assert_eq!(super::BOOT_BG, format!("#{r:02x}{g:02x}{b:02x}"));
+        assert_eq!(0xff, a, "the window background must be opaque");
+    }
+
+    #[test]
+    fn boot_css_paints_the_dark_ground_before_any_stylesheet() {
+        let css = super::boot_critical_css();
+        assert!(css.contains(super::BOOT_BG));
+        assert!(css.contains("margin:0"));
+        assert!(!css.contains('\n'), "boot css must stay on one line: {css}");
+    }
 
     #[test]
     fn unit_lang_from_app_lang() {

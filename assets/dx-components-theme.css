@@ -1,11 +1,19 @@
 /* This file contains the global styles for the styled dioxus components. You only
  * need to import this file once in your project root.
  */
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+/* Inter used to be pulled from fonts.googleapis.com here. It is bundled in
+ * assets/fonts/ instead: an @import is render-blocking *and* the desktop client only
+ * streams its first DOM after `window.onload`, so a font request over the network held
+ * up the whole launch — and never resolved at all during offline play. The @font-face
+ * rules are built in Rust (`inter_font_face_css`, src/common.rs) because the asset
+ * pipeline hashes the folder name, which a url() written here could not know. */
 
 body {
   color: var(--secondary-color-4);
-  font-family: Inter, sans-serif;
+  /* Same stack as FONT_STACK in src/common.rs — a real fallback rather than bare
+   * `sans-serif`, since this rule loads after main.css and wins the tie. */
+  font-family: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, system-ui,
+    sans-serif;
   font-optical-sizing: auto;
   font-style: normal;
   font-weight: 400;
@@ -33,6 +41,17 @@ html[data-theme="light"] {
     --dark: ;
     --light: initial;
   }
+}
+
+/* The app is dark-only: App() sets data-theme="dark" on load. That happens in an effect,
+ * i.e. after the first paint, so on a light-themed desktop the launch used to flash the
+ * light palette and snap to dark a frame later. `html:root` (0,1,1) outranks the bare
+ * `:root` (0,1,0) of the two media queries above whatever the load order, so dark is what
+ * paints from the first byte, with no JS involved. The attribute rules still win over
+ * this one, which keeps a future light theme a one-line change. */
+html:root {
+  --dark: initial;
+  --light: ;
 }
 
 :root {

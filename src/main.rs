@@ -45,6 +45,57 @@ use dioxus_sdk_storage::StorageBacking;
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
+/// The `<head>` both native clients boot from.
+///
+/// Everything a webview needs for a correct *first* paint has to be in the initial HTML:
+/// App()'s `document::Link` stylesheets are injected by an effect that runs after that
+/// paint, which is what used to make the launch flash unstyled. The App()-root links stay
+/// — web needs them, and here they harmlessly re-apply the same hrefs.
+#[cfg(all(not(feature = "server"), any(feature = "desktop", feature = "mobile")))]
+fn native_boot_head() -> String {
+    // Must be kept in sync by hand with App()'s document::Link list: one is a const
+    // here, the other is markup inside the component.
+    let stylesheets: &[Asset] = &[
+        MAIN_CSS,
+        dx_rpg::common::DX_COMP_CSS,
+        dx_rpg::components::alert_dialog::STYLE_CSS,
+        dx_rpg::components::button::STYLE_CSS,
+        dx_rpg::components::drag_and_drop_list::STYLE_CSS,
+        dx_rpg::components::input::STYLE_CSS,
+        dx_rpg::components::label::STYLE_CSS,
+        dx_rpg::components::popover::STYLE_CSS,
+        dx_rpg::components::select::STYLE_CSS,
+        dx_rpg::components::separator::STYLE_CSS,
+        dx_rpg::components::sheet::STYLE_CSS,
+        dx_rpg::components::sidebar::STYLE_CSS,
+        dx_rpg::components::tabs::STYLE_CSS,
+        dx_rpg::components::tooltip::STYLE_CSS,
+    ];
+    let mut head = format!(r#"<link rel="icon" href="{FAVICON}">"#);
+    // Inline, first, and request-free: whatever else is still in flight, the window is
+    // already the app's dark ground in the right font instead of a white page.
+    head.push_str(&format!(
+        "<style>{}{}</style>",
+        dx_rpg::common::boot_critical_css(),
+        dx_rpg::common::inter_font_face_css()
+    ));
+    // A native client streams its first DOM only after `window.onload` (see
+    // dioxus-desktop's module loader — `dioxus::mobile` is that same crate), so preloading
+    // the two upright faces here means text is laid out in Inter the first time it is
+    // painted, with no swap. `crossorigin` because font fetches are CORS-mode even
+    // same-origin; the asset protocol answers with `Access-Control-Allow-Origin: *`.
+    for subset in ["latin", "latin-ext"] {
+        head.push_str(&format!(
+            r#"<link rel="preload" as="font" type="font/woff2" crossorigin href="{}/inter-{subset}-normal.woff2">"#,
+            dx_rpg::common::PATH_FONTS
+        ));
+    }
+    for href in stylesheets {
+        head.push_str(&format!(r#"<link rel="stylesheet" href="{href}">"#));
+    }
+    head
+}
+
 fn main() {
     // Reads the .env file. Native builds (server, and native clients below) can have one;
     // the browser (wasm32) has no filesystem so it never reads one.
@@ -120,35 +171,8 @@ fn main() {
     #[cfg(not(feature = "server"))]
     dx_rpg::embedded_data::register();
 
-    // Desktop only: App()'s `document::Link` stylesheets are injected by an effect that
-    // runs after the webview's first paint, so the launch flashes unstyled.
-    // `with_custom_head` puts them in the initial HTML instead. The App()-root links stay
-    // — web needs them, and on desktop they harmlessly re-apply the same hrefs.
     #[cfg(all(not(feature = "server"), feature = "desktop"))]
     {
-        // Must be kept in sync by hand with App()'s document::Link list: one is a const
-        // here, the other is markup inside the component.
-        let stylesheets: &[Asset] = &[
-            MAIN_CSS,
-            dx_rpg::common::DX_COMP_CSS,
-            dx_rpg::components::alert_dialog::STYLE_CSS,
-            dx_rpg::components::button::STYLE_CSS,
-            dx_rpg::components::drag_and_drop_list::STYLE_CSS,
-            dx_rpg::components::input::STYLE_CSS,
-            dx_rpg::components::label::STYLE_CSS,
-            dx_rpg::components::popover::STYLE_CSS,
-            dx_rpg::components::select::STYLE_CSS,
-            dx_rpg::components::separator::STYLE_CSS,
-            dx_rpg::components::sheet::STYLE_CSS,
-            dx_rpg::components::sidebar::STYLE_CSS,
-            dx_rpg::components::tabs::STYLE_CSS,
-            dx_rpg::components::tooltip::STYLE_CSS,
-        ];
-        let mut head = format!(r#"<link rel="icon" href="{FAVICON}">"#);
-        for href in stylesheets {
-            head.push_str(&format!(r#"<link rel="stylesheet" href="{href}">"#));
-        }
-
         // `with_icon` below never reaches Wayland — GTK3 implements no per-window icon
         // protocol there. The compositor matches the xdg-shell app_id against an installed
         // .desktop file instead, and GTK3 takes that app_id from `g_get_prgname()`, i.e.
@@ -177,12 +201,35 @@ fn main() {
         dioxus::LaunchBuilder::new()
             .with_cfg(
                 dioxus_desktop::Config::new()
-                    .with_custom_head(head)
+                    .with_custom_head(native_boot_head())
+                    // Painted by the webview before it has a document at all — without it
+                    // the window opens white for as long as the first paint takes.
+                    .with_background_color(dx_rpg::common::BOOT_BG_RGBA)
                     .with_icon(window_icon),
             )
             .launch(App);
     }
-    #[cfg(all(not(feature = "server"), not(feature = "desktop")))]
+
+    // Android/iOS. `dioxus::mobile` *is* dioxus-desktop (same webview stack), so the
+    // launch gets the same treatment as the desktop client above, minus the window icon
+    // and prgname, which are desktop window-manager concerns. The system window behind
+    // the webview is themed by the platform, not from here.
+    #[cfg(all(not(feature = "server"), feature = "mobile", not(feature = "desktop")))]
+    dioxus::LaunchBuilder::new()
+        .with_cfg(
+            dioxus::mobile::Config::new()
+                .with_custom_head(native_boot_head())
+                .with_background_color(dx_rpg::common::BOOT_BG_RGBA),
+        )
+        .launch(App);
+
+    // Web: dx generates index.html and the fullstack server renders App()'s
+    // `document::Link`s into it, so the markup arrives styled with no head to patch.
+    #[cfg(all(
+        not(feature = "server"),
+        not(feature = "desktop"),
+        not(feature = "mobile")
+    ))]
     dioxus::launch(App);
 
     // `dioxus::serve` takes a closure returning an `axum::Router` and wires up logging,
@@ -554,6 +601,11 @@ fn App() -> Element {
     // Set the theme to dark on app load.
     // `document::eval` (not raw web_sys) so this also works on desktop/mobile clients,
     // which don't compile web_sys (it's a wasm-bindgen crate, native targets don't have it).
+    //
+    // No longer what decides the first paint: this runs in an effect, i.e. after it, so
+    // the launch used to flash the light palette on a light-themed system. Dark is now the
+    // CSS default (`html:root` in assets/dx-components-theme.css) and the attribute only
+    // states it explicitly — keep both, so switching themes later stays a one-liner.
     use_effect(|| {
         document::eval("document.documentElement.setAttribute('data-theme', 'dark');");
     });
@@ -896,6 +948,10 @@ fn App() -> Element {
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
+        // Bundled Inter (assets/fonts/). Declared here for web and mobile; the desktop
+        // client also inlines the same rules into its index head, early enough to matter
+        // at launch (see the `with_custom_head` block in main()).
+        document::Style { {dx_rpg::common::inter_font_face_css()} }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: DX_COMP_CSS }
         // Shared dx-components-library stylesheets: loaded here (app root) rather than via

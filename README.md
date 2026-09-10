@@ -836,6 +836,44 @@ flow). As a stopgap for testing against a self-signed server you control, set
 client. This is insecure — anyone on the network path can impersonate the server —
 so only use it against a server and network you trust, never for a real deployment.
 
+### Launch — what the first frame looks like
+
+A webview app has a window on screen before it has a styled document, so the launch is
+worth treating as a feature rather than a side effect. Four things keep it from flashing,
+and they apply to **both native clients** — `dioxus::mobile` is dioxus-desktop, the same
+webview stack, so `native_boot_head()` and the background colour are shared by the two
+launch paths in `main.rs`:
+
+| Cause | Fix |
+|-------|-----|
+| The window paints white before the webview has a document at all | `Config::with_background_color((0x08, 0x0c, 0x14, 0xff))` — the same `--rpg-bg` the app uses |
+| The App-root `document::Link` stylesheets are injected by an effect that runs *after* the first paint | they are written into the initial HTML by `with_custom_head`, plus an inline `<style>` (`boot_critical_css`) that needs no request of its own |
+| dx-components' palette follows `prefers-color-scheme` until an effect sets `data-theme="dark"` | dark is the CSS default: `html:root { --dark: initial; --light: ; }` in `assets/dx-components-theme.css`, which outranks the media queries with no JS involved |
+| Inter was fetched from `fonts.googleapis.com` on every start | the latin/latin-ext subsets are bundled in `assets/fonts/` and declared through `inter_font_face_css()`; the desktop head also `preload`s the two upright faces |
+
+The font one mattered most: the desktop client streams its first DOM only after
+`window.onload` (see dioxus-desktop's module loader), and `window.onload` waits for the
+stylesheets — so a render-blocking `@import` of a Google Fonts URL held up the entire
+launch, and never resolved at all when playing offline. The `@font-face` rules are built
+in Rust rather than written into a stylesheet because the asset pipeline hashes the folder
+name (`fonts-dxh…`), which a hand-written `url()` could not know — the same reason overworld
+sprites are addressed through `PATH_IMG`.
+
+Inter is vendored under the SIL Open Font License 1.1; `assets/fonts/LICENSE.txt` and
+`assets/fonts/Sources.txt` record the license and the exact files each subset came from.
+
+Web needs none of this: `dx` generates `index.html` and the fullstack server renders
+App()'s `document::Link`s into it, so the first bytes the browser receives are already
+styled. What web *does* share is the bundled font — declared there through
+`document::Style { inter_font_face_css() }` at the App root.
+
+One frame is still out of the app's hands on Android: the system window behind the webview
+(`windowBackground`, and the Android 12+ splash screen) is themed by the generated Android
+project, which `dx` builds and this repo does not check in — the same reason the launcher
+icon is patched into the built APK by `scripts/patch_android_icon.sh` rather than
+configured. If that frame ever reads as a white flash on a device, that patch script is
+where the fix would go.
+
 ---
 
 ## Responsive Design
