@@ -91,6 +91,11 @@ pub const SYNCED_OVERWORLD_ZOOM_KEY: &str = "synced_overworld_zoom";
 /// without asking for it, and that includes the offline mode, where there is no account.
 pub const SYNCED_TUTORIAL_SEEN_KEY: &str = "synced_tutorial_seen";
 
+/// Whether the player has dismissed the first-scenario combat hints. Device-local for the
+/// same reasons as `SYNCED_TUTORIAL_SEEN_KEY`; without it a veteran would be coached again
+/// at the start of every new run.
+pub const SYNCED_COMBAT_HINTS_OFF_KEY: &str = "synced_combat_hints_off";
+
 // ── Per-setting context newtypes ─────────────────────────────────────────────
 // Each wraps a `Signal<bool>` in a distinct type so that Dioxus context lookup
 // (which is keyed by TypeId) stores and retrieves them independently.
@@ -157,6 +162,12 @@ pub struct CtxDeviceToken(pub Signal<String>);
 /// `CtxSyncedServerUrl`, and flipped by `Navbar` when the dialog closes.
 #[derive(Clone, Copy)]
 pub struct CtxTutorialSeen(pub Signal<bool>);
+
+/// Whether the first-scenario combat hints have been dismissed — see
+/// `SYNCED_COMBAT_HINTS_OFF_KEY`. Declared in `App()`, read by `GameBoard` and written by
+/// the hint bar's ✕ (`board_game_components/tutorial.rs`).
+#[derive(Clone, Copy)]
+pub struct CtxCombatHintsOff(pub Signal<bool>);
 
 /// Overworld zoom as a scale factor (`1.0` = 100%), via `SYNCED_OVERWORLD_ZOOM_KEY`.
 /// Declared in `App()`, not `OverworldMap`: the map is unmounted for the whole of a

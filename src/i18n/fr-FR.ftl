@@ -140,6 +140,15 @@ help-admin-characters = Personnages — tous les héros et boss, par univers.
 help-admin-scenarios = Scénarios — ajoutez, modifiez ou supprimez des scénarios dans l'éditeur JSON intégré.
 help-admin-content = Attaques & Équipement — ajustez les coûts, dégâts, effets et prix.
 
+## conseils de combat du premier scénario (board_game_components/tutorial.rs)
+hint-badge = Tutoriel
+hint-dismiss = Masquer ces conseils
+hint-waiting = ⏳ { $name } joue — héros et boss agissent par ordre de Vitesse. Votre carte s'illumine quand c'est votre tour.
+hint-your-turn = ⚔️ À vous. Appuyez sur ⚔️ sur la carte de { $name } pour ouvrir les attaques — ou sur 💊 pour boire une potion.
+hint-pick-attack = Choisissez une attaque. Une attaque grisée ne peut pas être lancée ce tour-ci, le plus souvent faute d'énergie.
+hint-pick-attack-target = 🎯 Cliquez sur un cercle clignotant d'une carte pour viser, puis confirmez avec « ⚔️ Lancer l'attaque ».
+hint-pick-potion-target = Cliquez sur le héros qui la boit, puis appuyez sur « ✅ Utiliser ».
+
 footer-about = À propos
 footer-lib-rpg-engine = moteur lib-rpg
 footer-built-with-dioxus = Construit avec Dioxus

@@ -140,6 +140,15 @@ help-admin-characters = Characters — every hero and boss, by universe.
 help-admin-scenarios = Scenarios — add, edit or delete scenarios in the inline JSON editor.
 help-admin-content = Attacks & Equipment — tune costs, damage, effects and prices.
 
+## first-scenario combat hints (board_game_components/tutorial.rs)
+hint-badge = Tutorial
+hint-dismiss = Hide these hints
+hint-waiting = ⏳ { $name } is acting — heroes and bosses play in Speed order. Your card lights up when it is your turn.
+hint-your-turn = ⚔️ Your turn. Press ⚔️ on { $name }'s card to open the attacks — or 💊 to drink a potion.
+hint-pick-attack = Choose an attack. A dimmed one cannot be launched this turn, usually for lack of energy.
+hint-pick-attack-target = 🎯 Click a pulsing circle on a card to aim, then confirm with "⚔️ Launch Attack".
+hint-pick-potion-target = Click the hero who drinks it, then press "✅ Use".
+
 footer-about = About
 footer-lib-rpg-engine = lib-rpg engine
 footer-built-with-dioxus = Built with Dioxus

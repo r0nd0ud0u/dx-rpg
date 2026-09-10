@@ -164,6 +164,31 @@ Two ergonomics details:
   it keeps the read out of the web hydration window, where `dioxus-sdk-storage` still serves
   a synced signal's default instead of the stored value.
 
+### First-scenario combat hints
+
+The dialog above only helps a player who thinks to open it, so the **first fight of a run**
+coaches the loop in place. A one-line strip sits at the top of the combat log column and
+follows what the board is actually showing:
+
+| State | Hint |
+|-------|------|
+| Another character is acting | who is playing, and that the order comes from Speed |
+| Your turn, no menu open | press ⚔️ on the card — or 💊 for a potion |
+| Attack list open | pick an attack; a dimmed one can't be launched this turn |
+| Attack chosen | click a pulsing target circle, then **⚔️ Launch Attack** |
+| Potion chosen | click who drinks it, then **✅ Use** |
+
+The hint is derived from board state, never scripted: `CombatUiState::hint()`
+(`tutorial.rs`) is a pure function over the same five flags `GameBoard` renders from, and
+its branch order mirrors the render order — a unit test pins that so the two can't drift.
+While the player is aiming, `.grid-board` also gets a `hint-aim` class that pulses the
+target buttons; they are unlabelled circles, and they are the least discoverable control on
+the board.
+
+Hints stop by themselves once any scenario is `Completed` (`are_hints_on`), are hidden for
+spectators, and the ✕ turns them off for good on that device (`synced_combat_hints_off` /
+`CtxCombatHintsOff`) so a veteran isn't coached at the start of every new run.
+
 ### Settings Panel (⚙️)
 
 In the game toolbar, a **Settings** sheet lets each user toggle options that are persisted per-user in the DB:
