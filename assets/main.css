@@ -21,7 +21,21 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     flex-direction: column;
     min-height: 100vh;
 }
-.page-content { flex: 1; }
+
+/* The Outlet renders its page as a direct flex child of .page-layout, between the
+   navbar and the footer, so the page takes the room those two leave instead of
+   guessing at it. These containers used to declare `min-height: calc(100vh - 56px)`,
+   which counted the navbar alone — and with a hardcoded 56px that is wrong by 4px
+   below 768px anyway — so the footer was pushed off the bottom of every screen and
+   every page scrolled by exactly the footer's height, however little was on it.
+   `1 0 auto` grows into the free space but never shrinks below the content, so a
+   genuinely tall page still scrolls the way it should. */
+.home-container,
+.rpg-page,
+.ongoing-games-container,
+.admin-page-container {
+    flex: 1 0 auto;
+}
 
 /* Back-navigation button (BackButton, common_comp.rs) — same spot and same look on
    every page that uses it, so leaving a page during fast play is one unambiguous click.
@@ -140,7 +154,6 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 
 /* LAYOUT */
 .rpg-page {
-    min-height: calc(100vh - 56px);
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     padding: var(--sp-xl) var(--sp-md);
@@ -175,7 +188,6 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 
 /* HOME CONTAINER */
 .home-container {
-    min-height: calc(100vh - 56px);
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     padding: var(--sp-xl) var(--sp-md);
@@ -267,6 +279,15 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     width: 100%; max-width: 680px;
 }
 .auth-card { display:flex; flex-direction:column; gap: var(--sp-md); padding: var(--sp-xl); }
+/* "No account yet?" and the sign-up action, on one line under the primary button.
+   Sign-in and sign-up share one field set (see LoginPage), so the two actions are
+   ranked rather than mirrored: most visits are a returning player, and a ghost
+   button keeps the second path visible without competing. */
+.auth-alt {
+    display: flex; align-items: center; justify-content: center;
+    flex-wrap: wrap; gap: var(--sp-sm);
+}
+.auth-alt .auth-desc { margin: 0; }
 .auth-section-title {
     font-size:1.05rem; font-weight:600; color: var(--rpg-gold);
     border-bottom: 1px solid var(--rpg-border-light);
@@ -292,7 +313,6 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
     display:flex; flex-direction:column;
     align-items:center; gap: var(--sp-lg);
     padding: var(--sp-xl) var(--sp-md);
-    min-height: calc(100vh - 56px);
     width: 100%;
 }
 .games-grid {
@@ -1213,7 +1233,6 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
    ADMIN PAGE — FULL-WIDTH CONTAINER
    ============================================= */
 .admin-page-container {
-    min-height: calc(100vh - 56px);
     display: flex; flex-direction: column;
     align-items: flex-start;
     padding: var(--sp-xl) var(--sp-lg);
@@ -1793,8 +1812,15 @@ h1,h2,h3,h4,h5,h6 { margin: 0; line-height: 1.25; }
 
     /* Page wrappers */
     .rpg-page       { padding: var(--sp-lg) var(--sp-sm); }
-    .rpg-title      { font-size: 1.5rem; }
-    .home-container { padding: var(--sp-lg) var(--sp-sm); gap: var(--sp-lg); }
+    .rpg-title      { font-size: 1.5rem; margin-bottom: var(--sp-sm); }
+    .home-container { padding: var(--sp-lg) var(--sp-sm); gap: var(--sp-md); }
+
+    /* Login: the auth card and the offline card have to land on one phone screen
+       together, without scrolling. The desktop spacing (40px padding, 40px grid
+       gap) alone pushed the offline card below the fold. */
+    .auth-grid { gap: var(--sp-md); }
+    .auth-card { padding: var(--sp-lg) var(--sp-md); gap: var(--sp-sm); }
+    .auth-section-title { padding-bottom: var(--sp-xs); margin-bottom: 0; }
 
     /* Game board: 3 fixed columns → single column (heroes / log / bosses stacked) */
     .grid-board {
